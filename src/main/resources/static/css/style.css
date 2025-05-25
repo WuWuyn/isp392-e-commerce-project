@@ -1,0 +1,497 @@
+/* Global Styles */
+body {
+    font-family: 'Open Sans', sans-serif;
+    color: #333;
+    line-height: 1.6;
+}
+
+a {
+    color: #3A50A0; /* Primary link color, adjust as needed */
+    text-decoration: none;
+}
+
+a:hover {
+    color: #2C3E50; /* Darker shade for hover */
+}
+
+.section-title {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 700;
+    color: #212529; /* Darker heading color */
+    margin-bottom: 1.5rem;
+}
+
+.view-all-link {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #555;
+}
+.view-all-link:hover {
+    color: #3A50A0;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important; /* Standard light background */
+}
+
+/* Header Styles */
+.top-banner {
+    background-color: #f0f0f0; /* Light gray for top banner */
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.main-navbar .navbar-brand.bookix-logo {
+    font-family: 'Lora', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2C3E50 !important; /* Dark blue/charcoal for logo */
+}
+
+.main-navbar .nav-link {
+    font-weight: 600;
+    color: #333 !important;
+    margin: 0 0.5rem;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+.main-navbar .nav-link:hover, .main-navbar .nav-link.active {
+    color: #3A50A0 !important; /* Accent color for hover/active */
+}
+.main-navbar .dropdown-menu {
+    border-radius: 0;
+    border: 1px solid #eee;
+}
+.main-navbar .dropdown-item {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+.main-navbar .dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #3A50A0;
+}
+
+.nav-right-actions .nav-link {
+    font-size: 0.9rem; /* Smaller for action links */
+    color: #555 !important;
+}
+.nav-right-actions .nav-link i {
+    margin-right: 0.3rem;
+}
+.search-input-header {
+    border-radius: 20px; /* Rounded search input */
+    font-size: 0.9rem;
+}
+
+/* Hero Section */
+.hero-section {
+    background: url('../images/hero-background.jpg') no-repeat center center/cover;
+    min-height: 70vh; /* Adjust height as needed */
+    padding: 6rem 0;
+}
+
+.hero-section .container {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+}
+
+.hero-title {
+    font-family: 'Lato', sans-serif; /* Or another bold sans-serif */
+    font-size: 3.5rem; /* Adjust size based on image */
+    font-weight: 700; /* Bold */
+    line-height: 1.2;
+    margin-bottom: 2rem;
+}
+
+.btn-hero {
+    background-color: #3A50A0; /* Hero button color from image */
+    color: white;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 5px;
+    text-transform: uppercase;
+}
+.btn-hero:hover {
+    background-color: #2C3E50; /* Darker shade for hover */
+    color: white;
+}
+
+/* Features Bar */
+.features-bar .feature-item h6 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    margin-bottom: 0.2rem;
+    color: #333;
+}
+.features-bar .feature-item p {
+    font-size: 0.8rem;
+    color: #666;
+}
+.feature-icon {
+    width: 40px; /* Adjust size as needed */
+    height: 40px;
+    margin-bottom: 0.5rem;
+}
+
+/* Featured Categories */
+.category-card .category-img {
+    border-radius: 8px; /* Softly rounded corners for images */
+    transition: transform 0.3s ease;
+    aspect-ratio: 3/4; /* Maintain aspect ratio */
+    object-fit: cover;
+}
+.category-card:hover .category-img {
+    transform: scale(1.05);
+}
+.category-card .category-name {
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #333;
+    margin-top: 0.5rem;
+}
+.category-card:hover .category-name {
+    color: #3A50A0;
+}
+
+/* Book Card (Used in People's Choice, New Additions, Popular Books) */
+.book-card {
+    background-color: #fff;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    text-align: center; /* Center content in card */
+    transition: box-shadow 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.book-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.book-card .book-cover {
+    width: 100%;
+    max-width: 180px; /* Control max width of book cover */
+    height: auto;
+    aspect-ratio: 2/3; /* Common book cover aspect ratio */
+    object-fit: cover;
+    margin: 0 auto 1rem; /* Center image and add bottom margin */
+    padding-top: 1rem; /* Space above book cover image */
+}
+.book-card .book-info {
+    padding: 0 1rem 1rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.book-card .book-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    line-height: 1.3;
+    min-height: 40px; /* Ensure consistent height for titles */
+}
+.book-card .book-title a {
+    color: #333;
+}
+.book-card .book-title a:hover {
+    color: #3A50A0;
+}
+.star-rating {
+    color: #ffc107; /* Bootstrap warning color for stars */
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+.star-rating .far.fa-star {
+    color: #ccc; /* Lighter color for empty stars */
+}
+.book-card .book-price {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #E74C3C; /* Price color, e.g., a reddish tone */
+    margin-bottom: 0;
+}
+.book-price .original-price {
+    font-size: 0.85rem;
+    color: #777;
+}
+.sale-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 0.75rem;
+    padding: 0.3em 0.6em;
+}
+
+/* Discount Banner */
+.discount-banner {
+    background-color: #FFF3CD; /* Light yellow, similar to Bootstrap warning bg */
+    color: #664D03; /* Darker text for contrast */
+    padding: 1.5rem 0;
+}
+.discount-icon {
+    font-size: 1.8rem;
+    font-weight: bold;
+    background-color: #F7941D; /* Orange color */
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.discount-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-right: 1.5rem;
+}
+.btn-shop-deals {
+    background-color: #F7941D; /* Orange color for button */
+    color: white;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    font-weight: bold;
+}
+.btn-shop-deals:hover {
+    background-color: #e6830d; /* Darker orange */
+    color: white;
+}
+
+/* Best New Books of April */
+.best-new-books .display-5 {
+    color: #2C3E50; /* Dark blue/charcoal */
+}
+.best-new-books .btn-dark {
+    background-color: #2C3E50;
+    border-color: #2C3E50;
+    padding: 0.8rem 1.8rem;
+}
+.best-new-books .btn-dark:hover {
+    background-color: #1a252f;
+    border-color: #1a252f;
+}
+
+/* Popular Books - uses .book-card styles */
+/* People's Choice - uses .book-card styles */
+/* New Additions - uses .book-card styles */
+
+/* Super Books Testimonial */
+.super-books-testimonial .quote-icon-superbooks {
+    font-size: 4rem;
+    font-family: 'Playfair Display', serif;
+    color: #3A50A0; /* Accent color */
+    line-height: 1;
+}
+.super-books-testimonial .testimonial-avatar {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.super-books-testimonial .testimonial-name {
+    font-weight: 600;
+    margin-top: 0.5rem;
+    margin-bottom: 0.1rem;
+}
+.super-books-testimonial .testimonial-title {
+    font-size: 0.9rem;
+}
+
+/* Favorite Authors */
+.author-avatar {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+.author-link:hover .author-avatar {
+    transform: scale(1.1);
+}
+.author-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+    margin-top: 0.5rem;
+}
+.author-link:hover .author-name {
+    color: #3A50A0;
+}
+
+
+/* From the Blog */
+.blog-post-card {
+    border: 1px solid #e0e0e0;
+    transition: box-shadow 0.3s ease;
+}
+.blog-post-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.blog-post-card .card-img-top {
+    aspect-ratio: 16/10;
+    object-fit: cover;
+}
+.blog-post-card .blog-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.blog-post-card .blog-title a {
+    color: #333;
+}
+.blog-post-card .blog-title a:hover {
+    color: #3A50A0;
+}
+.blog-post-card .card-text.small {
+    margin-bottom: 0.5rem;
+}
+
+/* Newsletter Subscription Section */
+.newsletter-section {
+    background-color: #2C3E50; /* Dark blue/gray */
+    color: #fff;
+}
+.newsletter-title {
+    font-weight: 600;
+}
+.newsletter-section .form-control {
+    border-radius: 5px;
+}
+.btn-subscribe {
+    background-color: #F7941D; /* Orange */
+    color: white;
+    font-weight: bold;
+    border: none;
+}
+.btn-subscribe:hover {
+    background-color: #e6830d; /* Darker orange */
+    color: white;
+}
+
+/* Footer Styles */
+.site-footer {
+    background-color: #212529; /* Very dark gray, almost black */
+    color: #adb5bd; /* Lighter text for contrast */
+    font-size: 0.9rem;
+}
+.site-footer .footer-heading {
+    font-size: 1.1rem;
+    color: #fff;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+.site-footer .footer-links li {
+    margin-bottom: 0.5rem;
+}
+.site-footer .footer-links a {
+    color: #adb5bd;
+    transition: color 0.2s ease;
+}
+.site-footer .footer-links a:hover {
+    color: #fff;
+    text-decoration: none;
+}
+.site-footer .social-icons .social-icon {
+    display: inline-block;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #343a40; /* Slightly lighter than footer bg */
+    color: #fff;
+    margin-right: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+.site-footer .social-icons .social-icon:hover {
+    background-color: #3A50A0; /* Accent color on hover */
+}
+.site-footer .footer-hr {
+    border-top: 1px solid #343a40; /* Separator line color */
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.payment-methods-img {
+    max-height: 25px; /* Adjust as needed */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 991.98px) { /* Medium devices (tablets, less than 992px) */
+    .main-navbar .navbar-nav { /* Center nav items on mobile toggle */
+        text-align: center;
+    }
+    .nav-right-actions {
+        width: 100%;
+        justify-content: center;
+        margin-top: 1rem;
+    }
+    .nav-right-actions .nav-link {
+        padding: 0.5rem;
+    }
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    .people-choice-section .col-lg,
+    .new-additions-section .col-lg,
+    .popular-books-section .col-lg-2 { /* Make book cards stack earlier */
+        flex: 0 0 auto;
+        width: 50%; /* 2 cards per row on medium */
+    }
+}
+
+@media (max-width: 767.98px) { /* Small devices (landscape phones, less than 768px) */
+    .hero-title {
+        font-size: 2rem;
+    }
+    .hero-section {
+        min-height: 50vh;
+        padding: 4rem 0;
+    }
+    .discount-text {
+        display: block;
+        margin-bottom: 0.5rem;
+        margin-right: 0;
+    }
+    .features-bar .feature-item {
+        margin-bottom: 1rem;
+    }
+    .people-choice-section .col-lg,
+    .new-additions-section .col-lg,
+    .popular-books-section .col-lg-2,
+    .featured-categories .col-lg-2 {
+        width: 50%; /* 2 cards per row */
+    }
+    .favorite-authors-section .col-lg,
+    .favorite-authors-section .col-md-3 {
+        width: 33.333%; /* 3 authors per row */
+    }
+}
+
+@media (max-width: 575.98px) { /* Extra small devices (portrait phones, less than 576px) */
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    .section-title {
+        font-size: 1.5rem;
+    }
+    .people-choice-section .col-lg,
+    .new-additions-section .col-lg,
+    .popular-books-section .col-lg-2,
+    .featured-categories .col-lg-2 {
+        width: 100%; /* 1 card per row */
+    }
+    .favorite-authors-section .col-4 {
+        width: 50%; /* 2 authors per row */
+    }
+    .newsletter-section .form-control-lg, .newsletter-section .btn-lg {
+        font-size: 1rem; /* Reduce size on small screens */
+        padding: 0.5rem 1rem;
+    }
+}

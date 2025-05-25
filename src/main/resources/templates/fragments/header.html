@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<header th:fragment="header-content">
+    <!-- Top Banner -->
+    <div class="top-banner text-center py-1">
+        Free Shipping on Orders Over $250
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom main-navbar">
+        <div class="container">
+            <a class="navbar-brand bookix-logo" th:href="@{/}">ReadHub</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="shopDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Shop
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="shopDropdown">
+                            <li><a class="dropdown-item" href="#">Fiction</a></li>
+                            <li><a class="dropdown-item" href="#">Non-Fiction</a></li>
+                            <li><a class="dropdown-item" href="#">Biographies</a></li>
+                            <li><a class="dropdown-item" href="#">Children's Books</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Blog</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Pages
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="pagesDropdown">
+                            <li><a class="dropdown-item" href="#">About Us</a></li>
+                            <li><a class="dropdown-item" href="#">Contact Us</a></li>
+                            <li><a class="dropdown-item" href="#">FAQ</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Contact</a>
+                    </li>
+                </ul>
+                <div class="navbar-nav nav-right-actions">
+                    <form class="d-none d-lg-flex me-2" id="searchFormDesktop">
+                        <input class="form-control form-control-sm search-input-header" type="search" placeholder="Search books..." aria-label="Search">
+                    </form>
+                    <a href="#" class="nav-link" id="searchIconToggle"><i class="fas fa-search"></i> <span class="d-none d-lg-inline">Search</span></a>
+                    <a href="#" class="nav-link"><i class="fas fa-user"></i> <span class="d-none d-lg-inline">Login</span></a>
+                    <a href="#" class="nav-link"><i class="fas fa-shopping-cart"></i> <span class="d-none d-lg-inline">Cart</span></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- Search bar for mobile/tablet toggle -->
+    <div class="container d-lg-none mt-2" id="searchFormMobileContainer" style="display: none;">
+        <form class="d-flex" id="searchFormMobile">
+            <input class="form-control me-2 search-input-header" type="search" placeholder="Search books..." aria-label="Search">
+            <button class="btn btn-sm btn-primary" type="submit">Search</button>
+        </form>
+    </div>
+</header>
+
+</body>
+</html>
