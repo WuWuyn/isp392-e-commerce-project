@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadHub - Your World of Books</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main>
+  <!-- Hero Section -->
+  <section class="hero-section text-white text-start d-flex align-items-center">
+    <div class="container">
+      <p class="hero-subtitle">THE BOOKIX EDITORS'</p>
+      <h1 class="hero-title">Top 10 Books To Make<br>It A Great Year</h1>
+      <a href="#" class="btn btn-hero">Learn More <i class="fas fa-arrow-right ms-1"></i></a>
+    </div>
+  </section>
+
+  <!-- Features Bar -->
+  <section class="features-bar py-4 bg-light">
+    <div class="container">
+      <div class="row text-center">
+        <div class="col-md-3 col-6 feature-item">
+          <img th:src="@{/images/icon-shipping.svg}" alt="Free Shipping" class="feature-icon">
+          <h6>FREE SHIPPING</h6>
+          <p class="small">On all orders over $50</p>
+        </div>
+        <div class="col-md-3 col-6 feature-item">
+          <img th:src="@{/images/icon-returns.svg}" alt="90 Day Returns" class="feature-icon">
+          <h6>90 DAY RETURNS</h6>
+          <p class="small">On all unopened items</p>
+        </div>
+        <div class="col-md-3 col-6 feature-item mt-3 mt-md-0">
+          <img th:src="@{/images/icon-pickup.svg}" alt="Local Pickup" class="feature-icon">
+          <h6>LOCAL PICKUP</h6>
+          <p class="small">Collect from local stores</p>
+        </div>
+        <div class="col-md-3 col-6 feature-item mt-3 mt-md-0">
+          <img th:src="@{/images/icon-delivery.svg}" alt="Next Day Delivery" class="feature-icon">
+          <h6>NEXT DAY DELIVERY</h6>
+          <p class="small">Available in our checkout</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Categories -->
+  <section class="featured-categories py-5">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title">Featured Categories</h2>
+        <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="row">
+        <!-- Repeat this col for each category -->
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <a href="#" class="category-card text-decoration-none">
+            <img th:src="@{/images/category-childrens.jpg}" alt="Children's Books" class="img-fluid category-img mb-2">
+            <h6 class="category-name">Children's Books</h6>
+          </a>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <a href="#" class="category-card text-decoration-none">
+            <img th:src="@{/images/category-biographies.jpg}" alt="Biographies & Memoirs" class="img-fluid category-img mb-2">
+            <h6 class="category-name">Biographies & Memoirs</h6>
+          </a>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <a href="#" class="category-card text-decoration-none">
+            <img th:src="@{/images/category-food.jpg}" alt="Food & Wine" class="img-fluid category-img mb-2">
+            <h6 class="category-name">Food & Wine</h6>
+          </a>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <a href="#" class="category-card text-decoration-none">
+            <img th:src="@{/images/category-history.jpg}" alt="History" class="img-fluid category-img mb-2">
+            <h6 class="category-name">History</h6>
+          </a>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <a href="#" class="category-card text-decoration-none">
+            <img th:src="@{/images/category-romance.jpg}" alt="Romance" class="img-fluid category-img mb-2">
+            <h6 class="category-name">Romance</h6>
+          </a>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <a href="#" class="category-card text-decoration-none">
+            <img th:src="@{/images/category-fantasy.jpg}" alt="Fantasy" class="img-fluid category-img mb-2">
+            <h6 class="category-name">Fantasy</h6>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- People's Choice -->
+  <section class="people-choice-section py-5 bg-light">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title">People's Choice</h2>
+        <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="row">
+        <!-- Example Book Card (Repeat for 5 books) -->
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-project-nim.jpg}" alt="Project Nim" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Under a Firefly Moon (Firefly Lake Book 1)</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="book-price">$100.00 - $400.00</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-think-like-monk.jpg}" alt="Avris" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Think Like a Monk: Train Your Mind for Peace</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="book-price">$16.50</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-broken-faith.jpg}" alt="Beast" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Broken Faith: Inside the Word of Faith</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+              </div>
+              <p class="book-price">$12.35</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-only-lovers.jpg}" alt="Only Lovers Left Alive" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">The Divorce: A gripping psychological thriller</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="book-price">$10.35</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-think-like-monk.jpg}" alt="The Sure Thing" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Think Like a Monk: Train Your Mind for Peace</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="book-price">$5.95</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Discount Banner -->
+  <section class="discount-banner py-4">
+    <div class="container text-center">
+      <span class="discount-icon">%</span>
+      <span class="discount-text">Get -70% purchase on order over $429.00</span>
+      <a href="#" class="btn btn-shop-deals">Shop All Deals <i class="fas fa-arrow-right ms-1"></i></a>
+    </div>
+  </section>
+
+  <!-- New Additions -->
+  <section class="new-additions-section py-5">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title">New Additions</h2>
+        <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="row">
+        <!-- Example Book Card with Sale (Repeat for 5 books) -->
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <div class="position-relative">
+              <a href="#"><img th:src="@{/images/book-star-trek-picard.jpg}" alt="Star Trek Picard" class="book-cover img-fluid"></a>
+              <span class="badge bg-danger sale-badge">Sale</span>
+            </div>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Star Trek: Picard: The Last Best Hope</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+              </div>
+              <p class="book-price">
+                <span class="original-price text-decoration-line-through me-1">$99.29</span>
+                <span class="sale-price">$33.95</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-romancing-mister-bridgerton.jpg}" alt="Long Way Down" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Romancing Mister Bridgerton Penelope & Colin's Story</a></h6>
+              <div class="star-rating"> <!-- No rating in image, but let's add for consistency -->
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+              </div>
+              <p class="book-price">$33.95</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-when-we-believed-mermaids.jpg}" alt="Coastline" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">When We Believed in Mermaids: A Novel</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+              </div>
+              <p class="book-price">$12.35</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <div class="position-relative">
+              <a href="#"><img th:src="@{/images/book-broken-faith.jpg}" alt="Broken Faith" class="book-cover img-fluid"></a>
+              <span class="badge bg-danger sale-badge">Sale</span>
+            </div>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Broken Faith: Inside the Word of Faith...</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="book-price">
+                <span class="original-price text-decoration-line-through me-1">$69.05</span>
+                <span class="sale-price">$29.59</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg col-md-4 col-sm-6 mb-4">
+          <div class="book-card">
+            <div class="position-relative">
+              <a href="#"><img th:src="@{/images/book-when-we-believed-mermaids.jpg}" alt="When We Believed" class="book-cover img-fluid"></a>
+              <span class="badge bg-danger sale-badge">Sale</span>
+            </div>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">When We Believed in Mermaids: A Novel</a></h6>
+              <div class="star-rating">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="book-price">
+                <span class="original-price text-decoration-line-through me-1">$99.29</span>
+                <span class="sale-price">$33.95</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Best New Books of April -->
+  <section class="best-new-books py-5 bg-light">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-6 mb-4 mb-md-0">
+          <img th:src="@{/images/person-reading.jpg}" alt="Person Reading Book" class="img-fluid rounded">
+        </div>
+        <div class="col-md-6 text-center text-md-start ps-md-5">
+          <p class="text-uppercase small text-muted">NEW YEAR, NEW BOOKS</p>
+          <h2 class="display-5 fw-bold mb-3">The Best New Books of April</h2>
+          <a href="#" class="btn btn-dark btn-lg">View Book <i class="fas fa-arrow-right ms-1"></i></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Popular Books -->
+  <section class="popular-books-section py-5">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title">Popular Books</h2>
+        <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="row">
+        <!-- Repeat this structure for each popular book -->
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-all-you-can-ever-know.jpg}" alt="Never Stop Your Spirit" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">All You Can Ever Know: A Memoir</a></h6>
+              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+              <p class="book-price">$14.20</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-angry-god.jpg}" alt="Subletter" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Angry God (All Saints High Book 3)</a></h6>
+              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
+              <p class="book-price">$4.30</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-romancing-mister-bridgerton.jpg}" alt="Versus" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Romancing Mister Bridgerton</a></h6>
+              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+              <p class="book-price">$33.95</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-rural-diaries.jpg}" alt="Grazie" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">The Rural Diaries: Love, Livestock</a></h6>
+              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+              <p class="book-price">$33.95</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <div class="book-card">
+            <a href="#"><img th:src="@{/images/book-until-end-of-time.jpg}" alt="Unlimited" class="book-cover img-fluid"></a>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">Until the End of Time: Mind, Matter</a></h6>
+              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
+              <p class="book-price">$33.95</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
+          <div class="book-card">
+            <div class="position-relative">
+              <a href="#"><img th:src="@{/images/book-last-sister.jpg}" alt="Operetta" class="book-cover img-fluid"></a>
+              <span class="badge bg-danger sale-badge">Sale</span>
+            </div>
+            <div class="book-info">
+              <h6 class="book-title"><a href="#">The Last Sister (Columbia River Book 1)</a></h6>
+              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+              <p class="book-price">
+                <span class="original-price text-decoration-line-through me-1">$33.95</span> <!-- Assuming original price, not in image -->
+                <span class="sale-price">$4.30</span> <!-- Image shows $4.30 $33.95, assuming $4.30 is sale price -->
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Super Books Testimonial -->
+  <section class="super-books-testimonial py-5 bg-light">
+    <div class="container text-center">
+      <div class="quote-icon-superbooks mb-3">“</div>
+      <h2 class="section-title mb-3">Super Books</h2>
+      <p class="lead mb-4 col-md-8 mx-auto">Bookix is a monthly book review publication distributed to 400,000 avid readers through subscribing bookstores & public libraries.</p>
+      <img th:src="@{/images/avatar-ali-tufan.jpg}" alt="Ali Tufan" class="testimonial-avatar img-fluid rounded-circle mb-2">
+      <h6 class="testimonial-name">Ali Tufan</h6>
+      <p class="testimonial-title small text-muted">Product Manager, Apple Inc</p>
+    </div>
+  </section>
+
+  <!-- Favorite Authors -->
+  <section class="favorite-authors-section py-5">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title">Favorite Authors</h2>
+        <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="row text-center">
+        <!-- Repeat this col structure for each author -->
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-annette.jpg}" alt="Annette Black" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Annette Black</p>
+          </a>
+        </div>
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-theresa.jpg}" alt="Theresa Webb" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Theresa Webb</p>
+          </a>
+        </div>
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-guy.jpg}" alt="Guy Hawkins" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Guy Hawkins</p>
+          </a>
+        </div>
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-robert.jpg}" alt="Robert Fox" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Robert Fox</p>
+          </a>
+        </div>
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-kristin.jpg}" alt="Kristin Watson" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Kristin Watson</p>
+          </a>
+        </div>
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-floyd.jpg}" alt="Floyd Miles" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Floyd Miles</p>
+          </a>
+        </div>
+        <div class="col-lg d-none d-lg-block"> <!-- Show 6 on large, adjust if more --> </div>
+      </div>
+      <!-- Second row for more authors if needed, or adjust col sizes -->
+      <div class="row text-center d-none d-md-flex"> <!-- Example for more authors visible on medium+ -->
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-jacob.jpg}" alt="Jacob Jones" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Jacob Jones</p>
+          </a>
+        </div>
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-arlene.jpg}" alt="Arlene McCoy" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Arlene McCoy</p>
+          </a>
+        </div>
+        <div class="col-lg col-md-3 col-4 mb-4">
+          <a href="#" class="author-link text-decoration-none">
+            <img th:src="@{/images/author-jenny.jpg}" alt="Jenny Wilson" class="author-avatar img-fluid rounded-circle mb-2">
+            <p class="author-name">Jenny Wilson</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- From the Blog -->
+  <section class="from-the-blog-section py-5 bg-light">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title">From the Blog</h2>
+        <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="row">
+        <!-- Repeat this col structure for each blog post -->
+        <div class="col-md-6 col-lg-3 mb-4">
+          <div class="card blog-post-card h-100">
+            <a href="#"><img th:src="@{/images/blog-post-1.jpg}" class="card-img-top" alt="Blog Post 1"></a>
+            <div class="card-body d-flex flex-column">
+              <p class="card-text small text-muted">24 Oct, 2023 by Ali Tufan</p>
+              <h5 class="card-title blog-title"><a href="#">Should You Feel Embarrassed for Reading Kids Books?</a></h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-4">
+          <div class="card blog-post-card h-100">
+            <a href="#"><img th:src="@{/images/blog-post-2.jpg}" class="card-img-top" alt="Blog Post 2"></a>
+            <div class="card-body d-flex flex-column">
+              <p class="card-text small text-muted">24 Oct, 2023 by Ali Tufan</p>
+              <h5 class="card-title blog-title"><a href="#">Benefits of Reading: Getting Smart, Thin, Healthy, Happy</a></h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-4">
+          <div class="card blog-post-card h-100">
+            <a href="#"><img th:src="@{/images/blog-post-3.jpg}" class="card-img-top" alt="Blog Post 3"></a>
+            <div class="card-body d-flex flex-column">
+              <p class="card-text small text-muted">24 Oct, 2023 by Ali Tufan</p>
+              <h5 class="card-title blog-title"><a href="#">Anne Bogel's 5 Tips to Restore Your Love of Reading</a></h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-4">
+          <div class="card blog-post-card h-100">
+            <a href="#"><img th:src="@{/images/blog-post-4.jpg}" class="card-img-top" alt="Blog Post 4"></a>
+            <div class="card-body d-flex flex-column">
+              <p class="card-text small text-muted">24 Oct, 2023 by Ali Tufan</p>
+              <h5 class="card-title blog-title"><a href="#">The London Book Fair is to be packed with exciting</a></h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Newsletter Subscription Section -->
+<section class="newsletter-section py-5 text-center">
+  <div class="container">
+    <h2 class="newsletter-title mb-3">Subscribe to Our Newsletter and Get 10% Off</h2>
+    <form class="row justify-content-center">
+      <div class="col-md-5 col-sm-8 mb-2 mb-md-0">
+        <input type="email" class="form-control form-control-lg" placeholder="Your Email" required>
+      </div>
+      <div class="col-md-2 col-sm-4">
+        <button type="submit" class="btn btn-subscribe btn-lg w-100">Subscribe</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle (Popper.js included) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>
