@@ -27,4 +27,14 @@ public class HomepageController {
     public String blogSingle(){
         return "blog-single";
     }
+
+    @RequestMapping(value = "/about-contact", method = RequestMethod.GET)
+    public String aboutContact(){
+        return "about-contact";
+    }
+
+    @RequestMapping(value = "/terms-policy", method = RequestMethod.GET)
+    public String termsPolicy(){
+        return "terms-policy";
+    }
 }

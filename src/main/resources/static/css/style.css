@@ -1259,3 +1259,239 @@ a:hover {
         margin-bottom: 0;
     }
 }
+
+
+
+
+
+/*-------------------------------------------------------------------------------*/
+/* style.css additions for About & Contact Page */
+
+.about-contact-page .bg-light-tint {
+    background-color: #fcfcfc; /* A very light grey, almost white */
+}
+
+/* About Us Section */
+.about-us-section .page-subtitle-header .breadcrumb-item a,
+.about-us-section .page-subtitle-header .breadcrumb-item.active {
+    font-size: 0.9rem;
+}
+
+.section-title-big {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 3rem; /* Large title */
+    color: #2C3E50;
+    line-height: 1.2;
+}
+.lead-text {
+    font-size: 1.1rem;
+    color: #555;
+    line-height: 1.7;
+}
+.about-us-section .btn-outline-primary {
+    border-color: #3A50A0;
+    color: #3A50A0;
+    font-weight: 500;
+}
+.about-us-section .btn-outline-primary:hover {
+    background-color: #3A50A0;
+    color: #fff;
+}
+
+/* Tiny Changes Section */
+.tiny-changes-section .section-title {
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    color: #2C3E50;
+}
+
+/* Stats Counter Section */
+.stats-counter-section .stat-item .stat-number {
+    font-family: 'Lato', sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    color: #3A50A0; /* Accent color */
+    margin-bottom: 0.25rem;
+}
+.stats-counter-section .stat-item .stat-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Super Books Testimonial & Favorite Authors - Reuse existing styles from index.css */
+/* Ensure .super-books-testimonial has white background if not already set by default */
+.super-books-testimonial {
+    background-color: #fff; /* Matches image if bg-light-tint is around it */
+}
+.super-books-testimonial .star-rating { /* Added based on image */
+    color: #ffc107;
+    font-size: 1.2rem;
+}
+
+/* Contact Us Section (Info Part) */
+.contact-us-section .contact-info-block .contact-info-title {
+    font-family: 'Lato', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+.contact-us-section .contact-link {
+    color: #3A50A0;
+    font-weight: 500;
+    text-decoration: none;
+}
+.contact-us-section .contact-link:hover {
+    text-decoration: underline;
+}
+.contact-us-section .contact-social-icons .social-icon {
+    display: inline-block;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #f0f0f0; /* Light grey background for icons */
+    color: #555; /* Icon color */
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: 0.9rem;
+}
+.contact-us-section .contact-social-icons .social-icon:hover {
+    background-color: #3A50A0;
+    color: #fff;
+}
+
+/* Contact Form Section */
+.contact-form-section .section-title {
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    color: #2C3E50;
+}
+.contact-form-section .form-control {
+    background-color: #fff; /* White background for form fields */
+    border: 1px solid #ced4da;
+    padding: 0.75rem 1rem;
+}
+.contact-form-section .form-control:focus {
+    border-color: #3A50A0;
+    box-shadow: 0 0 0 0.2rem rgba(58, 80, 160, 0.25);
+}
+.submit-contact-btn {
+    background-color: #2C3E50;
+    border-color: #2C3E50;
+    padding: 0.75rem 2.5rem;
+    font-weight: 500;
+    border-radius: 25px; /* Rounded button */
+}
+.submit-contact-btn:hover {
+    background-color: #1e2b37;
+    border-color: #1e2b37;
+}
+
+@media (max-width: 991.98px) { /* lg */
+    .section-title-big {
+        font-size: 2.5rem;
+    }
+}
+@media (max-width: 767.98px) { /* md */
+    .section-title-big {
+        font-size: 2.2rem;
+        text-align: center; /* Center titles on smaller screens */
+    }
+    .about-us-section .lead-text,
+    .tiny-changes-section p {
+        text-align: center;
+    }
+    .about-us-section .text-lg-start,
+    .contact-us-section .col-lg-6 { /* Center content in columns on small screens */
+        text-align: center;
+    }
+    .about-us-section .btn-outline-primary {
+        display: block;
+        width: fit-content;
+        margin: 1rem auto 0;
+    }
+    .contact-us-section .contact-social-icons {
+        justify-content: center;
+        display: flex; /* Center social icons */
+    }
+}
+
+
+
+/*------------------------------------------------------------------------------------------------*/
+/* style.css additions for Terms & Policy Page */
+
+.terms-policy-page {
+    background-color: #fdfdfd; /* Very light off-white or white background */
+}
+
+.terms-policy-page .page-header .page-main-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: #2C3E50; /* Dark blue/charcoal */
+}
+.terms-policy-page .page-header .page-main-subtitle {
+    font-size: 0.95rem;
+}
+
+.terms-policy-content {
+    font-size: 1rem;      /* Base font size for readability */
+    line-height: 1.7;     /* Generous line height */
+    color: #333;          /* Standard text color */
+}
+
+.terms-policy-content .section-title-legal {
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    color: #2C3E50;
+    margin-top: 2.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e0e0e0; /* Subtle separator for main sections */
+    font-size: 1.8rem; /* h2 equivalent */
+}
+.terms-policy-content .section-title-legal:first-child {
+    margin-top: 0; /* Remove top margin for the very first section title */
+}
+
+.terms-policy-content .subsection-title-legal {
+    font-family: 'Lato', sans-serif;
+    font-weight: 600;
+    color: #333; /* Slightly less prominent than main section titles */
+    margin-top: 1.8rem;
+    margin-bottom: 0.8rem;
+    font-size: 1.4rem; /* h3 equivalent */
+}
+
+.terms-policy-content p {
+    margin-bottom: 1.2rem;
+}
+
+.terms-policy-content ul,
+.terms-policy-content ol {
+    margin-bottom: 1.2rem;
+    padding-left: 1.8rem; /* Indent lists */
+}
+
+.terms-policy-content ul li,
+.terms-policy-content ol li {
+    margin-bottom: 0.5rem;
+}
+
+.terms-policy-content a {
+    color: #3A50A0; /* Standard link color */
+    text-decoration: underline;
+}
+.terms-policy-content a:hover {
+    text-decoration: none;
+}
+
+/* Optional: Style for "Last Updated" date if you want it to stand out a bit */
+.page-main-subtitle .last-updated-date { /* If you wrap the date span with this class */
+    font-weight: 500;
+    color: #555;
+}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service & Privacy Policy - Bookix</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="terms-policy-page py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-9 col-md-10"> <!-- Centered column for readability -->
+        <header class="page-header text-center mb-5">
+          <h1 class="page-main-title display-5">Terms of Service & Privacy Policy</h1>
+          <p class="page-main-subtitle text-muted">Last Updated: <span th:text="${#dates.format(#dates.createNow(), 'MMMM dd, yyyy')}">October 26, 2023</span></p>
+        </header>
+
+        <article class="terms-policy-content">
+          <!-- Terms of Service Section -->
+          <section id="terms-of-service" class="mb-5">
+            <h2 class="section-title-legal">Terms of Service</h2>
+            <p>Welcome to Bookix! These terms and conditions outline the rules and regulations for the use of Bookix's Website, located at bookix.com.</p>
+            <p>By accessing this website we assume you accept these terms and conditions. Do not continue to use Bookix if you do not agree to take all of the terms and conditions stated on this page.</p>
+
+            <h3 class="subsection-title-legal">1. Intellectual Property Rights</h3>
+            <p>Other than the content you own, under these Terms, Bookix and/or its licensors own all the intellectual property rights and materials contained in this Website. You are granted limited license only for purposes of viewing the material contained on this Website.</p>
+
+            <h3 class="subsection-title-legal">2. Restrictions</h3>
+            <p>You are specifically restricted from all of the following:</p>
+            <ul>
+              <li>Publishing any Website material in any other media;</li>
+              <li>Selling, sublicensing and/or otherwise commercializing any Website material;</li>
+              <li>Publicly performing and/or showing any Website material;</li>
+              <li>Using this Website in any way that is or may be damaging to this Website;</li>
+              <li>Using this Website in any way that impacts user access to this Website;</li>
+              <li>Using this Website contrary to applicable laws and regulations, or in any way may cause harm to the Website, or to any person or business entity;</li>
+              <li>Engaging in any data mining, data harvesting, data extracting or any other similar activity in relation to this Website;</li>
+              <li>Using this Website to engage in any advertising or marketing.</li>
+            </ul>
+            <p>Certain areas of this Website are restricted from being access by you and Bookix may further restrict access by you to any areas of this Website, at any time, in absolute discretion. Any user ID and password you may have for this Website are confidential and you must maintain confidentiality as well.</p>
+
+            <h3 class="subsection-title-legal">3. Your Content</h3>
+            <p>In these Website Standard Terms and Conditions, “Your Content” shall mean any audio, video text, images or other material you choose to display on this Website. By displaying Your Content, you grant Bookix a non-exclusive, worldwide irrevocable, sub licensable license to use, reproduce, adapt, publish, translate and distribute it in any and all media.</p>
+            <p>Your Content must be your own and must not be invading any third-party's rights. Bookix reserves the right to remove any of Your Content from this Website at any time without notice.</p>
+
+            <h3 class="subsection-title-legal">4. No warranties</h3>
+            <p>This Website is provided “as is,” with all faults, and Bookix express no representations or warranties, of any kind related to this Website or the materials contained on this Website. Also, nothing contained on this Website shall be interpreted as advising you.</p>
+
+            <h3 class="subsection-title-legal">5. Limitation of liability</h3>
+            <p>In no event shall Bookix, nor any of its officers, directors and employees, shall be held liable for anything arising out of or in any way connected with your use of this Website whether such liability is under contract. Bookix, including its officers, directors and employees shall not be held liable for any indirect, consequential or special liability arising out of or in any way related to your use of this Website.</p>
+
+            <h3 class="subsection-title-legal">6. Indemnification</h3>
+            <p>You hereby indemnify to the fullest extent Bookix from and against any and/or all liabilities, costs, demands, causes of action, damages and expenses arising in any way related to your breach of any of the provisions of these Terms.</p>
+
+            <!-- Add more terms sections as needed -->
+          </section>
+
+          <!-- Privacy Policy Section -->
+          <section id="privacy-policy" class="mb-5">
+            <h2 class="section-title-legal">Privacy Policy</h2>
+            <p>Your privacy is important to us. It is Bookix's policy to respect your privacy regarding any information we may collect from you across our website, bookix.com, and other sites we own and operate.</p>
+
+            <h3 class="subsection-title-legal">1. Information we collect</h3>
+            <p><strong>Log data:</strong> When you visit our website, our servers may automatically log the standard data provided by your web browser. It may include your computer’s Internet Protocol (IP) address, your browser type and version, the pages you visit, the time and date of your visit, the time spent on each page, and other details.</p>
+            <p><strong>Device data:</strong> We may also collect data about the device you’re using to access our website. This data may include the device type, operating system, unique device identifiers, device settings, and geo-location data. What we collect can depend on the individual settings of your device and software. We recommend checking the policies of your device manufacturer or software provider to learn what information they make available to us.</p>
+            <p><strong>Personal information:</strong> We may ask for personal information, such as your: Name, Email, Social media profiles, Date of birth, Phone/mobile number, Home/Mailing address, Work address, Payment information.</p>
+
+            <h3 class="subsection-title-legal">2. Legal bases for processing</h3>
+            <p>We will process your personal information lawfully, fairly and in a transparent manner. We collect and process information about you only where we have legal bases for doing so.</p>
+            <p>These legal bases depend on the services you use and how you use them, meaning we collect and use your information only where:</p>
+            <ul>
+              <li>It’s necessary for the performance of a contract to which you are a party or to take steps at your request before entering into such a contract (for example, when we provide a service you request from us);</li>
+              <li>It satisfies a legitimate interest (which is not overridden by your data protection interests), such as for research and development, to market and promote our services, and to protect our legal rights and interests;</li>
+              <li>You give us consent to do so for a specific purpose (for example, you might consent to us sending you our newsletter); or</li>
+              <li>We need to process your data to comply with a legal obligation.</li>
+            </ul>
+
+            <h3 class="subsection-title-legal">3. Use of information</h3>
+            <p>We may use information we collect for a variety of purposes, including to:</p>
+            <ul>
+              <li>Provide, operate, and maintain our services;</li>
+              <li>Improve, personalize, and expand our services;</li>
+              <li>Understand and analyze how you use our services;</li>
+              <li>Develop new products, services, features, and functionality;</li>
+              <li>Communicate with you, either directly or through one of our partners, including for customer service, to provide you with updates and other information relating to the service, and for marketing and promotional purposes;</li>
+              <li>Process your transactions;</li>
+              <li>Send you text messages and push notifications;</li>
+              <li>Find and prevent fraud; and</li>
+              <li>For compliance purposes, including enforcing our Terms of Service, or other legal rights, or as may be required by applicable laws and regulations or requested by any judicial process or governmental agency.</li>
+            </ul>
+
+            <h3 class="subsection-title-legal">4. Security of your personal information</h3>
+            <p>When we collect and process personal information, and while we retain this information, we will protect it within commercially acceptable means to prevent loss and theft, as well as unauthorized access, disclosure, copying, use or modification.</p>
+            <p>Although we will do our best to protect the personal information you provide to us, we advise that no method of transmission or storage is 100% secure, and no one can guarantee absolute data security. We will comply with laws applicable to us in respect of any data breach.</p>
+
+            <h3 class="subsection-title-legal">5. Your rights and controlling your personal information</h3>
+            <p>You always retain the right to withhold personal information from us, with the understanding that your experience of our website may be affected. We will not discriminate against you for exercising any of your rights over your personal information. If you do provide us with personal information you understand that we will collect, hold, use and disclose it in accordance with this privacy policy.</p>
+
+            <!-- Add more policy sections as needed -->
+            <p class="mt-4">If you have any questions or concerns regarding your privacy, you may contact us using the following details: <a href="mailto:privacy@bookix.com">privacy@bookix.com</a></p>
+          </section>
+        </article>
+      </div>
+    </div>
+  </div> <!-- /.container -->
+</main>
+
+<!-- Newsletter Subscription Section -->
+<div th:replace="~{fragments/newsletter :: newsletter-section}"></div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>
