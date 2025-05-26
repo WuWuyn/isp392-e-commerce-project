@@ -507,19 +507,7 @@
 </main>
 
 <!-- Newsletter Subscription Section -->
-<section class="newsletter-section py-5 text-center">
-  <div class="container">
-    <h2 class="newsletter-title mb-3">Subscribe to Our Newsletter and Get 10% Off</h2>
-    <form class="row justify-content-center">
-      <div class="col-md-5 col-sm-8 mb-2 mb-md-0">
-        <input type="email" class="form-control form-control-lg" placeholder="Your Email" required>
-      </div>
-      <div class="col-md-2 col-sm-4">
-        <button type="submit" class="btn btn-subscribe btn-lg w-100">Subscribe</button>
-      </div>
-    </form>
-  </div>
-</section>
+<div th:replace="~{fragments/newsletter :: newsletter-section}"></div>
 
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer-content}"></div>
