@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop - Bookix</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main>
+    <!-- Shop Page Header & Category Filters -->
+    <section class="shop-page-header-section py-5">
+        <div class="container">
+            <div class="shop-title-area text-center text-md-start">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h1 class="shop-page-title">Shop Page</h1>
+                        <p class="shop-page-subtitle text-muted">Browse our favorite sale products and brands.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb justify-content-center justify-content-md-end bg-transparent p-0 m-0">
+                                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Shop</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <div class="shop-category-filters-scrollable mt-4">
+                <div class="d-flex justify-content-start flex-nowrap overflow-auto">
+                    <a href="#" class="btn shop-category-filter-btn active"><i class="fas fa-child me-2"></i>Children's Books</a>
+                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-utensils me-2"></i>Food & Wine</a>
+                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-book-open me-2"></i>Biographies</a>
+                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-heart me-2"></i>Romance</a>
+                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-ghost me-2"></i>Fantasy</a>
+                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-landmark me-2"></i>History</a>
+                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-feather-alt me-2"></i>Literature</a>
+                    <!-- Add more category buttons as needed -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shop Content: Sidebar & Products -->
+    <section class="shop-content-section py-5">
+        <div class="container">
+            <div class="row">
+                <!-- Sidebar -->
+                <aside class="col-lg-3">
+                    <div class="filter-widget mb-4">
+                        <h5 class="filter-widget-title">Categories</h5>
+                        <ul class="list-unstyled category-filter-list">
+                            <li><a href="#">Hot Deals <span class="count">(12)</span></a></li>
+                            <li><a href="#">Mick Herron <span class="count">(10)</span></a></li>
+                            <li><a href="#">Baby <span class="count">(6)</span></a></li>
+                            <li><a href="#">Biography <span class="count">(2)</span></a></li>
+                            <li><a href="#">Crime <span class="count">(6)</span></a></li>
+                            <li><a href="#">Fantasy <span class="count">(6)</span></a></li>
+                            <li><a href="#">Food <span class="count">(1)</span></a></li>
+                            <li><a href="#">Health <span class="count">(3)</span></a></li>
+                            <li><a href="#">History <span class="count">(5)</span></a></li>
+                            <li><a href="#">Romance <span class="count">(3)</span></a></li>
+                            <li><a href="#">Sci-Fi <span class="count">(6)</span></a></li>
+                            <li><a href="#">Travel <span class="count">(6)</span></a></li>
+                        </ul>
+                    </div>
+
+                    <div class="filter-widget mb-4">
+                        <h5 class="filter-widget-title">Author</h5>
+                        <ul class="list-unstyled author-filter-list">
+                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorAli"><label class="form-check-label" for="authorAli">Ali Tufan</label></div></li>
+                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorBessie"><label class="form-check-label" for="authorBessie">Bessie Cooper</label></div></li>
+                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorBrooklyn"><label class="form-check-label" for="authorBrooklyn">Brooklyn Simmons</label></div></li>
+                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorCourtney"><label class="form-check-label" for="authorCourtney">Courtney Henry</label></div></li>
+                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorFloyd"><label class="form-check-label" for="authorFloyd">Floyd Miles</label></div></li>
+                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorRalph"><label class="form-check-label" for="authorRalph">Ralph Edwards</label></div></li>
+                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorRonald"><label class="form-check-label" for="authorRonald">Ronald Richards</label></div></li>
+                        </ul>
+                    </div>
+
+                    <div class="filter-widget mb-4">
+                        <h5 class="filter-widget-title">Filter by Price</h5>
+                        <input type="range" class="form-range price-filter-slider" id="priceRange" min="4" max="400" step="1">
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="price-label small">Min: $<span id="minPriceDisplay">4</span></span>
+                            <span class="price-label small">Max: $<span id="maxPriceDisplay">400</span></span>
+                        </div>
+                    </div>
+
+                    <div class="filter-widget">
+                        <h5 class="filter-widget-title">Rating</h5>
+                        <div class="rating-filter-stars">
+                            <!-- Use radio buttons for single selection, or checkboxes for multi-selection -->
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="ratingFilter" id="rating5">
+                                <label class="form-check-label" for="rating5">
+                                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                </label>
+                            </div> <br>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="ratingFilter" id="rating4">
+                                <label class="form-check-label" for="rating4">
+                                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i> & Up
+                                </label>
+                            </div> <br>
+                            <!-- Add more rating options as in the image -->
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="ratingFilter" id="ratingImageMatch">
+                                <label class="form-check-label" for="ratingImageMatch" title="Matches image: 1 filled, 1 half, 3 empty - this is unusual for a filter">
+                                    <i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i> <!-- This exact rating from image seems like a display, not a filter option -->
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Product Grid -->
+                <div class="col-lg-9">
+                    <div class="product-grid-controls d-flex justify-content-between align-items-center mb-4">
+                        <p class="mb-0 text-muted">Showing 1–16 of 20 results</p>
+                        <div class="sort-by-dropdown">
+                            <select class="form-select form-select-sm" aria-label="Sort by">
+                                <option selected>Default sorting</option>
+                                <option value="1">Sort by popularity</option>
+                                <option value="2">Sort by average rating</option>
+                                <option value="3">Sort by latest</option>
+                                <option value="4">Sort by price: low to high</option>
+                                <option value="5">Sort by price: high to low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4">
+                        <!-- Book 1 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-spirit.jpg}" alt="All You Can Ever Know" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">All You Can Ever Know: A Memoir</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">$14.20</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 2 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-subletter.jpg}" alt="Angry God" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Angry God (All Saints High Book 3)</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                                    <p class="book-price">$4.30</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 3 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-beast.jpg}" alt="Broken Faith" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Broken Faith: Inside the Word of Faith...</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">$12.35</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 4 (Sale) -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <div class="position-relative">
+                                    <a href="#"><img th:src="@{/images/shop-book-beautifully-delicious.jpg}" alt="Broken Faith Delicious" class="book-cover img-fluid"></a>
+                                    <span class="badge bg-danger sale-badge">Sale!</span>
+                                </div>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Broken Faith: Inside the Word of Faith...</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                                    <p class="book-price">
+                                        <span class="original-price text-decoration-line-through me-1">$59.95</span>
+                                        <span class="sale-price">$29.59</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 5 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-playing-cool.jpg}" alt="Dark in Death" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Dark in Death: An Eve Dallas Novel (In Death, Book 46)</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">$12.30</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 6 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-enjoy-little-things.jpg}" alt="Eternity Springs" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Eternity Springs: The McBrides of Texas Ever : Tucker</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
+                                    <p class="book-price">$10.35</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 7 (Add to Cart on Hover) -->
+                        <div class="col">
+                            <div class="book-card shop-book-card book-card-interactive">
+                                <div class="book-cover-container position-relative">
+                                    <a href="#"><img th:src="@{/images/shop-book-long-way-down.jpg}" alt="Long Way Down" class="book-cover img-fluid"></a>
+                                    <div class="book-card-hover-content">
+                                        <button class="btn btn-primary btn-sm">Add to cart</button>
+                                    </div>
+                                </div>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Romancing Mister Bridgerton Penelope & Colin's Story</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">$33.95</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 8 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-versus.jpg}" alt="Versus" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Romancing Mister Bridgerton Penelope & Colin's Story</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">$33.95</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 9 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-rose.jpg}" alt="Slow Horses" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Slow Horses (Deluxe Edition) (Slough House)</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                                    <p class="book-price">$33.95</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 10 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <div class="position-relative"> <!-- For overlay text like 'OCT 26' -->
+                                    <a href="#"><img th:src="@{/images/shop-book-avenir-next.jpg}" alt="Star Trek" class="book-cover img-fluid"></a>
+                                    <!-- Example Overlay Text, style as needed -->
+                                    <div class="book-cover-overlay-text">OCT 26 <br> SOUL: MATES</div>
+                                </div>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Star Trek: The Last Best Hope</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price"><span class="original-price text-decoration-line-through me-1">$89.29</span> $33.95</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 11 (Sale) -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <div class="position-relative">
+                                    <a href="#"><img th:src="@{/images/shop-book-its-good.jpg}" alt="It's Good" class="book-cover img-fluid"></a>
+                                    <span class="badge bg-danger sale-badge">Sale!</span>
+                                </div>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">It's Good & Delicious Choice!</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
+                                    <p class="book-price">$33.95</p> <!-- Price from image is not clear, using placeholder -->
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 12 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-only-lovers-shop.jpg}" alt="The Divorce" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">The Divorce: A gripping psychological thriller with a...</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                                    <p class="book-price">$10.35</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 13 (Sale) -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <div class="position-relative">
+                                    <a href="#"><img th:src="@{/images/shop-book-operetta-shop.jpg}" alt="The Last Sister" class="book-cover img-fluid"></a>
+                                    <span class="badge bg-danger sale-badge">Sale!</span>
+                                </div>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">The Last Sister (Columbia River Book 1)</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">
+                                        <span class="original-price text-decoration-line-through me-1">$33.95</span> <!-- Assuming a sale from $33.95 -->
+                                        <span class="sale-price">$4.30</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 14 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-grazie-shop.jpg}" alt="The Rural Diaries" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">The Rural Diaries: Love, Livestock, and Big Life Lesson...</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">$33.95</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 15 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-avris-shop.jpg}" alt="Think Like a Monk" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Think Like a Monk: Train Your Mind for Peace and Purpose...</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">$16.50</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Book 16 -->
+                        <div class="col">
+                            <div class="book-card shop-book-card">
+                                <a href="#"><img th:src="@{/images/shop-book-sure-thing-shop.jpg}" alt="The Sure Thing" class="book-cover img-fluid"></a>
+                                <div class="book-info">
+                                    <h6 class="book-title"><a href="#">Think Like a Monk: Train Your Mind for Peace and Purpose...</a></h6>
+                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                    <p class="book-price">$5.95</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Pagination -->
+                    <nav aria-label="Page navigation" class="mt-5 d-flex justify-content-center">
+                        <ul class="pagination">
+                            <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-left"></i></a></li>
+                            <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Newsletter Subscription Section (Copied from index.html for now) -->
+<section class="newsletter-section py-5 text-center">
+    <div class="container">
+        <h2 class="newsletter-title mb-3">Subscribe to Our Newsletter and Get 10% Off</h2>
+        <form class="row justify-content-center">
+            <div class="col-md-5 col-sm-8 mb-2 mb-md-0">
+                <input type="email" class="form-control form-control-lg" placeholder="Your Email" required>
+            </div>
+            <div class="col-md-2 col-sm-4">
+                <button type="submit" class="btn btn-subscribe btn-lg w-100">Subscribe</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>
