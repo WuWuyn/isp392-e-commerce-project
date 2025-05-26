@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookix Blog - Latest Posts</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="blog-page py-5">
+    <div class="container">
+        <!-- Blog Page Header -->
+        <header class="blog-page-header text-center mb-5">
+            <h1 class="blog-main-title display-5">Latest Post</h1>
+            <p class="blog-main-subtitle text-muted">Exploring Ideas, One Blog at a Time</p>
+        </header>
+
+        <!-- Highlighted Latest Post -->
+        <section class="latest-post-highlight mb-5">
+            <div class="card latest-post-card flex-md-row">
+                <div class="col-md-6">
+                    <img th:src="@{/images/blog-latest-post.jpg}" class="card-img-top card-img-md-left h-100 object-fit-cover" alt="Should You Feel Embarrassed for Reading Kids Books?">
+                </div>
+                <div class="col-md-6">
+                    <div class="card-body p-md-5 d-flex flex-column justify-content-center">
+                        <p class="blog-post-meta small text-muted mb-1">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                        <h2 class="card-title latest-post-title mb-3"><a href="#">Should You Feel Embarrassed for Reading Kids Books?</a></h2>
+                        <p class="card-text latest-post-excerpt text-muted">
+                            Bad habits repeat themselves again and again not because you don't want to change, but because you have the wrong system for change.
+                        </p>
+                        <a href="#" class="btn btn-link read-more-link ps-0 mt-2">Read More <i class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Blog Post Filters & Search -->
+        <section class="blog-filters-search mb-4">
+            <div class="row justify-content-between align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <form class="d-flex blog-search-form">
+                        <input class="form-control me-2" type="search" placeholder="Search blog posts..." aria-label="Search blog posts">
+                        <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
+                    </form>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <select class="form-select form-select-sm" aria-label="Filter posts">
+                        <option selected value="latest">Sort by Latest</option>
+                        <option value="oldest">Sort by Oldest</option>
+                        <option value="popular">Sort by Popularity</option>
+                        <!-- Add more filter options as needed -->
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Blog Posts Grid -->
+        <section class="blog-posts-grid">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4">
+                <!-- Blog Post Card (Repeat this structure) -->
+                <div class="col">
+                    <div class="card blog-post-card h-100"> <!-- Reuse .blog-post-card from index.html styles -->
+                        <a href="#"><img th:src="@{/images/blog-post-embarrassed.jpg}" class="card-img-top" alt="Blog Post 1"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                            <h5 class="card-title blog-title"><a href="#">Should You Feel Embarrassed for Reading Kids Books?</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-benefits.jpg}" class="card-img-top" alt="Blog Post 2"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                            <h5 class="card-title blog-title"><a href="#">Benefits of Reading: Getting Smart, Thin, Healthy, Happy</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-anne-bogel.jpg}" class="card-img-top" alt="Blog Post 3"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                            <h5 class="card-title blog-title"><a href="#">Anne Bogel's 5 Tips to Restore Your Love of Reading</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-london-fair.jpg}" class="card-img-top" alt="Blog Post 4"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                            <h5 class="card-title blog-title"><a href="#">The London Book Fair is to be packed with exciting</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <!-- Row 2 -->
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-laurie-petrou.jpg}" class="card-img-top" alt="Laurie Petrou"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                            <h5 class="card-title blog-title"><a href="#">Laurie Petrou on editing her debutnovel</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-why-choose.jpg}" class="card-img-top" alt="Why choose Bookix"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                            <h5 class="card-title blog-title"><a href="#">Why choose Bookix? What do we have?</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-furniture.jpg}" class="card-img-top" alt="Furniture and comfortable space"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                            <h5 class="card-title blog-title"><a href="#">Furniture and comfortable space help to read books more effectively</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-building-library.jpg}" class="card-img-top" alt="Building a library"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
+                            <h5 class="card-title blog-title"><a href="#">Building a library – Prepare the future for a genius</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <!-- Row 3 -->
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-attractive-themes-1.jpg}" class="card-img-top" alt="Attractive Bookstore Themes"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">10 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Floyd Miles</a></p>
+                            <h5 class="card-title blog-title"><a href="#">5 Attractive Bookstore WordPress Themes</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card blog-post-card h-100">
+                        <a href="#"><img th:src="@{/images/blog-post-attractive-themes-2.jpg}" class="card-img-top" alt="Attractive Bookstore Themes"></a>
+                        <div class="card-body">
+                            <p class="blog-post-meta small text-muted">10 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Floyd Miles</a></p>
+                            <h5 class="card-title blog-title"><a href="#">5 Attractive Bookstore WordPress Themes</a></h5>
+                        </div>
+                    </div>
+                </div>
+                <!-- Add more blog posts as needed to fill the grid -->
+            </div>
+        </section>
+
+        <!-- Pagination -->
+        <nav aria-label="Blog page navigation" class="mt-5 d-flex justify-content-center">
+            <ul class="pagination"> <!-- Re-use pagination styles -->
+                <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-left"></i></a></li>
+                <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a></li>
+            </ul>
+        </nav>
+    </div> <!-- /.container -->
+</main>
+
+<!-- Newsletter Subscription Section -->
+<div th:replace="~{fragments/newsletter :: newsletter-section}"></div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>

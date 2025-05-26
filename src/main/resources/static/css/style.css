@@ -85,7 +85,7 @@ a:hover {
 
 /* Hero Section */
 .hero-section {
-    background: url('../images/hero-background.jpg') no-repeat center center/cover;
+    /*background: url('../images/hero-background.jpg') no-repeat center center/cover; *!*/
     min-height: 70vh; /* Adjust height as needed */
     padding: 6rem 0;
 }
@@ -497,7 +497,7 @@ a:hover {
 }
 
 
-
+/*-----------------------------------------------------------------------------------------*/
 /* style.css additions for Product List*/
 
 /* Shop Page Header Section */
@@ -936,4 +936,326 @@ a:hover {
 #imageZoomModal .modal-body img {
     max-height: 85vh;
     object-fit: contain;
+}
+
+
+
+/*-------------------------------------------------------------------------------------*/
+/* style.css additions for Blog Page */
+
+.blog-page {
+    background-color: #fdfdfd; /* Very light off-white background */
+}
+
+.blog-page-header .blog-main-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: #2C3E50; /* Dark blue/charcoal */
+}
+.blog-page-header .blog-main-subtitle {
+    font-size: 1.1rem;
+}
+
+/* Latest Post Highlight Section */
+.latest-post-card {
+    background-color: #f8f9fa; /* Light background for the featured post card */
+    border: none; /* Remove default card border if desired */
+    border-radius: 8px;
+    overflow: hidden; /* To ensure rounded corners on image */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+.latest-post-card .card-img-md-left {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-top-right-radius: 0; /* Reset for md and up */
+    border-bottom-right-radius: 0; /* Reset for md and up */
+}
+@media (max-width: 767.98px) { /* Below md */
+    .latest-post-card .card-img-md-left {
+        border-bottom-left-radius: 0;
+        border-top-right-radius: 8px; /* Apply to top right on smaller screens */
+    }
+}
+.latest-post-card .latest-post-title {
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    font-size: 1.8rem; /* Larger title for featured post */
+    line-height: 1.3;
+}
+.latest-post-card .latest-post-title a {
+    color: #2C3E50;
+    text-decoration: none;
+}
+.latest-post-card .latest-post-title a:hover {
+    color: #3A50A0;
+}
+.latest-post-card .latest-post-excerpt {
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+.latest-post-card .read-more-link {
+    color: #3A50A0;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+.latest-post-card .read-more-link:hover {
+    text-decoration: underline;
+}
+.blog-post-meta a {
+    text-decoration: none;
+}
+.blog-post-meta a:hover {
+    text-decoration: underline;
+}
+
+/* Blog Post Filters & Search */
+.blog-search-form .form-control {
+    border-radius: 20px 0 0 20px;
+}
+.blog-search-form .btn {
+    border-radius: 0 20px 20px 0;
+}
+.blog-filters-search .form-select-sm {
+    font-size: 0.875rem;
+    border-radius: 20px;
+}
+
+
+/* Blog Post Card (re-uses .blog-post-card from index/global styles) */
+/* Add any blog-page specific overrides if necessary */
+.blog-post-card {
+    background-color: #fff; /* Ensure white background for grid cards */
+    /* transition: transform 0.2s ease-in-out; */ /* Optional: subtle lift on hover */
+}
+/*
+.blog-post-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+*/
+.blog-post-card .card-body {
+    background-color: #f8f9fa; /* Light bg for text area of card */
+    border-top: 1px solid #eee; /* Separator if image and body have different bg */
+}
+.blog-post-card .blog-post-meta {
+    margin-bottom: 0.5rem;
+}
+.blog-post-card .blog-title {
+    font-size: 1.05rem; /* Slightly smaller than featured post title */
+    font-weight: 600;
+}
+.blog-post-card .blog-title a {
+    color: #333;
+}
+.blog-post-card .blog-title a:hover {
+    color: #3A50A0;
+}
+
+/* Pagination styles are typically global or reused from shop/other pages */
+
+
+
+/*--------------------------------------------------------------------------------------------*/
+/* style.css additions for Blog Single Page */
+
+.blog-single-page {
+    background-color: #fff; /* Clean white background for single post */
+}
+
+.blog-single-hero-image {
+    max-height: 500px; /* Or your preferred max height */
+    object-fit: cover;
+    border-radius: 0 0 12px 12px; /* Rounded bottom corners for hero image */
+}
+
+.blog-single-header .blog-single-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: #2C3E50;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+}
+.blog-single-header .blog-single-meta {
+    font-size: 0.9rem;
+}
+.blog-single-header .blog-single-meta a {
+    text-decoration: none;
+}
+.blog-single-header .blog-single-meta a:hover {
+    text-decoration: underline;
+}
+
+/* Blog Single Content Styling */
+.blog-single-content {
+    font-size: 1.05rem; /* Slightly larger base font for readability */
+    line-height: 1.8;
+    color: #333;
+}
+.blog-single-content h1, .blog-single-content h2, .blog-single-content h3,
+.blog-single-content h4, .blog-single-content h5, .blog-single-content h6 {
+    font-family: 'Lato', sans-serif; /* Consistent heading font */
+    color: #2C3E50;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+.blog-single-content p {
+    margin-bottom: 1.25rem;
+}
+.blog-single-content a {
+    color: #3A50A0;
+    text-decoration: underline;
+    text-decoration-color: rgba(58, 80, 160, 0.3);
+    transition: text-decoration-color 0.2s ease;
+}
+.blog-single-content a:hover {
+    text-decoration-color: #3A50A0;
+}
+
+.custom-blockquote {
+    background-color: #f8f9fa;
+    border-left: 5px solid #D9A170; /* Accent color for blockquote - orange/brownish */
+    color: #444;
+    font-style: italic;
+}
+.custom-blockquote .blockquote-footer {
+    font-style: normal;
+    color: #555;
+}
+
+.custom-bullet-list li {
+    padding-left: 1.5em;
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+.custom-bullet-list li::before {
+    content: "\2022"; /* Bullet character */
+    font-family: inherit; /* Use default font for bullet */
+    position: absolute;
+    left: 0;
+    color: #D9A170; /* Accent color for bullets */
+    font-weight: bold;
+    font-size: 1.2em; /* Make bullet slightly larger */
+    line-height: 1;
+}
+
+/* Post Footer: Tags & Share */
+.blog-single-footer .tag-btn {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    color: #555;
+    border-color: #ddd;
+}
+.blog-single-footer .tag-btn:hover {
+    background-color: #eee;
+    color: #333;
+}
+.blog-single-footer .post-share .social-share-icon {
+    font-size: 1rem; /* Smaller for post footer */
+}
+
+/* Author Bio Section */
+.author-bio-section {
+    background-color: #f8f9fa; /* Light bg for author bio */
+}
+.author-bio-section .author-avatar {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+}
+.author-bio-section .author-name {
+    font-weight: 600;
+    color: #2C3E50;
+}
+
+/* Prev/Next Post Navigation */
+.post-navigation a {
+    color: #333;
+    max-width: 45%; /* Prevent overlapping on small screens */
+}
+.post-navigation a:hover .post-nav-title {
+    color: #3A50A0;
+}
+.post-navigation .post-nav-title {
+    font-weight: 500;
+    display: block; /* Ensure it takes full width for text-end on next */
+    font-size: 0.95rem;
+}
+
+/* Comments Section */
+.comments-section .comments-title,
+.comments-section .existing-comments-title {
+    font-family: 'Lato', sans-serif;
+    font-weight: 600;
+    color: #2C3E50;
+}
+.comment-form .form-control {
+    background-color: #f8f9fa; /* Light background for form fields */
+    border-color: #e0e0e0;
+}
+.comment-form .form-control:focus {
+    background-color: #fff;
+    border-color: #3A50A0;
+    box-shadow: 0 0 0 0.2rem rgba(58, 80, 160, 0.25);
+}
+.comment-form .required {
+    color: #E74C3C; /* Red asterisk */
+}
+.submit-comment-btn {
+    background-color: #2C3E50;
+    border-color: #2C3E50;
+    padding: 0.6rem 1.5rem;
+    border-radius: 25px;
+}
+.submit-comment-btn:hover {
+    background-color: #1e2b37;
+    border-color: #1e2b37;
+}
+
+.comment-item .commenter-avatar {
+    width: 45px;
+    height: 45px;
+    object-fit: cover;
+}
+.comment-item .commenter-name {
+    font-weight: 600;
+}
+.comment-item .comment-date {
+    font-size: 0.8rem;
+}
+.comment-item .comment-text {
+    font-size: 0.9rem;
+    color: #444;
+    line-height: 1.7;
+}
+.comment-item .reply-link {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+}
+.comment-reply {
+    /* Indent replies */
+    /* background-color: #fbfbfb; /* Slightly different bg for replies */
+    /* padding-left: 1rem; /* Add padding for visual indent */
+    /* border-left: 2px solid #eee; */
+}
+
+/* Pagination for comments reuses global pagination styles */
+
+@media (max-width: 767.98px) {
+    .blog-single-title {
+        font-size: 2rem; /* Adjust for smaller screens */
+    }
+    .post-navigation {
+        flex-direction: column;
+    }
+    .post-navigation a {
+        max-width: 100%;
+        margin-bottom: 1rem;
+        text-align: center !important; /* Center prev/next links */
+    }
+    .post-navigation .next-post-link {
+        margin-bottom: 0;
+    }
 }
