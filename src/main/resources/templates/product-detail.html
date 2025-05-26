@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Trek: Picard: The Last Best Hope - Bookix</title> <!-- Dynamic title -->
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="product-detail-page py-4">
+    <div class="container">
+        <!-- Breadcrumbs and Sale Badge -->
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-6">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb bg-transparent p-0 m-0">
+                        <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/shop}">Baby</a></li> <!-- Example Category -->
+                        <li class="breadcrumb-item active" aria-current="page">Star Trek: Picard: The Last Best Hope</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <span class="badge bg-danger product-sale-badge-breadcrumb">Sale!</span>
+            </div>
+        </div>
+
+        <!-- Product Display Section -->
+        <section class="product-display-section mb-5">
+            <div class="row">
+                <!-- Product Image -->
+                <div class="col-md-5 mb-4 mb-md-0">
+                    <div class="product-image-gallery">
+                        <div class="main-product-image position-relative">
+                            <img th:src="@{/images/product-detail-avenir-next.jpg}" alt="Star Trek: Picard: The Last Best Hope" class="img-fluid rounded border" id="mainProductImage">
+                            <div class="book-cover-overlay-text product-detail-overlay">OCT 26 <br> SOUL: MATES</div>
+                            <button class="btn btn-light btn-sm position-absolute top-0 end-0 m-2" aria-label="Expand image" data-bs-toggle="modal" data-bs-target="#imageZoomModal">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </button>
+                        </div>
+                        <!-- Thumbnails if any (not in design, but common) -->
+                    </div>
+                </div>
+
+                <!-- Product Information & Actions -->
+                <div class="col-md-7 ps-md-5">
+                    <h1 class="product-title-detail display-6">Star Trek: Picard: The Last Best Hope</h1>
+                    <p class="product-price-detail mb-3">
+                        <span class="original-price text-decoration-line-through me-2 text-muted">$89.29</span>
+                        <span class="current-price fs-4 fw-bold text-danger">$33.95</span>
+                    </p>
+                    <p class="product-short-description text-muted mb-4">
+                        Tiny Changes, Remarkable Results No matter your goals, Atomic Habits offers a proven framework for improving--every day. James Clear, one of the world's leading experts on habit formation, reveals practical strategies that will teach you exactly how to form good habits, break bad ones, and master the tiny behaviors that lead to remarkable results if...
+                    </p>
+
+                    <div class="product-actions mb-4">
+                        <div class="quantity-selector d-inline-flex align-items-center border rounded me-3 mb-2 mb-sm-0" style="width: 120px;">
+                            <button class="btn btn-light btn-sm quantity-btn" type="button" data-action="decrease"><i class="fas fa-minus"></i></button>
+                            <input type="number" class="form-control form-control-sm text-center border-0" value="1" min="1" id="quantityInput" aria-label="Quantity">
+                            <button class="btn btn-light btn-sm quantity-btn" type="button" data-action="increase"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <button class="btn btn-primary btn-lg add-to-cart-btn" type="button">
+                            <i class="fas fa-shopping-cart me-2"></i>Add to cart
+                        </button>
+                    </div>
+
+                    <div class="product-meta mt-4">
+                        <p class="mb-1"><strong class="text-secondary">Author:</strong> Ali Tufan</p>
+                        <p class="mb-1"><strong class="text-secondary">SKU:</strong> SFK000284</p>
+                        <p class="mb-1"><strong class="text-secondary">Category:</strong> <a href="#">Baby</a>, <a href="#">Hot Deals</a>, <a href="#">Travel</a></p>
+                        <p class="mb-1"><strong class="text-secondary">Tags:</strong> <a href="#">Book</a>, <a href="#">Fantasy</a></p>
+                        <div class="d-flex align-items-center mt-2">
+                            <strong class="text-secondary me-2">Share:</strong>
+                            <a href="#" class="social-share-icon text-muted me-2" aria-label="Share on Facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-share-icon text-muted me-2" aria-label="Share on Twitter"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-share-icon text-muted me-2" aria-label="Share on Pinterest"><i class="fab fa-pinterest-p"></i></a>
+                            <a href="#" class="social-share-icon text-muted" aria-label="Share on Email"><i class="fas fa-envelope"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Content: Description, Additional Info, Reviews -->
+        <section class="product-content-details">
+            <!-- Description -->
+            <div class="product-content-block mb-5">
+                <h3 class="section-subheader-line"><span>Description</span></h3>
+                <h4 class="fw-bold mb-3">Tiny Changes, Remarkable Results</h4>
+                <p>No matter your goals, Atomic Habits offers a proven framework for improving--every day. James Clear, one of the world's leading experts on habit formation, reveals practical strategies that will teach you exactly how to form good habits, break bad ones, and master the tiny behaviors that lead to remarkable results.</p>
+                <p>If you're having trouble changing your habits, the problem isn't you. The problem is your system. Bad habits repeat themselves again and again not because you don't want to change, but because you have the wrong system for change. You do not rise to the level of your goals. You fall to the level of your systems. Here, you'll get a proven system that can take you to new heights.</p>
+                <p>Clear is known for his ability to distill complex topics into simple behaviors that can be easily applied to daily life and work. Here, he draws on the most proven ideas from biology, psychology, and neuroscience to create an easy-to-understand guide for making good habits inevitable and bad habits impossible.</p>
+                <h5 class="mt-4 mb-2">Learn how to:</h5>
+                <ul class="list-styled">
+                    <li>Make time for new habits (even when life gets crazy).</li>
+                    <li>Overcome a lack of motivation and willpower.</li>
+                    <li>Design your environment to make success easier.</li>
+                    <li>Get back on track when you fall off course.</li>
+                    <li>...and much more.</li>
+                </ul>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="product-content-block mb-5">
+                <h3 class="section-subheader-line"><span>Additional information</span></h3>
+                <div class="additional-info-grid">
+                    <div class="info-item">
+                        <i class="fas fa-ruler-combined me-2 text-secondary"></i>
+                        <div>
+                            <span class="info-label">Length</span>
+                            <span class="info-value">320 pages</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-language me-2 text-secondary"></i>
+                        <div>
+                            <span class="info-label">Language</span>
+                            <span class="info-value">English</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt me-2 text-secondary"></i>
+                        <div>
+                            <span class="info-label">Publication date</span>
+                            <span class="info-value">October 16, 2023</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-arrows-alt-h me-2 text-secondary"></i> <!-- Placeholder for dimensions -->
+                        <div>
+                            <span class="info-label">Dimensions</span>
+                            <span class="info-value">6.28 x 1.1 x 5.28 inches</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="product-content-block mb-5" id="reviewsSection">
+                <h3 class="section-subheader-line"><span>Reviews (1)</span></h3>
+                <!-- Review Filters -->
+                <div class="review-filters d-flex justify-content-end mb-4 gap-2">
+                    <select class="form-select form-select-sm w-auto" aria-label="Filter by stars">
+                        <option selected>All Stars</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4 Stars & Up</option>
+                        <option value="3">3 Stars & Up</option>
+                        <option value="2">2 Stars & Up</option>
+                        <option value="1">1 Star & Up</option>
+                    </select>
+                    <select class="form-select form-select-sm w-auto" aria-label="Sort reviews">
+                        <option selected value="latest">Sort by Latest</option>
+                        <option value="oldest">Sort by Oldest</option>
+                        <option value="highest_rating">Highest Rating</option>
+                        <option value="lowest_rating">Lowest Rating</option>
+                    </select>
+                </div>
+
+                <!-- List of Reviews -->
+                <div class="reviews-list mb-4">
+                    <!-- Single Review Item (Repeat this structure for each review) -->
+                    <div class="review-item d-flex mb-4 pb-3 border-bottom">
+                        <img th:src="@{/images/avatar-floyd-miles.jpg}" alt="Floyd Miles" class="reviewer-avatar rounded-circle me-3">
+                        <div class="review-content">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="reviewer-name mb-0">Floyd Miles <span class="text-success small"><i class="fas fa-check-circle me-1"></i> Verified Purchase</span></h6>
+                                <span class="review-date text-muted small">26 Oct, 2023</span>
+                            </div>
+                            <div class="star-rating my-1">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <p class="review-text mb-0">This book was great. I read it right after reading the book, Today, February 15th, after applying James's system for 100 days on a few key habits... The first part is a summary of the book with short excerpts highlighted while taking notes.</p>
+                        </div>
+                    </div>
+                    <!-- Add more review items here -->
+                    <!-- Example of a review without verified purchase -->
+                    <div class="review-item d-flex mb-4 pb-3 border-bottom">
+                        <img th:src="@{/images/author-arlene.jpg}" alt="Arlene McCoy" class="reviewer-avatar rounded-circle me-3">
+                        <div class="review-content">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="reviewer-name mb-0">Arlene McCoy</h6>
+                                <span class="review-date text-muted small">15 Nov, 2023</span>
+                            </div>
+                            <div class="star-rating my-1">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+                            </div>
+                            <p class="review-text mb-0">A good read, but some parts felt a bit repetitive. Overall, I enjoyed the core message.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review Pagination (Placeholder) -->
+                <nav aria-label="Review navigation" class="d-flex justify-content-center">
+                    <ul class="pagination">
+                        <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-left"></i></a></li>
+                        <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a></li>
+                    </ul>
+                </nav>
+
+                <!-- Add a Review Form -->
+                <div class="add-review-form mt-5 pt-4 border-top">
+                    <h4 class="mb-3">Add a review</h4>
+                    <p class="text-muted small mb-3">Your email address will not be published. Required fields are marked *</p>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Your rating *</label>
+                            <div class="add-review-stars">
+                                <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reviewText" class="form-label">Your review *</label>
+                            <textarea class="form-control" id="reviewText" rows="5" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="reviewerName" class="form-label">Name *</label>
+                                <input type="text" class="form-control" id="reviewerName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="reviewerEmail" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="reviewerEmail" required>
+                            </div>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" value="" id="saveReviewerInfo">
+                            <label class="form-check-label" for="saveReviewerInfo">
+                                Save my name, email, and website in this browser for the next time I comment.
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- "You may also like" Section -->
+        <section class="you-may-also-like-section py-5 border-top">
+            <div class="container px-0"> <!-- Removed container padding for edge-to-edge feel if desired, or keep it -->
+                <h2 class="section-title text-center mb-4">You may also like</h2>
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                    <!-- Re-use book-card structure from index/shop -->
+                    <div class="col">
+                        <div class="book-card">
+                            <a href="#"><img th:src="@{/images/book-think-like-monk.jpg}" alt="Think Like a Monk" class="book-cover img-fluid"></a>
+                            <div class="book-info">
+                                <h6 class="book-title"><a href="#">Think Like a Monk: Train Your Mind for Peace Every Day</a></h6>
+                                <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                                <p class="book-price">$16.50</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="book-card">
+                            <a href="#"><img th:src="@{/images/book-until-end-of-time.jpg}" alt="Until the End of Time" class="book-cover img-fluid"></a>
+                            <div class="book-info">
+                                <h6 class="book-title"><a href="#">Until the End of Time: Mind, Matter, and Our Search for Meaning in an Evolving Universe</a></h6>
+                                <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
+                                <p class="book-price">$33.95</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="book-card">
+                            <a href="#"><img th:src="@{/images/shop-book-its-good.jpg}" alt="Star Trek: Picard" class="book-cover img-fluid"></a> <!-- Reusing an image -->
+                            <div class="book-info">
+                                <h6 class="book-title"><a href="#">Star Trek: Picard: The Last Best Hope</a></h6>
+                                <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                <p class="book-price"><span class="original-price text-decoration-line-through me-1">$89.29</span> $33.95</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="book-card">
+                            <a href="#"><img th:src="@{/images/book-romancing-mister-bridgerton.jpg}" alt="Romancing Mister Bridgerton" class="book-cover img-fluid"></a>
+                            <div class="book-info">
+                                <h6 class="book-title"><a href="#">Romancing Mister Bridgerton Penelope & Colin's Story</a></h6>
+                                <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                <p class="book-price">$33.95</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div> <!-- /.container -->
+</main>
+
+<!-- Image Zoom Modal -->
+<div class="modal fade" id="imageZoomModal" tabindex="-1" aria-labelledby="imageZoomModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img th:src="@{/images/product-detail-avenir-next.jpg}" class="img-fluid" alt="Zoomed Product Image">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Newsletter Subscription Section -->
+<div th:replace="~{fragments/newsletter :: newsletter-section}"></div> <!-- Assuming you create newsletter-section.html -->
+<!-- Or copy paste the section if not fragmented yet -->
+<!-- <section class="newsletter-section py-5 text-center"> ... </section> -->
+
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>
