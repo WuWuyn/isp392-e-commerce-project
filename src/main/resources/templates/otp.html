@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - BOOKIX</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome (optional, for icons if needed) -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"> -->
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS (shared style.css + OTP specific) -->
+    <link rel="stylesheet" href="style.css"> <!-- If you have a shared style.css -->
+    <style>
+        /* OTP Page Specific Styles */
+        body.otp-page {
+            background-color: #F8F5F0; /* Light beige background */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .otp-container {
+            background-color: #FFFFFF;
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px; /* Slightly wider for OTP inputs */
+            text-align: center;
+        }
+
+        .otp-logo { /* Optional: Re-use logo style if needed */
+            font-family: 'Lora', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2C3E50; /* Dark Teal/Slate */
+            margin-bottom: 1rem;
+        }
+        .otp-logo a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+
+        .otp-heading {
+            font-family: 'Lora', serif;
+            font-size: 1.75rem;
+            color: #2C3E50;
+            margin-bottom: 0.75rem;
+        }
+
+        .otp-instruction {
+            color: #555;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .otp-input-fields {
+            display: flex;
+            justify-content: space-between; /* Distribute space evenly */
+            gap: 10px; /* Space between input fields */
+            margin-bottom: 2rem;
+        }
+
+        .otp-input {
+            width: 48px;  /* Adjust width as needed */
+            height: 52px; /* Adjust height as needed */
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            color: #2C3E50; /* Text color inside input */
+            caret-color: #2C3E50; /* Cursor color */
+        }
+        .otp-input:focus {
+            border-color: #2C3E50;
+            box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+            outline: none;
+        }
+        /* Hide number input spinners for WebKit browsers */
+        .otp-input::-webkit-outer-spin-button,
+        .otp-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Hide number input spinners for Firefox */
+        .otp-input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+
+        .btn-otp-primary {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+            color: #FFFFFF;
+            font-weight: 600;
+            padding: 0.65rem 1rem;
+            width: 100%;
+        }
+        .btn-otp-primary:hover {
+            background-color: #1e2b37;
+            border-color: #1e2b37;
+            color: #FFFFFF;
+        }
+
+        .otp-actions {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .otp-actions .resend-otp-link,
+        .otp-actions .reset-link {
+            color: #2C3E50;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .otp-actions .resend-otp-link:hover,
+        .otp-actions .reset-link:hover {
+            text-decoration: underline;
+            color: #1e2b37;
+        }
+        .otp-actions .text-muted {
+            color: #6c757d !important;
+        }
+    </style>
+</head>
+<body class="otp-page">
+
+<main class="otp-container">
+    <div class="otp-logo">
+        <a href="index.html">ReadHub</a> <!-- Link to homepage -->
+    </div>
+    <h2 class="otp-heading">Enter OTP</h2>
+    <p class="otp-instruction">
+        A 6-digit One-Time Password has been sent to your registered email.
+    </p>
+
+    <form id="otpForm">
+        <div class="otp-input-fields mb-4">
+            <input type="text" class="form-control otp-input" id="otp-1" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="form-control otp-input" id="otp-2" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="form-control otp-input" id="otp-3" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="form-control otp-input" id="otp-4" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="form-control otp-input" id="otp-5" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="form-control otp-input" id="otp-6" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+        </div>
+        <!-- Hidden input to store combined OTP -->
+        <input type="hidden" name="fullOtp" id="fullOtp">
+
+        <button type="submit" class="btn btn-otp-primary">Verify OTP</button>
+    </form>
+
+    <div class="otp-actions">
+        <p class="mb-2">
+            Didn't receive the OTP?
+            <a href="#" class="resend-otp-link" id="resendOtpLink">Resend OTP</a>
+            <span class="text-muted" id="resendTimer">(0:30)</span>
+        </p>
+    </div>
+</main>
+
+<!-- Bootstrap JS Bundle (Popper.js included) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const otpForm = document.getElementById('otpForm');
+        const fullOtpInput = document.getElementById('fullOtp');
+        const resendOtpLink = document.getElementById('resendOtpLink');
+        const resendTimerDisplay = document.getElementById('resendTimer');
+        let resendCooldown = 30; // seconds
+
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                // If a digit is entered and there's a next input, focus it
+                if (input.value.length === 1 && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+                // If backspace or delete on an empty input, move to previous
+                // (This specific backspace logic is better handled by keydown)
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace') {
+                    // If the current input is empty and it's not the first input,
+                    // move focus to the previous input.
+                    if (input.value === '' && index > 0) {
+                        otpInputs[index - 1].focus();
+                    }
+                    // If current input has value, backspace will clear it, then on next backspace it will trigger above
+                } else if (e.key === 'ArrowLeft' && index > 0) {
+                    otpInputs[index - 1].focus();
+                } else if (e.key === 'ArrowRight' && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            });
+
+            // Prevent non-numeric input if pattern and inputmode are not enough
+            input.addEventListener('keypress', (e) => {
+                if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        if (otpForm) {
+            otpForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission for now
+                let otpValue = "";
+                otpInputs.forEach(input => {
+                    otpValue += input.value;
+                });
+                fullOtpInput.value = otpValue; // Store combined OTP
+
+                if (otpValue.length === 6) {
+                    console.log('Verifying OTP:', otpValue);
+                    alert('OTP Submitted: ' + otpValue); // Replace with actual verification logic
+                    // Example: this.submit(); // To actually submit the form to a backend
+                } else {
+                    alert('Please enter all 6 digits of the OTP.');
+                }
+            });
+        }
+
+        // Resend OTP Timer
+        function startResendTimer() {
+            resendOtpLink.style.pointerEvents = 'none';
+            resendOtpLink.style.opacity = '0.6';
+            resendTimerDisplay.style.display = 'inline';
+            let timer = resendCooldown;
+            const interval = setInterval(() => {
+                timer--;
+                resendTimerDisplay.textContent = `(0:${timer < 10 ? '0' : ''}${timer})`;
+                if (timer <= 0) {
+                    clearInterval(interval);
+                    resendOtpLink.style.pointerEvents = 'auto';
+                    resendOtpLink.style.opacity = '1';
+                    resendTimerDisplay.style.display = 'none';
+                    // Optionally, you can change the text back or hide timer fully
+                }
+            }, 1000);
+        }
+
+        if (resendOtpLink) {
+            resendOtpLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Resend OTP clicked');
+                // Add your resend OTP logic here (e.g., API call)
+                alert('Resending OTP...');
+                startResendTimer();
+            });
+            // Start timer on page load for the first time
+            startResendTimer();
+        }
+    });
+</script>
+</body>
+</html>

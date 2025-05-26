@@ -18,9 +18,18 @@ public class BuyerAuthenticationController {
         return "buyer/signup";
     }
 
-    @RequestMapping(value = "/buyer/forgot-password", method = RequestMethod.GET)
+    @RequestMapping(value = "/forgot-password", method = RequestMethod.GET)
     public String buyerForgotPassword(){
-        return "buyer/forgot-password";
+        return "forgot-password";
     }
 
+    @RequestMapping(value = "/new-password", method = RequestMethod.GET)
+    public String buyerProfile(){
+        return "new-password";
+    }
+
+    @RequestMapping(value = "/otp", method = RequestMethod.GET)
+    public String buyerProfilePage(){
+        return "otp";
+    }
 }
