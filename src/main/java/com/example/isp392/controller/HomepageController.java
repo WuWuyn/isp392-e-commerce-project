@@ -17,4 +17,14 @@ public class HomepageController {
     public String homepage(){
         return "home";
     }
+
+    @RequestMapping(value = "/blog", method = RequestMethod.GET)
+    public String blog(){
+        return "blog";
+    }
+
+    @RequestMapping(value = "/blog-single", method = RequestMethod.GET)
+    public String blogSingle(){
+        return "blog-single";
+    }
 }

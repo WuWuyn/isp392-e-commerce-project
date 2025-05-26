@@ -161,4 +161,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
+    //--------------------------------------------------------------------------------------
+    //----------------------------------Blog Page-------------------------------------------
+    // Add this inside your DOMContentLoaded event listener in script.js
+
+    // Blog Page: Search and Filter Placeholders
+    const blogSearchForm = document.querySelector('.blog-search-form');
+    if (blogSearchForm) {
+        blogSearchForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent actual form submission for demo
+            const searchTerm = this.querySelector('input[type="search"]').value;
+            console.log('Searching blog for:', searchTerm);
+            // Add AJAX call or page reload logic here
+            // alert('Search functionality would be implemented here for: ' + searchTerm);
+        });
+    }
+
+    const blogFilterSelect = document.querySelector('.blog-filters-search select[aria-label="Filter posts"]');
+    if (blogFilterSelect) {
+        blogFilterSelect.addEventListener('change', function() {
+            const filterValue = this.value;
+            console.log('Filtering blog posts by:', filterValue);
+            // Add AJAX call or page reload logic here
+            // alert('Filter functionality would be implemented here for: ' + filterValue);
+        });
+    }
+
 });
