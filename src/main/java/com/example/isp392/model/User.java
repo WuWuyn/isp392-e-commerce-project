@@ -34,7 +34,7 @@ public class User {
     @Column(name = "date_of_birth", nullable = false)
     private Date dateOfBirth;
 
-    @Column(name = "gender")
+    @Column(name = "gender", nullable = false)
     private boolean gender;
 
     @Column(name = "profile_pic_url")
