@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Account Information - Bookix</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <style>
+        /* style.css additions */
+        .account-info-display-section strong {
+            min-width: 100px; /* Adjust as needed for alignment */
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <nav aria-label="breadcrumb mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/buyer/account-info}">Account Information</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit Personal Information</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Account Sidebar using fragment - using info as active tab since edit-info is part of account info -->            
+            <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('info')}"></div>
+
+            <!-- Edit Account Content -->
+            <section class="col-lg-9 account-content">
+                <div class="card">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="mb-0">Edit Personal Information</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form th:action="@{/buyer/update-info}" method="post" enctype="multipart/form-data"> <!-- Updated to support file uploads -->
+                            <div class="row mb-4 align-items-center">
+                                <div class="col-md-3 text-center text-md-start mb-3 mb-md-0">
+                                    <div class="position-relative d-inline-block">
+                                        <img th:src="${user != null and user.profilePicUrl != null ? user.profilePicUrl : '/images/avatar-placeholder.png'}"
+                                             alt="User Avatar" class="rounded-circle border" width="100" height="100" id="avatarPreviewEdit">
+                                        <label for="avatarUploadEdit" class="avatar-edit-btn position-absolute bottom-0 end-0 bg-white rounded-circle p-1" style="cursor: pointer;">
+                                            <i class="fas fa-pencil-alt text-primary"></i>
+                                        </label>
+                                        <input type="file" id="avatarUploadEdit" name="profilePictureFile" class="d-none" accept="image/*" onchange="previewImage(this)">
+                                    </div>
+                                    <script>
+                                        function previewImage(input) {
+                                            if (input.files && input.files[0]) {
+                                                var reader = new FileReader();
+                                                reader.onload = function(e) {
+                                                    document.getElementById('avatarPreviewEdit').src = e.target.result;
+                                                }
+                                                reader.readAsDataURL(input.files[0]);
+                                            }
+                                        }
+                                    </script>
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="mb-3">
+                                        <label for="editFullName" class="form-label">Full Name</label>
+                                        <input type="text" class="form-control" id="editFullName" name="fullName" th:value="${user != null ? user.fullName : 'Vũ Khánh Huyền'}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="editPhone" class="form-label">Phone Number</label>
+                                        <input type="text" class="form-control" id="editPhone" name="phone" th:value="${user != null ? user.phone : ''}" placeholder="Enter your phone number">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="editDateOfBirth" class="form-label">Date of Birth</label>
+                                    <div class="input-group">
+                                        <input type="date" class="form-control" id="editDateOfBirth" name="dateOfBirth"
+                                            th:value="${user != null and user.dateOfBirth != null ? #dates.format(user.dateOfBirth, 'yyyy-MM-dd') : ''}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Gender</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gender" id="editGenderMale" value="0" th:checked="${user != null and user.gender == 0}">
+                                            <label class="form-check-label" for="editGenderMale">Male</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gender" id="editGenderFemale" value="1" th:checked="${user != null and user.gender == 1}">
+                                            <label class="form-check-label" for="editGenderFemale">Female</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gender" id="editGenderOther" value="2" th:checked="${user != null and user.gender == 2}">
+                                            <label class="form-check-label" for="editGenderOther">Other</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Nationality section removed as it's not part of the User model -->
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a th:href="@{/buyer/account-info}" class="btn btn-secondary ms-2">Cancel</a>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/newsletter :: newsletter-section}"></div>
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>

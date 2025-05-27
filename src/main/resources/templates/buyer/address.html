@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Address - Bookix</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        /* Ensure radio button labels have consistent styling */
+        .form-check-label {
+            font-weight: 500; /* Match label weight */
+            color: #555;
+        }
+        /* Optional: Style for the Google Maps icons if you choose to implement them */
+        /* This requires specific placement within the textarea or label */
+        /* .address-map-icons {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 1.2rem;
+            color: #6c757d;
+        }
+        .address-map-icons i {
+            margin-left: 5px;
+            cursor: pointer;
+        } */
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <nav aria-label="breadcrumb mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/buyer/account-info}">Account Information</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/buyer/addresses}">Addresses</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Create New Address</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Account Sidebar using fragment -->
+            <!-- Passing 'address' to the sidebar fragment to highlight the correct link -->
+            <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('address')}"></div>
+
+            <!-- Account Content - Create New Address Form -->
+            <section class="col-lg-9 account-content">
+                <div class="card">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="mb-0">Create New Address</h4>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <!-- Success message -->
+                        <div th:if="${param.success}" class="alert alert-success mb-4">
+                            Address saved successfully!
+                        </div>
+                        <!-- Error message -->
+                        <div th:if="${param.error}" class="alert alert-danger mb-4">
+                            Error saving address. Please try again. <span th:if="${errorMessage}" th:text="${errorMessage}"></span>
+                        </div>
+
+                        <!-- Use a Thymeleaf object to bind form fields -->
+                        <form th:action="@{/buyer/addresses/create}" th:object="${address}" method="post">
+
+                            <div class="mb-3">
+                                <label for="fullName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="fullName" th:field="*{recipientName}" placeholder="Enter full name" required>
+                                <!-- Potential error message display -->
+                                <!-- <div class="text-danger small" th:errors="*{recipientName}"></div> -->
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="company" class="form-label">Company (Optional)</label>
+                                <input type="text" class="form-control" id="company" th:field="*{company}" placeholder="Enter company name">
+                                <!-- Potential error message display -->
+                                <!-- <div class="text-danger small" th:errors="*{company}"></div> -->
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="phoneNumber" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phoneNumber" th:field="*{phone}" placeholder="Enter phone number" required>
+                                <!-- Potential error message display -->
+                                <!-- <div class="text-danger small" th:errors="*{phone}"></div> -->
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4 mb-3 mb-md-0">
+                                    <label for="province" class="form-label">Province/City</label>
+                                    <select class="form-select" id="province" th:field="*{province}" required>
+                                        <option value="">Select Province/City</option>
+                                        <!-- Options will be populated by Thymeleaf or JavaScript -->
+                                        <!-- th:each="p : ${provinces}" th:value="${p.id}" th:text="${p.name}" -->
+                                    </select>
+                                    <!-- Potential error message display -->
+                                    <!-- <div class="text-danger small" th:errors="*{province}"></div> -->
+                                </div>
+                                <div class="col-md-4 mb-3 mb-md-0">
+                                    <label for="district" class="form-label">District</label>
+                                    <select class="form-select" id="district" th:field="*{district}" required>
+                                        <option value="">Select District</option>
+                                        <!-- Options will be populated by JavaScript based on province -->
+                                        <!-- th:each="d : ${districts}" th:value="${d.id}" th:text="${d.name}" -->
+                                    </select>
+                                    <!-- Potential error message display -->
+                                    <!-- <div class="text-danger small" th:errors="*{district}"></div> -->
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="ward" class="form-label">Ward/Commune</label>
+                                    <select class="form-select" id="ward" th:field="*{ward}" required>
+                                        <option value="">Select Ward/Commune</option>
+                                        <!-- Options will be populated by JavaScript based on district -->
+                                        <!-- th:each="w : ${wards}" th:value="${w.id}" th:text="${w.name}" -->
+                                    </select>
+                                    <!-- Potential error message display -->
+                                    <!-- <div class="text-danger small" th:errors="*{ward}"></div> -->
+                                </div>
+                            </div>
+
+
+                            <div class="mb-3">
+                                <label for="addressDetails" class="form-label">Address Details</label>
+                                <textarea class="form-control" id="addressDetails" th:field="*{addressLine}" rows="3" placeholder="Enter house number, street name, building name, etc." required></textarea>
+                                <!-- Note: Google Maps icons from screenshot are complex to place exactly inside textarea with standard Bootstrap. Omitted for simplicity in this template. If needed, they'd typically be placed outside the textarea, styled absolute. -->
+                                <!-- Potential error message display -->
+                                <!-- <div class="text-danger small" th:errors="*{addressLine}"></div> -->
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label d-block">Address Type</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="addressType" id="addressTypeHome" value="HOME" th:field="*{addressType}" required>
+                                    <label class="form-check-label" for="addressTypeHome">Home / Apartment</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="addressType" id="addressTypeOffice" value="OFFICE" th:field="*{addressType}" required>
+                                    <label class="form-check-label" for="addressTypeOffice">Office / Company</label>
+                                </div>
+                                <!-- Potential error message display -->
+                                <!-- <div class="text-danger small" th:errors="*{addressType}"></div> -->
+                            </div>
+
+
+                            <div class="mb-4 form-check">
+                                <input type="checkbox" class="form-check-input" id="setDefault" th:field="*{isDefault}">
+                                <label class="form-check-label" for="setDefault">Set as Default Address</label>
+                            </div>
+
+                            <!-- Changed class to btn btn-primary -->
+                            <button type="submit" class="btn btn-primary">Save Address</button>
+                            <a th:href="@{/buyer/addresses}" class="btn btn-secondary ms-2">Cancel</a>
+                        </form>
+
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/script.js}"></script>
+<!-- Add JavaScript for Province/District/Ward dropdowns if needed -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // JavaScript to handle Province -> District -> Ward cascading dropdowns
+        // This is a placeholder; actual implementation would require fetching data via API
+        const provinceSelect = document.getElementById('province');
+        const districtSelect = document.getElementById('district');
+        const wardSelect = document.getElementById('ward');
+
+        // Function to clear and populate dropdowns
+        function populateDropdown(selectElement, options) {
+            selectElement.innerHTML = ''; // Clear existing options
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select ' + selectElement.id.charAt(0).toUpperCase() + selectElement.id.slice(1); // Capitalize first letter
+            selectElement.appendChild(defaultOption);
+
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.id; // Assuming options have id and name properties
+                opt.textContent = option.name;
+                selectElement.appendChild(opt);
+            });
+             // Re-select the Thymeleaf bound value if it exists (for editing)
+            if (selectElement.getAttribute('data-current-value')) {
+                 selectElement.value = selectElement.getAttribute('data-current-value');
+            }
+        }
+
+        // Example data structure (replace with API calls)
+        const demoData = {
+            provinces: [{id: 1, name: 'Hồ Chí Minh'}, {id: 2, name: 'Hà Nội'}],
+            districts: {
+                1: [{id: 101, name: 'Quận 1'}, {id: 102, name: 'Quận Bình Thạnh'}],
+                2: [{id: 201, name: 'Quận Ba Đình'}, {id: 202, name: 'Quận Cầu Giấy'}]
+            },
+            wards: {
+                 101: [{id: 1011, name: 'Phường Bến Nghé'}, {id: 1012, name: 'Phường Bến Thành'}],
+                 102: [{id: 1021, name: 'Phường 1'}, {id: 1022, name: 'Phường 2'}],
+                 201: [{id: 2011, name: 'Phường Phúc Xá'}, {id: 2012, name: 'Phường Trúc Bạch'}],
+                 202: [{id: 2021, name: 'Phường Quan Hoa'}, {id: 2022, name: 'Phường Nghĩa Đô'}]
+            }
+        };
+
+         // Initial population of provinces
+         populateDropdown(provinceSelect, demoData.provinces);
+
+        // Event listener for province change
+        provinceSelect.addEventListener('change', function() {
+            const selectedProvinceId = this.value;
+            const districts = demoData.districts[selectedProvinceId] || [];
+            populateDropdown(districtSelect, districts);
+            populateDropdown(wardSelect, []); // Clear wards when province changes
+             // Store current values for editing scenario
+             districtSelect.setAttribute('data-current-value', '');
+             wardSelect.setAttribute('data-current-value', '');
+        });
+
+        // Event listener for district change
+        districtSelect.addEventListener('change', function() {
+            const selectedDistrictId = this.value;
+            const wards = demoData.wards[selectedDistrictId] || [];
+            populateDropdown(wardSelect, wards);
+             // Store current values for editing scenario
+            wardSelect.setAttribute('data-current-value', '');
+        });
+
+        // --- For Edit Scenario (if this template is reused for editing) ---
+        // Add data attributes in Thymeleaf if editing
+        // e.g., <select ... th:field="*{province}" data-current-value="${address.provinceId}" ...>
+        // e.g., <select ... th:field="*{district}" data-current-value="${address.districtId}" ...>
+        // e.g., <select ... th:field="*{ward}" data-current-value="${address.wardId}" ...>
+
+        // If rendering for edit, trigger change events after populating initial provinces
+        // This would typically happen after fetching existing address data
+         const initialProvinceId = provinceSelect.getAttribute('data-current-value');
+         if(initialProvinceId) {
+             // Simulate province change to load districts
+             // Need to fetch districts for the initialProvinceId and populate the districtSelect
+             // Then simulate district change to load wards
+             // This requires actual data fetching logic or passing full data to the template
+             // For this template, we'll leave it as a placeholder/comment
+             console.log('Edit mode detected. Need to load districts and wards based on initial values.');
+             // Example (requires actual data/API):
+             // fetchDistricts(initialProvinceId).then(districts => {
+             //     populateDropdown(districtSelect, districts);
+             //     // Set the initial district value
+             //     districtSelect.value = districtSelect.getAttribute('data-current-value');
+             //     // Then fetch wards for the initial district and populate wardSelect
+             //     const initialDistrictId = districtSelect.getAttribute('data-current-value');
+             //     if (initialDistrictId) {
+             //          fetchWards(initialDistrictId).then(wards => {
+             //             populateDropdown(wardSelect, wards);
+             //             // Set the initial ward value
+             //             wardSelect.value = wardSelect.getAttribute('data-current-value');
+             //         });
+             //     }
+             // });
+         }
+
+    });
+</script>
+</body>
+</html>

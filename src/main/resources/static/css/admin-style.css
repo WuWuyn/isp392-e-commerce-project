@@ -1,0 +1,171 @@
+/* Admin Panel Specific Styles */
+body.admin-body {
+    background-color: #f0f2f5; /* Light grey background for admin area */
+    font-family: 'Lato', sans-serif; /* Consistent font */
+}
+
+.admin-sidebar {
+    width: 260px; /* Sidebar width */
+    background-color: #2C3E50; /* Bookix dark blue/charcoal */
+    color: #fff;
+    top: 0;
+    left: 0;
+    z-index: 1031; /* Higher than topbar if topbar is fixed */
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.admin-logo-link {
+    transition: opacity 0.2s ease;
+}
+.admin-logo-link:hover {
+    opacity: 0.9;
+}
+.admin-logo-text {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+}
+.admin-panel-text {
+    font-weight: 300;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.admin-nav-menu .nav-link {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.admin-nav-menu .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+.admin-nav-menu .nav-link.active {
+    background-color: #3A50A0; /* Bookix primary accent */
+    color: #fff;
+    font-weight: 500;
+}
+.admin-nav-menu .nav-link i.fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+.admin-nav-menu .nav-link[aria-expanded="true"] i.fa-chevron-down {
+    transform: rotate(180deg);
+}
+.admin-nav-menu .sub-link {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem 0.5rem 2.5rem; /* Indent sub-links */
+    opacity: 0.8;
+}
+.admin-nav-menu .sub-link:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.admin-nav-menu .sub-link.active {
+    opacity: 1;
+    background-color: rgba(75, 93, 155, 0.5); /* Lighter version of primary for active sub-link */
+    font-weight: normal; /* Override main active link boldness if desired */
+}
+
+.admin-sidebar .support-btn {
+    background-color: #3A50A0;
+    border-color: #3A50A0;
+}
+.admin-sidebar .support-btn:hover {
+    background-color: #314483;
+    border-color: #314483;
+}
+
+
+.admin-main-content {
+    margin-left: 260px; /* Same as sidebar width */
+    padding-top: 60px; /* Space for fixed topbar */
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.admin-topbar {
+    height: 60px;
+    z-index: 1030;
+    border-bottom: 1px solid #e0e0e0;
+    padding-left: 1rem; /* Adjust if sidebar toggle is present */
+}
+.admin-topbar .page-title-placeholder {
+    color: #2C3E50;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+.admin-topbar .nav-link {
+    color: #555;
+}
+.admin-topbar .nav-link:hover {
+    color: #3A50A0;
+}
+.admin-topbar .admin-notification-badge {
+    font-size: 0.65em;
+    padding: 0.3em 0.5em;
+}
+.admin-topbar .dropdown-menu {
+    font-size: 0.9rem;
+}
+
+
+/* Admin Dashboard Specific */
+.admin-campaign-card .card-img-top {
+    max-height: 150px;
+    object-fit: cover;
+}
+.admin-campaign-card .card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-height: 40px; /* Ensure consistent title height */
+}
+.admin-announcements .list-group-item {
+    border-left: none;
+    border-right: none;
+}
+.admin-announcements .list-group-item:first-child {
+    border-top: none;
+}
+.admin-announcements .list-group-item:last-child {
+    border-bottom: none;
+}
+.admin-metrics-table th, .admin-metrics-table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+/* Admin Product Management Table */
+.admin-table {
+    font-size: 0.9rem;
+}
+.admin-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+.admin-table .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+}
+.page-section-title {
+    color: #2C3E50;
+    font-weight: 600;
+}
+
+/* Responsive: Sidebar Toggle */
+@media (max-width: 991.98px) {
+    .admin-sidebar {
+        margin-left: -260px; /* Hide sidebar by default */
+    }
+    .admin-sidebar.active {
+        margin-left: 0;
+    }
+    .admin-main-content {
+        margin-left: 0;
+    }
+    .admin-main-content.sidebar-active { /* When JS adds this class to main content */
+        margin-left: 260px;
+    }
+    .admin-topbar #adminSidebarToggle {
+        color: #333;
+    }
+}
