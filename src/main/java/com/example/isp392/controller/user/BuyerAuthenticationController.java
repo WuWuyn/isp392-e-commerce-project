@@ -1,4 +1,4 @@
-package com.example.isp392.controller;
+package com.example.isp392.controller.user;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,4 +32,10 @@ public class BuyerAuthenticationController {
     public String buyerProfilePage(){
         return "otp";
     }
+
+    @RequestMapping(value = "/buyer/account-info", method = RequestMethod.GET)
+    public String buyerProfilePage2(){
+        return "buyer/account-info";
+    }
+
 }
