@@ -158,28 +158,34 @@ public class SecurityConfig {
     @Order(4)
     public SecurityFilterChain sellerFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/seller/**")
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/seller/login").permitAll()
-                .anyRequest().hasRole("SELLER")
-            )
-            .formLogin(form -> form
-                .loginPage("/seller/login")
-                .loginProcessingUrl("/seller/process_login")
-                .defaultSuccessUrl("/seller/dashboard")
-                .failureUrl("/seller/login?error")
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/seller/logout")
-                .logoutSuccessUrl("/seller/login?logout")
-                .permitAll()
-            )
-            .csrf(csrf -> csrf.disable());
-            
+                .securityMatcher("/seller/**")
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/seller/login",
+                                "/seller/registration",
+                                "/seller/process_registration",
+                                "/seller/registration-success"
+                        ).permitAll()
+                        .anyRequest().hasRole("SELLER")
+                )
+                .formLogin(form -> form
+                        .loginPage("/seller/login")
+                        .loginProcessingUrl("/seller/process_login")
+                        .defaultSuccessUrl("/seller/dashboard")
+                        .failureUrl("/seller/login?error")
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/seller/logout")
+                        .logoutSuccessUrl("/seller/login?logout")
+                        .permitAll()
+                )
+                .csrf(csrf -> csrf.disable());
+
         return http.build();
     }
-    
+
+
     /**
      * Default security filter chain to catch all other requests
      * @param http HttpSecurity
@@ -201,4 +207,7 @@ public class SecurityConfig {
             
         return http.build();
     }
+
+
+
 }

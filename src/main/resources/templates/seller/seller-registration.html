@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register as a Seller - ReadHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+            border-left: 4px solid #4f46e5;
+            padding-left: 20px;
+        }
+
+        .form-section h2 {
+            color: #1f2937;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section h2::before {
+            content: "📋";
+            font-size: 1.2rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            border-color: #4f46e5;
+            background: #f0f4ff;
+        }
+
+        .regulations-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .regulations-section h3 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .regulations-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .regulations-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .regulations-list li::before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .regulations-list li:last-child {
+            border-bottom: none;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            transform: scale(1.2);
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 2px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                margin: 10px;
+                border-radius: 12px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .form-container {
+                padding: 20px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+
+        .info-tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+        }
+
+        .info-tooltip::after {
+            content: "ⓘ";
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
+
+        .info-tooltip:hover::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Seller Registration</h1>
+        <p>Start your business journey with us</p>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+
+    <form class="form-container" id="sellerRegistrationForm">
+        <!-- Thông tin cửa hàng -->
+        <div class="form-section">
+            <h2>Store Information</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="shopName">Store name <span class="required">*</span></label>
+                    <input type="text" id="shopName" name="shopName" required
+                           placeholder="Enter your store name">
+                </div>
+
+                <div class="form-group">
+                    <label for="shopCategory">Business Directory <span class="required">*</span></label>
+                    <select id="shopCategory" name="shopCategory" required>
+                        <option value="">Select category</option>
+                        <option value="electronics">Fiction</option>
+                        <option value="fashion">Non-Fiction</option>
+                        <option value="books">Biographies</option>
+                        <option value="home">Children's Books</option>
+                        <option value="beauty">Horrified</option>
+                        <option value="sports">Anime</option>
+                        <option value="food">Economy</option>
+                        <option value="other">Others</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="shopDescription">Store Description<span class="required">*</span></label>
+                <textarea id="shopDescription" name="shopDescription" required
+                          placeholder="Introduce your store, products, services..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="shopLogo">Store Logo
+                    <span class="info-tooltip" data-tooltip="Định dạng: JPG, PNG. Kích thước tối đa: 2MB"></span>
+                </label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="shopLogo" name="shopLogo" class="file-input"
+                           accept="image/jpeg,image/png,image/jpg">
+                    <label for="shopLogo" class="file-input-label">
+                        <span>📷</span>
+                        <span>Choose store logo</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin liên hệ -->
+        <div class="form-section">
+            <h2>Contact Information</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contactName">Contact person name <span class="required">*</span></label>
+                    <input type="text" id="contactName" name="contactName" required
+                           placeholder="Enter full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="contactPhone">Phone number <span class="required">*</span></label>
+                    <input type="tel" id="contactPhone" name="contactPhone" required
+                           placeholder="0123456789">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contactEmail">Email <span class="required">*</span></label>
+                    <input type="email" id="contactEmail" name="contactEmail" required
+                           placeholder="example@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="contactWebsite">Website (nếu có)</label>
+                    <input type="url" id="contactWebsite" name="contactWebsite"
+                           placeholder="https://yourwebsite.com">
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="contactAddress">Contact address <span class="required">*</span></label>
+                <textarea id="contactAddress" name="contactAddress" required
+                          placeholder="Enter full address..."></textarea>
+            </div>
+        </div>
+
+        <!-- Thông tin ngân hàng -->
+        <div class="form-section">
+            <h2>Bank Information</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="bankName">Bank name <span class="required">*</span></label>
+                    <select id="bankName" name="bankName" required>
+                        <option value="">Select bank</option>
+                        <option value="vietcombank">Vietcombank</option>
+                        <option value="techcombank">Techcombank</option>
+                        <option value="bidv">BIDV</option>
+                        <option value="vietinbank">VietinBank</option>
+                        <option value="acb">ACB</option>
+                        <option value="mb">MB Bank</option>
+                        <option value="tpbank">TPBank</option>
+                        <option value="other">Khác</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="bankAccountNumber">Account number <span class="required">*</span></label>
+                    <input type="text" id="bankAccountNumber" name="bankAccountNumber" required
+                           placeholder="Enter account number">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="bankAccountName">Account holder name <span class="required">*</span></label>
+                    <input type="text" id="bankAccountName" name="bankAccountName" required
+                           placeholder="Account holder name (according to ID card/CCCD)">
+                </div>
+
+                <div class="form-group">
+                    <label for="bankBranch">Branch</label>
+                    <input type="text" id="bankBranch" name="bankBranch"
+                           placeholder="Bank branch name">
+                </div>
+            </div>
+        </div>
+
+        <!-- Giấy phép kinh doanh -->
+        <div class="form-section">
+            <h2>Business License</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="businessType">Business type <span class="required">*</span></label>
+                    <select id="businessType" name="businessType" required>
+                        <option value="">Select type</option>
+                        <option value="individual">Individual</option>
+                        <option value="company">Company</option>
+                        <option value="publisher">Publishing house</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="businessLicenseNumber">Business license number</label>
+                    <input type="text" id="businessLicenseNumber" name="businessLicenseNumber"
+                           placeholder="Enter license number (if applicable)">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="businessLicenseFile">Business license file
+                    <span class="info-tooltip" data-tooltip="Định dạng: PDF, JPG, PNG. Kích thước tối đa: 5MB"></span>
+                </label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="businessLicenseFile" name="businessLicenseFile" class="file-input"
+                           accept="application/pdf,image/jpeg,image/png,image/jpg">
+                    <label for="businessLicenseFile" class="file-input-label">
+                        <span>📄</span>
+                        <span>Select license file</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="taxCode">Tax code</label>
+                <input type="text" id="taxCode" name="taxCode"
+                       placeholder="Enter tax code (if any)">
+            </div>
+        </div>
+
+        <!-- Quy định -->
+        <div class="regulations-section">
+            <h3>Rules For Sellers</h3>
+            <ul class="regulations-list">
+                <li>Committed to providing genuine, high quality products</li>
+                <li>Comply with platform pricing and promotion policies</li>
+                <li>Customer response within 24 hours</li>
+                <li>Process orders and deliver on time as committed</li>
+                <li>Do not sell illegal or harmful products</li>
+                <li>Maintain a minimum rating of 4.0/5.0 stars</li>
+                <li>Provide accurate and complete product information</li>
+                <li>Responsible for product and service quality</li>
+                <li>Participate in on-demand marketing programs</li>
+                <li>Comply with regulations on customer information protection</li>
+            </ul>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                <label for="agreeTerms">
+                    I have read and agree to all of the above terms.
+                    I agree to abide by the terms and conditions of the platform.
+                    <span class="required">*</span>
+                </label>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="agreeMarketing" name="agreeMarketing">
+                <label for="agreeMarketing">
+                    I agree to receive marketing information and updates from the platform via email and SMS.
+                </label>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                Back
+            </button>
+            <button type="submit" class="btn btn-primary">
+                Submit
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Progress bar functionality
+    function updateProgressBar() {
+        const form = document.getElementById('sellerRegistrationForm');
+        const requiredFields = form.querySelectorAll('input[required], select[required], textarea[required]');
+        const filledFields = Array.from(requiredFields).filter(field => {
+            if (field.type === 'checkbox') {
+                return field.checked;
+            }
+            return field.value.trim() !== '';
+        });
+
+        const progress = (filledFields.length / requiredFields.length) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    // Add event listeners to update progress
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('sellerRegistrationForm');
+        const inputs = form.querySelectorAll('input, select, textarea');
+
+        inputs.forEach(input => {
+            input.addEventListener('input', updateProgressBar);
+            input.addEventListener('change', updateProgressBar);
+        });
+
+        updateProgressBar();
+    });
+
+    // File input labels update
+    document.querySelectorAll('.file-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const label = this.nextElementSibling;
+            const fileName = this.files[0] ? this.files[0].name : 'Chọn file';
+            label.querySelector('span:last-child').textContent = fileName;
+        });
+    });
+
+    // Form submission
+    document.getElementById('sellerRegistrationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Validate required fields
+        const requiredFields = this.querySelectorAll('input[required], select[required], textarea[required]');
+        let isValid = true;
+
+        requiredFields.forEach(field => {
+            if (!field.value.trim() && !field.checked) {
+                isValid = false;
+                field.style.borderColor = '#ef4444';
+            } else {
+                field.style.borderColor = '#e5e7eb';
+            }
+        });
+
+        if (!isValid) {
+            alert('Please fill in all required information!');
+            return;
+        }
+
+        // Check if terms are agreed
+        if (!document.getElementById('agreeTerms').checked) {
+            alert('Please agree to the terms to continue!');
+            return;
+        }
+
+        // Simulate form submission
+        const submitBtn = this.querySelector('.btn-primary');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Processing...';
+        submitBtn.disabled = true;
+
+        setTimeout(() => {
+            alert('Registration successful! We will review and respond within 24-48 hours.');
+            // Here you would normally submit to your Spring Boot backend
+            // window.location.href = '/seller/dashboard';
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }, 2000);
+    });
+
+    // Phone number formatting
+    document.getElementById('contactPhone').addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        if (value.length > 10) value = value.slice(0, 10);
+        this.value = value;
+    });
+
+    // Bank account number formatting
+    document.getElementById('bankAccountNumber').addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        this.value = value;
+    });
+</script>
+</body>
+</html>

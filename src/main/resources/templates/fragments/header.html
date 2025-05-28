@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <body>
 
 <header th:fragment="header-content">
@@ -50,39 +50,67 @@
                 </ul>
                 <div class="navbar-nav nav-right-actions">
                     <form class="d-none d-lg-flex me-2" id="searchFormDesktop">
-                        <input class="form-control form-control-sm search-input-header" type="search" placeholder="Search books..." aria-label="Search">
+                        <input class="form-control form-control-sm search-input-header" type="search"
+                               placeholder="Search books..." aria-label="Search">
                     </form>
-                    <a href="#" class="nav-link" id="searchIconToggle"><i class="fas fa-search"></i> <span class="d-none d-lg-inline">Search</span></a>
-                    
+                    <a href="#" class="nav-link" id="searchIconToggle"><i class="fas fa-search"></i> <span
+                            class="d-none d-lg-inline">Search</span></a>
+
                     <!-- User Account - Show Login link when not authenticated, or username with dropdown when authenticated -->
+                </div>
+                <div class="navbar-nav nav-right-actions">
                     <div class="nav-item dropdown" sec:authorize="isAuthenticated()">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user"></i> <span class="d-none d-lg-inline" th:text="${#authentication.name}">User</span>
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user"></i> <span class="d-none d-lg-inline"
+                                                              th:text="${#authentication.name}">User</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <!-- Show manage account link for buyers -->
-                            <li sec:authorize="hasRole('BUYER')"><a class="dropdown-item" th:href="@{/buyer/account-info}"><i class="fas fa-user-circle me-2"></i>Manage Account</a></li>
-                            
+                            <li sec:authorize="hasRole('BUYER')"><a class="dropdown-item"
+                                                                    th:href="@{/buyer/account-info}"><i
+                                    class="fas fa-user-circle me-2"></i>Manage Account</a></li>
+
+                            <!-- Seller Registration (only if not already seller) -->
+                            <li sec:authorize="!hasRole('SELLER')">
+                                <a class="dropdown-item" th:href="@{/seller/registration}">
+                                    <i class="fas fa-id-badge me-2"></i>
+                                    Seller Registration
+                                </a>
+                            </li>
+
                             <!-- Show admin dashboard link for admins -->
-                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/products}"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</a></li>
-                            
+                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item"
+                                                                    th:href="@{/admin/products}"><i
+                                    class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</a></li>
+
                             <!-- Show seller dashboard link for sellers -->
-                            <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item" th:href="@{/seller/dashboard}"><i class="fas fa-store me-2"></i>Seller Dashboard</a></li>
-                            
-                            <li><hr class="dropdown-divider"></li>
-                            
+                            <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item"
+                                                                     th:href="@{/seller/dashboard}"><i
+                                    class="fas fa-store me-2"></i>Seller Dashboard</a></li>
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+
                             <!-- Dynamic logout links based on role -->
-                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            <li sec:authorize="hasRole('BUYER')"><a class="dropdown-item" th:href="@{/buyer/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item" th:href="@{/seller/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/logout}"><i
+                                    class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            <li sec:authorize="hasRole('BUYER')"><a class="dropdown-item" th:href="@{/buyer/logout}"><i
+                                    class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item"
+                                                                     th:href="@{/seller/logout}"><i
+                                    class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                         </ul>
                     </div>
-                    
+
                     <!-- Login link - Only show when not authenticated -->
-                    <a th:href="@{/buyer/login}" class="nav-link" sec:authorize="!isAuthenticated()"><i class="fas fa-user"></i> <span class="d-none d-lg-inline">Login</span></a>
-                    
+                    <a th:href="@{/buyer/login}" class="nav-link" sec:authorize="!isAuthenticated()"><i
+                            class="fas fa-user"></i> <span class="d-none d-lg-inline">Login</span></a>
+
                     <!-- Shopping Cart - Link to cart page or login if not authenticated -->
-                    <a th:href="${#authorization.expression('isAuthenticated()') ? '/buyer/cart' : '/buyer/login'}" class="nav-link">
+                    <a th:href="${#authorization.expression('isAuthenticated()') ? '/buyer/cart' : '/buyer/login'}"
+                       class="nav-link">
                         <i class="fas fa-shopping-cart"></i> <span class="d-none d-lg-inline">Cart</span>
                     </a>
                 </div>
