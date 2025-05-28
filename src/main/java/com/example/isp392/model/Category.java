@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Getter
 @Setter
 @Entity
@@ -22,6 +25,8 @@ public class Category {
     @Column(name = "category_description")
     private String categoryDescription;
 
-    //@OneToMany with Book
+    @ManyToMany(mappedBy = "categories", fetch = FetchType.LAZY)
+    private Set<Book> books = new HashSet<>(); // Use Set to avoid duplicate books in a category's list
+
 
 }

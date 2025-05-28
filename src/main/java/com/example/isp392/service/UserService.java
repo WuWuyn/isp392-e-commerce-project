@@ -7,7 +7,6 @@ import com.example.isp392.model.UserRole;
 import com.example.isp392.repository.RoleRepository;
 import com.example.isp392.repository.UserRepository;
 import com.example.isp392.repository.UserRoleRepository;
-// No imports needed for annotations since we use constructor injection
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,7 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service

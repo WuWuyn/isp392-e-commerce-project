@@ -1612,3 +1612,48 @@ a:hover {
     background-color: #2C3E50;
     border-color: #2C3E50;
 }
+
+.address-saved-header {
+    background-color: #e9f5fe; /* Light blue background */
+    color: #333; /* Text color */
+    padding: 0.75rem 1rem; /* Padding inside the box */
+    border-radius: 5px; /* Slightly rounded corners */
+    margin-bottom: 1.5rem; /* Space below the header */
+    font-weight: 600; /* Make text bold */
+}
+
+.address-item {
+    /* Additional styling for address blocks if needed */
+    /* e.g., padding-top or border-top if border-bottom is not used */
+}
+
+.address-type-badge {
+    background-color: #d0e9ff; /* Light blue badge color */
+    color: #0a58ca; /* Dark blue text color (Bootstrap --bs-link-color or custom) */
+    padding: 0.25em 0.5em; /* Padding inside the badge */
+    border-radius: 0.25rem; /* Small border radius */
+    font-size: 0.75rem; /* Smaller font size */
+    font-weight: 500; /* Medium font weight */
+    vertical-align: middle; /* Align vertically with text */
+    white-space: nowrap; /* Prevent wrapping */
+}
+
+.address-item .text-end a {
+    /* Style for edit/delete links */
+    font-size: 0.9rem;
+}
+.address-item .text-end a.text-danger {
+    /* Specific style for delete link */
+    /* Ensure color is correct */
+    color: #dc3545 !important; /* Bootstrap danger color */
+}
+.address-item .text-end a.text-danger:hover {
+     color: #c82333 !important; /* Darker on hover */
+}
+
+/* Adjust spacing for last address item if no border */
+.address-list .address-item:last-child {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
