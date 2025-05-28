@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!-- Buyer Account Sidebar Fragment -->
+<!-- 
+This fragment provides a consistent sidebar for all buyer account pages
+Parameters:
+- user: the current logged in user object
+- roles: list of user roles 
+- activeTab: indicates which sidebar item should be highlighted (values: 'info', 'password', 'orders', 'address')
+-->
+<aside class="col-lg-3 account-sidebar mb-4 mb-lg-0" th:fragment="sidebar(activeTab)">
+    <div class="card">
+        <!-- User Profile Summary -->
+        <div class="card-body text-center p-4">
+            <img th:src="${user.profilePicUrl != null ? user.profilePicUrl : '/images/avatar-placeholder.png'}" 
+                 alt="User Avatar" class="rounded-circle mb-2" width="80" height="80">
+            <h5 class="mb-0" th:text="${user.fullName}">User Name</h5>
+            <p class="text-muted small" th:text="${user.email}">user@example.com</p>
+            <p class="badge bg-primary" th:each="role : ${roles}" th:text="${role}">ROLE</p>
+        </div>
+        
+        <!-- Navigation Links -->
+        <ul class="list-group list-group-flush account-nav">
+            <!-- Account Information -->
+            <li class="list-group-item" th:classappend="${activeTab == 'info'} ? 'active' : ''">
+                <a th:href="@{/buyer/account-info}" class="d-flex align-items-center text-decoration-none">
+                    <i class="fas fa-user-circle fa-fw me-2"></i> Account Information
+                </a>
+            </li>
+            
+            <!-- Change Password -->
+            <li class="list-group-item" th:classappend="${activeTab == 'password'} ? 'active' : ''">
+                <a th:href="@{/buyer/change-password}" class="d-flex align-items-center text-decoration-none">
+                    <i class="fas fa-key fa-fw me-2"></i> Change Password
+                </a>
+            </li>
+            
+            <!-- Order History -->
+            <li class="list-group-item" th:classappend="${activeTab == 'orders'} ? 'active' : ''">
+                <a th:href="@{/buyer/orders}" class="d-flex align-items-center text-decoration-none">
+                    <i class="fas fa-list-alt fa-fw me-2"></i> Order History
+                </a>
+            </li>
+            
+            <!-- Address Book -->
+            <li class="list-group-item" th:classappend="${activeTab == 'address'} ? 'active' : ''">
+                <a th:href="@{/buyer/addresses}" class="d-flex align-items-center text-decoration-none">
+                    <i class="fas fa-map-marker-alt fa-fw me-2"></i> Address Book
+                </a>
+            </li>
+            
+            <!-- Logout -->
+            <li class="list-group-item">
+                <a th:href="@{/logout}" class="d-flex align-items-center text-decoration-none text-danger">
+                    <i class="fas fa-sign-out-alt fa-fw me-2"></i> Logout
+                </a>
+            </li>
+        </ul>
+    </div>
+</aside>
+
+</body>
+</html>

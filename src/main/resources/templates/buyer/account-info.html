@@ -28,43 +28,8 @@
         </nav>
 
         <div class="row">
-            <!-- Account Sidebar -->
-            <aside class="col-lg-3 account-sidebar mb-4 mb-lg-0">
-                <div class="card">
-                    <div class="card-body text-center p-4">
-                        <img th:src="@{/images/avatar-placeholder.png}" alt="User Avatar" class="rounded-circle mb-2" width="80" height="80">
-                        <h5 class="mb-0">Vũ Khánh Huyền</h5> <!-- Placeholder Name -->
-                        <p class="text-muted small">bookworm@example.com</p>
-                    </div>
-                    <ul class="list-group list-group-flush account-nav">
-                        <li class="list-group-item active">
-                            <a th:href="@{/account/info}" class="d-flex align-items-center text-decoration-none">
-                                <i class="fas fa-user-circle fa-fw me-2"></i> Account Information
-                            </a>
-                        </li>
-                        <li class="list-group-item">
-                            <a th:href="@{/account/change-password}" class="d-flex align-items-center text-decoration-none">
-                                <i class="fas fa-key fa-fw me-2"></i> Change Password
-                            </a>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="#" class="d-flex align-items-center text-decoration-none">
-                                <i class="fas fa-list-alt fa-fw me-2"></i> Order History
-                            </a>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="#" class="d-flex align-items-center text-decoration-none">
-                                <i class="fas fa-map-marker-alt fa-fw me-2"></i> Address Book
-                            </a>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="#" class="d-flex align-items-center text-decoration-none text-danger">
-                                <i class="fas fa-sign-out-alt fa-fw me-2"></i> Logout
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </aside>
+            <!-- Account Sidebar using fragment -->
+            <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('info')}"></div>
 
             <!-- Account Content -->
             <section class="col-lg-9 account-content">
@@ -73,93 +38,48 @@
                         <h4 class="mb-0">Account Information</h4>
                     </div>
                     <div class="card-body p-4">
-                        <form>
+                        <div>
                             <!-- Personal Information -->
                             <h5 class="mb-3 section-form-title">Personal Information</h5>
                             <div class="row mb-4 align-items-center">
                                 <div class="col-md-3 text-center text-md-start mb-3 mb-md-0">
                                     <div class="position-relative d-inline-block">
-                                        <img th:src="@{/images/avatar-placeholder.png}" alt="User Avatar" class="rounded-circle border" width="100" height="100" id="avatarPreview">
-                                        <label for="avatarUpload" class="avatar-edit-btn">
-                                            <img th:src="@{/images/icon-edit-pencil.svg}" alt="Edit Avatar">
-                                        </label>
-                                        <input type="file" id="avatarUpload" class="d-none" accept="image/*">
+                                        <img th:src="${user.profilePicUrl != null ? user.profilePicUrl : '/images/avatar-placeholder.png'}" alt="User Avatar" class="rounded-circle border" width="100" height="100" id="avatarPreview">
                                     </div>
                                 </div>
                                 <div class="col-md-9">
                                     <div class="mb-3">
-                                        <label for="fullName" class="form-label">Full Name</label>
-                                        <input type="text" class="form-control" id="fullName" value="Vũ Khánh Huyền">
+                                        <strong>Full Name:</strong> <span th:text="${user.fullName}">Full Name</span>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="nickname" class="form-label">Nickname</label>
-                                        <input type="text" class="form-control" id="nickname" placeholder="Enter your nickname">
+                                        <strong>Email:</strong> <span th:text="${user.email}">Email</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Phone Number:</strong> <span th:text="${user.phone}">Phone Number</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Date of Birth</label>
-                                    <div class="input-group">
-                                        <select class="form-select dob-select" id="dobDay" aria-label="Day">
-                                            <option selected>Day</option>
-                                            <!-- Options generated by JS or Thymeleaf -->
-                                        </select>
-                                        <select class="form-select dob-select" id="dobMonth" aria-label="Month">
-                                            <option selected>Month</option>
-                                            <!-- Options generated by JS or Thymeleaf -->
-                                        </select>
-                                        <select class="form-select dob-select" id="dobYear" aria-label="Year">
-                                            <option selected>Year</option>
-                                            <!-- Options generated by JS or Thymeleaf -->
-                                        </select>
-                                    </div>
+                                    <strong>Date of Birth:</strong> <span th:text="${#dates.format(user.dateOfBirth, 'yyyy-MM-dd')}">Date of Birth</span>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Gender</label>
-                                    <div>
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="gender" id="genderMale" value="male" checked>
-                                            <label class="form-check-label" for="genderMale">Male</label>
-                                        </div>
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="gender" id="genderFemale" value="female">
-                                            <label class="form-check-label" for="genderFemale">Female</label>
-                                        </div>
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="gender" id="genderOther" value="other">
-                                            <label class="form-check-label" for="genderOther">Other</label>
-                                        </div>
-                                    </div>
+                                    <strong>Gender:</strong> 
+                                    <span th:if="${user.gender == 0}">Male</span>
+                                    <span th:if="${user.gender == 1}">Female</span>
+                                    <span th:if="${user.gender == 2}">Other</span>
                                 </div>
                             </div>
-                            <div class="mb-4"> <!-- Changed from mb-3 to mb-4 for more spacing before button -->
-                                <label for="nationality" class="form-label">Nationality</label>
-                                <select class="form-select" id="nationality">
-                                    <option selected>Select Nationality</option>
-                                    <option value="VN">Vietnamese</option>
-                                    <option value="US">American</option>
-                                    <option value="GB">British</option>
-                                    <!-- Add more nationalities -->
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a th:href="@{/buyer/edit-info}" class="btn btn-primary">Modify Profile Information</a>
                             <hr class="my-4">
 
                             <!-- Contact Information -->
                             <h5 class="mb-3 section-form-title">Contact Information</h5>
                             <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
                                 <div>
-                                    <p class="mb-0 fw-medium">Phone Number</p>
-                                    <p class="mb-0 text-muted small">000000000</p> <!-- Placeholder -->
-                                </div>
-                                <button type="button" class="btn btn-outline-primary btn-sm">Update</button>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
-                                <div>
                                     <p class="mb-0 fw-medium">Email Address</p>
-                                    <p class="mb-0 text-muted small">bookworm@example.com</p> <!-- Placeholder -->
+                                    <p class="mb-0 text-muted small" th:text="${user.email}">Email address</p>
                                 </div>
                                 <button type="button" class="btn btn-outline-primary btn-sm">Update</button>
                             </div>
@@ -171,7 +91,7 @@
                                 <div>
                                     <p class="mb-0 fw-medium">Change Password</p>
                                 </div>
-                                <a th:href="@{/account/change-password}" class="btn btn-outline-primary btn-sm">Update</a>
+                                <a th:href="@{/buyer/change-password}" class="btn btn-outline-primary btn-sm">Update</a>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
                                 <div>
@@ -182,17 +102,6 @@
                             <hr class="my-4">
 
                             <!-- Social Links -->
-                            <h5 class="mb-3 section-form-title">Linked Social Accounts</h5>
-                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
-                                <div class="d-flex align-items-center">
-                                    <i class="fab fa-facebook fa-2x text-primary me-3"></i>
-                                    <div>
-                                        <p class="mb-0 fw-medium">Facebook</p>
-                                        <p class="mb-0 text-muted small">Not linked</p>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn btn-outline-primary btn-sm">Link</button>
-                            </div>
                             <div class="d-flex justify-content-between align-items-center p-3 border rounded">
                                 <div class="d-flex align-items-center">
                                     <i class="fab fa-google fa-2x text-danger me-3"></i>
@@ -203,8 +112,9 @@
                                 </div>
                                 <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Linked</button>
                             </div>
-                        </form>
+                        </div>
                     </div>
+                </div>
                 </div>
             </section>
         </div>

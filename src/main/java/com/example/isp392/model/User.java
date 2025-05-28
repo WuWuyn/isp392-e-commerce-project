@@ -36,13 +36,19 @@ public class User {
     @Column(name = "date_of_birth", nullable = false)
     private Date dateOfBirth;
 
+    /**
+     * Gender: 0 - Male, 1 - Female, 2 - Other
+     */
     @Column(name = "gender", nullable = false)
-    private boolean gender;
+    private int gender;
 
     @Column(name = "profile_pic_url")
     private String profilePicUrl;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<UserRole> userRoles = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private Set<UserAddress> addresses = new HashSet<>(); // Danh sách các địa chỉ của user
 
 }
