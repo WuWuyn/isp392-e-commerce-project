@@ -69,14 +69,14 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicResourcesFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/css/**", "/js/**", "/images/**", "/webjars/**", "/error/**",
-                        "/", "/about-contact", "/all-category", "/blog", "/blog-single",
-                        "/terms-policy", "/product-detail", "/favicon.ico")
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll()
-                )
-                .csrf(csrf -> csrf.disable());
-
+            .securityMatcher("/css/**", "/js/**", "/images/**", "/webjars/**", "/error/**",
+                    "/", "/about-contact", "/all-category", "/blog", "/blog-single", 
+                    "/terms-policy", "/product-detail", "/favicon.ico")
+            .authorizeHttpRequests(authorize -> authorize
+                .anyRequest().permitAll()
+            )
+            .csrf(csrf -> csrf.disable());
+        
         return http.build();
     }
 
@@ -90,25 +90,25 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/admin/**")
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/admin/login").permitAll()
-                        .anyRequest().hasRole("ADMIN")
-                )
-                .formLogin(form -> form
-                        .loginPage("/admin/login")
-                        .loginProcessingUrl("/admin/process_login")
-                        .defaultSuccessUrl("/admin/products")
-                        .failureUrl("/admin/login?error")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/admin/logout")
-                        .logoutSuccessUrl("/admin/login?logout")
-                        .permitAll()
-                )
-                .csrf(csrf -> csrf.disable());
-
+            .securityMatcher("/admin/**")
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/admin/login").permitAll()
+                .anyRequest().hasRole("ADMIN")
+            )
+            .formLogin(form -> form
+                .loginPage("/admin/login")
+                .loginProcessingUrl("/admin/process_login")
+                .defaultSuccessUrl("/admin/products")
+                .failureUrl("/admin/login?error")
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutUrl("/admin/logout")
+                .logoutSuccessUrl("/admin/login?logout")
+                .permitAll()
+            )
+            .csrf(csrf -> csrf.disable());
+            
         return http.build();
     }
 
@@ -122,29 +122,29 @@ public class SecurityConfig {
     @Order(3)
     public SecurityFilterChain buyerFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/buyer/**")
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(
-                                "/buyer/signup",
-                                "/buyer/login",
-                                "/buyer/register"
-                        ).permitAll()
-                        .anyRequest().hasRole("BUYER")
-                )
-                .formLogin(form -> form
-                        .loginPage("/buyer/login")
-                        .loginProcessingUrl("/buyer/process_login")
-                        .defaultSuccessUrl("/buyer/account-info")
-                        .failureUrl("/buyer/login?error")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/buyer/logout")
-                        .logoutSuccessUrl("/buyer/login?logout")
-                        .permitAll()
-                )
-                .csrf(csrf -> csrf.disable());
-
+            .securityMatcher("/buyer/**")
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(
+                    "/buyer/signup",
+                    "/buyer/login",
+                    "/buyer/register"
+                ).permitAll()
+                .anyRequest().hasRole("BUYER")
+            )
+            .formLogin(form -> form
+                .loginPage("/buyer/login")
+                .loginProcessingUrl("/buyer/process_login")
+                .defaultSuccessUrl("/buyer/account-info")
+                .failureUrl("/buyer/login?error")
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutUrl("/buyer/logout")
+                .logoutSuccessUrl("/buyer/login?logout")
+                .permitAll()
+            )
+            .csrf(csrf -> csrf.disable());
+            
         return http.build();
     }
 
@@ -158,28 +158,28 @@ public class SecurityConfig {
     @Order(4)
     public SecurityFilterChain sellerFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/seller/**")
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/seller/login").permitAll()
-                        .anyRequest().hasRole("SELLER")
-                )
-                .formLogin(form -> form
-                        .loginPage("/seller/login")
-                        .loginProcessingUrl("/seller/process_login")
-                        .defaultSuccessUrl("/seller/dashboard")
-                        .failureUrl("/seller/login?error")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/seller/logout")
-                        .logoutSuccessUrl("/seller/login?logout")
-                        .permitAll()
-                )
-                .csrf(csrf -> csrf.disable());
-
+            .securityMatcher("/seller/**")
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/seller/login").permitAll()
+                .anyRequest().hasRole("SELLER")
+            )
+            .formLogin(form -> form
+                .loginPage("/seller/login")
+                .loginProcessingUrl("/seller/process_login")
+                .defaultSuccessUrl("/seller/dashboard")
+                .failureUrl("/seller/login?error")
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutUrl("/seller/logout")
+                .logoutSuccessUrl("/seller/login?logout")
+                .permitAll()
+            )
+            .csrf(csrf -> csrf.disable());
+            
         return http.build();
     }
-
+    
     /**
      * Default security filter chain to catch all other requests
      * @param http HttpSecurity
@@ -190,15 +190,15 @@ public class SecurityConfig {
     @Order(5)
     public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated()
-                )
-                .formLogin(form -> form
-                        .loginPage("/buyer/login")
-                        .permitAll()
-                )
-                .csrf(csrf -> csrf.disable());
-
+            .authorizeHttpRequests(authorize -> authorize
+                .anyRequest().authenticated()
+            )
+            .formLogin(form -> form
+                .loginPage("/buyer/login")
+                .permitAll()
+            )
+            .csrf(csrf -> csrf.disable());
+            
         return http.build();
     }
 }

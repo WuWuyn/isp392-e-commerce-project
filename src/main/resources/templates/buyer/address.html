@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Address - Bookix</title>
+    <title th:text="${isEdit ? 'Edit Address' : 'Create New Address'}">Create New Address - Bookix</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -18,19 +18,28 @@
             font-weight: 500; /* Match label weight */
             color: #555;
         }
-        /* Optional: Style for the Google Maps icons if you choose to implement them */
-        /* This requires specific placement within the textarea or label */
-        /* .address-map-icons {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            font-size: 1.2rem;
-            color: #6c757d;
+        /* Field validation */
+        .is-invalid {
+            border-color: #dc3545;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
         }
-        .address-map-icons i {
-            margin-left: 5px;
-            cursor: pointer;
-        } */
+        .is-valid {
+            border-color: #198754;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        .invalid-feedback {
+            display: none;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -72,27 +81,38 @@
                         </div>
 
                         <!-- Use a Thymeleaf object to bind form fields -->
-                        <form th:action="@{/buyer/addresses/create}" th:object="${address}" method="post">
+                        <!-- Form action changes based on whether we're editing or creating -->
+                        <form th:action="${isEdit ? '/buyer/addresses/update/' + address.addressId : '/buyer/addresses/create'}" 
+                              th:object="${address}" method="post" id="addressForm" novalidate>
+                        
+                            <!-- Hidden field for addressId when editing -->
+                            <input type="hidden" th:if="${isEdit}" th:field="*{addressId}">
 
                             <div class="mb-3">
-                                <label for="fullName" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="fullName" th:field="*{recipientName}" placeholder="Enter full name" required>
-                                <!-- Potential error message display -->
-                                <!-- <div class="text-danger small" th:errors="*{recipientName}"></div> -->
+                                <label for="recipientName" class="form-label">Recipient Name</label>
+                                <input type="text" class="form-control" id="recipientName" th:field="*{recipientName}" 
+                                       placeholder="Enter recipient name" required minlength="2" maxlength="100">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('recipientName')}" th:errors="*{recipientName}">
+                                    Recipient name is required and must be between 2-100 characters
+                                </div>
                             </div>
 
+                            <div class="mb-3">
+                                <label for="recipientPhone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="recipientPhone" th:field="*{recipientPhone}" 
+                                       placeholder="Enter phone number" required pattern="^(\+84|84|0)[3|5|7|8|9][0-9]{8}$">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('recipientPhone')}" th:errors="*{recipientPhone}">
+                                    Valid phone number is required (e.g., 0912345678)
+                                </div>
+                            </div>
+                            
                             <div class="mb-3">
                                 <label for="company" class="form-label">Company (Optional)</label>
-                                <input type="text" class="form-control" id="company" th:field="*{company}" placeholder="Enter company name">
-                                <!-- Potential error message display -->
-                                <!-- <div class="text-danger small" th:errors="*{company}"></div> -->
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="phoneNumber" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="phoneNumber" th:field="*{phone}" placeholder="Enter phone number" required>
-                                <!-- Potential error message display -->
-                                <!-- <div class="text-danger small" th:errors="*{phone}"></div> -->
+                                <input type="text" class="form-control" id="company" th:field="*{company}" 
+                                       placeholder="Enter company name" maxlength="255">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('company')}" th:errors="*{company}">
+                                    Company name must be less than 255 characters
+                                </div>
                             </div>
 
                             <div class="row mb-3">
@@ -100,66 +120,79 @@
                                     <label for="province" class="form-label">Province/City</label>
                                     <select class="form-select" id="province" th:field="*{province}" required>
                                         <option value="">Select Province/City</option>
-                                        <!-- Options will be populated by Thymeleaf or JavaScript -->
-                                        <!-- th:each="p : ${provinces}" th:value="${p.id}" th:text="${p.name}" -->
+                                        <!-- Options populated by JavaScript -->
                                     </select>
-                                    <!-- Potential error message display -->
-                                    <!-- <div class="text-danger small" th:errors="*{province}"></div> -->
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('province')}" th:errors="*{province}">
+                                        Province/City is required
+                                    </div>
                                 </div>
                                 <div class="col-md-4 mb-3 mb-md-0">
                                     <label for="district" class="form-label">District</label>
                                     <select class="form-select" id="district" th:field="*{district}" required>
                                         <option value="">Select District</option>
-                                        <!-- Options will be populated by JavaScript based on province -->
-                                        <!-- th:each="d : ${districts}" th:value="${d.id}" th:text="${d.name}" -->
+                                        <!-- Options populated by JavaScript based on province -->
                                     </select>
-                                    <!-- Potential error message display -->
-                                    <!-- <div class="text-danger small" th:errors="*{district}"></div> -->
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('district')}" th:errors="*{district}">
+                                        District is required
+                                    </div>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="ward" class="form-label">Ward/Commune</label>
                                     <select class="form-select" id="ward" th:field="*{ward}" required>
                                         <option value="">Select Ward/Commune</option>
-                                        <!-- Options will be populated by JavaScript based on district -->
-                                        <!-- th:each="w : ${wards}" th:value="${w.id}" th:text="${w.name}" -->
+                                        <!-- Options populated by JavaScript based on district -->
                                     </select>
-                                    <!-- Potential error message display -->
-                                    <!-- <div class="text-danger small" th:errors="*{ward}"></div> -->
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('ward')}" th:errors="*{ward}">
+                                        Ward is required
+                                    </div>
                                 </div>
                             </div>
 
-
                             <div class="mb-3">
-                                <label for="addressDetails" class="form-label">Address Details</label>
-                                <textarea class="form-control" id="addressDetails" th:field="*{addressLine}" rows="3" placeholder="Enter house number, street name, building name, etc." required></textarea>
-                                <!-- Note: Google Maps icons from screenshot are complex to place exactly inside textarea with standard Bootstrap. Omitted for simplicity in this template. If needed, they'd typically be placed outside the textarea, styled absolute. -->
-                                <!-- Potential error message display -->
-                                <!-- <div class="text-danger small" th:errors="*{addressLine}"></div> -->
+                                <label for="addressDetail" class="form-label">Address Details</label>
+                                <textarea class="form-control" id="addressDetail" th:field="*{addressDetail}" 
+                                          rows="3" placeholder="Enter house number, street name, etc." 
+                                          required maxlength="500"></textarea>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('addressDetail')}" th:errors="*{addressDetail}">
+                                    Address details are required and must be less than 500 characters
+                                </div>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label d-block">Address Type</label>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="addressType" id="addressTypeHome" value="HOME" th:field="*{addressType}" required>
-                                    <label class="form-check-label" for="addressTypeHome">Home / Apartment</label>
+                                    <input class="form-check-input" type="radio" name="addressType" 
+                                           id="addressType0" value="0" th:field="*{addressType}" required>
+                                    <label class="form-check-label" for="addressType0">Residential</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="addressType" id="addressTypeOffice" value="OFFICE" th:field="*{addressType}" required>
-                                    <label class="form-check-label" for="addressTypeOffice">Office / Company</label>
+                                    <input class="form-check-input" type="radio" name="addressType" 
+                                           id="addressType1" value="1" th:field="*{addressType}" required>
+                                    <label class="form-check-label" for="addressType1">Company</label>
                                 </div>
-                                <!-- Potential error message display -->
-                                <!-- <div class="text-danger small" th:errors="*{addressType}"></div> -->
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('addressType')}" th:errors="*{addressType}">
+                                    Please select an address type
+                                </div>
                             </div>
 
-
-                            <div class="mb-4 form-check">
-                                <input type="checkbox" class="form-check-input" id="setDefault" th:field="*{isDefault}">
+                            <!-- Only show default checkbox when not editing a default address -->
+                            <div class="mb-4 form-check" th:if="${!isEdit || !address.default}">
+                                <input type="checkbox" class="form-check-input" id="setDefault" th:field="*{default}">
                                 <label class="form-check-label" for="setDefault">Set as Default Address</label>
                             </div>
+                            
+                            <!-- Show a message if editing a default address -->
+                            <div class="mb-4 alert alert-info" th:if="${isEdit && address.default}">
+                                <i class="fas fa-info-circle me-2"></i> This is your default address
+                            </div>
 
-                            <!-- Changed class to btn btn-primary -->
-                            <button type="submit" class="btn btn-primary">Save Address</button>
-                            <a th:href="@{/buyer/addresses}" class="btn btn-secondary ms-2">Cancel</a>
+                            <!-- Submit and cancel buttons -->
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Save Address
+                            </button>
+                            <a th:href="@{/buyer/addresses}" class="btn btn-secondary ms-2">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </a>
                         </form>
 
                     </div>
@@ -176,21 +209,27 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Custom JS -->
 <script th:src="@{/js/script.js}"></script>
-<!-- Add JavaScript for Province/District/Ward dropdowns if needed -->
+<!-- Add JavaScript for form validation and dynamic dropdowns -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // JavaScript to handle Province -> District -> Ward cascading dropdowns
-        // This is a placeholder; actual implementation would require fetching data via API
+        // Get form and input elements
+        const addressForm = document.getElementById('addressForm');
         const provinceSelect = document.getElementById('province');
         const districtSelect = document.getElementById('district');
         const wardSelect = document.getElementById('ward');
-
+        const phoneInput = document.getElementById('recipientPhone');
+        const addressDetailInput = document.getElementById('addressDetail');
+        const recipientNameInput = document.getElementById('recipientName');
+        
+        // Check if we're in edit mode
+        const isEditMode = document.querySelector('input[name="addressId"]') !== null;
+        
         // Function to clear and populate dropdowns
         function populateDropdown(selectElement, options) {
             selectElement.innerHTML = ''; // Clear existing options
             const defaultOption = document.createElement('option');
             defaultOption.value = '';
-            defaultOption.textContent = 'Select ' + selectElement.id.charAt(0).toUpperCase() + selectElement.id.slice(1); // Capitalize first letter
+            defaultOption.textContent = 'Select ' + selectElement.id.charAt(0).toUpperCase() + selectElement.id.slice(1);
             selectElement.appendChild(defaultOption);
 
             options.forEach(option => {
@@ -199,83 +238,207 @@
                 opt.textContent = option.name;
                 selectElement.appendChild(opt);
             });
-             // Re-select the Thymeleaf bound value if it exists (for editing)
+            
+            // Re-select the value if set (for edit mode)
             if (selectElement.getAttribute('data-current-value')) {
-                 selectElement.value = selectElement.getAttribute('data-current-value');
+                selectElement.value = selectElement.getAttribute('data-current-value');
+            }
+        }
+        
+        // Function to validate phone number
+        function validatePhone(phone) {
+            const regex = /^(\+84|84|0)[3|5|7|8|9][0-9]{8}$/;
+            return regex.test(phone);
+        }
+        
+        // Function to mark field as valid or invalid
+        function setValidationStatus(element, isValid, errorMessage = '') {
+            if (isValid) {
+                element.classList.remove('is-invalid');
+                element.classList.add('is-valid');
+            } else {
+                element.classList.remove('is-valid');
+                element.classList.add('is-invalid');
+                // Find the error message container (invalid-feedback)
+                const feedbackElement = element.nextElementSibling;
+                if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                    if (errorMessage) feedbackElement.textContent = errorMessage;
+                }
             }
         }
 
-        // Example data structure (replace with API calls)
+        // Example data structure (replace with API calls in production)
         const demoData = {
-            provinces: [{id: 1, name: 'Hồ Chí Minh'}, {id: 2, name: 'Hà Nội'}],
+            provinces: [
+                {id: 'Hồ Chí Minh', name: 'Hồ Chí Minh'}, 
+                {id: 'Hà Nội', name: 'Hà Nội'},
+                {id: 'Đà Nẵng', name: 'Đà Nẵng'},
+                {id: 'Hải Phòng', name: 'Hải Phòng'},
+                {id: 'Cần Thơ', name: 'Cần Thơ'}
+            ],
             districts: {
-                1: [{id: 101, name: 'Quận 1'}, {id: 102, name: 'Quận Bình Thạnh'}],
-                2: [{id: 201, name: 'Quận Ba Đình'}, {id: 202, name: 'Quận Cầu Giấy'}]
+                'Hồ Chí Minh': [
+                    {id: 'Quận 1', name: 'Quận 1'}, 
+                    {id: 'Quận 2', name: 'Quận 2'},
+                    {id: 'Quận 3', name: 'Quận 3'},
+                    {id: 'Quận Bình Thạnh', name: 'Quận Bình Thạnh'}
+                ],
+                'Hà Nội': [
+                    {id: 'Quận Ba Đình', name: 'Quận Ba Đình'}, 
+                    {id: 'Quận Cầu Giấy', name: 'Quận Cầu Giấy'},
+                    {id: 'Quận Đống Đa', name: 'Quận Đống Đa'}
+                ],
+                'Đà Nẵng': [
+                    {id: 'Quận Hải Châu', name: 'Quận Hải Châu'},
+                    {id: 'Quận Thanh Khê', name: 'Quận Thanh Khê'}
+                ]
             },
             wards: {
-                 101: [{id: 1011, name: 'Phường Bến Nghé'}, {id: 1012, name: 'Phường Bến Thành'}],
-                 102: [{id: 1021, name: 'Phường 1'}, {id: 1022, name: 'Phường 2'}],
-                 201: [{id: 2011, name: 'Phường Phúc Xá'}, {id: 2012, name: 'Phường Trúc Bạch'}],
-                 202: [{id: 2021, name: 'Phường Quan Hoa'}, {id: 2022, name: 'Phường Nghĩa Đô'}]
+                'Quận 1': [
+                    {id: 'Phường Bến Nghé', name: 'Phường Bến Nghé'}, 
+                    {id: 'Phường Bến Thành', name: 'Phường Bến Thành'}
+                ],
+                'Quận Bình Thạnh': [
+                    {id: 'Phường 1', name: 'Phường 1'}, 
+                    {id: 'Phường 2', name: 'Phường 2'}
+                ],
+                'Quận Ba Đình': [
+                    {id: 'Phường Phúc Xá', name: 'Phường Phúc Xá'}, 
+                    {id: 'Phường Trúc Bạch', name: 'Phường Trúc Bạch'}
+                ],
+                'Quận Cầu Giấy': [
+                    {id: 'Phường Quan Hoa', name: 'Phường Quan Hoa'}, 
+                    {id: 'Phường Nghĩa Đô', name: 'Phường Nghĩa Đô'}
+                ]
             }
         };
 
-         // Initial population of provinces
-         populateDropdown(provinceSelect, demoData.provinces);
+        // Initial population of provinces
+        populateDropdown(provinceSelect, demoData.provinces);
+        
+        // Pre-populate dropdowns in edit mode
+        if (isEditMode) {
+            const currentProvince = provinceSelect.value;
+            if (currentProvince) {
+                // Set the data attribute
+                provinceSelect.setAttribute('data-current-value', currentProvince);
+                
+                // Load districts for the current province
+                const districts = demoData.districts[currentProvince] || [];
+                populateDropdown(districtSelect, districts);
+                
+                // Set the current district
+                const currentDistrict = districtSelect.value;
+                if (currentDistrict) {
+                    districtSelect.setAttribute('data-current-value', currentDistrict);
+                    
+                    // Load wards for the current district
+                    const wards = demoData.wards[currentDistrict] || [];
+                    populateDropdown(wardSelect, wards);
+                    
+                    // Set the current ward
+                    const currentWard = wardSelect.value;
+                    if (currentWard) {
+                        wardSelect.setAttribute('data-current-value', currentWard);
+                    }
+                }
+            }
+        }
 
         // Event listener for province change
         provinceSelect.addEventListener('change', function() {
-            const selectedProvinceId = this.value;
-            const districts = demoData.districts[selectedProvinceId] || [];
+            const selectedProvince = this.value;
+            const districts = demoData.districts[selectedProvince] || [];
             populateDropdown(districtSelect, districts);
             populateDropdown(wardSelect, []); // Clear wards when province changes
-             // Store current values for editing scenario
-             districtSelect.setAttribute('data-current-value', '');
-             wardSelect.setAttribute('data-current-value', '');
+            
+            // Validate selection
+            setValidationStatus(provinceSelect, selectedProvince !== '');
         });
 
         // Event listener for district change
         districtSelect.addEventListener('change', function() {
-            const selectedDistrictId = this.value;
-            const wards = demoData.wards[selectedDistrictId] || [];
+            const selectedDistrict = this.value;
+            const wards = demoData.wards[selectedDistrict] || [];
             populateDropdown(wardSelect, wards);
-             // Store current values for editing scenario
-            wardSelect.setAttribute('data-current-value', '');
+            
+            // Validate selection
+            setValidationStatus(districtSelect, selectedDistrict !== '');
         });
-
-        // --- For Edit Scenario (if this template is reused for editing) ---
-        // Add data attributes in Thymeleaf if editing
-        // e.g., <select ... th:field="*{province}" data-current-value="${address.provinceId}" ...>
-        // e.g., <select ... th:field="*{district}" data-current-value="${address.districtId}" ...>
-        // e.g., <select ... th:field="*{ward}" data-current-value="${address.wardId}" ...>
-
-        // If rendering for edit, trigger change events after populating initial provinces
-        // This would typically happen after fetching existing address data
-         const initialProvinceId = provinceSelect.getAttribute('data-current-value');
-         if(initialProvinceId) {
-             // Simulate province change to load districts
-             // Need to fetch districts for the initialProvinceId and populate the districtSelect
-             // Then simulate district change to load wards
-             // This requires actual data fetching logic or passing full data to the template
-             // For this template, we'll leave it as a placeholder/comment
-             console.log('Edit mode detected. Need to load districts and wards based on initial values.');
-             // Example (requires actual data/API):
-             // fetchDistricts(initialProvinceId).then(districts => {
-             //     populateDropdown(districtSelect, districts);
-             //     // Set the initial district value
-             //     districtSelect.value = districtSelect.getAttribute('data-current-value');
-             //     // Then fetch wards for the initial district and populate wardSelect
-             //     const initialDistrictId = districtSelect.getAttribute('data-current-value');
-             //     if (initialDistrictId) {
-             //          fetchWards(initialDistrictId).then(wards => {
-             //             populateDropdown(wardSelect, wards);
-             //             // Set the initial ward value
-             //             wardSelect.value = wardSelect.getAttribute('data-current-value');
-             //         });
-             //     }
-             // });
-         }
-
+        
+        // Event listener for ward change
+        wardSelect.addEventListener('change', function() {
+            // Validate selection
+            setValidationStatus(wardSelect, this.value !== '');
+        });
+        
+        // Validate recipient name input
+        recipientNameInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            const isValid = value.length >= 2 && value.length <= 100;
+            setValidationStatus(this, isValid);
+        });
+        
+        // Validate phone number input
+        phoneInput.addEventListener('input', function() {
+            const isValid = validatePhone(this.value);
+            setValidationStatus(this, isValid, isValid ? '' : 'Please enter a valid phone number (e.g., 0912345678)');
+        });
+        
+        // Validate address details
+        addressDetailInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            const isValid = value.length > 0 && value.length <= 500;
+            setValidationStatus(this, isValid);
+        });
+        
+        // Form submission validation
+        addressForm.addEventListener('submit', function(event) {
+            let isFormValid = true;
+            
+            // Validate recipient name
+            const nameValue = recipientNameInput.value.trim();
+            const isNameValid = nameValue.length >= 2 && nameValue.length <= 100;
+            setValidationStatus(recipientNameInput, isNameValid);
+            if (!isNameValid) isFormValid = false;
+            
+            // Validate phone
+            const isPhoneValid = validatePhone(phoneInput.value);
+            setValidationStatus(phoneInput, isPhoneValid);
+            if (!isPhoneValid) isFormValid = false;
+            
+            // Validate province
+            const isProvinceValid = provinceSelect.value !== '';
+            setValidationStatus(provinceSelect, isProvinceValid);
+            if (!isProvinceValid) isFormValid = false;
+            
+            // Validate district
+            const isDistrictValid = districtSelect.value !== '';
+            setValidationStatus(districtSelect, isDistrictValid);
+            if (!isDistrictValid) isFormValid = false;
+            
+            // Validate ward
+            const isWardValid = wardSelect.value !== '';
+            setValidationStatus(wardSelect, isWardValid);
+            if (!isWardValid) isFormValid = false;
+            
+            // Validate address details
+            const addressValue = addressDetailInput.value.trim();
+            const isAddressValid = addressValue.length > 0 && addressValue.length <= 500;
+            setValidationStatus(addressDetailInput, isAddressValid);
+            if (!isAddressValid) isFormValid = false;
+            
+            // Prevent form submission if validation fails
+            if (!isFormValid) {
+                event.preventDefault();
+                // Scroll to the first invalid field
+                const firstInvalidField = document.querySelector('.is-invalid');
+                if (firstInvalidField) {
+                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalidField.focus();
+                }
+            }
+        });
     });
 </script>
 </body>
