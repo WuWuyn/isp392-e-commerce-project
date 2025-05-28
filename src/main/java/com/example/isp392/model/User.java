@@ -40,7 +40,7 @@ public class User {
     @Column(name = "gender", nullable = false)
     private int gender;
 
-    @Column(name = "profile_pic_url")
+    @Column(name = "profile_pic_url", columnDefinition = "NVARCHAR(MAX)")
     private String profilePicUrl;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

@@ -24,7 +24,7 @@ public class Shop {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @Column(name = "shop_name", length = 150, columnDefinition = "NVARCHAR(500)")
+    @Column(name = "shop_name", nullable = false, length = 150, columnDefinition = "NVARCHAR(500)")
     private String shopName;
 
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)") // Specific for SQL Server if needed
@@ -36,7 +36,7 @@ public class Shop {
     @Column(name = "cover_image_url", columnDefinition = "NVARCHAR(MAX)")
     private String coverImageUrl;
 
-    @Column(name = "contact_email", length = 255)
+    @Column(name = "contact_email", nullable = false, length = 255)
     private String contactEmail;
 
     @Column(name = "contact_phone", nullable = false, length = 20)
@@ -48,6 +48,12 @@ public class Shop {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "registration_date", nullable = false, updatable = false)
     private Timestamp registrationDate;
+
+    @Column(name  = "tax_code", nullable = false, length = 15)
+    private String taxCode;
+
+    @Column(name = "identification_file_url", nullable = false, columnDefinition = "NVARCHAR(MAX)")
+    private String identificationFileUrl;
 
     @Column(name = "status", nullable = false)
     private int status;
