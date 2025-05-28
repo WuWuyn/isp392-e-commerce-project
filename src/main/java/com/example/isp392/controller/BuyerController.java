@@ -23,6 +23,7 @@ import java.util.Date;
 import java.io.File;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -55,6 +56,7 @@ public class BuyerController {
     public String showLoginPage() {
         // Check if user is already authenticated
         if (isUserAuthenticated()) {
+            
             return "redirect:/buyer/account-info";
         }
         return "buyer/login";
@@ -145,7 +147,7 @@ public class BuyerController {
             return "redirect:/buyer/login";
         }
     }
-    
+
     /**
      * Display edit account info page
      * @param model Model to add attributes
@@ -314,6 +316,32 @@ public class BuyerController {
     }
     
     /**
+     * Display orders page (placeholder)
+     * @param model Model to add attributes
+     * @return orders page view
+     */
+    @GetMapping("/orders")
+    public String showOrdersPage(Model model) {
+        // Get authenticated user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        
+        // Find user by email
+        Optional<User> userOptional = userService.findByEmail(email);
+        
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            model.addAttribute("activeTab", "orders");
+            // This would normally include order data from an OrderService
+            return "buyer/orders";
+        } else {
+            return "redirect:/buyer/login";
+        }
+    }
+
+    /**
      * Display the shopping cart page
      * This page is only accessible to authenticated users
      * 
@@ -348,7 +376,7 @@ public class BuyerController {
             return "redirect:/buyer/login";
         }
     }
-    
+
     /**
      * Check if user is authenticated
      * @return true if user is authenticated, false otherwise
