@@ -13,40 +13,40 @@
         <hr class="text-white-50">
         <ul class="nav nav-pills flex-column mb-auto admin-nav-menu">
             <li class="nav-item">
-                <a th:href="@{/admin/dashboard}" class="nav-link text-white" th:classappend="${#httpServletRequest.getRequestURI().startsWith('/admin/dashboard') ? 'active' : ''}" aria-current="page">
+                <a th:href="@{/admin/dashboard}" class="nav-link text-white" th:classappend="${activeMenu == 'dashboard' ? 'active' : ''}" aria-current="page">
                     <i class="fas fa-home fa-fw me-2"></i>
                     Home
                 </a>
             </li>
             <li>
                 <a href="#productSubmenu" data-bs-toggle="collapse" class="nav-link text-white d-flex justify-content-between align-items-center"
-                   th:classappend="${#httpServletRequest.getRequestURI().startsWith('/admin/product') ? 'active' : ''}">
+                   th:classappend="${activeMenu == 'product' ? 'active' : ''}">
                     <span><i class="fas fa-book fa-fw me-2"></i> Product</span>
                     <i class="fas fa-chevron-down fa-xs"></i>
                 </a>
                 <ul class="collapse list-unstyled ms-3" id="productSubmenu"
-                    th:classappend="${#httpServletRequest.getRequestURI().startsWith('/admin/product') ? 'show' : ''}">
+                    th:classappend="${activeMenu == 'product' ? 'show' : ''}">
                     <li>
                         <a th:href="@{/admin/product/list}" class="nav-link text-white sub-link"
-                           th:classappend="${#httpServletRequest.getRequestURI().equals('/admin/product/list') ? 'active' : ''}">
+                           th:classappend="${activeSubMenu == 'product-list' ? 'active' : ''}">
                             <i class="fas fa-list fa-fw me-2"></i> Book List
                         </a>
                     </li>
                     <li>
                         <a th:href="@{/admin/product/add}" class="nav-link text-white sub-link"
-                           th:classappend="${#httpServletRequest.getRequestURI().equals('/admin/product/add') ? 'active' : ''}">
+                           th:classappend="${activeSubMenu == 'product-add' ? 'active' : ''}">
                             <i class="fas fa-plus-circle fa-fw me-2"></i> Add New Book
                         </a>
                     </li>
                     <li>
                         <a th:href="@{/admin/product/categories}" class="nav-link text-white sub-link"
-                           th:classappend="${#httpServletRequest.getRequestURI().equals('/admin/product/categories') ? 'active' : ''}">
+                           th:classappend="${activeSubMenu == 'product-categories' ? 'active' : ''}">
                             <i class="fas fa-tags fa-fw me-2"></i> Categories
                         </a>
                     </li>
                     <li>
                         <a th:href="@{/admin/product/inventory}" class="nav-link text-white sub-link"
-                           th:classappend="${#httpServletRequest.getRequestURI().equals('/admin/product/inventory') ? 'active' : ''}">
+                           th:classappend="${activeSubMenu == 'product-inventory' ? 'active' : ''}">
                             <i class="fas fa-boxes fa-fw me-2"></i> Inventory
                         </a>
                     </li>

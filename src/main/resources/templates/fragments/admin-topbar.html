@@ -31,14 +31,19 @@
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="adminUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img th:src="@{/images/admin-avatar-placeholder.png}" alt="Admin" width="32" height="32" class="rounded-circle me-2">
-                        <span class="d-none d-sm-inline">admin@bookix.com</span>
+                        <img th:src="${user != null and user.profilePicUrl != null ? user.profilePicUrl : '/images/admin-avatar-placeholder.png'}" 
+                             alt="Admin" width="32" height="32" class="rounded-circle me-2">
+                        <!-- Display the first name from the full name -->
+                        <span class="d-none d-sm-inline" th:if="${user != null}">
+                            <span th:text="${#strings.arraySplit(user.fullName, ' ')[0]}">Admin</span>
+                        </span>
+                        <span class="d-none d-sm-inline" th:unless="${user != null}">Admin</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminUserDropdown">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog fa-fw me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item" href="#"><i class="fas fa-cog fa-fw me-2"></i>Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" th:href="@{/logout}"><i class="fas fa-sign-out-alt fa-fw me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item text-danger" th:href="@{/admin/logout}"><i class="fas fa-sign-out-alt fa-fw me-2"></i>Logout</a></li>
                     </ul>
                 </li>
             </ul>
