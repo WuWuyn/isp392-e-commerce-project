@@ -60,9 +60,6 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();
 
-    @Column(name = "created_at")
-    private Timestamp createdAt;
-
     @Column(name = "updated_at")
     private Timestamp updatedAt;
 
