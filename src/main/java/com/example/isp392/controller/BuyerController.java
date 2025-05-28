@@ -293,7 +293,7 @@ public class BuyerController {
             if (updated) {
                 // Add success message
                 redirectAttributes.addFlashAttribute("successMessage", "Your password has been updated successfully.");
-                return "redirect:/buyer/account-info";
+                return "redirect:/buyer/change-password";
             } else {
                 // If password not updated, redirect to change password page
                 redirectAttributes.addFlashAttribute("errorMessage", "Current password is incorrect.");
