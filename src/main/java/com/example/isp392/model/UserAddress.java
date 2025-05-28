@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 
 @Getter
 @Setter
@@ -46,4 +48,5 @@ public class UserAddress {
 
     @Column(name = "is_default", nullable = false)
     private boolean isDefault = false;
+
 }

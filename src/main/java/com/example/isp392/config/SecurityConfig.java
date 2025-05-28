@@ -25,7 +25,7 @@ public class SecurityConfig {
 
     /**
      * Constructor with explicit dependency injection
-     *
+     * 
      * @param userService User service for authentication
      * @param passwordEncoder Password encoder from PasswordConfig
      */
@@ -37,7 +37,7 @@ public class SecurityConfig {
     /**
      * Authentication provider bean
      * Creating and configuring DaoAuthenticationProvider with our custom UserDetailsService
-     *
+     * 
      * @return DaoAuthenticationProvider properly configured with our user service and password encoder
      */
     @Bean
