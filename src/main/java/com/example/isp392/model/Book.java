@@ -24,7 +24,7 @@ public class Book {
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
-    @Column(name = "title", nullable = false, length = 255)
+    @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String title;
 
     @Column(name = "publication_date")
@@ -54,7 +54,7 @@ public class Book {
     @JoinColumn(name = "publisher_id") // Can be nullable if a book might not have a publisher
     private Publisher publisher;
 
-    @Column(name = "dimensions", columnDefinition = "VARCHAR(10)")
+    @Column(name = "dimensions", columnDefinition = "NVARCHAR(20)")
     private String dimensions;
 
     @Column(name = "sku", columnDefinition = "VARCHAR(50)")
