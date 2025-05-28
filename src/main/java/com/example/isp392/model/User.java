@@ -25,10 +25,10 @@ public class User {
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
-    @Column(name = "full_name", nullable = false, length = 255)
+    @Column(name = "full_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
-    @Column(name = "phone", nullable = false, length = 255)
+    @Column(name = "phone", nullable = false, length = 20)
     private String phone;
 
     @Column(name = "date_of_birth", nullable = false)

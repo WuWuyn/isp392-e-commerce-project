@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.sql.Timestamp;
 import java.util.Date;
 
 @Getter
@@ -29,18 +30,18 @@ public class UserRole {
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "role_assignment_date", nullable = false, updatable = false)
-    private Date roleAssignmentDate;
+    private Timestamp roleAssignmentDate;
 
     @Column(name = "is_role_active_for_user", nullable = false)
     private boolean isRoleActiveForUser = true;
 
     public UserRole() {
-        this.roleAssignmentDate = new Date();
+        this.roleAssignmentDate = new Timestamp(System.currentTimeMillis());
     }
 
     public UserRole(User user, Role role) {
         this.user = user;
         this.role = role;
-        this.roleAssignmentDate = new Date();
+        this.roleAssignmentDate = new Timestamp(System.currentTimeMillis());
     }
 }
