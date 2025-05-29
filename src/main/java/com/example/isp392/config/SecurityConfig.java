@@ -70,7 +70,7 @@ public class SecurityConfig {
     public SecurityFilterChain publicResourcesFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/css/**", "/js/**", "/images/**", "/webjars/**", "/error/**",
-                    "/", "/about-contact", "/all-category", "/blog", "/blog-single", 
+                    "/", "/about-contact", "/all-category", "/blog/**", "/blog-single",
                     "/terms-policy", "/product-detail", "/favicon.ico")
             .authorizeHttpRequests(authorize -> authorize
                 .anyRequest().permitAll()
