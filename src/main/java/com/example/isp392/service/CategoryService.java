@@ -5,7 +5,7 @@ import com.example.isp392.repository.CategoryRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -78,5 +78,56 @@ public class CategoryService {
      */
     public Page<Category> findByCategoryNameContainingIgnoreCase(String categoryName, Pageable pageable) {
         return categoryRepository.findByCategoryNameContainingIgnoreCase(categoryName, pageable);
+    }
+    
+    /**
+     * Find all active categories
+     * @return List of all active categories
+     */
+    public List<Category> findAllActive() {
+        return categoryRepository.findByIsActiveTrue();
+    }
+    
+    /**
+     * Find all active categories with pagination
+     * @param pageable Pagination information
+     * @return Page of active categories
+     */
+    public Page<Category> findAllActive(Pageable pageable) {
+        return categoryRepository.findByIsActiveTrue(pageable);
+    }
+    
+    /**
+     * Toggle category active status
+     * @param id Category ID
+     * @param active New active status
+     * @return Updated category or empty optional if not found
+     */
+    @Transactional
+    public Optional<Category> toggleActive(Integer id, boolean active) {
+        Optional<Category> categoryOpt = categoryRepository.findById(id);
+        if (categoryOpt.isPresent()) {
+            Category category = categoryOpt.get();
+            category.setActive(active);
+            return Optional.of(categoryRepository.save(category));
+        }
+        return Optional.empty();
+    }
+    
+    /**
+     * Set multiple categories' active status
+     * @param ids List of category IDs
+     * @param active New active status
+     * @return Number of categories updated
+     */
+    @Transactional
+    public int toggleActiveMultiple(List<Integer> ids, boolean active) {
+        int count = 0;
+        for (Integer id : ids) {
+            if (toggleActive(id, active).isPresent()) {
+                count++;
+            }
+        }
+        return count;
     }
 }

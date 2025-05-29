@@ -42,8 +42,8 @@ public class HomepageController {
         List<Book> discountedBooks = bookService.getDiscountedBooks(5);
         model.addAttribute("discountedBooks", discountedBooks);
 
-        // Lấy danh sách các danh mục
-        List<Category> categories = categoryRepository.findAll();
+        // Lấy danh sách các danh mục có isActive = true
+        List<Category> categories = categoryRepository.findByIsActiveTrue();
         model.addAttribute("categories", categories);
         
         // Lấy danh sách bài blog mới nhất cho phần "From the Blog"

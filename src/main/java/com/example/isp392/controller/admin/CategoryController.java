@@ -84,7 +84,7 @@ public class CategoryController {
         // Add an empty category for the form
         model.addAttribute("category", new Category());
         
-        return "admin/product/category";
+        return "admin/product/category-management";
     }
 
     /**
@@ -159,44 +159,54 @@ public class CategoryController {
     }
 
     /**
-     * Delete a category
+     * Toggle a category active status
      * 
-     * @param id Category ID to delete
+     * @param id Category ID to toggle
+     * @param active New active status
      * @param redirectAttributes For flash messages
      * @return redirect to category list
      */
-    @PostMapping("/delete/{id}")
-    public String deleteCategory(
+    @PostMapping("/toggle-active/{id}")
+    public String toggleCategoryActive(
             @PathVariable Integer id,
+            @RequestParam(defaultValue = "false") boolean active,
             RedirectAttributes redirectAttributes) {
         
         try {
-            categoryService.deleteById(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Category deleted successfully");
+            Optional<Category> result = categoryService.toggleActive(id, active);
+            if (result.isPresent()) {
+                redirectAttributes.addFlashAttribute("successMessage", 
+                    "Category " + (active ? "activated" : "deactivated") + " successfully");
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "Category not found");
+            }
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting category: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating category status: " + e.getMessage());
         }
         
         return "redirect:/admin/category";
     }
 
     /**
-     * Delete multiple categories
+     * Toggle active status for multiple categories
      * 
-     * @param ids Array of category IDs to delete
+     * @param ids Array of category IDs to update
+     * @param active New active status
      * @param redirectAttributes For flash messages
      * @return redirect to category list
      */
-    @PostMapping("/delete-multiple")
-    public String deleteMultipleCategories(
+    @PostMapping("/toggle-multiple-active")
+    public String toggleMultipleCategoriesActive(
             @RequestParam("ids") Integer[] ids,
+            @RequestParam(defaultValue = "false") boolean active,
             RedirectAttributes redirectAttributes) {
         
         try {
-            categoryService.deleteAllById(List.of(ids));
-            redirectAttributes.addFlashAttribute("successMessage", "Categories deleted successfully");
+            int count = categoryService.toggleActiveMultiple(List.of(ids), active);
+            String action = active ? "activated" : "deactivated";
+            redirectAttributes.addFlashAttribute("successMessage", count + " categories " + action + " successfully");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting categories: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating categories status: " + e.getMessage());
         }
         
         return "redirect:/admin/category";

@@ -1,12 +1,17 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.model.Book;
+import com.example.isp392.model.BookReview;
 import com.example.isp392.model.Category;
 import com.example.isp392.model.Publisher;
+import com.example.isp392.repository.BookReviewRepository;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
 import com.example.isp392.service.BookService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,11 +30,14 @@ public class ProductController {
     private final BookService bookService;
     private final CategoryRepository categoryRepository;
     private final PublisherRepository publisherRepository;
+    private final BookReviewRepository bookReviewRepository;
 
-    public ProductController(BookService bookService, CategoryRepository categoryRepository, PublisherRepository publisherRepository) {
+    public ProductController(BookService bookService, CategoryRepository categoryRepository, 
+                            PublisherRepository publisherRepository, BookReviewRepository bookReviewRepository) {
         this.bookService = bookService;
         this.categoryRepository = categoryRepository;
         this.publisherRepository = publisherRepository;
+        this.bookReviewRepository = bookReviewRepository;
     }
 
     @RequestMapping(value = "/all-category", method = RequestMethod.GET)
@@ -88,8 +96,8 @@ public class ProductController {
                 sortField, 
                 sortDirection);
         
-        // Fetch all categories and publishers for filter options
-        List<Category> allCategories = categoryRepository.findAll();
+        // Fetch active categories and all publishers for filter options
+        List<Category> allCategories = categoryRepository.findByIsActiveTrue();
         List<Publisher> allPublishers = publisherRepository.findAll();
         
         // Add data to the model
@@ -117,7 +125,15 @@ public class ProductController {
     }
 
     @GetMapping("/product-detail")
-    public String detailProduct(@RequestParam("book_id") int bookId, Model model) {
+    public String detailProduct(
+            @RequestParam("book_id") int bookId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size,
+            @RequestParam(value = "sort", defaultValue = "createdDate") String sortField,
+            @RequestParam(value = "direction", defaultValue = "DESC") String sortDirection,
+            @RequestParam(value = "minRating", required = false) Integer minRating,
+            Model model) {
+        
         // Lấy thông tin chi tiết sách từ cơ sở dữ liệu
         Optional<Book> bookOptional = bookService.getBookById(bookId);
         
@@ -132,6 +148,29 @@ public class ProductController {
                         .getContent();
                 model.addAttribute("relatedBooks", relatedBooks);
             }
+            
+            // Lấy đánh giá sách từ cơ sở dữ liệu
+            Page<BookReview> bookReviews;
+            Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
+            Pageable pageable = PageRequest.of(page, size, sort);
+            
+            // Lọc theo rating nếu có
+            if (minRating != null && minRating > 0) {
+                bookReviews = bookReviewRepository.findByBookIdAndRatingGreaterThanEqual(bookId, minRating, pageable);
+            } else {
+                bookReviews = bookReviewRepository.findByBookId(bookId, pageable);
+            }
+            
+            // Đếm tổng số đánh giá
+            long totalReviews = bookReviewRepository.countByBookId(bookId);
+            
+            model.addAttribute("bookReviews", bookReviews);
+            model.addAttribute("totalReviews", totalReviews);
+            model.addAttribute("currentPage", page);
+            model.addAttribute("totalPages", bookReviews.getTotalPages());
+            model.addAttribute("sortField", sortField);
+            model.addAttribute("sortDirection", sortDirection);
+            model.addAttribute("minRating", minRating);
             
             return "product-detail";
         } else {
