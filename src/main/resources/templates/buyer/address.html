@@ -13,12 +13,10 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <style>
-        /* Ensure radio button labels have consistent styling */
         .form-check-label {
-            font-weight: 500; /* Match label weight */
+            font-weight: 500;
             color: #555;
         }
-        /* Field validation */
         .is-invalid {
             border-color: #dc3545;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
@@ -40,13 +38,26 @@
             font-size: 0.875em;
             color: #dc3545;
         }
+        #addressAutocomplete {
+            margin-bottom: 1rem;
+        }
+        select.is-invalid, select.is-valid {
+            background-image: none;
+            padding-right: 0.75rem;
+        }
     </style>
+    <!-- Vietnamese Provinces API dependencies -->    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js" integrity="sha512-bPh3uwgU5qEMipS/VOmRqynnMXGGSRv+72H/N260MQeXZIK4PG48401Bsby9Nq5P5fz7hy5UGNmC/W1Z51h2GQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script th:src="@{/js/address-location.js}" defer></script>
+    
+    <!-- Google Maps API for address autocomplete -->
+    <script async loading="async"
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZ4uh8I6fcp9WXJ8au3HZ8l8yKe2vSkes&libraries=places&callback=initAutocomplete">
+    </script>
 </head>
 <body>
-
-<!-- Header -->
 <div th:replace="~{fragments/header :: header-content}"></div>
-
 <main class="account-page py-5 bg-light">
     <div class="container">
         <nav aria-label="breadcrumb mb-4">
@@ -54,119 +65,103 @@
                 <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
                 <li class="breadcrumb-item"><a th:href="@{/buyer/account-info}">Account Information</a></li>
                 <li class="breadcrumb-item"><a th:href="@{/buyer/addresses}">Addresses</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Create New Address</li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${isEdit ? 'Edit Address' : 'Create New Address'}">Create New Address</li>
             </ol>
         </nav>
-
         <div class="row">
-            <!-- Account Sidebar using fragment -->
-            <!-- Passing 'address' to the sidebar fragment to highlight the correct link -->
             <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('address')}"></div>
-
-            <!-- Account Content - Create New Address Form -->
             <section class="col-lg-9 account-content">
                 <div class="card">
                     <div class="card-header bg-white py-3">
-                        <h4 class="mb-0">Create New Address</h4>
+                        <h4 class="mb-0" th:text="${isEdit ? 'Edit Address' : 'Create New Address'}">Create New Address</h4>
                     </div>
                     <div class="card-body p-4">
-
-                        <!-- Success message -->
                         <div th:if="${param.success}" class="alert alert-success mb-4">
                             Address saved successfully!
                         </div>
-                        <!-- Error message -->
                         <div th:if="${param.error}" class="alert alert-danger mb-4">
                             Error saving address. Please try again. <span th:if="${errorMessage}" th:text="${errorMessage}"></span>
                         </div>
-
-                        <!-- Use a Thymeleaf object to bind form fields -->
-                        <!-- Form action changes based on whether we're editing or creating -->
-                        <form th:action="${isEdit ? '/buyer/addresses/update/' + address.addressId : '/buyer/addresses/create'}" 
+                        <form th:action="${isEdit ? '/buyer/addresses/update/' + address?.addressId : '/buyer/addresses/create'}"
                               th:object="${address}" method="post" id="addressForm" novalidate>
-                        
-                            <!-- Hidden field for addressId when editing -->
                             <input type="hidden" th:if="${isEdit}" th:field="*{addressId}">
-
                             <div class="mb-3">
                                 <label for="recipientName" class="form-label">Recipient Name</label>
-                                <input type="text" class="form-control" id="recipientName" th:field="*{recipientName}" 
+                                <input type="text" class="form-control" id="recipientName" th:field="*{recipientName}"
                                        placeholder="Enter recipient name" required minlength="2" maxlength="100">
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('recipientName')}" th:errors="*{recipientName}">
                                     Recipient name is required and must be between 2-100 characters
                                 </div>
                             </div>
-
                             <div class="mb-3">
                                 <label for="recipientPhone" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="recipientPhone" th:field="*{recipientPhone}" 
+                                <input type="tel" class="form-control" id="recipientPhone" th:field="*{recipientPhone}"
                                        placeholder="Enter phone number" required pattern="^(\+84|84|0)[3|5|7|8|9][0-9]{8}$">
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('recipientPhone')}" th:errors="*{recipientPhone}">
                                     Valid phone number is required (e.g., 0912345678)
                                 </div>
                             </div>
-                            
                             <div class="mb-3">
                                 <label for="company" class="form-label">Company (Optional)</label>
-                                <input type="text" class="form-control" id="company" th:field="*{company}" 
+                                <input type="text" class="form-control" id="company" th:field="*{company}"
                                        placeholder="Enter company name" maxlength="255">
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('company')}" th:errors="*{company}">
                                     Company name must be less than 255 characters
                                 </div>
                             </div>
-
                             <div class="row mb-3">
                                 <div class="col-md-4 mb-3 mb-md-0">
                                     <label for="province" class="form-label">Province/City</label>
-                                    <select class="form-select" id="province" th:field="*{province}" required>
+                                    <select class="form-control" id="province" name="provinceCode" required>
                                         <option value="">Select Province/City</option>
-                                        <!-- Options populated by JavaScript -->
                                     </select>
-                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('province')}" th:errors="*{province}">
-                                        Province/City is required
+                                    <!-- Hidden field to store the province name -->
+                                    <input type="hidden" id="provinceName" th:field="*{province}">
+                                    <div class="invalid-feedback">
+                                        Province is required
                                     </div>
                                 </div>
                                 <div class="col-md-4 mb-3 mb-md-0">
                                     <label for="district" class="form-label">District</label>
-                                    <select class="form-select" id="district" th:field="*{district}" required>
+                                    <select class="form-control" id="district" name="districtCode" required disabled>
                                         <option value="">Select District</option>
-                                        <!-- Options populated by JavaScript based on province -->
                                     </select>
-                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('district')}" th:errors="*{district}">
+                                    <!-- Hidden field to store the district name -->
+                                    <input type="hidden" id="districtName" th:field="*{district}">
+                                    <div class="invalid-feedback">
                                         District is required
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="ward" class="form-label">Ward/Commune</label>
-                                    <select class="form-select" id="ward" th:field="*{ward}" required>
-                                        <option value="">Select Ward/Commune</option>
-                                        <!-- Options populated by JavaScript based on district -->
+                                    <select class="form-control" id="ward" name="wardCode" disabled>
+                                        <option value="">Select Ward/Commune (Optional)</option>
                                     </select>
-                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('ward')}" th:errors="*{ward}">
-                                        Ward is required
+                                    <!-- Hidden field to store the ward name -->
+                                    <input type="hidden" id="wardName" th:field="*{ward}">
+                                    <div class="invalid-feedback">
+                                        Ward/Commune might not be available
                                     </div>
                                 </div>
                             </div>
-
                             <div class="mb-3">
-                                <label for="addressDetail" class="form-label">Address Details</label>
-                                <textarea class="form-control" id="addressDetail" th:field="*{addressDetail}" 
-                                          rows="3" placeholder="Enter house number, street name, etc." 
+                                <label for="addressDetail" class="form-label">Address Details (Street, House No.)</label>
+                                <textarea class="form-control" id="addressDetail" th:field="*{addressDetail}"
+                                          rows="2" placeholder="e.g., 123 Nguyen Hue Street"
                                           required maxlength="500"></textarea>
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('addressDetail')}" th:errors="*{addressDetail}">
                                     Address details are required and must be less than 500 characters
                                 </div>
                             </div>
-
                             <div class="mb-3">
                                 <label class="form-label d-block">Address Type</label>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="addressType" 
+                                    <input class="form-check-input" type="radio" name="addressType"
                                            id="addressType0" value="0" th:field="*{addressType}" required>
                                     <label class="form-check-label" for="addressType0">Residential</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="addressType" 
+                                    <input class="form-check-input" type="radio" name="addressType"
                                            id="addressType1" value="1" th:field="*{addressType}" required>
                                     <label class="form-check-label" for="addressType1">Company</label>
                                 </div>
@@ -174,19 +169,13 @@
                                     Please select an address type
                                 </div>
                             </div>
-
-                            <!-- Only show default checkbox when not editing a default address -->
-                            <div class="mb-4 form-check" th:if="${!isEdit || !address.default}">
+                            <div class="mb-4 form-check" th:if="${!isEdit || (address != null && !address.default)}">
                                 <input type="checkbox" class="form-check-input" id="setDefault" th:field="*{default}">
                                 <label class="form-check-label" for="setDefault">Set as Default Address</label>
                             </div>
-                            
-                            <!-- Show a message if editing a default address -->
-                            <div class="mb-4 alert alert-info" th:if="${isEdit && address.default}">
+                            <div class="mb-4 alert alert-info" th:if="${isEdit && address != null && address.default}">
                                 <i class="fas fa-info-circle me-2"></i> This is your default address
                             </div>
-
-                            <!-- Submit and cancel buttons -->
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save me-1"></i> Save Address
                             </button>
@@ -194,251 +183,552 @@
                                 <i class="fas fa-times me-1"></i> Cancel
                             </a>
                         </form>
-
                     </div>
                 </div>
             </section>
         </div>
     </div>
 </main>
-
-<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer-content}"></div>
-
-<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Custom JS -->
-<script th:src="@{/js/script.js}"></script>
-<!-- Add JavaScript for form validation and dynamic dropdowns -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get form and input elements
-        const addressForm = document.getElementById('addressForm');
+    // Complete list of Vietnam provinces/cities
+    const vietnamData = {
+        "An Giang": { "Long Xuyên": ["Mỹ Bình", "Mỹ Long"], "Châu Đốc": ["Vĩnh Mỹ"] },
+        "Bà Rịa - Vũng Tàu": { "Vũng Tàu": ["Phường 1", "Phường 2"] },
+        "Bắc Giang": { "Bắc Giang": ["Dĩnh Kế", "Song Mai"] },
+        "Bắc Kạn": { "Bắc Kạn": ["Đức Xuân", "Nguyễn Thị Minh Khai"] },
+        "Bạc Liêu": { "Bạc Liêu": ["Phường 2", "Phường 3"] },
+        "Bắc Ninh": { "Bắc Ninh": ["Đại Phúc", "Vũ Ninh"] },
+        "Bến Tre": { "Bến Tre": ["Phường 4", "Phường 5"] },
+        "Bình Định": { "Quy Nhơn": ["Lý Thường Kiệt", "Ngô Mây"] },
+        "Bình Dương": { "Thủ Dầu Một": ["Phú Cường", "Phú Lợi"] },
+        "Bình Phước": { "Đồng Xoài": ["Tân Bình", "Tân Phú"] },
+        "Bình Thuận": { "Phan Thiết": ["Mũi Né", "Phú Thủy"] },
+        "Cà Mau": { "Cà Mau": ["Phường 5", "Phường 9"] },
+        "Cần Thơ": { "Ninh Kiều": ["Cái Khế", "An Hội"] },
+        "Cao Bằng": { "Cao Bằng": ["Hòa Chung", "Ngọc Xuân"] },
+        "Đà Nẵng": { "Hải Châu": ["Hải Châu I", "Hòa Thuận Đông"] },
+        "Đắk Lắk": { "Buôn Ma Thuột": ["Tân Lợi", "Thành Nhất"] },
+        "Đắk Nông": { "Gia Nghĩa": ["Nghĩa Đức", "Nghĩa Thành"] },
+        "Điện Biên": { "Điện Biên Phủ": ["Mường Thanh", "Nam Thanh"] },
+        "Đồng Nai": { "Biên Hòa": ["Tân Phong", "Quang Vinh"] },
+        "Đồng Tháp": { "Cao Lãnh": ["Phường 1", "Phường 2"] },
+        "Gia Lai": { "Pleiku": ["Hội Thương", "Ia Kring"] },
+        "Hà Giang": { "Hà Giang": ["Nguyễn Trãi", "Trần Phú"] },
+        "Hà Nam": { "Phủ Lý": ["Lê Hồng Phong", "Quang Trung"] },
+        "Hà Nội": { "Ba Đình": ["Phúc Xá", "Trúc Bạch"], "Hoàn Kiếm": ["Hàng Bạc", "Cửa Đông"], "Đống Đa": ["Cát Linh", "Láng Thượng"] },
+        "Hà Tĩnh": { "Hà Tĩnh": ["Bắc Hà", "Nam Hà"] },
+        "Hải Dương": { "Hải Dương": ["Bình Hàn", "Ngọc Châu"] },
+        "Hải Phòng": { "Hồng Bàng": ["Hạ Lý", "Hùng Vương"] },
+        "Hậu Giang": { "Vị Thanh": ["Phường I", "Phường V"] },
+        "Hòa Bình": { "Hòa Bình": ["Đồng Tiến", "Hữu Nghị"] },
+        "Hưng Yên": { "Hưng Yên": ["Hiến Nam", "Quang Trung"] },
+        "Khánh Hòa": { "Nha Trang": ["Lộc Thọ", "Phước Tiến"] },
+        "Kiên Giang": { "Rạch Giá": ["Vĩnh Thanh", "Vĩnh Lợi"] },
+        "Kon Tum": { "Kon Tum": ["Quang Trung", "Thống Nhất"] },
+        "Lai Châu": { "Lai Châu": ["Đoàn Kết", "Quyết Thắng"] },
+        "Lâm Đồng": { "Đà Lạt": ["Phường 1", "Phường 2"] },
+        "Lạng Sơn": { "Lạng Sơn": ["Hoàng Văn Thụ", "Tam Thanh"] },
+        "Lào Cai": { "Lào Cai": ["Phố Mới", "Bắc Cường"] },
+        "Long An": { "Tân An": ["Phường 2", "Phường 5"] },
+        "Nam Định": { "Nam Định": ["Hạ Long", "Vị Hoàng"] },
+        "Nghệ An": { "Vinh": ["Hồng Sơn", "Đông Vĩnh"] },
+        "Ninh Bình": { "Ninh Bình": ["Đông Thành", "Tân Thành"] },
+        "Ninh Thuận": { "Phan Rang-Tháp Chàm": ["Đông Hải", "Mỹ Hương"] },
+        "Phú Thọ": { "Việt Trì": ["Gia Cẩm", "Tiên Cát"] },
+        "Phú Yên": { "Tuy Hòa": ["Phường 1", "Phường 5"] },
+        "Quảng Bình": { "Đồng Hới": ["Hải Thành", "Đồng Phú"] },
+        "Quảng Nam": { "Tam Kỳ": ["An Mỹ", "Hòa Hương"] },
+        "Quảng Ngãi": { "Quảng Ngãi": ["Lê Hồng Phong", "Nghĩa Chánh"] },
+        "Quảng Ninh": { "Hạ Long": ["Hà Khẩu", "Bạch Đằng"] },
+        "Quảng Trị": { "Đông Hà": ["Phường 1", "Phường 5"] },
+        "Sóc Trăng": { "Sóc Trăng": ["Phường 2", "Phường 3"] },
+        "Sơn La": { "Sơn La": ["Chiềng Lề", "Tô Hiệu"] },
+        "Tây Ninh": { "Tây Ninh": ["Phường 1", "Phường 3"] },
+        "Thái Bình": { "Thái Bình": ["Lê Hồng Phong", "Đề Thám"] },
+        "Thái Nguyên": { "Thái Nguyên": ["Quang Trung", "Trưng Vương"] },
+        "Thanh Hóa": { "Thanh Hóa": ["Ba Đình", "Đông Thọ"] },
+        "Thừa Thiên Huế": { "Huế": ["Phú Nhuận", "Tây Lộc"] },
+        "Tiền Giang": { "Mỹ Tho": ["Phường 4", "Phường 7"] },
+        "Trà Vinh": { "Trà Vinh": ["Phường 2", "Phường 3"] },
+        "Tuyên Quang": { "Tuyên Quang": ["Phan Thiết", "Tân Quang"] },
+        "Vĩnh Long": { "Vĩnh Long": ["Phường 2", "Phường 5"] },
+        "Vĩnh Phúc": { "Vĩnh Yên": ["Đồng Tâm", "Tích Sơn"] },
+        "Yên Bái": { "Yên Bái": ["Hồng Hà", "Yên Ninh"] },
+        "Hồ Chí Minh": { "Quận 1": ["Bến Nghé", "Bến Thành"], "Quận 3": ["Phường 1", "Phường 2"], "Quận 7": ["Tân Phong", "Tân Phú"] }
+    };
+
+    let autocomplete;
+
+    function initAutocomplete() {
+        const addressAutocompleteInput = document.getElementById('addressAutocomplete');
+        if (!addressAutocompleteInput) {
+            console.error("Address autocomplete input field (id='addressAutocomplete') not found.");
+            return;
+        }
+
+        try {
+            autocomplete = new google.maps.places.Autocomplete(addressAutocompleteInput, {
+                types: ['address'],
+                componentRestrictions: { country: 'vn' }
+            });
+            autocomplete.setFields(['address_components', 'formatted_address', 'name']);
+            autocomplete.addListener('place_changed', fillInAddress);
+            populateProvinces();
+            console.log("Google Places Autocomplete and dropdowns initialized for Vietnam.");
+        } catch (error) {
+            console.error("Error initializing Google Places Autocomplete:", error);
+        }
+    }
+
+    function populateProvinces() {
+        const provinceSelect = document.getElementById('province');
+        if (!provinceSelect) return;
+        provinceSelect.innerHTML = '<option value="">Select Province/City</option>';
+        Object.keys(vietnamData).sort().forEach(province => {
+            const option = document.createElement('option');
+            option.value = province;
+            option.textContent = province;
+            provinceSelect.appendChild(option);
+        });
+    }
+
+    function populateDistricts(province) {
+        const districtSelect = document.getElementById('district');
+        const wardSelect = document.getElementById('ward');
+        if (!districtSelect || !wardSelect) return;
+
+        districtSelect.innerHTML = '<option value="">Select District</option>';
+        wardSelect.innerHTML = '<option value="">Select Ward/Commune (Optional)</option>';
+
+        if (province && vietnamData[province]) {
+            Object.keys(vietnamData[province]).sort().forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                districtSelect.appendChild(option);
+            });
+            districtSelect.disabled = false;
+        } else {
+            districtSelect.disabled = true;
+            wardSelect.disabled = true;
+        }
+    }
+
+    function populateWards(province, district) {
+        const wardSelect = document.getElementById('ward');
+        if (!wardSelect) return;
+
+        wardSelect.innerHTML = '<option value="">Select Ward/Commune (Optional)</option>';
+
+        if (province && district && vietnamData[province] && vietnamData[province][district]) {
+            vietnamData[province][district].sort().forEach(ward => {
+                const option = document.createElement('option');
+                option.value = ward;
+                option.textContent = ward;
+                wardSelect.appendChild(option);
+            });
+            wardSelect.disabled = false;
+        } else {
+            wardSelect.disabled = true;
+        }
+    }
+
+    function fillInAddress() {
+        if (!autocomplete) {
+            console.error("Autocomplete not initialized.");
+            return;
+        }
+
+        const place = autocomplete.getPlace();
         const provinceSelect = document.getElementById('province');
         const districtSelect = document.getElementById('district');
         const wardSelect = document.getElementById('ward');
-        const phoneInput = document.getElementById('recipientPhone');
         const addressDetailInput = document.getElementById('addressDetail');
-        const recipientNameInput = document.getElementById('recipientName');
-        
-        // Check if we're in edit mode
-        const isEditMode = document.querySelector('input[name="addressId"]') !== null;
-        
-        // Function to clear and populate dropdowns
-        function populateDropdown(selectElement, options) {
-            selectElement.innerHTML = ''; // Clear existing options
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Select ' + selectElement.id.charAt(0).toUpperCase() + selectElement.id.slice(1);
-            selectElement.appendChild(defaultOption);
 
-            options.forEach(option => {
-                const opt = document.createElement('option');
-                opt.value = option.id; // Assuming options have id and name properties
-                opt.textContent = option.name;
-                selectElement.appendChild(opt);
-            });
-            
-            // Re-select the value if set (for edit mode)
-            if (selectElement.getAttribute('data-current-value')) {
-                selectElement.value = selectElement.getAttribute('data-current-value');
-            }
-        }
-        
-        // Function to validate phone number
-        function validatePhone(phone) {
-            const regex = /^(\+84|84|0)[3|5|7|8|9][0-9]{8}$/;
-            return regex.test(phone);
-        }
-        
-        // Function to mark field as valid or invalid
-        function setValidationStatus(element, isValid, errorMessage = '') {
-            if (isValid) {
-                element.classList.remove('is-invalid');
-                element.classList.add('is-valid');
-            } else {
-                element.classList.remove('is-valid');
-                element.classList.add('is-invalid');
-                // Find the error message container (invalid-feedback)
-                const feedbackElement = element.nextElementSibling;
-                if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
-                    if (errorMessage) feedbackElement.textContent = errorMessage;
+        // Clear previous values and validation states
+        const fields = [provinceSelect, districtSelect, wardSelect, addressDetailInput];
+        fields.forEach(field => {
+            if (field) {
+                if (field.tagName === 'SELECT') {
+                    field.selectedIndex = 0;
+                    field.classList.remove('is-valid', 'is-invalid');
+                } else {
+                    field.value = '';
+                    field.classList.remove('is-valid', 'is-invalid');
+                }
+                const feedback = field.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.style.display = 'none';
                 }
             }
+        });
+
+        if (!place || !place.address_components) {
+            console.warn("Place selected has no address components:", place);
+            const autocompleteInput = document.getElementById('addressAutocomplete');
+            if (autocompleteInput) {
+                autocompleteInput.classList.add('is-invalid');
+            }
+            return;
         }
 
-        // Example data structure (replace with API calls in production)
-        const demoData = {
-            provinces: [
-                {id: 'Hồ Chí Minh', name: 'Hồ Chí Minh'}, 
-                {id: 'Hà Nội', name: 'Hà Nội'},
-                {id: 'Đà Nẵng', name: 'Đà Nẵng'},
-                {id: 'Hải Phòng', name: 'Hải Phòng'},
-                {id: 'Cần Thơ', name: 'Cần Thơ'}
-            ],
-            districts: {
-                'Hồ Chí Minh': [
-                    {id: 'Quận 1', name: 'Quận 1'}, 
-                    {id: 'Quận 2', name: 'Quận 2'},
-                    {id: 'Quận 3', name: 'Quận 3'},
-                    {id: 'Quận Bình Thạnh', name: 'Quận Bình Thạnh'}
-                ],
-                'Hà Nội': [
-                    {id: 'Quận Ba Đình', name: 'Quận Ba Đình'}, 
-                    {id: 'Quận Cầu Giấy', name: 'Quận Cầu Giấy'},
-                    {id: 'Quận Đống Đa', name: 'Quận Đống Đa'}
-                ],
-                'Đà Nẵng': [
-                    {id: 'Quận Hải Châu', name: 'Quận Hải Châu'},
-                    {id: 'Quận Thanh Khê', name: 'Quận Thanh Khê'}
-                ]
-            },
-            wards: {
-                'Quận 1': [
-                    {id: 'Phường Bến Nghé', name: 'Phường Bến Nghé'}, 
-                    {id: 'Phường Bến Thành', name: 'Phường Bến Thành'}
-                ],
-                'Quận Bình Thạnh': [
-                    {id: 'Phường 1', name: 'Phường 1'}, 
-                    {id: 'Phường 2', name: 'Phường 2'}
-                ],
-                'Quận Ba Đình': [
-                    {id: 'Phường Phúc Xá', name: 'Phường Phúc Xá'}, 
-                    {id: 'Phường Trúc Bạch', name: 'Phường Trúc Bạch'}
-                ],
-                'Quận Cầu Giấy': [
-                    {id: 'Phường Quan Hoa', name: 'Phường Quan Hoa'}, 
-                    {id: 'Phường Nghĩa Đô', name: 'Phường Nghĩa Đô'}
-                ]
-            }
-        };
+        let streetNumber = '';
+        let route = '';
+        let ward = '';
+        let district = '';
+        let province = '';
 
-        // Initial population of provinces
-        populateDropdown(provinceSelect, demoData.provinces);
-        
-        // Pre-populate dropdowns in edit mode
-        if (isEditMode) {
-            const currentProvince = provinceSelect.value;
-            if (currentProvince) {
-                // Set the data attribute
-                provinceSelect.setAttribute('data-current-value', currentProvince);
-                
-                // Load districts for the current province
-                const districts = demoData.districts[currentProvince] || [];
-                populateDropdown(districtSelect, districts);
-                
-                // Set the current district
-                const currentDistrict = districtSelect.value;
-                if (currentDistrict) {
-                    districtSelect.setAttribute('data-current-value', currentDistrict);
-                    
-                    // Load wards for the current district
-                    const wards = demoData.wards[currentDistrict] || [];
-                    populateDropdown(wardSelect, wards);
-                    
-                    // Set the current ward
-                    const currentWard = wardSelect.value;
-                    if (currentWard) {
-                        wardSelect.setAttribute('data-current-value', currentWard);
+        for (const component of place.address_components) {
+            const types = component.types;
+            if (types.includes('street_number')) {
+                streetNumber = component.long_name;
+            }
+            if (types.includes('route')) {
+                route = component.long_name;
+            }
+            if (types.includes('sublocality_level_1') || types.includes('sublocality') || types.includes('neighborhood')) {
+                ward = component.long_name;
+            }
+            if (types.includes('administrative_area_level_2') || (types.includes('locality') && !types.includes('administrative_area_level_1'))) {
+                district = component.long_name;
+            }
+            if (types.includes('administrative_area_level_1') || (types.includes('locality') && types.includes('political'))) {
+                province = component.long_name;
+            }
+        }
+
+        // Normalize province names
+        province = province.replace(/^Thành phố\s+|^Tỉnh\s+/i, '');
+        if (/hanoi|ha noi|hà nội/i.test(province)) province = 'Hà Nội';
+        if (/ho chi minh|hồ chí minh/i.test(province)) province = 'Hồ Chí Minh';
+
+        // Populate dropdowns
+        if (province && vietnamData[province]) {
+            if (provinceSelect) {
+                provinceSelect.value = province;
+                populateDistricts(province);
+                if (district && vietnamData[province][district]) {
+                    if (districtSelect) {
+                        districtSelect.value = district;
+                        populateWards(province, district);
+                        if (ward && vietnamData[province][district].includes(ward) && wardSelect) {
+                            wardSelect.value = ward;
+                        }
                     }
                 }
             }
         }
 
-        // Event listener for province change
-        provinceSelect.addEventListener('change', function() {
-            const selectedProvince = this.value;
-            const districts = demoData.districts[selectedProvince] || [];
-            populateDropdown(districtSelect, districts);
-            populateDropdown(wardSelect, []); // Clear wards when province changes
-            
-            // Validate selection
-            setValidationStatus(provinceSelect, selectedProvince !== '');
-        });
+        // Set address details
+        const detailedAddress = (streetNumber + ' ' + route).trim();
+        if (addressDetailInput) {
+            addressDetailInput.value = detailedAddress || '';
+        }
 
-        // Event listener for district change
-        districtSelect.addEventListener('change', function() {
-            const selectedDistrict = this.value;
-            const wards = demoData.wards[selectedDistrict] || [];
-            populateDropdown(wardSelect, wards);
-            
-            // Validate selection
-            setValidationStatus(districtSelect, selectedDistrict !== '');
-        });
-        
-        // Event listener for ward change
-        wardSelect.addEventListener('change', function() {
-            // Validate selection
-            setValidationStatus(wardSelect, this.value !== '');
-        });
-        
-        // Validate recipient name input
-        recipientNameInput.addEventListener('input', function() {
-            const value = this.value.trim();
-            const isValid = value.length >= 2 && value.length <= 100;
-            setValidationStatus(this, isValid);
-        });
-        
-        // Validate phone number input
-        phoneInput.addEventListener('input', function() {
-            const isValid = validatePhone(this.value);
-            setValidationStatus(this, isValid, isValid ? '' : 'Please enter a valid phone number (e.g., 0912345678)');
-        });
-        
-        // Validate address details
-        addressDetailInput.addEventListener('input', function() {
-            const value = this.value.trim();
-            const isValid = value.length > 0 && value.length <= 500;
-            setValidationStatus(this, isValid);
-        });
-        
-        // Form submission validation
-        addressForm.addEventListener('submit', function(event) {
-            let isFormValid = true;
-            
-            // Validate recipient name
-            const nameValue = recipientNameInput.value.trim();
-            const isNameValid = nameValue.length >= 2 && nameValue.length <= 100;
-            setValidationStatus(recipientNameInput, isNameValid);
-            if (!isNameValid) isFormValid = false;
-            
-            // Validate phone
-            const isPhoneValid = validatePhone(phoneInput.value);
-            setValidationStatus(phoneInput, isPhoneValid);
-            if (!isPhoneValid) isFormValid = false;
-            
-            // Validate province
-            const isProvinceValid = provinceSelect.value !== '';
-            setValidationStatus(provinceSelect, isProvinceValid);
-            if (!isProvinceValid) isFormValid = false;
-            
-            // Validate district
-            const isDistrictValid = districtSelect.value !== '';
-            setValidationStatus(districtSelect, isDistrictValid);
-            if (!isDistrictValid) isFormValid = false;
-            
-            // Validate ward
-            const isWardValid = wardSelect.value !== '';
-            setValidationStatus(wardSelect, isWardValid);
-            if (!isWardValid) isFormValid = false;
-            
-            // Validate address details
-            const addressValue = addressDetailInput.value.trim();
-            const isAddressValid = addressValue.length > 0 && addressValue.length <= 500;
-            setValidationStatus(addressDetailInput, isAddressValid);
-            if (!isAddressValid) isFormValid = false;
-            
-            // Prevent form submission if validation fails
-            if (!isFormValid) {
-                event.preventDefault();
-                // Scroll to the first invalid field
-                const firstInvalidField = document.querySelector('.is-invalid');
-                if (firstInvalidField) {
-                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    firstInvalidField.focus();
-                }
+        // Validate fields
+        fields.forEach(field => {
+            if (field) {
+                validateAndSetStatus(field);
             }
         });
+    }
+
+    function validateAndSetStatus(element) {
+        if (!element) return;
+        const isRequired = element.hasAttribute('required');
+        const hasValue = element.tagName === 'SELECT' ? element.value !== '' : element.value.trim() !== '';
+        const isValid = !isRequired || hasValue;
+
+        setValidationVisuals(element, isValid, `${element.previousElementSibling?.textContent || 'Field'} is required.`);
+    }
+
+    window.setValidationVisuals = function(element, isValid, errorMessage = '') {
+        if (!element) return;
+        const feedbackElement = element.nextElementSibling;
+
+        if (isValid) {
+            element.classList.remove('is-invalid');
+            element.classList.add('is-valid');
+            if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                feedbackElement.style.display = 'none';
+                feedbackElement.textContent = '';
+            }
+        } else {
+            element.classList.remove('is-valid');
+            element.classList.add('is-invalid');
+            if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                feedbackElement.textContent = errorMessage;
+                feedbackElement.style.display = 'block';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const addressForm = document.getElementById('addressForm');
+        const recipientNameInput = document.getElementById('recipientName');
+        const phoneInput = document.getElementById('recipientPhone');
+        const companyInput = document.getElementById('company');
+        const provinceSelect = document.getElementById('province');
+        const districtSelect = document.getElementById('district');
+        const wardSelect = document.getElementById('ward');
+        const addressDetailInput = document.getElementById('addressDetail');
+
+        function validatePhone(phone) {
+            const regex = /^(\+84|84|0)[3|5|7|8|9][0-9]{8}$/;
+            return regex.test(phone);
+        }
+
+        // Set up province/district/ward selectors
+        const savedProvince = document.getElementById('provinceName')?.value;
+        const savedDistrict = document.getElementById('districtName')?.value;
+        const savedWard = document.getElementById('wardName')?.value;
+
+        if (savedProvince) {
+            const provinceObserver = new MutationObserver(function(mutations) {
+                const provinceSelect = document.getElementById('province');
+                if (provinceSelect && provinceSelect.options.length > 1) {
+                    // Find and select the matching province
+                    for (let i = 0; i < provinceSelect.options.length; i++) {
+                        if (provinceSelect.options[i].text === savedProvince) {
+                            provinceSelect.value = provinceSelect.options[i].value;
+                            provinceSelect.dispatchEvent(new Event('change'));
+                            this.disconnect(); // Stop observing once we've found the match
+                            break;
+                        }
+                    }
+                }
+            });
+
+            const provinceSelect = document.getElementById('province');
+            if (provinceSelect) {
+                provinceObserver.observe(provinceSelect, { childList: true });
+            }
+
+            // Set up observers for district and ward
+            if (savedDistrict) {
+                const districtObserver = new MutationObserver(function(mutations) {
+                    const districtSelect = document.getElementById('district');
+                    if (districtSelect && districtSelect.options.length > 1) {
+                        // Find and select the matching district
+                        for (let i = 0; i < districtSelect.options.length; i++) {
+                            if (districtSelect.options[i].text === savedDistrict) {
+                                districtSelect.value = districtSelect.options[i].value;
+                                districtSelect.dispatchEvent(new Event('change'));
+                                this.disconnect(); // Stop observing
+                                break;
+                            }
+                        }
+                    }
+                });
+
+                const districtSelect = document.getElementById('district');
+                if (districtSelect) {
+                    districtObserver.observe(districtSelect, { childList: true });
+                }
+
+                // Set up ward observer
+                if (savedWard) {
+                    const wardObserver = new MutationObserver(function(mutations) {
+                        const wardSelect = document.getElementById('ward');
+                        if (wardSelect && wardSelect.options.length > 1) {
+                            // Find and select the matching ward
+                            for (let i = 0; i < wardSelect.options.length; i++) {
+                                if (wardSelect.options[i].text === savedWard) {
+                                    wardSelect.value = wardSelect.options[i].value;
+                                    wardSelect.dispatchEvent(new Event('change'));
+                                    this.disconnect(); // Stop observing
+                                    break;
+                                }
+                            }
+                        }
+                    });
+
+                    const wardSelect = document.getElementById('ward');
+                    if (wardSelect) {
+                        wardObserver.observe(wardSelect, { childList: true });
+                    }
+                }
+            }
+        }
+
+        // Attach event listeners only if elements exist
+        if (provinceSelect) {
+            provinceSelect.addEventListener('change', function() {
+                populateDistricts(this.value);
+                validateAndSetStatus(this);
+            });
+        }
+
+        if (districtSelect) {
+            districtSelect.addEventListener('change', function() {
+                populateWards(provinceSelect?.value || '', this.value);
+                validateAndSetStatus(this);
+            });
+        }
+
+        if (wardSelect) {
+            wardSelect.addEventListener('change', function() {
+                validateAndSetStatus(this);
+            });
+        }
+
+        if (recipientNameInput) {
+            recipientNameInput.addEventListener('input', function() {
+                const value = this.value.trim();
+                const isValid = value.length >= 2 && value.length <= 100;
+                setValidationVisuals(this, isValid, 'Recipient name must be 2-100 characters.');
+            });
+        }
+
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function() {
+                const isValid = validatePhone(this.value);
+                setValidationVisuals(this, isValid, 'Please enter a valid Vietnamese phone number (e.g., 0912345678).');
+            });
+        }
+
+        if (companyInput) {
+            companyInput.addEventListener('input', function() {
+                const value = this.value.trim();
+                const maxLength = 255;
+                if (value.length > maxLength) {
+                    setValidationVisuals(this, false, `Company name must be less than ${maxLength} characters.`);
+                } else if (value.length > 0) {
+                    setValidationVisuals(this, true);
+                } else {
+                    this.classList.remove('is-invalid', 'is-valid');
+                    const feedback = this.nextElementSibling;
+                    if (feedback && feedback.classList.contains('invalid-feedback')) {
+                        feedback.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        if (addressDetailInput) {
+            addressDetailInput.addEventListener('input', function() {
+                const value = this.value.trim();
+                const isValid = value.length > 0 && value.length <= 500;
+                setValidationVisuals(this, isValid, 'Address details are required (max 500 chars).');
+            });
+        }
+
+        if (addressForm) {
+            addressForm.addEventListener('submit', function(event) {
+                let isFormValid = true;
+
+                if (recipientNameInput) {
+                    const nameValue = recipientNameInput.value.trim();
+                    const isNameValid = nameValue.length >= 2 && nameValue.length <= 100;
+                    setValidationVisuals(recipientNameInput, isNameValid, 'Recipient name must be 2-100 characters.');
+                    if (!isNameValid) isFormValid = false;
+                }
+
+                if (phoneInput) {
+                    const isPhoneValid = validatePhone(phoneInput.value);
+                    setValidationVisuals(phoneInput, isPhoneValid, 'Valid Vietnamese phone number required.');
+                    if (!isPhoneValid) isFormValid = false;
+                }
+
+                if (companyInput) {
+                    const companyValue = companyInput.value.trim();
+                    if (companyValue.length > 255) {
+                        setValidationVisuals(companyInput, false, 'Company name must be less than 255 characters.');
+                        isFormValid = false;
+                    } else if (companyValue.length > 0) {
+                        setValidationVisuals(companyInput, true);
+                    } else {
+                        companyInput.classList.remove('is-invalid', 'is-valid');
+                        const feedback = companyInput.nextElementSibling;
+                        if (feedback && feedback.classList.contains('invalid-feedback')) {
+                            feedback.style.display = 'none';
+                        }
+                    }
+                }
+
+                // Validate province and district selectors
+                const provinceCode = document.querySelector('#province');
+                const districtCode = document.querySelector('#district');
+                const provinceName = document.querySelector('#provinceName');
+                const districtName = document.querySelector('#districtName');
+                
+                if (provinceCode && provinceCode.hasAttribute('required') && provinceCode.value === '') {
+                    setValidationVisuals(provinceCode, false, 'Province is required');
+                    isFormValid = false;
+                } else if (provinceCode && provinceCode.value !== '') {
+                    // Ensure the province name is set in the hidden field
+                    if (provinceName) {
+                        const selectedOption = provinceCode.options[provinceCode.selectedIndex];
+                        provinceName.value = selectedOption ? selectedOption.text : '';
+                    }
+                    setValidationVisuals(provinceCode, true);
+                }
+                
+                if (districtCode && districtCode.hasAttribute('required') && districtCode.value === '') {
+                    setValidationVisuals(districtCode, false, 'District is required');
+                    isFormValid = false;
+                } else if (districtCode && districtCode.value !== '') {
+                    // Ensure the district name is set in the hidden field
+                    if (districtName) {
+                        const selectedOption = districtCode.options[districtCode.selectedIndex];
+                        districtName.value = selectedOption ? selectedOption.text : '';
+                    }
+                    setValidationVisuals(districtCode, true);
+                }
+                
+                // Ensure ward name is set in the hidden field
+                const wardCode = document.querySelector('#ward');
+                const wardName = document.querySelector('#wardName');
+                if (wardCode && wardCode.value !== '' && wardName) {
+                    const selectedOption = wardCode.options[wardCode.selectedIndex];
+                    wardName.value = selectedOption ? selectedOption.text : '';
+                }
+
+                if (addressDetailInput) {
+                    const addressDetailValue = addressDetailInput.value.trim();
+                    const isAddressDetailValid = addressDetailValue.length > 0 && addressDetailValue.length <= 500;
+                    setValidationVisuals(addressDetailInput, isAddressDetailValid, 'Address details are required (max 500 chars).');
+                    if (!isAddressDetailValid) isFormValid = false;
+                }
+
+                const addressTypeSelected = document.querySelector('input[name="addressType"]:checked');
+                const addressTypeGroup = document.querySelector('input[name="addressType"]')?.closest('.mb-3');
+                const addressTypeFeedback = addressTypeGroup?.querySelector('.invalid-feedback.d-block');
+
+                if (!addressTypeSelected) {
+                    isFormValid = false;
+                    if (addressTypeFeedback) {
+                        addressTypeFeedback.textContent = 'Please select an address type.';
+                        addressTypeFeedback.style.display = 'block';
+                    }
+                    if (addressTypeGroup) {
+                        Array.from(addressTypeGroup.querySelectorAll('.form-check-input')).forEach(radio => {
+                            radio.classList.add('is-invalid');
+                        });
+                    }
+                } else {
+                    if (addressTypeFeedback) {
+                        addressTypeFeedback.style.display = 'none';
+                    }
+                    if (addressTypeGroup) {
+                        Array.from(addressTypeGroup.querySelectorAll('.form-check-input')).forEach(radio => {
+                            radio.classList.remove('is-invalid');
+                        });
+                    }
+                }
+
+                if (!isFormValid) {
+                    event.preventDefault();
+                    const firstInvalidField = document.querySelector('.is-invalid, input.is-invalid, textarea.is-invalid, select.is-invalid');
+                    if (firstInvalidField) {
+                        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstInvalidField.focus();
+                    }
+                }
+            });
+        }
     });
 </script>
 </body>

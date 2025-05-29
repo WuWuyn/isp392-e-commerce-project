@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+
 import java.math.BigInteger;
 
 @Entity
@@ -44,6 +45,5 @@ public class OrderItem {
     // Trong OrderItem.java
     @OneToOne(mappedBy = "orderItem", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private BookReview review;
-
 
 }
