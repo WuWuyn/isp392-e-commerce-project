@@ -29,19 +29,35 @@ public class BlogService {
     }
 
     // Get blogs based on sort option
+    @Transactional(readOnly = true)
     public Page<Blog> getBlogsSorted(String sortOption, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         
+        Page<Blog> blogs;
         switch (sortOption) {
             case "latest":
-                return blogRepository.findAllByOrderByCreatedDateDesc(pageable);
+                blogs = blogRepository.findAllByOrderByCreatedDateDesc(pageable);
+                break;
             case "oldest":
-                return blogRepository.findAllByOrderByCreatedDateAsc(pageable);
+                blogs = blogRepository.findAllByOrderByCreatedDateAsc(pageable);
+                break;
             case "popular":
-                return blogRepository.findAllByOrderByViewsCountDesc(pageable);
+                blogs = blogRepository.findAllByOrderByViewsCountDesc(pageable);
+                break;
             default:
-                return blogRepository.findAll(pageable);
+                blogs = blogRepository.findAll(pageable);
+                break;
         }
+        
+        // Chủ động tải thông tin user để tránh lỗi LazyInitializationException
+        blogs.getContent().forEach(blog -> {
+            if (blog.getUser() != null) {
+                // Chủ động truy cập để đảm bảo Hibernate tải dữ liệu
+                blog.getUser().getFullName(); 
+            }
+        });
+        
+        return blogs;
     }
 
     // Get blogs by search term
