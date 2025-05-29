@@ -3,30 +3,21 @@ package com.example.isp392.controller;
 import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.User;
 import com.example.isp392.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-// Using constructor injection instead of @Autowired
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-// ParseException is not needed as we handle exceptions generically
-import java.util.Optional;
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.io.File;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
+import java.util.Optional;
 
 /**
  * Controller for buyer-related operations

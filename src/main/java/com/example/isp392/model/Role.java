@@ -19,7 +19,7 @@ public class Role {
     @Column(name = "role_id")
     private int roleId;
 
-    @Column(name = "role_name", nullable = false, length = 255)
+    @Column(name = "role_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String roleName;
 
     @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

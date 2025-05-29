@@ -22,25 +22,25 @@ public class UserAddress {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "recipient_name", length = 500, nullable = false)
+    @Column(name = "recipient_name", columnDefinition = "NVARCHAR(255)", nullable = false)
     private String recipientName;
 
     @Column(name = "recipient_phone", length = 20, nullable = false)
     private String recipientPhone;
 
-    @Column(name = "province", length = 500, nullable = false)
+    @Column(name = "province", columnDefinition = "NVARCHAR(255)", nullable = false)
     private String province;
 
-    @Column(name = "district", length = 500, nullable = false)
+    @Column(name = "district", columnDefinition = "NVARCHAR(255)", nullable = false)
     private String district;
 
-    @Column(name = "ward", length = 500, nullable = false)
+    @Column(name = "ward", columnDefinition = "NVARCHAR(255)", nullable = false)
     private String ward;
 
-    @Column(name = "address_detail", length = 500, nullable = false)
+    @Column(name = "address_detail", columnDefinition = "NVARCHAR(500)", nullable = false)
     private String addressDetail;
 
-    @Column(name = "company", length = 255)
+    @Column(name = "company", columnDefinition = "NVARCHAR(255)")
     private String company;
 
     @Column(name = "address_type")
