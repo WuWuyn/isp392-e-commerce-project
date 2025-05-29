@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "seller_registrations")
-public class SellerRegistration {
+public class Seller {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -90,7 +90,7 @@ public class SellerRegistration {
     private String approvedBy;
 
     // Constructors
-    public SellerRegistration() {
+    public Seller() {
         this.registrationDate = LocalDateTime.now();
         this.status = "PENDING";
     }

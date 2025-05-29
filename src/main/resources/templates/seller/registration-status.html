@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Status - ReadHub</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .status-container {
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        .status-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            margin-top: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .status-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        .status-message {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        .status-details {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .status-details-item {
+            margin-bottom: 15px;
+        }
+        .status-details-item:last-child {
+            margin-bottom: 0;
+        }
+        .status-details-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .status-details-value {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+<div class="container status-container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="status-card text-center">
+                <div th:if="${shop.status == 'PENDING'}">
+                    <div class="status-icon text-primary">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <h2 class="status-message">Registration Pending</h2>
+                    <p class="text-muted">Your registration is currently under review. We'll notify you once it's approved.</p>
+                </div>
+
+                <div th:if="${shop.status == 'APPROVED'}">
+                    <div class="status-icon text-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="status-message">Registration Approved</h2>
+                    <p class="text-success">Congratulations! Your shop registration has been approved.</p>
+                    <a href="/seller/dashboard" class="btn btn-primary mt-3">Go to Dashboard</a>
+                </div>
+
+                <div th:if="${shop.status == 'REJECTED'}">
+                    <div class="status-icon text-danger">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <h2 class="status-message">Registration Rejected</h2>
+                    <p class="text-danger" th:text="${shop.rejectionReason}">Your registration has been rejected.</p>
+                    <a href="/seller/registration" class="btn btn-secondary mt-3">Edit Registration</a>
+                </div>
+
+                <div class="status-details">
+                    <div class="status-details-item">
+                        <span class="status-details-label">Shop Name:</span>
+                        <span class="status-details-value" th:text="${shop.shopName}">Shop Name</span>
+                    </div>
+                    <div class="status-details-item">
+                        <span class="status-details-label">Registration Date:</span>
+                        <span class="status-details-value" th:text="${#temporals.format(shop.registrationDate, 'dd/MM/yyyy HH:mm')}">Registration Date</span>
+                    </div>
+                    <div class="status-details-item">
+                        <span class="status-details-label">Status:</span>
+                        <span class="status-details-value" th:text="${shop.status}">Status</span>
+                    </div>
+                    <div class="status-details-item">
+                        <span class="status-details-label">Contact Email:</span>
+                        <span class="status-details-value" th:text="${shop.contactEmail}">contact@example.com</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

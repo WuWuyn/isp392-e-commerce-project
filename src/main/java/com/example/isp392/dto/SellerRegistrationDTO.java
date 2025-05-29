@@ -6,80 +6,65 @@ import java.time.LocalDateTime;
 
 public class SellerRegistrationDTO {
 
-    // Thông tin cửa hàng
-    @NotBlank(message = "Tên cửa hàng không được để trống")
-    @Size(min = 2, max = 100, message = "Tên cửa hàng phải từ 2-100 ký tự")
+    // Store Information
+    @NotBlank(message = "Shop name cannot be empty")
+    @Size(min = 2, max = 100, message = "Shop name must be between 2-100 characters")
     private String shopName;
 
-    @NotBlank(message = "Vui lòng chọn danh mục kinh doanh")
+    @NotBlank(message = "Please select shop category")
     private String shopCategory;
 
-    @NotBlank(message = "Mô tả cửa hàng không được để trống")
-    @Size(min = 10, max = 1000, message = "Mô tả phải từ 10-1000 ký tự")
+    @NotBlank(message = "Shop description cannot be empty")
+    @Size(min = 10, max = 1000, message = "Description must be between 10-1000 characters")
     private String shopDescription;
 
     private MultipartFile shopLogoFile;
     private String shopLogoPath;
 
-    // Thông tin liên hệ
-    @NotBlank(message = "Họ tên không được để trống")
-    @Size(min = 2, max = 50, message = "Họ tên phải từ 2-50 ký tự")
+    // Contact Information
+    @NotBlank(message = "Full name cannot be empty")
+    @Size(min = 2, max = 50, message = "Full name must be between 2-50 characters")
     private String contactName;
 
-    @NotBlank(message = "Số điện thoại không được để trống")
-    @Pattern(regexp = "^[0-9]{10,11}$", message = "Số điện thoại không hợp lệ")
+    @NotBlank(message = "Phone number cannot be empty")
+    @Pattern(regexp = "^[0-9]{10,11}$", message = "Invalid phone number")
     private String contactPhone;
 
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không hợp lệ")
+    @NotBlank(message = "Email cannot be empty")
+    @Email(message = "Invalid email")
     private String contactEmail;
 
-    private String contactWebsite;
-
-    @NotBlank(message = "Địa chỉ không được để trống")
-    @Size(min = 10, max = 200, message = "Địa chỉ phải từ 10-200 ký tự")
+    @NotBlank(message = "Address cannot be empty")
+    @Size(min = 10, max = 200, message = "Address must be between 10-200 characters")
     private String contactAddress;
 
-    // Thông tin ngân hàng
-    @NotBlank(message = "Vui lòng chọn ngân hàng")
-    private String bankName;
-
-    @NotBlank(message = "Số tài khoản không được để trống")
-    @Pattern(regexp = "^[0-9]{6,20}$", message = "Số tài khoản không hợp lệ")
-    private String bankAccountNumber;
-
-    @NotBlank(message = "Tên chủ tài khoản không được để trống")
-    @Size(min = 2, max = 50, message = "Tên chủ tài khoản phải từ 2-50 ký tự")
-    private String bankAccountName;
-
-    private String bankBranch;
-
-    // Thông tin giấy phép kinh doanh
-    @NotBlank(message = "Vui lòng chọn loại hình kinh doanh")
-    private String businessType;
-
-    private String businessLicenseNumber;
-    private MultipartFile businessLicenseFile;
-    private String businessLicenseFilePath;
+    // Tax Information & Verification
+    @NotBlank(message = "Tax code cannot be empty")
     private String taxCode;
 
-    // Đồng ý điều khoản
-    @AssertTrue(message = "Bạn phải đồng ý với các quy định")
+    private MultipartFile identificationFile;
+    private String identificationFilePath;
+
+    private MultipartFile businessLicenseFile; // ✅ Added field
+    private String businessLicenseFilePath;
+
+    // Terms & Conditions
+    @AssertTrue(message = "You must agree to the terms")
     private boolean agreeTerms;
 
     private boolean agreeMarketing;
 
-    // Thông tin hệ thống
+    // System Information
     private LocalDateTime registrationDate;
     private String status = "PENDING"; // PENDING, APPROVED, REJECTED
     private String rejectionReason;
 
-    // Constructors
+    // Constructor
     public SellerRegistrationDTO() {
         this.registrationDate = LocalDateTime.now();
     }
 
-    // Getters và Setters
+    // Getters and Setters
     public String getShopName() {
         return shopName;
     }
@@ -144,14 +129,6 @@ public class SellerRegistrationDTO {
         this.contactEmail = contactEmail;
     }
 
-    public String getContactWebsite() {
-        return contactWebsite;
-    }
-
-    public void setContactWebsite(String contactWebsite) {
-        this.contactWebsite = contactWebsite;
-    }
-
     public String getContactAddress() {
         return contactAddress;
     }
@@ -160,52 +137,28 @@ public class SellerRegistrationDTO {
         this.contactAddress = contactAddress;
     }
 
-    public String getBankName() {
-        return bankName;
+    public String getTaxCode() {
+        return taxCode;
     }
 
-    public void setBankName(String bankName) {
-        this.bankName = bankName;
+    public void setTaxCode(String taxCode) {
+        this.taxCode = taxCode;
     }
 
-    public String getBankAccountNumber() {
-        return bankAccountNumber;
+    public MultipartFile getIdentificationFile() {
+        return identificationFile;
     }
 
-    public void setBankAccountNumber(String bankAccountNumber) {
-        this.bankAccountNumber = bankAccountNumber;
+    public void setIdentificationFile(MultipartFile identificationFile) {
+        this.identificationFile = identificationFile;
     }
 
-    public String getBankAccountName() {
-        return bankAccountName;
+    public String getIdentificationFilePath() {
+        return identificationFilePath;
     }
 
-    public void setBankAccountName(String bankAccountName) {
-        this.bankAccountName = bankAccountName;
-    }
-
-    public String getBankBranch() {
-        return bankBranch;
-    }
-
-    public void setBankBranch(String bankBranch) {
-        this.bankBranch = bankBranch;
-    }
-
-    public String getBusinessType() {
-        return businessType;
-    }
-
-    public void setBusinessType(String businessType) {
-        this.businessType = businessType;
-    }
-
-    public String getBusinessLicenseNumber() {
-        return businessLicenseNumber;
-    }
-
-    public void setBusinessLicenseNumber(String businessLicenseNumber) {
-        this.businessLicenseNumber = businessLicenseNumber;
+    public void setIdentificationFilePath(String identificationFilePath) {
+        this.identificationFilePath = identificationFilePath;
     }
 
     public MultipartFile getBusinessLicenseFile() {
@@ -222,14 +175,6 @@ public class SellerRegistrationDTO {
 
     public void setBusinessLicenseFilePath(String businessLicenseFilePath) {
         this.businessLicenseFilePath = businessLicenseFilePath;
-    }
-
-    public String getTaxCode() {
-        return taxCode;
-    }
-
-    public void setTaxCode(String taxCode) {
-        this.taxCode = taxCode;
     }
 
     public boolean isAgreeTerms() {
@@ -270,17 +215,5 @@ public class SellerRegistrationDTO {
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
-    }
-
-    @Override
-    public String toString() {
-        return "SellerRegistrationDTO{" +
-                "shopName='" + shopName + '\'' +
-                ", shopCategory='" + shopCategory + '\'' +
-                ", contactName='" + contactName + '\'' +
-                ", contactEmail='" + contactEmail + '\'' +
-                ", status='" + status + '\'' +
-                ", registrationDate=" + registrationDate +
-                '}';
     }
 }

@@ -1,7 +1,7 @@
 package com.example.isp392.service;
 
 import com.example.isp392.dto.SellerRegistrationDTO;
-import com.example.isp392.model.SellerRegistration;
+import com.example.isp392.model.Seller;
 import com.example.isp392.repository.SellerRegistrationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,34 +34,33 @@ public class SellerRegistrationService {
         this.emailService = emailService;
     }
 
-    public SellerRegistration registerSeller(SellerRegistrationDTO dto) throws Exception {
+    public Seller registerSeller(SellerRegistrationDTO dto) throws Exception {
         if (sellerRegistrationRepository.existsByShopNameIgnoreCase(dto.getShopName())) {
             throw new IllegalArgumentException("Tên cửa hàng đã tồn tại!");
         }
         if (sellerRegistrationRepository.existsByContactEmailIgnoreCase(dto.getContactEmail())) {
             throw new IllegalArgumentException("Email đã được sử dụng!");
         }
-        SellerRegistration registration = new SellerRegistration();
+        Seller registration = new Seller();
         mapDtoToEntity(dto, registration);
         processFileUpload(dto.getShopLogoFile(), "logos", registration::setShopLogoPath);
-        processFileUpload(dto.getBusinessLicenseFile(), "licenses", registration::setBusinessLicenseFilePath);
         registration.setRegistrationDate(LocalDateTime.now());
         registration.setStatus("PENDING");
-        SellerRegistration saved = sellerRegistrationRepository.save(registration);
+        Seller saved = sellerRegistrationRepository.save(registration);
         try { sendConfirmationEmail(saved); } catch (Exception ignored) {}
         return saved;
     }
 
-    public List<SellerRegistration> getAllRegistrations() {
+    public List<Seller> getAllRegistrations() {
         return sellerRegistrationRepository.findAllByOrderByRegistrationDateDesc();
     }
 
-    public SellerRegistration getRegistrationById(Long id) {
+    public Seller getRegistrationById(Long id) {
         return sellerRegistrationRepository.findById(id).orElse(null);
     }
 
     public void approveRegistration(Long id, String approvedBy) {
-        SellerRegistration reg = getRegistrationById(id);
+        Seller reg = getRegistrationById(id);
         if (reg != null) {
             reg.setStatus("APPROVED");
             reg.setApprovedDate(LocalDateTime.now());
@@ -72,7 +71,7 @@ public class SellerRegistrationService {
     }
 
     public void rejectRegistration(Long id, String reason) {
-        SellerRegistration reg = getRegistrationById(id);
+        Seller reg = getRegistrationById(id);
         if (reg != null) {
             reg.setStatus("REJECTED");
             reg.setRejectionReason(reason);
@@ -81,21 +80,21 @@ public class SellerRegistrationService {
         }
     }
 
-    private void mapDtoToEntity(SellerRegistrationDTO dto, SellerRegistration entity) {
+    private void mapDtoToEntity(SellerRegistrationDTO dto, Seller entity) {
         entity.setShopName(dto.getShopName());
         entity.setShopCategory(dto.getShopCategory());
         entity.setShopDescription(dto.getShopDescription());
         entity.setContactName(dto.getContactName());
         entity.setContactPhone(dto.getContactPhone());
         entity.setContactEmail(dto.getContactEmail());
-        entity.setContactWebsite(dto.getContactWebsite());
+
         entity.setContactAddress(dto.getContactAddress());
-        entity.setBankName(dto.getBankName());
-        entity.setBankAccountNumber(dto.getBankAccountNumber());
-        entity.setBankAccountName(dto.getBankAccountName());
-        entity.setBankBranch(dto.getBankBranch());
-        entity.setBusinessType(dto.getBusinessType());
-        entity.setBusinessLicenseNumber(dto.getBusinessLicenseNumber());
+
+
+
+
+
+
         entity.setTaxCode(dto.getTaxCode());
         entity.setAgreeTerms(dto.isAgreeTerms());
         entity.setAgreeMarketing(dto.isAgreeMarketing());
@@ -122,25 +121,25 @@ public class SellerRegistrationService {
         return subfolder + "/" + filename;
     }
 
-    private void sendConfirmationEmail(SellerRegistration r) {
+    private void sendConfirmationEmail(Seller r) {
         String subject = "Xác nhận đăng ký Seller - " + r.getShopName();
         String content = buildEmailContent("confirmation", r);
         emailService.sendEmail(r.getContactEmail(), subject, content);
     }
 
-    private void sendApprovalEmail(SellerRegistration r) {
+    private void sendApprovalEmail(Seller r) {
         String subject = "Phê duyệt đăng ký Seller - " + r.getShopName();
         String content = buildEmailContent("approval", r);
         emailService.sendEmail(r.getContactEmail(), subject, content);
     }
 
-    private void sendRejectionEmail(SellerRegistration r) {
+    private void sendRejectionEmail(Seller r) {
         String subject = "Từ chối đăng ký Seller - " + r.getShopName();
         String content = buildEmailContent("rejection", r);
         emailService.sendEmail(r.getContactEmail(), subject, content);
     }
 
-    private String buildEmailContent(String type, SellerRegistration r) {
+    private String buildEmailContent(String type, Seller r) {
         switch (type) {
             case "approval": return String.format("Xin chúc mừng %s! Hồ sơ của bạn đã được phê duyệt.", r.getContactName());
             case "rejection": return String.format("Xin lỗi %s! Đăng ký bị từ chối. Lý do: %s", r.getContactName(), r.getRejectionReason());

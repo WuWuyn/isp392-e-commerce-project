@@ -85,9 +85,11 @@
                                     class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</a></li>
 
                             <!-- Show seller dashboard link for sellers -->
-                            <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item"
-                                                                     th:href="@{/seller/dashboard}"><i
-                                    class="fas fa-store me-2"></i>Seller Dashboard</a></li>
+                            <li sec:authorize="hasRole('SELLER')">
+                                <a class="dropdown-item" th:href="@{/seller/dashboard}">
+                                    <i class="fas fa-store me-2"></i>Seller Dashboard
+                                </a>
+                            </li>
 
                             <li>
                                 <hr class="dropdown-divider">

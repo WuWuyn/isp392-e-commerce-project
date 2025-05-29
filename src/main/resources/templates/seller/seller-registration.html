@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register as a Seller - ReadHub</title>
+    <!-- Recommended: Add Font Awesome for icons if your Bookix template uses it -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Recommended: Add Google Fonts used by Bookix -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Lora:wght@400;700&family=Lato:wght@300;400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
     <style>
+        /* Reset and Global Styles (Adapted from Bookix) */
         * {
             margin: 0;
             padding: 0;
@@ -12,67 +18,103 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: 'Open Sans', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background-color: #f8f9fa; /* Standard light background from Bookix */
+            padding: 20px; /* Keep some padding for small screens */
         }
 
+        a {
+            color: #3A50A0;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #2C3E50;
+        }
+
+        /* Container for the form - Adapted to Bookix style */
         .container {
             max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px auto; /* Add some top/bottom margin */
+            background: #fff; /* White background for the main content area */
+            border-radius: 8px; /* Softer border radius like Bookix cards */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.07); /* Softer shadow */
             overflow: hidden;
         }
 
+        /* Header of the form - Adapted to Bookix style */
         .header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            background-color: #2C3E50; /* Dark blue/charcoal for header background */
             color: white;
             padding: 30px;
             text-align: center;
+            border-bottom: 5px solid #3A50A0; /* Accent border */
         }
 
         .header h1 {
+            font-family: 'Lora', serif; /* Bookix logo font */
             font-size: 2.5rem;
             margin-bottom: 10px;
             font-weight: 700;
+            color: #fff; /* Ensure text is white */
         }
 
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+            color: #adb5bd; /* Lighter text for subtitle */
         }
 
+        /* Form Container within the main .container */
         .form-container {
-            padding: 40px;
+            padding: 30px 40px; /* Adjust padding */
         }
 
+        /* Form Sections - Adapted to Bookix style */
         .form-section {
-            margin-bottom: 40px;
-            border-left: 4px solid #4f46e5;
-            padding-left: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee; /* Softer separator */
         }
+        .form-section:last-of-type { /* Last form section before regulations */
+            border-bottom: 1px solid #eee; /* Keep border for consistency before regulations */
+        }
+        .regulations-section { /* No bottom border for regulations section itself */
+            border-bottom: none;
+        }
+
 
         .form-section h2 {
-            color: #1f2937;
+            font-family: 'Lato', sans-serif; /* Bookix heading font */
+            color: #2C3E50; /* Darker heading color */
             font-size: 1.5rem;
-            margin-bottom: 20px;
+            font-weight: 600;
+            margin-bottom: 25px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .form-section h2::before {
-            content: "📋";
+            font-family: "Font Awesome 6 Free"; /* Requires Font Awesome */
+            font-weight: 900;
             font-size: 1.2rem;
+            color: #3A50A0;
+            width: 20px; /* Ensure consistent width for icon alignment */
+            text-align: center;
         }
+        /* Specific icons for sections */
+        #storeInfoSection h2::before { content: "\f07a"; } /* fa-shopping-cart for Store Information */
+        #contactInfoSection h2::before { content: "\f2bb"; } /* fa-address-card for Contact Information */
+        #legalInfoSection h2::before { content: "\f02d"; } /* fa-book or fa-id-card for Legal/Identity */
+
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 25px; /* Slightly more gap */
             margin-bottom: 20px;
         }
 
@@ -87,30 +129,46 @@
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
-            color: #374151;
+            font-weight: 600; /* Bookix label style */
+            color: #555;     /* Bookix label color */
             font-size: 0.9rem;
         }
 
         .required {
-            color: #ef4444;
+            color: #E74C3C; /* Bookix price/alert red */
+            margin-left: 2px;
         }
 
-        input, textarea, select {
+        /* Input, Textarea, Select styling - Key Bookix adaptation */
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="url"],
+        input[type="number"],
+        textarea,
+        select {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #f9fafb;
+            padding: 10px 15px; /* Bookix form-control padding */
+            border: 1px solid #ced4da; /* Bookix form-control border */
+            border-radius: 4px;       /* Bookix form-control border-radius */
+            font-size: 0.95rem;       /* Bookix form-control font-size */
+            font-family: 'Open Sans', sans-serif;
+            color: #333;
+            background-color: #fff; /* Match Bookix form-control bg */
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
         }
 
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #4f46e5;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus,
+        input[type="url"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: 0;
+            border-color: #3A50A0; /* Bookix focus color */
+            box-shadow: 0 0 0 0.2rem rgba(58, 80, 160, 0.25); /* Bookix focus shadow */
+            background-color: #fff;
         }
 
         textarea {
@@ -118,6 +176,7 @@
             min-height: 100px;
         }
 
+        /* File Input */
         .file-input-wrapper {
             position: relative;
             display: inline-block;
@@ -127,40 +186,59 @@
         .file-input {
             opacity: 0;
             position: absolute;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
         }
 
         .file-input-label {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 10px;
-            padding: 12px 16px;
-            border: 2px dashed #d1d5db;
-            border-radius: 12px;
-            background: #f9fafb;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: #fff;
+            color: #555;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            font-size: 0.95rem;
         }
-
         .file-input-label:hover {
-            border-color: #4f46e5;
-            background: #f0f4ff;
+            border-color: #3A50A0;
+        }
+        .file-input-label .file-icon { /* Class for the icon span */
+            color: #3A50A0; /* Make icon more prominent */
+        }
+        .file-input-label .file-prompt-text {
+            color: #777;
+        }
+        .file-input-label .file-name-display {
+            color: #333;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-grow: 1; /* Allow file name to take up space */
         }
 
+        /* Regulations Section */
         .regulations-section {
-            background: #f8fafc;
-            border-radius: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
             padding: 25px;
             margin: 30px 0;
+            border: 1px solid #e9ecef;
         }
 
         .regulations-section h3 {
-            color: #1f2937;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
+            font-family: 'Lato', sans-serif;
+            color: #2C3E50;
+            margin-bottom: 20px;
+            font-size: 1.25rem;
+            font-weight: 600;
         }
 
         .regulations-list {
@@ -169,157 +247,210 @@
         }
 
         .regulations-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 10px 0 10px 28px;
+            border-bottom: 1px solid #e0e0e0;
             position: relative;
-            padding-left: 25px;
+            font-size: 0.9rem;
+            color: #555;
         }
 
         .regulations-list li::before {
-            content: "✓";
-            color: #10b981;
-            font-weight: bold;
+            content: "\f00c"; /* Font Awesome check */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #28a745;
             position: absolute;
             left: 0;
+            top: 50%;
+            transform: translateY(-50%); /* Better vertical alignment */
+            font-size: 1rem;
         }
 
         .regulations-list li:last-child {
             border-bottom: none;
         }
 
+        /* Checkbox Group */
         .checkbox-group {
             display: flex;
             align-items: flex-start;
-            gap: 12px;
+            gap: 10px;
             margin: 20px 0;
         }
 
         .checkbox-group input[type="checkbox"] {
             width: auto;
-            margin: 0;
-            transform: scale(1.2);
+            margin-top: 4px;
+            transform: scale(1.1);
+            flex-shrink: 0;
         }
 
         .checkbox-group label {
             margin: 0;
             flex: 1;
+            font-weight: 500;
+            color: #444;
+            font-size: 0.9rem;
+            line-height: 1.5;
             cursor: pointer;
         }
 
+        /* Button Group & Buttons */
         .btn-group {
             display: flex;
             gap: 15px;
-            justify-content: center;
-            margin-top: 40px;
+            justify-content: flex-end;
+            margin-top: 30px;
         }
 
         .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 150px;
+            transition: all 0.2s ease;
+            min-width: 120px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            background-color: #3A50A0;
             color: white;
+            border-color: #3A50A0;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
-            border: 2px solid #d1d5db;
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ced4da;
         }
 
         .btn-secondary:hover {
-            background: #e5e7eb;
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+            color: #2C3E50;
             transform: translateY(-1px);
         }
 
+        /* Progress Bar */
         .progress-bar {
-            height: 4px;
-            background: #e5e7eb;
-            border-radius: 2px;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
             overflow: hidden;
             margin-bottom: 30px;
         }
 
         .progress-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            background: #3A50A0;
             width: 0%;
             transition: width 0.3s ease;
+            border-radius: 3px;
         }
 
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .container {
-                margin: 10px;
-                border-radius: 12px;
-            }
-
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .form-container {
-                padding: 20px;
-            }
-
-            .btn-group {
-                flex-direction: column;
-            }
-        }
-
+        /* Info Tooltip */
         .info-tooltip {
             position: relative;
             display: inline-block;
-            margin-left: 5px;
+            margin-left: 4px;
             cursor: help;
         }
 
         .info-tooltip::after {
-            content: "ⓘ";
-            color: #6b7280;
-            font-size: 0.8rem;
+            content: "\f05a"; /* Font Awesome info icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #6c757d;
+            font-size: 0.9rem;
         }
 
-        .info-tooltip:hover::before {
-            content: attr(data-tooltip);
+        .info-tooltip .tooltip-text {
+            visibility: hidden;
+            width: max-content;
+            max-width: 220px;
+            background-color: #2C3E50;
+            color: #fff;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
             position: absolute;
-            bottom: 125%;
+            z-index: 1000;
+            bottom: 135%;
             left: 50%;
             transform: translateX(-50%);
-            background: #1f2937;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        .info-tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #2C3E50 transparent transparent transparent;
+        }
+
+        .info-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                margin: 10px auto;
+                border-radius: 6px;
+            }
+            .header {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .form-container {
+                padding: 20px;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+            .form-group {
+                margin-bottom: 20px;
+            }
+            .btn-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>Seller Registration</h1>
+        <h1>ReadHub Seller</h1>
         <p>Start your business journey with us</p>
     </div>
 
@@ -329,7 +460,7 @@
 
     <form class="form-container" id="sellerRegistrationForm">
         <!-- Thông tin cửa hàng -->
-        <div class="form-section">
+        <div class="form-section" id="storeInfoSection">
             <h2>Store Information</h2>
 
             <div class="form-row">
@@ -343,13 +474,13 @@
                     <label for="shopCategory">Business Directory <span class="required">*</span></label>
                     <select id="shopCategory" name="shopCategory" required>
                         <option value="">Select category</option>
-                        <option value="electronics">Fiction</option>
-                        <option value="fashion">Non-Fiction</option>
-                        <option value="books">Biographies</option>
-                        <option value="home">Children's Books</option>
-                        <option value="beauty">Horrified</option>
-                        <option value="sports">Anime</option>
-                        <option value="food">Economy</option>
+                        <option value="fiction">Fiction</option>
+                        <option value="non-fiction">Non-Fiction</option>
+                        <option value="biographies">Biographies</option>
+                        <option value="childrens">Children's Books</option>
+                        <option value="horror">Horror</option>
+                        <option value="manga-comic">Manga/Comic</option>
+                        <option value="economics">Economy</option>
                         <option value="other">Others</option>
                     </select>
                 </div>
@@ -363,21 +494,24 @@
 
             <div class="form-group">
                 <label for="shopLogo">Store Logo
-                    <span class="info-tooltip" data-tooltip="Định dạng: JPG, PNG. Kích thước tối đa: 2MB"></span>
+                    <span class="info-tooltip">
+                        <span class="tooltip-text">Formats: JPG, PNG. Max size: 2MB</span>
+                    </span>
                 </label>
                 <div class="file-input-wrapper">
                     <input type="file" id="shopLogo" name="shopLogo" class="file-input"
                            accept="image/jpeg,image/png,image/jpg">
                     <label for="shopLogo" class="file-input-label">
-                        <span>📷</span>
-                        <span>Choose store logo</span>
+                        <span class="file-icon"><i class="fas fa-image"></i></span>
+                        <span class="file-prompt-text">Choose store logo</span>
+                        <span class="file-name-display"></span>
                     </label>
                 </div>
             </div>
         </div>
 
         <!-- Thông tin liên hệ -->
-        <div class="form-section">
+        <div class="form-section" id="contactInfoSection">
             <h2>Contact Information</h2>
 
             <div class="form-row">
@@ -402,7 +536,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="contactWebsite">Website (nếu có)</label>
+                    <label for="contactWebsite">Website (optional)</label>
                     <input type="url" id="contactWebsite" name="contactWebsite"
                            placeholder="https://yourwebsite.com">
                 </div>
@@ -415,90 +549,34 @@
             </div>
         </div>
 
-        <!-- Thông tin ngân hàng -->
-        <div class="form-section">
-            <h2>Bank Information</h2>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="bankName">Bank name <span class="required">*</span></label>
-                    <select id="bankName" name="bankName" required>
-                        <option value="">Select bank</option>
-                        <option value="vietcombank">Vietcombank</option>
-                        <option value="techcombank">Techcombank</option>
-                        <option value="bidv">BIDV</option>
-                        <option value="vietinbank">VietinBank</option>
-                        <option value="acb">ACB</option>
-                        <option value="mb">MB Bank</option>
-                        <option value="tpbank">TPBank</option>
-                        <option value="other">Khác</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="bankAccountNumber">Account number <span class="required">*</span></label>
-                    <input type="text" id="bankAccountNumber" name="bankAccountNumber" required
-                           placeholder="Enter account number">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="bankAccountName">Account holder name <span class="required">*</span></label>
-                    <input type="text" id="bankAccountName" name="bankAccountName" required
-                           placeholder="Account holder name (according to ID card/CCCD)">
-                </div>
-
-                <div class="form-group">
-                    <label for="bankBranch">Branch</label>
-                    <input type="text" id="bankBranch" name="bankBranch"
-                           placeholder="Bank branch name">
-                </div>
-            </div>
-        </div>
-
-        <!-- Giấy phép kinh doanh -->
-        <div class="form-section">
-            <h2>Business License</h2>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="businessType">Business type <span class="required">*</span></label>
-                    <select id="businessType" name="businessType" required>
-                        <option value="">Select type</option>
-                        <option value="individual">Individual</option>
-                        <option value="company">Company</option>
-                        <option value="publisher">Publishing house</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="businessLicenseNumber">Business license number</label>
-                    <input type="text" id="businessLicenseNumber" name="businessLicenseNumber"
-                           placeholder="Enter license number (if applicable)">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="businessLicenseFile">Business license file
-                    <span class="info-tooltip" data-tooltip="Định dạng: PDF, JPG, PNG. Kích thước tối đa: 5MB"></span>
-                </label>
-                <div class="file-input-wrapper">
-                    <input type="file" id="businessLicenseFile" name="businessLicenseFile" class="file-input"
-                           accept="application/pdf,image/jpeg,image/png,image/jpg">
-                    <label for="businessLicenseFile" class="file-input-label">
-                        <span>📄</span>
-                        <span>Select license file</span>
-                    </label>
-                </div>
-            </div>
+        <!-- Thông tin pháp lý & Giấy tờ -->
+        <div class="form-section" id="legalInfoSection">
+            <h2>Legal & Identity</h2>
 
             <div class="form-group full-width">
-                <label for="taxCode">Tax code</label>
+                <label for="taxCode">Tax code (optional)</label>
                 <input type="text" id="taxCode" name="taxCode"
                        placeholder="Enter tax code (if any)">
             </div>
+
+            <div class="form-group">
+                <label for="identityDocument">Identity Document (ID Card, Passport, etc.)<span class="required">*</span>
+                    <span class="info-tooltip">
+                        <span class="tooltip-text">Formats: PDF, JPG, PNG. Max size: 5MB</span>
+                    </span>
+                </label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="identityDocument" name="identityDocument" class="file-input"
+                           accept="application/pdf,image/jpeg,image/png,image/jpg" required>
+                    <label for="identityDocument" class="file-input-label">
+                        <span class="file-icon"><i class="fas fa-id-card"></i></span>
+                        <span class="file-prompt-text">Upload identity document</span>
+                        <span class="file-name-display"></span>
+                    </label>
+                </div>
+            </div>
         </div>
+
 
         <!-- Quy định -->
         <div class="regulations-section">
@@ -549,14 +627,24 @@
     function updateProgressBar() {
         const form = document.getElementById('sellerRegistrationForm');
         const requiredFields = form.querySelectorAll('input[required], select[required], textarea[required]');
-        const filledFields = Array.from(requiredFields).filter(field => {
+        let filledFieldsCount = 0;
+
+        requiredFields.forEach(field => {
             if (field.type === 'checkbox') {
-                return field.checked;
+                if (field.checked) {
+                    filledFieldsCount++;
+                }
+            } else if (field.type === 'file') {
+                if (field.files && field.files.length > 0) {
+                    filledFieldsCount++;
+                }
             }
-            return field.value.trim() !== '';
+            else if (field.value.trim() !== '') {
+                filledFieldsCount++;
+            }
         });
 
-        const progress = (filledFields.length / requiredFields.length) * 100;
+        const progress = requiredFields.length > 0 ? (filledFieldsCount / requiredFields.length) * 100 : 0;
         document.getElementById('progressBar').style.width = progress + '%';
     }
 
@@ -569,7 +657,8 @@
             input.addEventListener('input', updateProgressBar);
             input.addEventListener('change', updateProgressBar);
         });
-
+        // Ensure Font Awesome is loaded before trying to use its classes in JS if needed
+        // For now, we're using them in CSS `content` and HTML `<i>` tags.
         updateProgressBar();
     });
 
@@ -577,49 +666,82 @@
     document.querySelectorAll('.file-input').forEach(input => {
         input.addEventListener('change', function() {
             const label = this.nextElementSibling;
-            const fileName = this.files[0] ? this.files[0].name : 'Chọn file';
-            label.querySelector('span:last-child').textContent = fileName;
+            const fileNameDisplay = label.querySelector('.file-name-display');
+            const filePromptText = label.querySelector('.file-prompt-text');
+
+            if (this.files[0]) {
+                fileNameDisplay.textContent = this.files[0].name;
+                if (filePromptText) filePromptText.style.display = 'none';
+            } else {
+                fileNameDisplay.textContent = '';
+                if (filePromptText) filePromptText.style.display = 'inline';
+            }
+            updateProgressBar(); // Update progress when file changes
         });
     });
+
 
     // Form submission
     document.getElementById('sellerRegistrationForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        // Validate required fields
         const requiredFields = this.querySelectorAll('input[required], select[required], textarea[required]');
         let isValid = true;
+        let firstInvalidField = null;
 
         requiredFields.forEach(field => {
-            if (!field.value.trim() && !field.checked) {
+            let fieldValid = true;
+            // Reset border color first
+            field.style.borderColor = '#ced4da';
+            if (field.closest('.file-input-wrapper')) {
+                field.closest('.file-input-wrapper').querySelector('.file-input-label').style.borderColor = '#ced4da';
+            }
+
+            if (field.type === 'checkbox') {
+                if (!field.checked) fieldValid = false;
+            } else if (field.type === 'file') {
+                if (!field.files || field.files.length === 0) fieldValid = false;
+            } else if (field.value.trim() === '') {
+                fieldValid = false;
+            }
+
+            if (!fieldValid) {
                 isValid = false;
-                field.style.borderColor = '#ef4444';
-            } else {
-                field.style.borderColor = '#e5e7eb';
+                field.style.borderColor = '#E74C3C';
+                if (field.closest('.file-input-wrapper')) {
+                    field.closest('.file-input-wrapper').querySelector('.file-input-label').style.borderColor = '#E74C3C';
+                }
+                if (!firstInvalidField) firstInvalidField = field; // Store the first invalid field
             }
         });
 
+
         if (!isValid) {
-            alert('Please fill in all required information!');
+            alert('Please fill in all required information and upload necessary documents!');
+            if (firstInvalidField) {
+                // If it's a hidden file input, focus its label for accessibility/visibility
+                if (firstInvalidField.type === 'file') {
+                    firstInvalidField.nextElementSibling.focus();
+                } else {
+                    firstInvalidField.focus();
+                }
+            }
             return;
         }
 
-        // Check if terms are agreed
-        if (!document.getElementById('agreeTerms').checked) {
-            alert('Please agree to the terms to continue!');
-            return;
-        }
 
-        // Simulate form submission
         const submitBtn = this.querySelector('.btn-primary');
         const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Processing...';
+        submitBtn.innerHTML = 'Processing…';
         submitBtn.disabled = true;
 
         setTimeout(() => {
             alert('Registration successful! We will review and respond within 24-48 hours.');
-            // Here you would normally submit to your Spring Boot backend
-            // window.location.href = '/seller/dashboard';
+            this.reset();
+            updateProgressBar();
+            document.querySelectorAll('.file-name-display').forEach(el => el.textContent = '');
+            document.querySelectorAll('.file-prompt-text').forEach(el => el.style.display = 'inline');
+
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }, 2000);
@@ -628,15 +750,10 @@
     // Phone number formatting
     document.getElementById('contactPhone').addEventListener('input', function() {
         let value = this.value.replace(/\D/g, '');
-        if (value.length > 10) value = value.slice(0, 10);
+        if (value.length > 11) value = value.slice(0, 11);
         this.value = value;
     });
 
-    // Bank account number formatting
-    document.getElementById('bankAccountNumber').addEventListener('input', function() {
-        let value = this.value.replace(/\D/g, '');
-        this.value = value;
-    });
 </script>
 </body>
 </html>
