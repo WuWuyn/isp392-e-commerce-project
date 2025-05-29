@@ -31,5 +31,4 @@ public class CartItem {
 
     @Column(name = "unit_price", nullable = false, columnDefinition = "BIGINT")
     private BigInteger unitPrice;
-
 }
