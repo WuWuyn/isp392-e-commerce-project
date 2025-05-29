@@ -1,8 +1,3 @@
-/**
- * Validation for buyer account password change form
- * Includes validation for password requirements and match checking
- * with enhanced user notifications
- */
 document.addEventListener('DOMContentLoaded', function() {
     const passwordForm = document.querySelector('form[action*="update-password"]');
     const currentPasswordInput = document.getElementById('currentPassword');
@@ -12,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check for success or error messages in URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('error')) {
-        // Show specific error message for incorrect current password
         const errorType = urlParams.get('error');
         let errorMessage = 'Error changing password. Please try again.';
         
@@ -20,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
             errorMessage = 'The current password you entered is incorrect.';
             setInvalid(currentPasswordInput, errorMessage);
             currentPasswordInput.focus();
+        } else if (errorType === 'same_password') {
+            errorMessage = 'New password cannot be the same as the current password.';
+            setInvalid(newPasswordInput, errorMessage);
+            newPasswordInput.focus();
         }
         
         // Display custom error notification if it doesn't already exist
@@ -54,6 +52,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!passwordRegex.test(newPasswordInput.value)) {
                 setInvalid(newPasswordInput, 'Password must be at least 6 characters long and include at least one letter and one number');
                 isValid = false;
+            } else if (newPasswordInput.value === currentPasswordInput.value) {
+                setInvalid(newPasswordInput, 'New password cannot be the same as the current password');
+                showNotification('New password cannot be the same as the current password', 'error', 'same-password');
+                isValid = false;
             } else {
                 setValid(newPasswordInput);
             }
@@ -61,9 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validate confirm password matches new password
             if (newPasswordInput.value !== confirmPasswordInput.value) {
                 setInvalid(confirmPasswordInput, 'Passwords do not match');
-                showNotification('New password and confirmation do not match', 'error');
+                showNotification('New password and confirmation do not match', 'error', 'password-match');
                 isValid = false;
-            } else if (confirmPasswordInput.value) { // Only set as valid if not empty
+            } else if (confirmPasswordInput.value) {
                 setValid(confirmPasswordInput);
             }
             
@@ -109,6 +111,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         setValid(confirmPasswordInput);
                     }
                 }
+                
+                // Check if new password matches current password
+                if (this.value && this.value === currentPasswordInput.value) {
+                    setInvalid(this, 'New password cannot be the same as the current password');
+                }
             });
             
             // Validate password requirements on blur
@@ -117,6 +124,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
                     if (!passwordRegex.test(this.value)) {
                         setInvalid(this, 'Password must be at least 6 characters long and include at least one letter and one number');
+                    } else if (this.value === currentPasswordInput.value) {
+                        setInvalid(this, 'New password cannot be the same as the current password');
+                        showNotification('New password cannot be the same as the current password', 'error', 'same-password');
                     } else {
                         setValid(this);
                     }
@@ -130,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.value) {
                     if (this.value !== newPasswordInput.value) {
                         setInvalid(this, 'Passwords do not match');
-                        // Don't show notification on every keystroke, only when blur
                     } else {
                         setValid(this);
                         // Remove any existing password match error notifications
@@ -269,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="notification-content">
                 ${icon} ${message}
             </div>
-            <button type="button" class="notification-close">&times;</button>
+            <button type="button" class="notification-close">×</button>
         `;
         
         // Add styles
