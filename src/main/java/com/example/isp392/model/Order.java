@@ -4,11 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 
@@ -59,9 +57,6 @@ public class Order {
     // One Order has Many OrderItems
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();
-
-    @Column(name = "created_at")
-    private Timestamp createdAt;
 
     @Column(name = "updated_at")
     private Timestamp updatedAt;

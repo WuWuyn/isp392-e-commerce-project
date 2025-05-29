@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 
@@ -68,6 +69,15 @@ public class Book {
 
     @Column(name = "date_added")
     private Date dateAdded;
+
+    @Column(name = "original_price", columnDefinition = "BIGINT")
+    private BigInteger originalPrice;
+
+    @Column(name = "selling_price", columnDefinition = "BIGINT")
+    private BigInteger sellingPrice;
+
+    @Column(name = "stock_quantity")
+    private int stockQuantity;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(
