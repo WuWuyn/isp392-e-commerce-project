@@ -19,10 +19,6 @@ public class BookReview {
     private int reviewId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "book_id", nullable = false)
-    private Book book; // Entity Book đã được định nghĩa trước đó
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user; // Entity User đã được định nghĩa trước đó
 
