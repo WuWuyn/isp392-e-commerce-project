@@ -182,7 +182,7 @@
   <section class="discount-banner py-4">
     <div class="container text-center">
       <span class="discount-icon">%</span>
-      <span class="discount-text">Get -70% purchase on order over $429.00</span>
+      <span class="discount-text">Get free shipping for order over 2.000.000 VND</span>
       <a href="#" class="btn btn-shop-deals">Shop All Deals <i class="fas fa-arrow-right ms-1"></i></a>
     </div>
   </section>
@@ -294,102 +294,11 @@
     </div>
   </section>
 
-  <!-- Popular Books -->
-  <section class="popular-books-section py-5">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="section-title">Popular Books</h2>
-        <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
-      </div>
-      <div class="row">
-        <!-- Repeat this structure for each popular book -->
-        <div class="col-lg-2 col-md-4 col-6 mb-4">
-          <div class="book-card">
-            <a href="#"><img th:src="@{/images/book-all-you-can-ever-know.jpg}" alt="Never Stop Your Spirit" class="book-cover img-fluid"></a>
-            <div class="book-info">
-              <h6 class="book-title"><a href="#">All You Can Ever Know: A Memoir</a></h6>
-              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-              <p class="book-price">$14.20</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-6 mb-4">
-          <div class="book-card">
-            <a href="#"><img th:src="@{/images/book-angry-god.jpg}" alt="Subletter" class="book-cover img-fluid"></a>
-            <div class="book-info">
-              <h6 class="book-title"><a href="#">Angry God (All Saints High Book 3)</a></h6>
-              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
-              <p class="book-price">$4.30</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-6 mb-4">
-          <div class="book-card">
-            <a href="#"><img th:src="@{/images/book-romancing-mister-bridgerton.jpg}" alt="Versus" class="book-cover img-fluid"></a>
-            <div class="book-info">
-              <h6 class="book-title"><a href="#">Romancing Mister Bridgerton</a></h6>
-              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-              <p class="book-price">$33.95</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-6 mb-4">
-          <div class="book-card">
-            <a href="#"><img th:src="@{/images/book-rural-diaries.jpg}" alt="Grazie" class="book-cover img-fluid"></a>
-            <div class="book-info">
-              <h6 class="book-title"><a href="#">The Rural Diaries: Love, Livestock</a></h6>
-              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-              <p class="book-price">$33.95</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-6 mb-4">
-          <div class="book-card">
-            <a href="#"><img th:src="@{/images/book-until-end-of-time.jpg}" alt="Unlimited" class="book-cover img-fluid"></a>
-            <div class="book-info">
-              <h6 class="book-title"><a href="#">Until the End of Time: Mind, Matter</a></h6>
-              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
-              <p class="book-price">$33.95</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-6 mb-4">
-          <div class="book-card">
-            <div class="position-relative">
-              <a href="#"><img th:src="@{/images/book-last-sister.jpg}" alt="Operetta" class="book-cover img-fluid"></a>
-              <span class="badge bg-danger sale-badge">Sale</span>
-            </div>
-            <div class="book-info">
-              <h6 class="book-title"><a href="#">The Last Sister (Columbia River Book 1)</a></h6>
-              <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-              <p class="book-price">
-                <span class="original-price text-decoration-line-through me-1">$33.95</span> <!-- Assuming original price, not in image -->
-                <span class="sale-price">$4.30</span> <!-- Image shows $4.30 $33.95, assuming $4.30 is sale price -->
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Super Books Testimonial -->
-  <section class="super-books-testimonial py-5 bg-light">
-    <div class="container text-center">
-      <div class="quote-icon-superbooks mb-3">“</div>
-      <h2 class="section-title mb-3">Super Books</h2>
-      <p class="lead mb-4 col-md-8 mx-auto">Bookix is a monthly book review publication distributed to 400,000 avid readers through subscribing bookstores & public libraries.</p>
-      <img th:src="@{/images/avatar-ali-tufan.jpg}" alt="Ali Tufan" class="testimonial-avatar img-fluid rounded-circle mb-2">
-      <h6 class="testimonial-name">Ali Tufan</h6>
-      <p class="testimonial-title small text-muted">Product Manager, Apple Inc</p>
-    </div>
-  </section>
-
-  <!-- Favorite Authors -->
+  <!-- Publishers -->
   <section class="favorite-authors-section py-5">
     <div class="container">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="section-title">Favorite Authors</h2>
+        <h2 class="section-title">The Publishers</h2>
         <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
       </div>
       <div class="row text-center">
