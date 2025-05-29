@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop - Bookix</title>
+    <title>ReadHub - Book Store</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -25,8 +25,8 @@
             <div class="shop-title-area text-center text-md-start">
                 <div class="row align-items-center">
                     <div class="col-md-6">
-                        <h1 class="shop-page-title">Shop Page</h1>
-                        <p class="shop-page-subtitle text-muted">Browse our favorite sale products and brands.</p>
+                        <h1 class="shop-page-title">Book Store</h1>
+                        <p class="shop-page-subtitle text-muted">Explore our vast collection of books across different categories.</p>
                     </div>
                     <div class="col-md-6 text-md-end">
                         <nav aria-label="breadcrumb">
@@ -39,16 +39,21 @@
                 </div>
             </div>
 
+            <!-- Category scroll filters - dynamic from database -->
             <div class="shop-category-filters-scrollable mt-4">
                 <div class="d-flex justify-content-start flex-nowrap overflow-auto">
-                    <a href="#" class="btn shop-category-filter-btn active"><i class="fas fa-child me-2"></i>Children's Books</a>
-                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-utensils me-2"></i>Food & Wine</a>
-                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-book-open me-2"></i>Biographies</a>
-                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-heart me-2"></i>Romance</a>
-                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-ghost me-2"></i>Fantasy</a>
-                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-landmark me-2"></i>History</a>
-                    <a href="#" class="btn shop-category-filter-btn"><i class="fas fa-feather-alt me-2"></i>Literature</a>
-                    <!-- Add more category buttons as needed -->
+                    <!-- All books filter option -->
+                    <a th:href="@{/all-category}" class="btn shop-category-filter-btn" th:classappend="${selectedCategoryIds == null || selectedCategoryIds.isEmpty() ? 'active' : ''}"><i class="fas fa-book me-2"></i>All Books</a>
+                    
+                    <!-- Dynamic categories from database -->
+                    <a th:each="category : ${allCategories}" 
+                       th:href="@{/all-category(category=${category.categoryId})}" 
+                       class="btn shop-category-filter-btn"
+                       th:classappend="${selectedCategoryIds != null && selectedCategoryIds.contains(category.categoryId) ? 'active' : ''}"
+                       th:attr="data-category-id=${category.categoryId}">
+                        <i class="fas fa-bookmark me-2"></i>
+                        <span th:text="${category.categoryName}">Category Name</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -60,301 +65,227 @@
             <div class="row">
                 <!-- Sidebar -->
                 <aside class="col-lg-3">
-                    <div class="filter-widget mb-4">
-                        <h5 class="filter-widget-title">Categories</h5>
-                        <ul class="list-unstyled category-filter-list">
-                            <li><a href="#">Hot Deals <span class="count">(12)</span></a></li>
-                            <li><a href="#">Mick Herron <span class="count">(10)</span></a></li>
-                            <li><a href="#">Baby <span class="count">(6)</span></a></li>
-                            <li><a href="#">Biography <span class="count">(2)</span></a></li>
-                            <li><a href="#">Crime <span class="count">(6)</span></a></li>
-                            <li><a href="#">Fantasy <span class="count">(6)</span></a></li>
-                            <li><a href="#">Food <span class="count">(1)</span></a></li>
-                            <li><a href="#">Health <span class="count">(3)</span></a></li>
-                            <li><a href="#">History <span class="count">(5)</span></a></li>
-                            <li><a href="#">Romance <span class="count">(3)</span></a></li>
-                            <li><a href="#">Sci-Fi <span class="count">(6)</span></a></li>
-                            <li><a href="#">Travel <span class="count">(6)</span></a></li>
-                        </ul>
-                    </div>
-
-                    <div class="filter-widget mb-4">
-                        <h5 class="filter-widget-title">Author</h5>
-                        <ul class="list-unstyled author-filter-list">
-                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorAli"><label class="form-check-label" for="authorAli">Ali Tufan</label></div></li>
-                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorBessie"><label class="form-check-label" for="authorBessie">Bessie Cooper</label></div></li>
-                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorBrooklyn"><label class="form-check-label" for="authorBrooklyn">Brooklyn Simmons</label></div></li>
-                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorCourtney"><label class="form-check-label" for="authorCourtney">Courtney Henry</label></div></li>
-                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorFloyd"><label class="form-check-label" for="authorFloyd">Floyd Miles</label></div></li>
-                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorRalph"><label class="form-check-label" for="authorRalph">Ralph Edwards</label></div></li>
-                            <li><div class="form-check"><input class="form-check-input" type="checkbox" value="" id="authorRonald"><label class="form-check-label" for="authorRonald">Ronald Richards</label></div></li>
-                        </ul>
-                    </div>
-
-                    <div class="filter-widget mb-4">
-                        <h5 class="filter-widget-title">Filter by Price</h5>
-                        <input type="range" class="form-range price-filter-slider" id="priceRange" min="4" max="400" step="1">
-                        <div class="d-flex justify-content-between mt-2">
-                            <span class="price-label small">Min: $<span id="minPriceDisplay">4</span></span>
-                            <span class="price-label small">Max: $<span id="maxPriceDisplay">400</span></span>
-                        </div>
-                    </div>
-
-                    <div class="filter-widget">
-                        <h5 class="filter-widget-title">Rating</h5>
-                        <div class="rating-filter-stars">
-                            <!-- Use radio buttons for single selection, or checkboxes for multi-selection -->
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="ratingFilter" id="rating5">
-                                <label class="form-check-label" for="rating5">
-                                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                                </label>
-                            </div> <br>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="ratingFilter" id="rating4">
-                                <label class="form-check-label" for="rating4">
-                                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i> & Up
-                                </label>
-                            </div> <br>
-                            <!-- Add more rating options as in the image -->
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="ratingFilter" id="ratingImageMatch">
-                                <label class="form-check-label" for="ratingImageMatch" title="Matches image: 1 filled, 1 half, 3 empty - this is unusual for a filter">
-                                    <i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i> <!-- This exact rating from image seems like a display, not a filter option -->
-                                </label>
+                    <!-- Category filter with checkboxes -->
+                    <form id="filterForm" th:action="@{/all-category}" method="get">
+                        <!-- Hidden inputs for maintaining pagination and sorting state -->
+                        <input type="hidden" name="page" th:value="${currentPage}">
+                        <input type="hidden" name="size" value="12">
+                        <input type="hidden" name="sort" th:value="${sortField}">
+                        <input type="hidden" name="direction" th:value="${sortDirection}">
+                        
+                        <!-- Apply filters button at the top for better UX -->
+                        <button type="submit" class="btn btn-primary w-100 mb-4">Áp Dụng Bộ Lọc</button>
+                        
+                        <div class="filter-widget mb-4">
+                            <h5 class="filter-widget-title">Categories</h5>
+                            <div class="category-filter-list">
+                                <div class="form-check" th:each="category : ${allCategories}">
+                                    <input class="form-check-input filter-checkbox" 
+                                           type="checkbox" 
+                                           name="category" 
+                                           th:value="${category.categoryId}" 
+                                           th:id="'category' + ${category.categoryId}"
+                                           th:checked="${selectedCategoryIds != null && selectedCategoryIds.contains(category.categoryId)}">
+                                    <label class="form-check-label" th:for="'category' + ${category.categoryId}" th:text="${category.categoryName}">Category Name</label>
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        <!-- Publisher filter instead of Author -->
+                        <div class="filter-widget mb-4">
+                            <h5 class="filter-widget-title">Filter by Publisher</h5>
+                            <div class="publisher-filter-list">
+                                <div class="form-check" th:each="publisher : ${allPublishers}">
+                                    <input class="form-check-input filter-checkbox" 
+                                           type="checkbox" 
+                                           name="publisher" 
+                                           th:value="${publisher.publisherId}" 
+                                           th:id="'publisher' + ${publisher.publisherId}"
+                                           th:checked="${selectedPublisherIds != null && selectedPublisherIds.contains(publisher.publisherId)}">
+                                    <label class="form-check-label" th:for="'publisher' + ${publisher.publisherId}" th:text="${publisher.publisherName}">Publisher Name</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Price range filter with checkboxes -->
+                        <div class="filter-widget mb-4">
+                            <h5 class="filter-widget-title">Filter by Price</h5>
+                            <div class="price-filter-list">
+                                <div class="form-check">
+                                    <input class="form-check-input filter-checkbox" type="checkbox" name="priceRange" value="range1" id="priceRange1"
+                                           th:checked="${selectedPriceRanges != null && selectedPriceRanges.contains('range1')}">
+                                    <label class="form-check-label" for="priceRange1">Less than 50.000 VND</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input filter-checkbox" type="checkbox" name="priceRange" value="range2" id="priceRange2"
+                                           th:checked="${selectedPriceRanges != null && selectedPriceRanges.contains('range2')}">
+                                    <label class="form-check-label" for="priceRange2">50.000 VND - 200.000 VND</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input filter-checkbox" type="checkbox" name="priceRange" value="range3" id="priceRange3"
+                                           th:checked="${selectedPriceRanges != null && selectedPriceRanges.contains('range3')}">
+                                    <label class="form-check-label" for="priceRange3">200.000 VND - 500.000 VND</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input filter-checkbox" type="checkbox" name="priceRange" value="range4" id="priceRange4"
+                                           th:checked="${selectedPriceRanges != null && selectedPriceRanges.contains('range4')}">
+                                    <label class="form-check-label" for="priceRange4">More than 500.000 VND</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- No Apply Filters button here anymore, moved to top -->
+                    </form>
                 </aside>
 
                 <!-- Product Grid -->
                 <div class="col-lg-9">
-                    <div class="product-grid-controls d-flex justify-content-between align-items-center mb-4">
-                        <p class="mb-0 text-muted">Showing 1–16 of 20 results</p>
-                        <div class="sort-by-dropdown">
-                            <select class="form-select form-select-sm" aria-label="Sort by">
-                                <option selected>Default sorting</option>
-                                <option value="1">Sort by popularity</option>
-                                <option value="2">Sort by average rating</option>
-                                <option value="3">Sort by latest</option>
-                                <option value="4">Sort by price: low to high</option>
-                                <option value="5">Sort by price: high to low</option>
-                            </select>
+                    <div class="product-grid-controls d-flex flex-wrap justify-content-between align-items-center mb-4">
+                        <!-- Results count -->
+                        <p class="mb-0 text-muted">
+                            Showing 
+                            <span th:text="${books.numberOfElements > 0 ? books.number * books.size + 1 : 0}"></span>
+                            –
+                            <span th:text="${books.numberOfElements > 0 ? books.number * books.size + books.numberOfElements : 0}"></span>
+                            of 
+                            <span th:text="${books.totalElements}"></span> results
+                        </p>
+                        
+                        <div class="d-flex align-items-center">
+                            <!-- Rating filter dropdown -->
+                            <div class="rating-dropdown me-3">
+                                <select class="form-select form-select-sm" id="ratingFilter" name="rating" form="filterForm">
+                                    <option value="">Rating</option>
+                                    <option value="5" th:selected="${minRating != null && minRating == 5}">5 ★</option>
+                                    <option value="4" th:selected="${minRating != null && minRating == 4}">4+ ★</option>
+                                    <option value="3" th:selected="${minRating != null && minRating == 3}">3+ ★</option>
+                                    <option value="2" th:selected="${minRating != null && minRating == 2}">2+ ★</option>
+                                    <option value="1" th:selected="${minRating != null && minRating == 1}">1+ ★</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Sort by dropdown and direction controls (separate) -->
+                            <div class="d-flex align-items-center">
+                                <form id="sortForm" th:action="@{/all-category}" method="get" class="d-inline">
+                                    <!-- Preserve all current filter parameters -->
+                                    <input type="hidden" name="page" value="0"> <!-- Reset to first page on sort change -->
+                                    <input type="hidden" name="size" value="12">
+                                    <th:block th:if="${searchQuery != null}">
+                                        <input type="hidden" name="search" th:value="${searchQuery}">
+                                    </th:block>
+                                    <th:block th:if="${selectedCategoryIds != null}" th:each="catId : ${selectedCategoryIds}">
+                                        <input type="hidden" name="category" th:value="${catId}">
+                                    </th:block>
+                                    <th:block th:if="${selectedPublisherIds != null}" th:each="pubId : ${selectedPublisherIds}">
+                                        <input type="hidden" name="publisher" th:value="${pubId}">
+                                    </th:block>
+                                    <th:block th:if="${selectedPriceRanges != null}" th:each="range : ${selectedPriceRanges}">
+                                        <input type="hidden" name="priceRange" th:value="${range}">
+                                    </th:block>
+                                    <th:block th:if="${minRating != null}">
+                                        <input type="hidden" name="rating" th:value="${minRating}">
+                                    </th:block>
+                                    
+                                    <!-- Sort options as a dropdown -->
+                                    <select class="form-select form-select-sm" name="sort" id="sortSelect" onchange="document.getElementById('sortForm').submit();">
+                                        <option value="dateAdded" th:selected="${sortField == 'dateAdded'}">Sắp xếp theo mới nhất</option>
+                                        <option value="averageRating" th:selected="${sortField == 'averageRating'}">Sắp xếp theo đánh giá</option>
+                                        <option value="sellingPrice" th:selected="${sortField == 'sellingPrice'}">Sắp xếp theo giá</option>
+                                        <option value="title" th:selected="${sortField == 'title'}">Sắp xếp theo tên</option>
+                                    </select>
+
+                                    <!-- Hidden direction input for form submit -->
+                                    <input type="hidden" name="direction" th:value="${sortDirection}" id="sortDirection">
+                                </form>
+                                
+                                <!-- Separate Order Direction controls in a button group -->
+                                <div class="btn-group ms-2">
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            th:classappend="${sortDirection == 'ASC' ? 'active' : ''}" 
+                                            onclick="setSortDirection('ASC')" 
+                                            title="Sắp xếp tăng dần">
+                                        <i class="fas fa-sort-amount-up-alt"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            th:classappend="${sortDirection == 'DESC' ? 'active' : ''}" 
+                                            onclick="setSortDirection('DESC')" 
+                                            title="Sắp xếp giảm dần">
+                                        <i class="fas fa-sort-amount-down-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4">
-                        <!-- Book 1 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-spirit.jpg}" alt="All You Can Ever Know" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">All You Can Ever Know: A Memoir</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">$14.20</p>
-                                </div>
+                        <!-- No books found message -->
+                        <div class="col-12 text-center" th:if="${books.empty}">
+                            <div class="alert alert-info">
+                                <h5>No books found matching your criteria</h5>
+                                <p>Try adjusting your filters or search query</p>
                             </div>
                         </div>
-                        <!-- Book 2 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-subletter.jpg}" alt="Angry God" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Angry God (All Saints High Book 3)</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
-                                    <p class="book-price">$4.30</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 3 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-beast.jpg}" alt="Broken Faith" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Broken Faith: Inside the Word of Faith...</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">$12.35</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 4 (Sale) -->
-                        <div class="col">
+                        
+                        <!-- Dynamic books from database -->
+                        <div class="col" th:each="book : ${books}">
                             <div class="book-card shop-book-card">
                                 <div class="position-relative">
-                                    <a href="#"><img th:src="@{/images/shop-book-beautifully-delicious.jpg}" alt="Broken Faith Delicious" class="book-cover img-fluid"></a>
-                                    <span class="badge bg-danger sale-badge">Sale!</span>
+                                    <!-- Book cover image with fallback -->
+                                    <a th:href="@{/product-detail(book_id=${book.book_id})}">
+                                        <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/book-placeholder.jpg'}" 
+                                             th:alt="${book.title}" class="book-cover img-fluid">
+                                    </a>
+                                    <!-- Sale badge if discount is available -->
+                                    <span class="badge bg-danger sale-badge" 
+                                          th:if="${book.originalPrice != null && book.sellingPrice != null && book.originalPrice.compareTo(book.sellingPrice) > 0}">Sale!</span>
                                 </div>
+                                
                                 <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Broken Faith: Inside the Word of Faith...</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
-                                    <p class="book-price">
-                                        <span class="original-price text-decoration-line-through me-1">$59.95</span>
-                                        <span class="sale-price">$29.59</span>
-                                    </p>
+                                    <!-- Book title with link to details -->
+                                    <h6 class="book-title">
+                                        <a th:href="@{/product-detail(book_id=${book.book_id})}" th:text="${book.title}">Book Title</a>
+                                    </h6>
+                                    
+                                    <!-- Star rating using the fragment -->
+                                    <div th:replace="~{fragments/book-rating :: star-rating(${book.averageRating})}"></div>
+                                    
+                                    <!-- Price display using the fragment -->
+                                    <div th:replace="~{fragments/book-price :: price-display(${book.originalPrice}, ${book.sellingPrice})}"></div>
                                 </div>
                             </div>
                         </div>
-                        <!-- Book 5 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-playing-cool.jpg}" alt="Dark in Death" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Dark in Death: An Eve Dallas Novel (In Death, Book 46)</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">$12.30</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 6 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-enjoy-little-things.jpg}" alt="Eternity Springs" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Eternity Springs: The McBrides of Texas Ever : Tucker</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
-                                    <p class="book-price">$10.35</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 7 (Add to Cart on Hover) -->
-                        <div class="col">
-                            <div class="book-card shop-book-card book-card-interactive">
-                                <div class="book-cover-container position-relative">
-                                    <a href="#"><img th:src="@{/images/shop-book-long-way-down.jpg}" alt="Long Way Down" class="book-cover img-fluid"></a>
-                                    <div class="book-card-hover-content">
-                                        <button class="btn btn-primary btn-sm">Add to cart</button>
-                                    </div>
-                                </div>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Romancing Mister Bridgerton Penelope & Colin's Story</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">$33.95</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 8 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-versus.jpg}" alt="Versus" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Romancing Mister Bridgerton Penelope & Colin's Story</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">$33.95</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 9 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-rose.jpg}" alt="Slow Horses" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Slow Horses (Deluxe Edition) (Slough House)</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
-                                    <p class="book-price">$33.95</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 10 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <div class="position-relative"> <!-- For overlay text like 'OCT 26' -->
-                                    <a href="#"><img th:src="@{/images/shop-book-avenir-next.jpg}" alt="Star Trek" class="book-cover img-fluid"></a>
-                                    <!-- Example Overlay Text, style as needed -->
-                                    <div class="book-cover-overlay-text">OCT 26 <br> SOUL: MATES</div>
-                                </div>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Star Trek: The Last Best Hope</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price"><span class="original-price text-decoration-line-through me-1">$89.29</span> $33.95</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 11 (Sale) -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <div class="position-relative">
-                                    <a href="#"><img th:src="@{/images/shop-book-its-good.jpg}" alt="It's Good" class="book-cover img-fluid"></a>
-                                    <span class="badge bg-danger sale-badge">Sale!</span>
-                                </div>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">It's Good & Delicious Choice!</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
-                                    <p class="book-price">$33.95</p> <!-- Price from image is not clear, using placeholder -->
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 12 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-only-lovers-shop.jpg}" alt="The Divorce" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">The Divorce: A gripping psychological thriller with a...</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
-                                    <p class="book-price">$10.35</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 13 (Sale) -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <div class="position-relative">
-                                    <a href="#"><img th:src="@{/images/shop-book-operetta-shop.jpg}" alt="The Last Sister" class="book-cover img-fluid"></a>
-                                    <span class="badge bg-danger sale-badge">Sale!</span>
-                                </div>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">The Last Sister (Columbia River Book 1)</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">
-                                        <span class="original-price text-decoration-line-through me-1">$33.95</span> <!-- Assuming a sale from $33.95 -->
-                                        <span class="sale-price">$4.30</span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 14 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-grazie-shop.jpg}" alt="The Rural Diaries" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">The Rural Diaries: Love, Livestock, and Big Life Lesson...</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">$33.95</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 15 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-avris-shop.jpg}" alt="Think Like a Monk" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Think Like a Monk: Train Your Mind for Peace and Purpose...</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">$16.50</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Book 16 -->
-                        <div class="col">
-                            <div class="book-card shop-book-card">
-                                <a href="#"><img th:src="@{/images/shop-book-sure-thing-shop.jpg}" alt="The Sure Thing" class="book-cover img-fluid"></a>
-                                <div class="book-info">
-                                    <h6 class="book-title"><a href="#">Think Like a Monk: Train Your Mind for Peace and Purpose...</a></h6>
-                                    <div class="star-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                    <p class="book-price">$5.95</p>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
 
-                    <!-- Pagination -->
-                    <nav aria-label="Page navigation" class="mt-5 d-flex justify-content-center">
+                    <!-- Dynamic Pagination -->
+                    <nav aria-label="Page navigation" class="mt-5 d-flex justify-content-center" th:if="${books.totalPages > 0}">
                         <ul class="pagination">
-                            <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-left"></i></a></li>
-                            <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a></li>
+                            <!-- Previous page link -->
+                            <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/all-category(page=${currentPage - 1}, size=12, sort=${sortField}, direction=${sortDirection}, 
+                                    search=${searchQuery}, category=${selectedCategoryIds}, publisher=${selectedPublisherIds}, 
+                                    priceRange=${selectedPriceRanges}, rating=${minRating})}"
+                                   tabindex="-1" th:aria-disabled="${currentPage == 0}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            
+                            <!-- Page number links -->
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, books.totalPages - 1)}" 
+                                th:classappend="${currentPage == i ? 'active' : ''}" th:if="${i < 5}">
+                                <a class="page-link" th:href="@{/all-category(page=${i}, size=12, sort=${sortField}, direction=${sortDirection}, 
+                                    search=${searchQuery}, category=${selectedCategoryIds}, publisher=${selectedPublisherIds}, 
+                                    priceRange=${selectedPriceRanges}, rating=${minRating})}"
+                                   th:text="${i + 1}"></a>
+                            </li>
+                            
+                            <!-- Next page link -->
+                            <li class="page-item" th:classappend="${currentPage + 1 >= books.totalPages ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/all-category(page=${currentPage + 1}, size=12, sort=${sortField}, direction=${sortDirection}, 
+                                    search=${searchQuery}, category=${selectedCategoryIds}, publisher=${selectedPublisherIds}, 
+                                    priceRange=${selectedPriceRanges}, rating=${minRating})}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
                         </ul>
                     </nav>
                 </div>
@@ -376,5 +307,54 @@
         crossorigin="anonymous"></script>
 <!-- Custom JS -->
 <script th:src="@{/js/script.js}"></script>
+
+<!-- Page-specific JavaScript -->
+<script>
+    // Function to set sort direction explicitly
+    function setSortDirection(direction) {
+        // Get the direction input
+        const directionInput = document.getElementById('sortDirection');
+        // Set the direction value
+        directionInput.value = direction;
+        // Submit the form
+        document.getElementById('sortForm').submit();
+    }
+    
+    // Auto-submit form when rating dropdown changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const ratingFilter = document.getElementById('ratingFilter');
+        if (ratingFilter) {
+            ratingFilter.addEventListener('change', function() {
+                document.getElementById('filterForm').submit();
+            });
+        }
+        
+        // Make category links in the top bar use the form
+        const categoryLinks = document.querySelectorAll('.shop-category-filter-btn');
+        categoryLinks.forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                const categoryId = this.getAttribute('data-category-id');
+                const form = document.getElementById('filterForm');
+                
+                // Clear any existing category inputs
+                const existingInputs = form.querySelectorAll('input[name="category"]');
+                existingInputs.forEach(input => input.remove());
+                
+                // If this isn't the "All Books" link, add the category
+                if (categoryId) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'category';
+                    input.value = categoryId;
+                    form.appendChild(input);
+                }
+                
+                // Submit the form
+                form.submit();
+            });
+        });
+    });
+</script>
 </body>
 </html>

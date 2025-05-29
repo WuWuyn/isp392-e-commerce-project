@@ -3,18 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>5 Attractive Bookstore WordPress Themes - Bookix Blog</title> <!-- Dynamic Title -->
+    <title th:text="${blog.title} + ' - Bookix Blog'">Blog Title - Bookix Blog</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
@@ -26,7 +21,7 @@
 <main class="blog-single-page pt-2 pb-5">
     <!-- Post Hero Image -->
     <section class="blog-single-hero mb-4">
-        <img th:src="@{/images/blog-single-hero.jpg}" alt="Attractive Bookstore WordPress Themes" class="img-fluid blog-single-hero-image w-100">
+        <img th:src="@{/images/blog-single-hero.jpg}" th:alt="${blog.title}" class="img-fluid blog-single-hero-image w-100">
     </section>
 
     <div class="container">
@@ -34,116 +29,64 @@
             <div class="col-lg-8"> <!-- Main content column -->
                 <!-- Post Header -->
                 <header class="blog-single-header text-center mb-4">
-                    <h1 class="blog-single-title display-5">5 Attractive Bookstore WordPress Themes</h1>
+                    <h1 class="blog-single-title display-5" th:text="${blog.title}">Blog Title</h1>
                     <p class="blog-single-meta text-muted">
-                        <span class="post-date">10 Oct, 2023</span>
+                        <span class="post-date" th:text="${#dates.format(blog.createdDate, 'dd MMM, yyyy')}">Date</span>
                         <span class="mx-1">•</span>
-                        by <a href="#" class="text-muted">Floyd Miles</a>
+                        by <a href="#" class="text-muted" th:text="${blog.user.fullName}">Author Name</a>
+                        <span class="mx-1">•</span>
+                        <span th:text="${blog.viewsCount} + ' views'">Views Count</span>
                     </p>
                 </header>
 
                 <!-- Post Content -->
                 <article class="blog-single-content">
-                    <h4 class="mb-3 fw-normal">Bringing the culture of sharing to everyone</h4>
-                    <p>Aliquam hendrerit sollicitudin purus, quis rutrum mi accumsan nec. Quisque bibendum orci ac nibh facilisis, at malesuada orci congue. Nullam tempus sollicitudin cursus. Ut et adipiscing erat. Curabitur this is a text link libero tempus congue.</p>
-                    <p>Duis mattis laoreet neque, et ornare neque sollicitudin at. Proin sagittis dolor sed mi elementum pretium. Donec et justo ante. Vivamus egestas sodales est, eu rhoncus urna semper eu. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Integer tristique elit lobortis purus bibendum, quis dictum metus mattis. Phasellus posuere felis sed eros porttitor mattis. Curabitur massa magna, tempor in blandit id, porta in ligula. Aliquam laoreet nisl massa, at interdum mauris sollicitudin et.</p>
-
-                    <blockquote class="custom-blockquote my-4 p-4">
-                        <p class="mb-2">Aliquam hendrerit sollicitudin purus, quis rutrum mi accumsan nec. Quisque bibendum orci ac nibh facilisis, at malesuada orci congue.</p>
-                        <footer class="blockquote-footer mb-0 text-dark fw-bold">Luis Pickford</footer>
-                    </blockquote>
-
-                    <h5 class="mt-5 mb-3">What you'll learn</h5>
-                    <div class="row learn-list">
-                        <div class="col-md-6">
-                            <ul class="list-unstyled custom-bullet-list">
-                                <li>Become a UI/UX designer.</li>
-                                <li>You will be able to start earning money Figma skills.</li>
-                                <li>Build a UI project from beginning to end.</li>
-                                <li>Work with colors & fonts.</li>
-                                <li>You will create your own UI Kit.</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <ul class="list-unstyled custom-bullet-list">
-                                <li>Build & test a complete mobile app.</li>
-                                <li>Learn to design mobile apps & websites.</li>
-                                <li>Design 3 different logos.</li>
-                                <li>Create low-fidelity wireframe.</li>
-                                <li>Downloadable exercise files.</li>
-                            </ul>
-                        </div>
+                    <div th:utext="${blog.content}">
+                        <!-- Blog content will be rendered here -->
+                        <p>Default blog content placeholder. This will be replaced with the actual blog content.</p>
                     </div>
-
-                    <div class="row my-4 g-3">
-                        <div class="col-md-6">
-                            <img th:src="@{/images/blog-single-content-img1.jpg}" alt="Reading in library" class="img-fluid rounded">
-                        </div>
-                        <div class="col-md-6">
-                            <img th:src="@{/images/blog-single-content-img2.jpg}" alt="Woman reading with bookshelf" class="img-fluid rounded">
-                        </div>
-                    </div>
-
-                    <h5 class="mt-5 mb-3">Requirements</h5>
-                    <ul class="list-unstyled custom-bullet-list">
-                        <li>We do not require any previous experience or pre-defined skills to take this course. A great orientation would be enough to master UI/UX design.</li>
-                        <li>A computer with a good internet connection.</li>
-                        <li>Adobe Photoshop (OPTIONAL).</li>
-                    </ul>
                 </article>
-
-                <!-- Post Footer: Tags & Share -->
-                <footer class="blog-single-footer mt-5 pt-4 border-top">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center">
-                        <div class="post-tags mb-2 mb-md-0">
-                            <a href="#" class="btn btn-sm btn-outline-secondary tag-btn me-1">Smart Homes</a>
-                            <!-- Add more tags as needed -->
-                        </div>
-                        <div class="post-share">
-                            <span class="me-2 text-muted small">Share:</span>
-                            <a href="#" class="social-share-icon text-muted me-2" aria-label="Share on Facebook"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="social-share-icon text-muted me-2" aria-label="Share on Twitter"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="social-share-icon text-muted me-2" aria-label="Share on Instagram"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="social-share-icon text-muted" aria-label="Share on LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                        </div>
-                    </div>
-                </footer>
 
                 <!-- Author Bio -->
                 <section class="author-bio-section my-5 p-4 rounded">
                     <div class="d-flex align-items-center">
-                        <img th:src="@{/images/avatar-floyd-miles.jpg}" alt="Floyd Miles" class="author-avatar rounded-circle me-3">
+                        <img th:src="@{/images/avatar-placeholder.jpg}" th:alt="${blog.user.fullName}" class="author-avatar rounded-circle me-3">
                         <div>
-                            <h5 class="author-name mb-0">Floyd Miles</h5>
-                            <p class="author-description text-muted small mb-0">Floyd Miles is a senior editor for Bookix, covering a wide range of topics including literature, technology in reading, and bookstore design.</p>
-                            <!-- Add social links for author if available -->
+                            <h5 class="author-name mb-0" th:text="${blog.user.fullName}">Author Name</h5>
                         </div>
                     </div>
                 </section>
 
                 <!-- Prev/Next Post Navigation -->
                 <nav class="post-navigation d-flex justify-content-between my-5 py-3 border-top border-bottom">
-                    <a href="#" class="prev-post-link text-decoration-none">
+                    <a th:if="${previousBlog != null}" th:href="@{/blog/{id}(id=${previousBlog.blogId})}" class="prev-post-link text-decoration-none">
                         <div class="text-muted small"><i class="fas fa-chevron-left me-1"></i> Previous:</div>
-                        <span class="post-nav-title">5 Attractive Bookstore WordPress Themes</span>
+                        <span class="post-nav-title" th:text="${previousBlog.title}">Previous Blog Title</span>
                     </a>
-                    <a href="#" class="next-post-link text-decoration-none text-end">
+                    <div th:unless="${previousBlog != null}" class="prev-post-link text-decoration-none text-muted">
+                        <!-- Empty space when no previous blog -->
+                    </div>
+                    
+                    <a th:if="${nextBlog != null}" th:href="@{/blog/{id}(id=${nextBlog.blogId})}" class="next-post-link text-decoration-none text-end">
                         <div class="text-muted small">Next: <i class="fas fa-chevron-right ms-1"></i></div>
-                        <span class="post-nav-title">Building a library – Prepare the future for a genius</span>
+                        <span class="post-nav-title" th:text="${nextBlog.title}">Next Blog Title</span>
                     </a>
+                    <div th:unless="${nextBlog != null}" class="next-post-link text-decoration-none text-end text-muted">
+                        <!-- Empty space when no next blog -->
+                    </div>
                 </nav>
 
                 <!-- Comments Section -->
                 <section class="comments-section mb-5" id="comments">
                     <h3 class="comments-title mb-4">Leave a Reply <span class="text-muted small">(or view existing comments below)</span></h3>
                     <!-- Comment Form -->
-                    <form class="comment-form mb-5">
+                    <form class="comment-form mb-5" th:action="@{/blog/{id}/comment(id=${blog.blogId})}" method="post">
                         <p class="comment-notes small text-muted mb-3">Your email address will not be published. Required fields are marked <span class="required">*</span></p>
                         <div class="mb-3">
                             <label for="commentText" class="form-label">Comment <span class="required">*</span></label>
                             <textarea class="form-control" id="commentText" name="comment" rows="5" required></textarea>
                         </div>
-                        <div class="row">
+                        <div class="row" th:if="${#authorization.expression('!isAuthenticated()')}">
                             <div class="col-md-4 mb-3">
                                 <label for="commentAuthor" class="form-label">Name <span class="required">*</span></label>
                                 <input type="text" class="form-control" id="commentAuthor" name="author" required>
@@ -157,7 +100,7 @@
                                 <input type="url" class="form-control" id="commentWebsite" name="url">
                             </div>
                         </div>
-                        <div class="form-check mb-3">
+                        <div class="form-check mb-3" th:if="${#authorization.expression('!isAuthenticated()')}">
                             <input class="form-check-input" type="checkbox" value="" id="saveCommentInfo" name="wp-comment-cookies-consent">
                             <label class="form-check-label" for="saveCommentInfo">
                                 Save my name, email, and website in this browser for the next time I comment.
@@ -166,46 +109,30 @@
                         <button type="submit" class="btn btn-dark submit-comment-btn">Post Comment</button>
                     </form>
 
-                    <!-- Existing Comments (with placeholder for pagination) -->
-                    <h4 class="existing-comments-title mb-4">Comments (3)</h4> <!-- Dynamic count -->
-                    <div class="comment-list">
-                        <!-- Single Comment Item (Repeat this structure) -->
-                        <div class="comment-item d-flex mb-4 pb-3 border-bottom">
-                            <img th:src="@{/images/avatar-placeholder.png}" alt="Commenter Name" class="commenter-avatar rounded-circle me-3">
+                    <!-- Existing Comments -->
+                    <h4 class="existing-comments-title mb-4" th:text="'Comments (' + ${blog.comments.size()} + ')'">Comments (0)</h4>
+                    <div class="comment-list" th:if="${!blog.comments.isEmpty()}">
+                        <!-- Single Comment Item -->
+                        <div class="comment-item d-flex mb-4 pb-3 border-bottom" th:each="comment : ${blog.comments}">
+                            <img th:src="@{/images/avatar-placeholder.png}" th:alt="${comment.user.fullName}" class="commenter-avatar rounded-circle me-3">
                             <div class="comment-content">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <h6 class="commenter-name mb-0">Jane Doe</h6>
-                                    <span class="comment-date text-muted small">12 Oct, 2023 at 10:30 AM</span>
+                                    <h6 class="commenter-name mb-0" th:text="${comment.user.fullName}">
+                                        Commenter Name
+                                        <span th:if="${comment.user.id == blog.user.id}" class="badge bg-primary-subtle text-primary-emphasis rounded-pill small ms-1">Author</span>
+                                    </h6>
+                                    <span class="comment-date text-muted small" th:text="${comment.createdDate != null ? #dates.format(comment.createdDate, 'dd MMM yyyy - hh:mm a') : 'Date unavailable'}">Comment Date</span>
                                 </div>
-                                <p class="comment-text mt-1 mb-2">This was a great read, very informative! Thanks for sharing.</p>
-                                <a href="#comments" class="btn btn-sm btn-outline-secondary reply-link"><i class="fas fa-reply me-1"></i> Reply</a>
-                            </div>
-                        </div>
-                        <!-- Nested Comment / Reply Example -->
-                        <div class="comment-item comment-reply d-flex mb-4 pb-3 border-bottom ms-md-5">
-                            <img th:src="@{/images/avatar-floyd-miles.jpg}" alt="Floyd Miles" class="commenter-avatar rounded-circle me-3">
-                            <div class="comment-content">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h6 class="commenter-name mb-0">Floyd Miles <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill small ms-1">Author</span></h6>
-                                    <span class="comment-date text-muted small">12 Oct, 2023 at 11:00 AM</span>
-                                </div>
-                                <p class="comment-text mt-1 mb-2">Thanks, Jane! Glad you found it useful.</p>
-                                <a href="#comments" class="btn btn-sm btn-outline-secondary reply-link"><i class="fas fa-reply me-1"></i> Reply</a>
-                            </div>
-                        </div>
-                        <div class="comment-item d-flex mb-4 pb-3 border-bottom">
-                            <img th:src="@{/images/avatar-placeholder.png}" alt="John Smith" class="commenter-avatar rounded-circle me-3">
-                            <div class="comment-content">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h6 class="commenter-name mb-0">John Smith</h6>
-                                    <span class="comment-date text-muted small">11 Oct, 2023 at 02:15 PM</span>
-                                </div>
-                                <p class="comment-text mt-1 mb-2">Very helpful tips on WordPress themes for bookstores. I'll definitely check some of these out.</p>
-                                <a href="#comments" class="btn btn-sm btn-outline-secondary reply-link"><i class="fas fa-reply me-1"></i> Reply</a>
+                                <p class="comment-text mt-1 mb-2" th:text="${comment.content}">Comment text goes here.</p>
                             </div>
                         </div>
                     </div>
-                    <!-- Comment Pagination (Placeholder) -->
+                    
+                    <!-- Empty state for no comments -->
+                    <div class="no-comments text-center py-4" th:if="${blog.comments.isEmpty()}">
+                        <i class="far fa-comment-dots fa-3x text-muted mb-3"></i>
+                        <p class="mb-0">No comments yet. Be the first to share your thoughts!</p>
+                    </div>
                     <nav aria-label="Comment navigation" class="mt-4 d-flex justify-content-center">
                         <ul class="pagination">
                             <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-left"></i></a></li>

@@ -37,7 +37,6 @@
                 <div class="col-lg-6 mb-4 mb-lg-0">
                     <h1 class="section-title-big mb-3">Who We Are</h1>
                     <p class="lead-text mb-3">Aliquam hendrerit sollicitudin purus, quis rutrum mi accumsan nec. Quisque bibendum orci ac nibh facilisis, at malesuada orci congue. Nullam tempus sollicitudin cursus. Ut et adipiscing erat. Curabitur this is a text link libero tempus congue.</p>
-                    <a href="#" class="btn btn-outline-primary">Our Team <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
                 <div class="col-lg-6">
                     <img th:src="@{/images/about-who-we-are.jpg}" alt="Team reading books in a library" class="img-fluid rounded shadow-sm">
@@ -86,124 +85,9 @@
     <!-- Super Books Testimonial (Reused from index.html styles) -->
     <section class="super-books-testimonial py-5"> <!-- Added bg-white for consistency with original index -->
         <div class="container text-center">
-            <div class="star-rating mb-2"> <!-- Assuming stars from image -->
-                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-            </div>
-            <h2 class="section-title mb-3">Super Books</h2>
-            <p class="lead mb-4 col-md-8 mx-auto">Bookix is a monthly book review publication distributed to 400,000 avid readers through subscribing bookstores & public libraries.</p>
-            <img th:src="@{/images/avatar-ali-tufan.jpg}" alt="Ali Tufan" class="testimonial-avatar img-fluid rounded-circle mb-2">
-            <h6 class="testimonial-name">Ali Tufan</h6>
-            <p class="testimonial-title small text-muted">Product Manager, Apple Inc</p>
-        </div>
-    </section>
-
-    <!-- Favorite Authors Section (Reused from index.html styles) -->
-    <section class="favorite-authors-section py-5 bg-light-tint">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="section-title">Favorite Authors</h2>
-                <a th:href="@{/authors}" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a> <!-- Assuming an authors page -->
-            </div>
-            <div class="row text-center">
-                <!-- Example author, repeat as needed (max 8 for this layout from image) -->
-                <div class="col-lg col-md-3 col-4 mb-4">
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-annette.jpg}" alt="Annette Black" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Annette Black</p>
-                    </a>
-                </div>
-                <div class="col-lg col-md-3 col-4 mb-4">
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-theresa.jpg}" alt="Theresa Webb" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Theresa Webb</p>
-                    </a>
-                </div>
-                <div class="col-lg col-md-3 col-4 mb-4">
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-guy.jpg}" alt="Guy Hawkins" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Guy Hawkins</p>
-                    </a>
-                </div>
-                <div class="col-lg col-md-3 col-4 mb-4">
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-robert.jpg}" alt="Robert Fox" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Robert Fox</p>
-                    </a>
-                </div>
-                <div class="col-lg col-md-3 col-4 mb-4">
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-kristin.jpg}" alt="Kristin Watson" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Kristin Watson</p>
-                    </a>
-                </div>
-                <div class="col-lg col-md-3 col-4 mb-4">
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-floyd.jpg}" alt="Floyd Miles" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Floyd Miles</p>
-                    </a>
-                </div>
-                <div class="col-lg col-md-3 col-4 mb-4">
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-jacob.jpg}" alt="Jacob Jones" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Jacob Jones</p>
-                    </a>
-                </div>
-                <div class="col-lg col-md-3 col-4 mb-4">
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-arlene.jpg}" alt="Arlene McCoy" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Arlene McCoy</p>
-                    </a>
-                </div>
-                <!-- Jenny Wilson is shown in the picture for a total of 9, so add one more or use 8 as max for this row -->
-                <div class="col-lg col-md-3 col-4 mb-4 d-none d-lg-block"> <!-- Hide on smaller if needed -->
-                    <a href="#" class="author-link text-decoration-none">
-                        <img th:src="@{/images/author-jenny.jpg}" alt="Jenny Wilson" class="author-avatar img-fluid rounded-circle mb-2">
-                        <p class="author-name">Jenny Wilson</p>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- "Contact Us" Part -->
-    <section class="contact-us-section py-5">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6 mb-5 mb-lg-0">
-                    <h1 class="section-title-big mb-3">Get in Touch</h1>
-                    <p class="text-muted mb-4">Have any questions about our products, or would you just like to say hello?</p>
-
-                    <div class="contact-info-block mb-4">
-                        <h5 class="contact-info-title">Address</h5>
-                        <p class="text-muted">329 Queensberry Street, North Melbourne VIC3051, Australia.</p>
-                        <a href="https://maps.google.com" target="_blank" class="contact-link">Find on Google Maps <i class="fas fa-arrow-right ms-1"></i></a>
-                    </div>
-
-                    <div class="contact-info-block mb-4">
-                        <h5 class="contact-info-title">Contact Info</h5>
-                        <p class="text-muted mb-0">Email: sales@bookix.com</p>
-                        <p class="text-muted">Phone: 123 456 7890</p>
-                    </div>
-                    <div class="contact-info-block mb-4">
-                        <h5 class="contact-info-title">Hour of Operation</h5>
-                        <p class="text-muted mb-0">Mon - Fri: 08:30 - 20:00</p>
-                        <p class="text-muted">Sat & Sun: 09:30 - 21:30</p>
-                    </div>
-
-                    <div class="contact-info-block">
-                        <h5 class="contact-info-title">Follow Us</h5>
-                        <div class="contact-social-icons">
-                            <a href="#" class="social-icon me-2"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="social-icon me-2"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="social-icon me-2"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a> <!-- Matched to footer icons -->
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <img th:src="@{/images/contact-get-in-touch.jpg}" alt="Woman reading in a cozy library" class="img-fluid rounded shadow-sm">
-                </div>
-            </div>
+                <div class="quote-icon-superbooks mb-3">“</div>
+                <h2 class="section-title mb-3">Super Books</h2>
+                <p class="lead mb-4 col-md-8 mx-auto">Bookix is a monthly book review publication distributed to 400,000 avid readers through subscribing bookstores & public libraries.</p>
         </div>
     </section>
 

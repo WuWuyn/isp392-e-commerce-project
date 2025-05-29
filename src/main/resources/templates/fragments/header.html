@@ -21,38 +21,47 @@
                         <a class="nav-link active" aria-current="page" th:href="@{/}">Home</a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="shopDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle" href="/all-category" id="shopDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Shop
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="shopDropdown">
-                            <li><a class="dropdown-item" href="#">Fiction</a></li>
+                            <li><a class="dropdown-item" href="/all-category">All Category</a></li>
                             <li><a class="dropdown-item" href="#">Non-Fiction</a></li>
                             <li><a class="dropdown-item" href="#">Biographies</a></li>
                             <li><a class="dropdown-item" href="#">Children's Books</a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Blog</a>
+                        <a class="nav-link" href="/blog">Blog</a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Pages
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="pagesDropdown">
-                            <li><a class="dropdown-item" href="#">About Us</a></li>
-                            <li><a class="dropdown-item" href="#">Contact Us</a></li>
-                            <li><a class="dropdown-item" href="#">FAQ</a></li>
+                            <li><a class="dropdown-item" href="/terms-policy">Terms and Policy</a></li>
+                            <li><a class="dropdown-item" href="#">Seller Center</a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Contact</a>
+                        <a class="nav-link" href="/about-contact">About Us</a>
                     </li>
                 </ul>
                 <div class="navbar-nav nav-right-actions">
-                    <form class="d-none d-lg-flex me-2" id="searchFormDesktop">
-                        <input class="form-control form-control-sm search-input-header" type="search" placeholder="Search books..." aria-label="Search">
-                    </form>
-                    <a href="#" class="nav-link" id="searchIconToggle"><i class="fas fa-search"></i> <span class="d-none d-lg-inline">Search</span></a>
+                    <!-- Search Icon and Dropdown -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link" href="#" id="searchIconToggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-search"></i> <span class="d-none d-lg-inline">Search</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end p-3 search-dropdown" style="width: 300px;" aria-labelledby="searchIconToggle">
+                            <form class="" th:action="@{/all-category}" method="get">
+                                <div class="input-group">
+                                    <input name="search" class="form-control" type="search" placeholder="Search books..." aria-label="Search">
+                                    <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                     
                     <!-- User Account - Show Login link when not authenticated, or username with dropdown when authenticated -->
                     <div class="nav-item dropdown" sec:authorize="isAuthenticated()">
@@ -91,11 +100,77 @@
     </nav>
     <!-- Search bar for mobile/tablet toggle -->
     <div class="container d-lg-none mt-2" id="searchFormMobileContainer" style="display: none;">
-        <form class="d-flex" id="searchFormMobile">
-            <input class="form-control me-2 search-input-header" type="search" placeholder="Search books..." aria-label="Search">
+        <form class="d-flex" id="searchFormMobile" th:action="@{/all-category}" method="get">
+            <input name="search" class="form-control me-2 search-input-header" type="search" placeholder="Search books..." aria-label="Search">
             <button class="btn btn-sm btn-primary" type="submit">Search</button>
         </form>
     </div>
+    
+    <!-- CSS for search dropdown -->
+    <style>
+        .search-dropdown {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            animation: fadeIn 0.3s ease-in-out;
+            min-width: 300px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Focus styles for search input */
+        .search-dropdown .form-control:focus {
+            box-shadow: none;
+            border-color: #80bdff;
+        }
+        
+        /* Style for search button */
+        .search-dropdown .btn-primary {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        
+        /* Make the search dropdown wider on larger screens */
+        @media (min-width: 768px) {
+            .search-dropdown {
+                min-width: 400px;
+            }
+        }
+    </style>
+    
+    <!-- JavaScript for search behavior -->
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto focus input when search dropdown is shown
+            const searchDropdown = document.querySelector('.search-dropdown');
+            const searchInput = searchDropdown?.querySelector('input[name="search"]');
+            
+            // Listen for dropdown events to focus the search input
+            document.querySelector('#searchIconToggle')?.addEventListener('click', function() {
+                // Use setTimeout to ensure dropdown is fully shown before focusing
+                setTimeout(() => {
+                    searchInput?.focus();
+                }, 200);
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                const dropdown = document.querySelector('.search-dropdown.show');
+                const searchIcon = document.querySelector('#searchIconToggle');
+                
+                if (dropdown && !dropdown.contains(e.target) && e.target !== searchIcon && !searchIcon?.contains(e.target)) {
+                    // Use Bootstrap's dropdown API to hide the dropdown
+                    bootstrap.Dropdown.getInstance(searchIcon)?.hide();
+                }
+            });
+            
+            // Prevent dropdown from closing when clicking inside
+            searchDropdown?.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+    </script>
 </header>
 
 </body>
