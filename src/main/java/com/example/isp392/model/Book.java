@@ -86,8 +86,4 @@ public class Book {
             inverseJoinColumns = @JoinColumn(name = "category_id") // Foreign key for Category in join table
     )
     private Set<Category> categories = new HashSet<>();
-
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<BookReview> reviews = new ArrayList<>();
-
 }
