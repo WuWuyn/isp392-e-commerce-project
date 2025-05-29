@@ -18,15 +18,7 @@ public class HomepageController {
         return "home";
     }
 
-    @RequestMapping(value = "/blog", method = RequestMethod.GET)
-    public String blog(){
-        return "blog";
-    }
-
-    @RequestMapping(value = "/blog-single", method = RequestMethod.GET)
-    public String blogSingle(){
-        return "blog-single";
-    }
+    // Blog-related endpoints have been moved to BlogController
 
     @RequestMapping(value = "/about-contact", method = RequestMethod.GET)
     public String aboutContact(){
