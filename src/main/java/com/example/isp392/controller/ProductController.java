@@ -128,7 +128,7 @@ public class ProductController {
     public String detailProduct(
             @RequestParam("book_id") int bookId,
             @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "5") int size,
+            @RequestParam(value = "size", defaultValue = "4") int size,
             @RequestParam(value = "sort", defaultValue = "createdDate") String sortField,
             @RequestParam(value = "direction", defaultValue = "DESC") String sortDirection,
             @RequestParam(value = "minRating", required = false) Integer minRating,
@@ -144,7 +144,7 @@ public class ProductController {
             // Lấy các sách liên quan (cùng danh mục)
             if (book.getCategories() != null && !book.getCategories().isEmpty()) {
                 Category firstCategory = book.getCategories().iterator().next();
-                List<Book> relatedBooks = bookService.findBooksByCategory(firstCategory, 0, 5, "dateAdded", "DESC")
+                List<Book> relatedBooks = bookService.findBooksByCategory(firstCategory, 0, 4, "dateAdded", "DESC")
                         .getContent();
                 model.addAttribute("relatedBooks", relatedBooks);
             }
