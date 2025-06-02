@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Details - ReadHub</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .details-container {
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        .details-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .details-section {
+            margin-bottom: 30px;
+        }
+        .details-section:last-child {
+            margin-bottom: 0;
+        }
+        .details-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        .details-value {
+            color: #6c757d;
+            word-break: break-word;
+        }
+        .file-preview {
+            max-width: 300px;
+            margin: 10px 0;
+        }
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid details-container">
+    <a href="/admin/sellers" class="btn btn-secondary back-button">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+
+    <div class="details-card">
+        <div class="row">
+            <div class="col-md-6">
+                <h2 th:text="${shop.shopName}">Shop Name</h2>
+                <p class="text-muted" th:text="${shop.contactEmail}">contact@example.com</p>
+                <div class="mt-3">
+                    <span class="status-badge" th:classappend="|badge-${shop.status.toLowerCase()}|" th:text="${shop.status}">Status</span>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" onclick="window.location.href='/admin/sellers/' + [[${shop.shopId}]] + '/edit'">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </button>
+                    <button class="btn btn-danger" onclick="window.location.href='/admin/sellers/' + [[${shop.shopId}]] + '/delete'">
+                        <i class="fas fa-trash me-2"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="details-section">
+            <h3>Shop Information</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <span class="details-label">Shop Name:</span>
+                        <span class="details-value" th:text="${shop.shopName}">Shop Name</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="details-label">Shop Category:</span>
+                        <span class="details-value" th:text="${shop.shopCategory}">Category</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="details-label">Shop Description:</span>
+                        <span class="details-value" th:text="${shop.shopDescription}">Description</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="details-label">Shop Logo:</span>
+                        <div class="file-preview">
+                            <img th:if="${shop.logoUrl}" th:src="${shop.logoUrl}" alt="Shop Logo" class="img-fluid">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <span class="details-label">Contact Name:</span>
+                        <span class="details-value" th:text="${shop.contactName}">Contact Name</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="details-label">Contact Phone:</span>
+                        <span class="details-value" th:text="${shop.contactPhone}">Phone</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="details-label">Contact Email:</span>
+                        <span class="details-value" th:text="${shop.contactEmail}">Email</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="details-label">Address:</span>
+                        <span class="details-value" th:text="${shop.address}">Address</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="details-section">
+            <h3>Verification Information</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <span class="details-label">Tax Code:</span>
+                        <span class="details-value" th:text="${shop.taxCode}">Tax Code</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="details-label">Identification Document:</span>
+                        <div class="file-preview">
+                            <a th:if="${shop.identificationFileUrl}" th:href="${shop.identificationFileUrl}" target="_blank">
+                                <i class="fas fa-file-pdf me-2"></i>View Document
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <span class="details-label">Registration Date:</span>
+                        <span class="details-value" th:text="${#temporals.format(shop.registrationDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="details-label">Last Updated:</span>
+                        <span class="details-value" th:text="${#temporals.format(shop.lastUpdated, 'dd/MM/yyyy HH:mm')}">Date</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="details-section" th:if="${shop.status == 'REJECTED'}">
+            <h3>Rejection Information</h3>
+            <div class="mb-3">
+                <span class="details-label">Rejection Reason:</span>
+                <span class="details-value" th:text="${shop.rejectionReason}">Rejection Reason</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register as a Seller - ReadHub</title>
+    <!-- Recommended: Add Font Awesome for icons if your Bookix template uses it -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Recommended: Add Google Fonts used by Bookix -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Lora:wght@400;700&family=Lato:wght@300;400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Reset and Global Styles (Adapted from Bookix) */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background-color: #f8f9fa; /* Standard light background from Bookix */
+            padding: 20px; /* Keep some padding for small screens */
+        }
+
+        a {
+            color: #3A50A0;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #2C3E50;
+        }
+
+        /* Container for the form - Adapted to Bookix style */
+        .container {
+            max-width: 900px;
+            margin: 20px auto; /* Add some top/bottom margin */
+            background: #fff; /* White background for the main content area */
+            border-radius: 8px; /* Softer border radius like Bookix cards */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.07); /* Softer shadow */
+            overflow: hidden;
+        }
+
+        /* Header of the form - Adapted to Bookix style */
+        .header {
+            background-color: #2C3E50; /* Dark blue/charcoal for header background */
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 5px solid #3A50A0; /* Accent border */
+        }
+
+        .header h1 {
+            font-family: 'Lora', serif; /* Bookix logo font */
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: #fff; /* Ensure text is white */
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            color: #adb5bd; /* Lighter text for subtitle */
+        }
+
+        /* Form Container within the main .container */
+        .form-container {
+            padding: 30px 40px; /* Adjust padding */
+        }
+
+        /* Form Sections - Adapted to Bookix style */
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee; /* Softer separator */
+        }
+        .form-section:last-of-type { /* Last form section before regulations */
+            border-bottom: 1px solid #eee; /* Keep border for consistency before regulations */
+        }
+        .regulations-section { /* No bottom border for regulations section itself */
+            border-bottom: none;
+        }
+
+
+        .form-section h2 {
+            font-family: 'Lato', sans-serif; /* Bookix heading font */
+            color: #2C3E50; /* Darker heading color */
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section h2::before {
+            font-family: "Font Awesome 6 Free"; /* Requires Font Awesome */
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: #3A50A0;
+            width: 20px; /* Ensure consistent width for icon alignment */
+            text-align: center;
+        }
+        /* Specific icons for sections */
+        #storeInfoSection h2::before { content: "\f07a"; } /* fa-shopping-cart for Store Information */
+        #contactInfoSection h2::before { content: "\f2bb"; } /* fa-address-card for Contact Information */
+        #legalInfoSection h2::before { content: "\f02d"; } /* fa-book or fa-id-card for Legal/Identity */
+
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px; /* Slightly more gap */
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600; /* Bookix label style */
+            color: #555;     /* Bookix label color */
+            font-size: 0.9rem;
+        }
+
+        .required {
+            color: #E74C3C; /* Bookix price/alert red */
+            margin-left: 2px;
+        }
+
+        /* Input, Textarea, Select styling - Key Bookix adaptation */
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="url"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px 15px; /* Bookix form-control padding */
+            border: 1px solid #ced4da; /* Bookix form-control border */
+            border-radius: 4px;       /* Bookix form-control border-radius */
+            font-size: 0.95rem;       /* Bookix form-control font-size */
+            font-family: 'Open Sans', sans-serif;
+            color: #333;
+            background-color: #fff; /* Match Bookix form-control bg */
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus,
+        input[type="url"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: 0;
+            border-color: #3A50A0; /* Bookix focus color */
+            box-shadow: 0 0 0 0.2rem rgba(58, 80, 160, 0.25); /* Bookix focus shadow */
+            background-color: #fff;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* File Input */
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            opacity: 0;
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: #fff;
+            color: #555;
+            cursor: pointer;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            font-size: 0.95rem;
+        }
+        .file-input-label:hover {
+            border-color: #3A50A0;
+        }
+        .file-input-label .file-icon { /* Class for the icon span */
+            color: #3A50A0; /* Make icon more prominent */
+        }
+        .file-input-label .file-prompt-text {
+            color: #777;
+        }
+        .file-input-label .file-name-display {
+            color: #333;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-grow: 1; /* Allow file name to take up space */
+        }
+
+        /* Regulations Section */
+        .regulations-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 1px solid #e9ecef;
+        }
+
+        .regulations-section h3 {
+            font-family: 'Lato', sans-serif;
+            color: #2C3E50;
+            margin-bottom: 20px;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .regulations-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .regulations-list li {
+            padding: 10px 0 10px 28px;
+            border-bottom: 1px solid #e0e0e0;
+            position: relative;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .regulations-list li::before {
+            content: "\f00c"; /* Font Awesome check */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #28a745;
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%); /* Better vertical alignment */
+            font-size: 1rem;
+        }
+
+        .regulations-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Checkbox Group */
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-top: 4px;
+            transform: scale(1.1);
+            flex-shrink: 0;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            flex: 1;
+            font-weight: 500;
+            color: #444;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        /* Button Group & Buttons */
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 120px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background-color: #3A50A0;
+            color: white;
+            border-color: #3A50A0;
+        }
+
+        .btn-primary:hover {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn-secondary {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ced4da;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+            color: #2C3E50;
+            transform: translateY(-1px);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #3A50A0;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        /* Info Tooltip */
+        .info-tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 4px;
+            cursor: help;
+        }
+
+        .info-tooltip::after {
+            content: "\f05a"; /* Font Awesome info icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .info-tooltip .tooltip-text {
+            visibility: hidden;
+            width: max-content;
+            max-width: 220px;
+            background-color: #2C3E50;
+            color: #fff;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            position: absolute;
+            z-index: 1000;
+            bottom: 135%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        .info-tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #2C3E50 transparent transparent transparent;
+        }
+
+        .info-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                margin: 10px auto;
+                border-radius: 6px;
+            }
+            .header {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .form-container {
+                padding: 20px;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+            .form-group {
+                margin-bottom: 20px;
+            }
+            .btn-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>ReadHub Seller</h1>
+        <p>Start your business journey with us</p>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+
+    <form class="form-container" id="sellerRegistrationForm">
+        <!-- Thông tin cửa hàng -->
+        <div class="form-section" id="storeInfoSection">
+            <h2>Store Information</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="shopName">Store name <span class="required">*</span></label>
+                    <input type="text" id="shopName" name="shopName" required
+                           placeholder="Enter your store name">
+                </div>
+
+                <div class="form-group">
+                    <label for="shopCategory">Business Directory <span class="required">*</span></label>
+                    <select id="shopCategory" name="shopCategory" required>
+                        <option value="">Select category</option>
+                        <option value="fiction">Fiction</option>
+                        <option value="non-fiction">Non-Fiction</option>
+                        <option value="biographies">Biographies</option>
+                        <option value="childrens">Children's Books</option>
+                        <option value="horror">Horror</option>
+                        <option value="manga-comic">Manga/Comic</option>
+                        <option value="economics">Economy</option>
+                        <option value="other">Others</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="shopDescription">Store Description<span class="required">*</span></label>
+                <textarea id="shopDescription" name="shopDescription" required
+                          placeholder="Introduce your store, products, services..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="shopLogo">Store Logo
+                    <span class="info-tooltip">
+                        <span class="tooltip-text">Formats: JPG, PNG. Max size: 2MB</span>
+                    </span>
+                </label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="shopLogo" name="shopLogo" class="file-input"
+                           accept="image/jpeg,image/png,image/jpg">
+                    <label for="shopLogo" class="file-input-label">
+                        <span class="file-icon"><i class="fas fa-image"></i></span>
+                        <span class="file-prompt-text">Choose store logo</span>
+                        <span class="file-name-display"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin liên hệ -->
+        <div class="form-section" id="contactInfoSection">
+            <h2>Contact Information</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contactName">Contact person name <span class="required">*</span></label>
+                    <input type="text" id="contactName" name="contactName" required
+                           placeholder="Enter full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="contactPhone">Phone number <span class="required">*</span></label>
+                    <input type="tel" id="contactPhone" name="contactPhone" required
+                           placeholder="0123456789">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contactEmail">Email <span class="required">*</span></label>
+                    <input type="email" id="contactEmail" name="contactEmail" required
+                           placeholder="example@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="contactWebsite">Website (optional)</label>
+                    <input type="url" id="contactWebsite" name="contactWebsite"
+                           placeholder="https://yourwebsite.com">
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="contactAddress">Contact address <span class="required">*</span></label>
+                <textarea id="contactAddress" name="contactAddress" required
+                          placeholder="Enter full address..."></textarea>
+            </div>
+        </div>
+
+        <!-- Thông tin pháp lý & Giấy tờ -->
+        <div class="form-section" id="legalInfoSection">
+            <h2>Legal & Identity</h2>
+
+            <div class="form-group full-width">
+                <label for="taxCode">Tax code (optional)</label>
+                <input type="text" id="taxCode" name="taxCode"
+                       placeholder="Enter tax code (if any)">
+            </div>
+
+            <div class="form-group">
+                <label for="identityDocument">Identity Document (ID Card, Passport, etc.)<span class="required">*</span>
+                    <span class="info-tooltip">
+                        <span class="tooltip-text">Formats: PDF, JPG, PNG. Max size: 5MB</span>
+                    </span>
+                </label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="identityDocument" name="identityDocument" class="file-input"
+                           accept="application/pdf,image/jpeg,image/png,image/jpg" required>
+                    <label for="identityDocument" class="file-input-label">
+                        <span class="file-icon"><i class="fas fa-id-card"></i></span>
+                        <span class="file-prompt-text">Upload identity document</span>
+                        <span class="file-name-display"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Quy định -->
+        <div class="regulations-section">
+            <h3>Rules For Sellers</h3>
+            <ul class="regulations-list">
+                <li>Committed to providing genuine, high quality products</li>
+                <li>Comply with platform pricing and promotion policies</li>
+                <li>Customer response within 24 hours</li>
+                <li>Process orders and deliver on time as committed</li>
+                <li>Do not sell illegal or harmful products</li>
+                <li>Maintain a minimum rating of 4.0/5.0 stars</li>
+                <li>Provide accurate and complete product information</li>
+                <li>Responsible for product and service quality</li>
+                <li>Participate in on-demand marketing programs</li>
+                <li>Comply with regulations on customer information protection</li>
+            </ul>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                <label for="agreeTerms">
+                    I have read and agree to all of the above terms.
+                    I agree to abide by the terms and conditions of the platform.
+                    <span class="required">*</span>
+                </label>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="agreeMarketing" name="agreeMarketing">
+                <label for="agreeMarketing">
+                    I agree to receive marketing information and updates from the platform via email and SMS.
+                </label>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                Back
+            </button>
+            <button type="submit" class="btn btn-primary">
+                Submit
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Progress bar functionality
+    function updateProgressBar() {
+        const form = document.getElementById('sellerRegistrationForm');
+        const requiredFields = form.querySelectorAll('input[required], select[required], textarea[required]');
+        let filledFieldsCount = 0;
+
+        requiredFields.forEach(field => {
+            if (field.type === 'checkbox') {
+                if (field.checked) {
+                    filledFieldsCount++;
+                }
+            } else if (field.type === 'file') {
+                if (field.files && field.files.length > 0) {
+                    filledFieldsCount++;
+                }
+            }
+            else if (field.value.trim() !== '') {
+                filledFieldsCount++;
+            }
+        });
+
+        const progress = requiredFields.length > 0 ? (filledFieldsCount / requiredFields.length) * 100 : 0;
+        document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    // Add event listeners to update progress
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('sellerRegistrationForm');
+        const inputs = form.querySelectorAll('input, select, textarea');
+
+        inputs.forEach(input => {
+            input.addEventListener('input', updateProgressBar);
+            input.addEventListener('change', updateProgressBar);
+        });
+        // Ensure Font Awesome is loaded before trying to use its classes in JS if needed
+        // For now, we're using them in CSS `content` and HTML `<i>` tags.
+        updateProgressBar();
+    });
+
+    // File input labels update
+    document.querySelectorAll('.file-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const label = this.nextElementSibling;
+            const fileNameDisplay = label.querySelector('.file-name-display');
+            const filePromptText = label.querySelector('.file-prompt-text');
+
+            if (this.files[0]) {
+                fileNameDisplay.textContent = this.files[0].name;
+                if (filePromptText) filePromptText.style.display = 'none';
+            } else {
+                fileNameDisplay.textContent = '';
+                if (filePromptText) filePromptText.style.display = 'inline';
+            }
+            updateProgressBar(); // Update progress when file changes
+        });
+    });
+
+
+    // Form submission
+    document.getElementById('sellerRegistrationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const requiredFields = this.querySelectorAll('input[required], select[required], textarea[required]');
+        let isValid = true;
+        let firstInvalidField = null;
+
+        requiredFields.forEach(field => {
+            let fieldValid = true;
+            // Reset border color first
+            field.style.borderColor = '#ced4da';
+            if (field.closest('.file-input-wrapper')) {
+                field.closest('.file-input-wrapper').querySelector('.file-input-label').style.borderColor = '#ced4da';
+            }
+
+            if (field.type === 'checkbox') {
+                if (!field.checked) fieldValid = false;
+            } else if (field.type === 'file') {
+                if (!field.files || field.files.length === 0) fieldValid = false;
+            } else if (field.value.trim() === '') {
+                fieldValid = false;
+            }
+
+            if (!fieldValid) {
+                isValid = false;
+                field.style.borderColor = '#E74C3C';
+                if (field.closest('.file-input-wrapper')) {
+                    field.closest('.file-input-wrapper').querySelector('.file-input-label').style.borderColor = '#E74C3C';
+                }
+                if (!firstInvalidField) firstInvalidField = field; // Store the first invalid field
+            }
+        });
+
+
+        if (!isValid) {
+            alert('Please fill in all required information and upload necessary documents!');
+            if (firstInvalidField) {
+                // If it's a hidden file input, focus its label for accessibility/visibility
+                if (firstInvalidField.type === 'file') {
+                    firstInvalidField.nextElementSibling.focus();
+                } else {
+                    firstInvalidField.focus();
+                }
+            }
+            return;
+        }
+
+
+        const submitBtn = this.querySelector('.btn-primary');
+        const originalText = submitBtn.textContent;
+        submitBtn.innerHTML = 'Processing…';
+        submitBtn.disabled = true;
+
+        setTimeout(() => {
+            alert('Registration successful! We will review and respond within 24-48 hours.');
+            this.reset();
+            updateProgressBar();
+            document.querySelectorAll('.file-name-display').forEach(el => el.textContent = '');
+            document.querySelectorAll('.file-prompt-text').forEach(el => el.style.display = 'inline');
+
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }, 2000);
+    });
+
+    // Phone number formatting
+    document.getElementById('contactPhone').addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        if (value.length > 11) value = value.slice(0, 11);
+        this.value = value;
+    });
+
+</script>
+</body>
+</html>

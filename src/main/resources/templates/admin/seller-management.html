@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Management - ReadHub</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .management-container {
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        .management-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .action-button {
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .action-button:hover {
+            opacity: 0.8;
+        }
+        .btn-approve {
+            background: #28a745;
+            color: white;
+        }
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-view {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid management-container">
+    <div class="management-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Seller Management</h2>
+            <div class="d-flex gap-3">
+                <button class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i>Export List
+                </button>
+            </div>
+        </div>
+
+        <!-- Pending Sellers -->
+        <div class="management-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Pending Registrations</h3>
+                <span class="badge bg-primary" th:text="${pendingSellers.size()}">0</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>Shop Name</th>
+                        <th>Contact</th>
+                        <th>Registration Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="shop : ${pendingSellers}">
+                        <td th:text="${shop.shopName}">Shop Name</td>
+                        <td>
+                            <div th:text="${shop.contactName}">Contact Name</div>
+                            <small th:text="${shop.contactEmail}">contact@example.com</small>
+                        </td>
+                        <td th:text="${#temporals.format(shop.registrationDate, 'dd/MM/yyyy HH:mm')}">Registration Date</td>
+                        <td>
+                            <span class="status-badge badge-pending">Pending</span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-button btn-approve"
+                                        th:onclick="|approveSeller(${shop.shopId})|">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="action-button btn-reject"
+                                        th:onclick="|rejectSeller(${shop.shopId})|">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                                <button class="action-button btn-view"
+                                        th:onclick="|viewSeller(${shop.shopId})|">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Approved Sellers -->
+        <div class="management-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Approved Sellers</h3>
+                <span class="badge bg-success" th:text="${approvedSellers.size()}">0</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>Shop Name</th>
+                        <th>Contact</th>
+                        <th>Registration Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="shop : ${approvedSellers}">
+                        <td th:text="${shop.shopName}">Shop Name</td>
+                        <td>
+                            <div th:text="${shop.contactName}">Contact Name</div>
+                            <small th:text="${shop.contactEmail}">contact@example.com</small>
+                        </td>
+                        <td th:text="${#temporals.format(shop.registrationDate, 'dd/MM/yyyy HH:mm')}">Registration Date</td>
+                        <td>
+                            <span class="status-badge badge-approved">Approved</span>
+                        </td>
+                        <td>
+                            <button class="action-button btn-view"
+                                    th:onclick="|viewSeller(${shop.shopId})|">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Rejected Sellers -->
+        <div class="management-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Rejected Sellers</h3>
+                <span class="badge bg-danger" th:text="${rejectedSellers.size()}">0</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>Shop Name</th>
+                        <th>Contact</th>
+                        <th>Registration Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="shop : ${rejectedSellers}">
+                        <td th:text="${shop.shopName}">Shop Name</td>
+                        <td>
+                            <div th:text="${shop.contactName}">Contact Name</div>
+                            <small th:text="${shop.contactEmail}">contact@example.com</small>
+                        </td>
+                        <td th:text="${#temporals.format(shop.registrationDate, 'dd/MM/yyyy HH:mm')}">Registration Date</td>
+                        <td>
+                            <span class="status-badge badge-rejected">Rejected</span>
+                        </td>
+                        <td>
+                            <button class="action-button btn-view"
+                                    th:onclick="|viewSeller(${shop.shopId})|">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function approveSeller(shopId) {
+        if (confirm('Are you sure you want to approve this seller?')) {
+            window.location.href = '/admin/sellers/' + shopId + '/approve';
+        }
+    }
+
+    function rejectSeller(shopId) {
+        const reason = prompt('Please enter the rejection reason:');
+        if (reason) {
+            window.location.href = '/admin/sellers/' + shopId + '/reject?rejectionReason=' + encodeURIComponent(reason);
+        }
+    }
+
+    function viewSeller(shopId) {
+        window.location.href = '/admin/sellers/' + shopId + '/view';
+    }
+</script>
+</body>
+</html>
