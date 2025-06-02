@@ -19,14 +19,16 @@ public class Category {
     @Column(name = "category_id")
     private int categoryId;
 
-    @Column(name = "category_name", nullable = false, length = 255)
+    @Column(name = "category_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String categoryName;
 
-    @Column(name = "category_description")
+    @Column(name = "category_description", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String categoryDescription;
 
     @ManyToMany(mappedBy = "categories", fetch = FetchType.LAZY)
     private Set<Book> books = new HashSet<>(); // Use Set to avoid duplicate books in a category's list
 
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
 
 }

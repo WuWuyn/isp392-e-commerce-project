@@ -84,7 +84,7 @@ public class CategoryController {
         // Add an empty category for the form
         model.addAttribute("category", new Category());
         
-        return "admin/product/category";
+        return "admin/product/category-management";
     }
 
     /**
@@ -120,12 +120,45 @@ public class CategoryController {
      * Get a specific category by ID
      * 
      * @param id Category ID
-     * @return Category object or null
+     * @return Category object or null with proper field names for JavaScript
      */
     @GetMapping("/{id}")
     @ResponseBody
-    public Category getCategoryById(@PathVariable Integer id) {
-        return categoryService.findById(id).orElse(null);
+    public CategoryDTO getCategoryById(@PathVariable Integer id) {
+        Category category = categoryService.findById(id).orElse(null);
+        if (category == null) {
+            return null;
+        }
+        
+        // Create a DTO to ensure field names match what JavaScript expects
+        CategoryDTO dto = new CategoryDTO();
+        dto.setCategoryId(category.getCategoryId());
+        dto.setCategoryName(category.getCategoryName());
+        dto.setCategoryDescription(category.getCategoryDescription());
+        dto.setActive(category.isActive()); // Map isActive to active for JavaScript
+        return dto;
+    }
+    
+    /**
+     * Simple DTO class for Category to ensure consistent field naming with JavaScript
+     */
+    private static class CategoryDTO {
+        private int categoryId;
+        private String categoryName;
+        private String categoryDescription;
+        private boolean active; // Note: named 'active' to match JavaScript expectations
+        
+        public int getCategoryId() { return categoryId; }
+        public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+        
+        public String getCategoryName() { return categoryName; }
+        public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+        
+        public String getCategoryDescription() { return categoryDescription; }
+        public void setCategoryDescription(String categoryDescription) { this.categoryDescription = categoryDescription; }
+        
+        public boolean isActive() { return active; }
+        public void setActive(boolean active) { this.active = active; }
     }
 
     /**
@@ -159,44 +192,54 @@ public class CategoryController {
     }
 
     /**
-     * Delete a category
+     * Toggle a category active status
      * 
-     * @param id Category ID to delete
+     * @param id Category ID to toggle
+     * @param active New active status
      * @param redirectAttributes For flash messages
      * @return redirect to category list
      */
-    @PostMapping("/delete/{id}")
-    public String deleteCategory(
+    @PostMapping("/toggle-active/{id}")
+    public String toggleCategoryActive(
             @PathVariable Integer id,
+            @RequestParam(defaultValue = "false") boolean active,
             RedirectAttributes redirectAttributes) {
         
         try {
-            categoryService.deleteById(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Category deleted successfully");
+            Optional<Category> result = categoryService.toggleActive(id, active);
+            if (result.isPresent()) {
+                redirectAttributes.addFlashAttribute("successMessage", 
+                    "Category " + (active ? "activated" : "deactivated") + " successfully");
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "Category not found");
+            }
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting category: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating category status: " + e.getMessage());
         }
         
         return "redirect:/admin/category";
     }
 
     /**
-     * Delete multiple categories
+     * Toggle active status for multiple categories
      * 
-     * @param ids Array of category IDs to delete
+     * @param ids Array of category IDs to update
+     * @param active New active status
      * @param redirectAttributes For flash messages
      * @return redirect to category list
      */
-    @PostMapping("/delete-multiple")
-    public String deleteMultipleCategories(
+    @PostMapping("/toggle-multiple-active")
+    public String toggleMultipleCategoriesActive(
             @RequestParam("ids") Integer[] ids,
+            @RequestParam(defaultValue = "false") boolean active,
             RedirectAttributes redirectAttributes) {
         
         try {
-            categoryService.deleteAllById(List.of(ids));
-            redirectAttributes.addFlashAttribute("successMessage", "Categories deleted successfully");
+            int count = categoryService.toggleActiveMultiple(List.of(ids), active);
+            String action = active ? "activated" : "deactivated";
+            redirectAttributes.addFlashAttribute("successMessage", count + " categories " + action + " successfully");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting categories: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating categories status: " + e.getMessage());
         }
         
         return "redirect:/admin/category";

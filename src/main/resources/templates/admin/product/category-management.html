@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Category Management - ReadHub Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/admin-style.css}">
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/admin-custom.css}">
     <style>
         .category-description {
             max-width: 300px;
@@ -91,7 +96,7 @@
             
             <!-- Category Table -->
             <div class="card-body">
-                <form id="deleteMultipleForm" th:action="@{/admin/category/delete-multiple}" method="post">
+                <form id="toggleMultipleForm" th:action="@{/admin/category/toggle-multiple-active}" method="post">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle admin-table">
                             <thead>
@@ -99,6 +104,7 @@
                                 <th scope="col" width="40px">
                                     <input class="form-check-input" type="checkbox" id="selectAllCategories">
                                 </th>
+                                <th scope="col" width="60px">STT</th>
                                 <th scope="col" width="80px">ID</th>
                                 <th scope="col">
                                     <a th:href="@{'/admin/category?sortField=categoryName&sortDir=' + ${reverseSortDir} + ${search != '' ? '&search=' + search : ''}}">
@@ -109,13 +115,21 @@
                                     </a>
                                 </th>
                                 <th scope="col">Description</th>
-                                <th scope="col" width="150px">Actions</th>
+                                <th scope="col" width="100px">
+                                    <a th:href="@{'/admin/category?sortField=isActive&sortDir=' + ${reverseSortDir} + ${search != '' ? '&search=' + search : ''}}">
+                                        Status
+                                        <i th:if="${sortField == 'isActive'}" 
+                                           th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"
+                                           class="sort-icon"></i>
+                                    </a>
+                                </th>
+                                <th scope="col" width="180px">Actions</th>
                             </tr>
                             </thead>
                             <tbody>
                             <!-- No categories message -->
                             <tr th:if="${categoryPage.content.empty}">
-                                <td colspan="5" class="text-center py-4">
+                                <td colspan="7" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="fas fa-info-circle me-2"></i>No categories found.
                                         <span th:if="${search != ''}">Try a different search term or <a th:href="@{/admin/category}">view all categories</a>.</span>
@@ -125,41 +139,49 @@
                             </tr>
                             
                             <!-- Category rows -->
-                            <tr th:each="category : ${categoryPage.content}">
+                            <tr th:each="category, iterStat : ${categoryPage.content}" th:class="${!category.active ? 'table-secondary' : ''}">
                                 <td>
                                     <input class="form-check-input category-checkbox" type="checkbox" 
                                            th:value="${category.categoryId}" name="ids">
                                 </td>
+                                <!-- Hiển thị số thứ tự (tính từ vị trí hiện tại trong trang + offset từ phân trang) -->
+                                <td th:text="${iterStat.count + currentPage * pageSize}"></td>
                                 <td th:text="${category.categoryId}"></td>
                                 <td th:text="${category.categoryName}"></td>
                                 <td>
                                     <div class="category-description" th:text="${category.categoryDescription}"></div>
                                 </td>
                                 <td>
-                                    <!-- View button -->
+                                    <!-- Hiển thị trạng thái active/inactive với badge -->
+                                    <span th:if="${category.active}" class="badge bg-success">Active</span>
+                                    <span th:unless="${category.active}" class="badge bg-secondary">Inactive</span>
+                                </td>
+                                <td>
+                                     <!-- View button -->
                                     <button type="button" class="btn btn-sm btn-outline-info action-button" 
                                             th:data-category-id="${category.categoryId}"
                                             data-bs-toggle="modal" data-bs-target="#viewCategoryModal"
-                                            title="View">
-                                        <i class="fas fa-eye"></i>
+                                            title="View details">
+                                        <i class="fas fa-info-circle"></i>
                                     </button>
                                     
                                     <!-- Edit button -->
                                     <button type="button" class="btn btn-sm btn-outline-primary action-button" 
                                             th:data-category-id="${category.categoryId}"
                                             data-bs-toggle="modal" data-bs-target="#editCategoryModal"
-                                            title="Edit">
+                                            title="Edit category">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     
-                                    <!-- Delete button -->
-                                    <button type="button" class="btn btn-sm btn-outline-danger action-button" 
-                                            th:data-category-id="${category.categoryId}"
-                                            th:data-category-name="${category.categoryName}"
-                                            data-bs-toggle="modal" data-bs-target="#deleteCategoryModal"
-                                            title="Delete">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                    <!-- Toggle active status buttons -->
+                                    <form th:action="@{/admin/category/toggle-active/} + ${category.categoryId}" method="post" class="d-inline">
+                                        <input type="hidden" name="active" th:value="${!category.active}">
+                                        <button type="submit" class="btn btn-sm action-button"
+                                                th:classappend="${category.active ? 'btn-outline-secondary' : 'btn-outline-success'}"
+                                                th:title="${category.active ? 'Deactivate category' : 'Activate category'}">
+                                            <i th:class="${category.active ? 'fas fa-eye-slash' : 'fas fa-eye'}"></i>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                             </tbody>
@@ -168,10 +190,27 @@
                     
                     <!-- Bulk Actions -->
                     <div class="mt-3 d-flex justify-content-between align-items-center">
-                        <button id="deleteSelectedButton" type="button" class="btn btn-danger btn-sm" disabled
-                                data-bs-toggle="modal" data-bs-target="#deleteMultipleModal">
-                            <i class="fas fa-trash-alt me-2"></i>Delete Selected
-                        </button>
+                        <div class="dropdown">
+                            <button id="bulkActionButton" type="button" class="btn btn-primary btn-sm dropdown-toggle" disabled data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-tasks me-2"></i>Bulk Actions
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="bulkActionButton">
+                                <li><a class="dropdown-item" href="#" id="activateSelectedButton">
+                                    <i class="fas fa-eye me-2"></i>Activate Selected
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" id="deactivateSelectedButton">
+                                    <i class="fas fa-eye-slash me-2"></i>Deactivate Selected
+                                </a></li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Hidden form for bulk actions -->
+                        <form id="toggleMultipleForm" th:action="@{/admin/category/toggle-multiple}" method="post" class="d-none">
+                            <input type="hidden" name="active" id="bulkActiveStatus" value="true">
+                            <div id="selectedCategoryIds">
+                                <!-- Checkboxes will be cloned here by JavaScript -->
+                            </div>
+                        </form>
                         
                         <!-- Pagination Controls -->
                         <div th:if="${categoryPage.totalPages > 1}">
@@ -179,8 +218,8 @@
                                 <ul class="pagination pagination-sm mb-0">
                                     <!-- Previous Button -->
                                     <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
-                                        <a class="page-link" th:href="@{'/admin/category?page=' + ${currentPage - 1} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + ${search != '' ? '&search=' + search : ''}}">
-                                            Previous
+                                        <a class="page-link" th:href="@{'/admin/category?page=' + ${currentPage - 1} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + ${search != '' ? '&search=' + search : ''}}" aria-label="Previous">
+                                            &lt;
                                         </a>
                                     </li>
                                     
@@ -193,8 +232,8 @@
                                     
                                     <!-- Next Button -->
                                     <li class="page-item" th:classappend="${currentPage == categoryPage.totalPages - 1 ? 'disabled' : ''}">
-                                        <a class="page-link" th:href="@{'/admin/category?page=' + ${currentPage + 1} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + ${search != '' ? '&search=' + search : ''}}">
-                                            Next
+                                        <a class="page-link" th:href="@{'/admin/category?page=' + ${currentPage + 1} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + ${search != '' ? '&search=' + search : ''}}" aria-label="Next">
+                                            &gt;
                                         </a>
                                     </li>
                                 </ul>
@@ -231,8 +270,13 @@
                         <input type="text" class="form-control" id="categoryName" name="categoryName" required>
                     </div>
                     <div class="mb-3">
-                        <label for="categoryDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="categoryDescription" name="categoryDescription" rows="3"></textarea>
+                        <label for="categoryDescription" class="form-label">Description<span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="categoryDescription" name="categoryDescription" rows="3" required></textarea>
+                        <div class="form-text">Please provide a clear description for this category.</div>
+                    </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="categoryActive" name="active" checked>
+                        <label class="form-check-label" for="categoryActive">Active</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -259,8 +303,13 @@
                         <input type="text" class="form-control" id="editCategoryName" name="categoryName" required>
                     </div>
                     <div class="mb-3">
-                        <label for="editCategoryDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="editCategoryDescription" name="categoryDescription" rows="3"></textarea>
+                        <label for="editCategoryDescription" class="form-label">Description<span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="editCategoryDescription" name="categoryDescription" rows="3" required></textarea>
+                        <div class="form-text">Please provide a clear description for this category.</div>
+                    </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="editCategoryActive" name="active">
+                        <label class="form-check-label" for="editCategoryActive">Active</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -289,9 +338,13 @@
                     <div class="col-4 fw-bold">Name:</div>
                     <div class="col-8" id="viewCategoryName"></div>
                 </div>
-                <div class="row">
+                <div class="row mb-3">
                     <div class="col-4 fw-bold">Description:</div>
                     <div class="col-8" id="viewCategoryDescription"></div>
+                </div>
+                <div class="row">
+                    <div class="col-4 fw-bold">Status:</div>
+                    <div class="col-8" id="viewCategoryStatus"></div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -301,43 +354,49 @@
     </div>
 </div>
 
-<!-- Delete Category Modal -->
-<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+<!-- Toggle Multiple Categories Modal -->
+<div class="modal fade" id="toggleMultipleModal" tabindex="-1" aria-labelledby="toggleMultipleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteCategoryModalLabel">Delete Category</h5>
+                <h5 class="modal-title" id="toggleMultipleModalLabel">Change Status for Selected Categories</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete the category <span id="deleteCategoryName" class="fw-bold"></span>?</p>
-                <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+                <p>You are about to change the status for <span id="selectedCategoriesCount">0</span> selected categories.</p>
+                <div class="d-flex justify-content-center gap-3 mt-4">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal" id="activateMultipleBtn">
+                        <i class="fas fa-eye me-2"></i>Activate All Selected
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="deactivateMultipleBtn">
+                        <i class="fas fa-eye-slash me-2"></i>Deactivate All Selected
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="deleteCategoryForm" method="post">
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Delete Multiple Categories Modal -->
-<div class="modal fade" id="deleteMultipleModal" tabindex="-1" aria-labelledby="deleteMultipleModalLabel" aria-hidden="true">
+<!-- Toggle Active Modal -->
+<div class="modal fade" id="toggleCategoryModal" tabindex="-1" aria-labelledby="toggleCategoryModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteMultipleModalLabel">Delete Selected Categories</h5>
+                <h5 class="modal-title" id="toggleCategoryModalLabel">Change Category Status</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete <span id="selectedCategoriesCount" class="fw-bold"></span> selected categories?</p>
-                <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+                <p>Are you sure you want to change the status of the category <span id="toggleCategoryName" class="fw-bold"></span>?</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" id="confirmDeleteSelected" class="btn btn-danger">Delete Selected</button>
+                <form id="toggleCategoryForm" method="post">
+                    <input type="hidden" name="active" id="toggleActiveValue">
+                    <button type="submit" class="btn btn-primary">Confirm</button>
+                </form>
             </div>
         </div>
     </div>
@@ -346,7 +405,11 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script th:src="@{/js/admin-script.js}"></script>
-<script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // Get context path from Thymeleaf to use in all AJAX URLs
+    const contextPath = /*[[@{/}]]*/ '';
+    
     $(document).ready(function() {
         // Auto-dismiss alerts after 5 seconds
         setTimeout(function() {
@@ -369,26 +432,34 @@
             $('#selectAllCategories').prop('checked', allChecked);
         });
         
-        // Function to update delete selected button state
+        // Function to update selected buttons state
         function updateDeleteSelectedButton() {
             const selectedCount = $('.category-checkbox:checked').length;
-            $('#deleteSelectedButton').prop('disabled', selectedCount === 0);
+            $('#activateSelectedButton, #deactivateSelectedButton').prop('disabled', selectedCount === 0);
             $('#selectedCategoriesCount').text(selectedCount);
         }
         
         // Handle view category modal
         $('#viewCategoryModal').on('show.bs.modal', function(event) {
             const button = $(event.relatedTarget);
-            const categoryId = button.data('category-id');
+            // Get category ID from data attribute directly instead of using jQuery's data method
+            const categoryId = button.attr('data-category-id');
             
-            // Fetch category data via AJAX
+            // Fetch category data via AJAX using Thymeleaf URL
             $.ajax({
-                url: '/admin/category/' + categoryId,
+                url: contextPath + 'admin/category/' + categoryId,
                 type: 'GET',
                 success: function(category) {
                     $('#viewCategoryId').text(category.categoryId);
                     $('#viewCategoryName').text(category.categoryName);
                     $('#viewCategoryDescription').text(category.categoryDescription || 'No description available');
+                    
+                    // Hiển thị trạng thái với badge
+                    if (category.active) {
+                        $('#viewCategoryStatus').html('<span class="badge bg-success">Active</span>');
+                    } else {
+                        $('#viewCategoryStatus').html('<span class="badge bg-secondary">Inactive</span>');
+                    }
                 },
                 error: function() {
                     alert('Error loading category data');
@@ -400,16 +471,19 @@
         // Handle edit category modal
         $('#editCategoryModal').on('show.bs.modal', function(event) {
             const button = $(event.relatedTarget);
-            const categoryId = button.data('category-id');
+            // Get category ID from data attribute directly instead of using jQuery's data method
+            const categoryId = button.attr('data-category-id');
             
-            // Fetch category data via AJAX
+            // Fetch category data via AJAX using Thymeleaf URL
             $.ajax({
-                url: '/admin/category/' + categoryId,
+                url: contextPath + 'admin/category/' + categoryId,
                 type: 'GET',
                 success: function(category) {
                     $('#editCategoryName').val(category.categoryName);
                     $('#editCategoryDescription').val(category.categoryDescription);
-                    $('#editCategoryForm').attr('action', '/admin/category/update/' + category.categoryId);
+                    $('#editCategoryActive').prop('checked', category.active);
+                    // Sử dụng context path để đảm bảo đúng đường dẫn
+                    $('#editCategoryForm').attr('action', contextPath + 'admin/category/update/' + category.categoryId);
                 },
                 error: function() {
                     alert('Error loading category data');
@@ -418,21 +492,67 @@
             });
         });
         
-        // Handle delete category modal
-        $('#deleteCategoryModal').on('show.bs.modal', function(event) {
-            const button = $(event.relatedTarget);
-            const categoryId = button.data('category-id');
-            const categoryName = button.data('category-name');
-            
-            $('#deleteCategoryName').text(categoryName);
-            $('#deleteCategoryForm').attr('action', '/admin/category/delete/' + categoryId);
+        // Handle category checkbox selection for bulk actions
+        $('.category-checkbox').on('change', function() {
+            const selectedCount = $('.category-checkbox:checked').length;
+            $('#bulkActionButton').prop('disabled', selectedCount === 0);
         });
         
-        // Handle delete selected categories
-        $('#confirmDeleteSelected').on('click', function() {
-            $('#deleteMultipleForm').submit();
+        // Select all categories
+        $('#selectAllCategories').on('change', function() {
+            $('.category-checkbox').prop('checked', $(this).is(':checked'));
+            $('#bulkActionButton').prop('disabled', !$(this).is(':checked'));
+        });
+        
+        // Handle direct bulk actions
+        $('#activateSelectedButton').on('click', function(e) {
+            e.preventDefault();
+            if ($('.category-checkbox:checked').length > 0) {
+                prepareToggleMultipleForm(true);
+            }
+        });
+        
+        $('#deactivateSelectedButton').on('click', function(e) {
+            e.preventDefault();
+            if ($('.category-checkbox:checked').length > 0) {
+                prepareToggleMultipleForm(false);
+            }
+        });
+        
+        // Function to prepare and submit the toggle multiple form
+        function prepareToggleMultipleForm(activateStatus) {
+            // Clear previous inputs
+            $('#selectedCategoryIds').empty();
+            
+            // Set the active status
+            $('#bulkActiveStatus').val(activateStatus);
+            
+            // Add all selected category IDs as hidden inputs
+            $('.category-checkbox:checked').each(function() {
+                const categoryId = $(this).val();
+                const hiddenInput = $('<input>').attr({
+                    type: 'hidden',
+                    name: 'ids',
+                    value: categoryId
+                });
+                $('#selectedCategoryIds').append(hiddenInput);
+            });
+            
+            // Submit the form
+            $('#toggleMultipleForm').submit();
+        }
+        
+        // Initialize bootstrap tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                placement: 'top',
+                delay: { show: 500, hide: 100 }
+            });
         });
     });
+
+    /*]]>*/
 </script>
 </body>
 </html>

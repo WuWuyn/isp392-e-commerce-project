@@ -6,7 +6,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.math.BigInteger;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 
 @Getter
@@ -24,7 +27,7 @@ public class Book {
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
-    @Column(name = "title", nullable = false, length = 255)
+    @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String title;
 
     @Column(name = "publication_date")
@@ -54,7 +57,7 @@ public class Book {
     @JoinColumn(name = "publisher_id") // Can be nullable if a book might not have a publisher
     private Publisher publisher;
 
-    @Column(name = "dimensions", columnDefinition = "VARCHAR(10)")
+    @Column(name = "dimensions", columnDefinition = "NVARCHAR(20)")
     private String dimensions;
 
     @Column(name = "sku", columnDefinition = "VARCHAR(50)")
@@ -69,6 +72,15 @@ public class Book {
     @Column(name = "date_added")
     private Date dateAdded;
 
+    @Column(name = "original_price", columnDefinition = "BIGINT")
+    private BigInteger originalPrice;
+
+    @Column(name = "selling_price", columnDefinition = "BIGINT")
+    private BigInteger sellingPrice;
+
+    @Column(name = "stock_quantity")
+    private int stockQuantity;
+
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(
             name = "book_categories", // Name of the join table
@@ -76,8 +88,4 @@ public class Book {
             inverseJoinColumns = @JoinColumn(name = "category_id") // Foreign key for Category in join table
     )
     private Set<Category> categories = new HashSet<>();
-
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<BookReview> reviews = new ArrayList<>();
-
 }

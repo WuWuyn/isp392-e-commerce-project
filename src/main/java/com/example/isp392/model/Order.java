@@ -4,10 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 
@@ -20,17 +19,17 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id")
-    private Integer orderId;
+    private int orderId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false) // An order must belong to a user
     private User user;
 
     @Column(name = "order_date", nullable = false)
-    private Date orderDate;
+    private Timestamp orderDate;
 
-    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2) // Example: 12345678.90
-    private BigDecimal totalAmount;
+    @Column(name = "total_amount", nullable = false, columnDefinition = "BIGINT") // Example: 12345678.90
+    private BigInteger totalAmount;
 
     @Enumerated(EnumType.STRING) // Store enum name as string, or ORDINAL for integer
     @Column(name = "order_status", length = 50, nullable = false)
@@ -45,22 +44,19 @@ public class Order {
     // For simplicity, you might omit these if billing always matches shipping,
     // or add similar fields: billing_address_line1, etc.
 
-    @Column(name = "payment_method", length = 50)
+    @Column(name = "payment_method", columnDefinition = "NVARCHAR(255)")
     private String paymentMethod; // e.g., "Credit Card", "PayPal", "COD"
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", length = 50)
     private PaymentStatus paymentStatus; // e.g., PENDING, PAID, FAILED
 
-    @Column(name = "notes", columnDefinition = "TEXT") // For longer customer notes
+    @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)") // For longer customer notes
     private String notes;
 
     // One Order has Many OrderItems
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();
-
-    @Column(name = "created_at")
-    private Timestamp createdAt;
 
     @Column(name = "updated_at")
     private Timestamp updatedAt;

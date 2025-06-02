@@ -23,11 +23,12 @@ public class Blog {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "title", length = 255, nullable = false)
+
+    @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @Lob
-    @Column(name = "content", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "content", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
     @Column(name = "created_date", nullable = false)

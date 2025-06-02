@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+    <!-- Fragment for displaying book prices in VND format -->
+    <div th:fragment="price-display(originalPrice, sellingPrice)" class="book-price">
+        <!-- Display discounted price if there is a discount -->
+        <th:block th:if="${originalPrice != null && sellingPrice != null && originalPrice.compareTo(sellingPrice) > 0}">
+            <span class="original-price text-decoration-line-through me-1" 
+                  th:text="${#numbers.formatDecimal(originalPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
+            <span class="sale-price" 
+                  th:text="${#numbers.formatDecimal(sellingPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
+        </th:block>
+        <!-- Display normal price if there is no discount -->
+        <th:block th:unless="${originalPrice != null && sellingPrice != null && originalPrice.compareTo(sellingPrice) > 0}">
+            <span th:text="${sellingPrice != null ? #numbers.formatDecimal(sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND' : '0 VND'}"></span>
+        </th:block>
+    </div>
+</body>
+</html>

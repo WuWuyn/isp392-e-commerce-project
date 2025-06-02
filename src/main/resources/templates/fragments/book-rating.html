@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+    <!-- Fragment for displaying book ratings consistently with exactly 5 stars -->
+    <div th:fragment="star-rating(rating)" class="star-rating">
+        <!-- Simplify rating calculation to always show exactly 5 stars -->
+        <th:block th:with="ratingValue=${rating != null ? (rating.doubleValue() > 5 ? 5 : rating.doubleValue()) : 0}">
+            <!-- Star 1 -->
+            <i th:class="${ratingValue >= 1 ? 'fas fa-star' : (ratingValue >= 0.5 ? 'fas fa-star-half-alt' : 'far fa-star')}"></i>
+            
+            <!-- Star 2 -->
+            <i th:class="${ratingValue >= 2 ? 'fas fa-star' : (ratingValue >= 1.5 ? 'fas fa-star-half-alt' : 'far fa-star')}"></i>
+            
+            <!-- Star 3 -->
+            <i th:class="${ratingValue >= 3 ? 'fas fa-star' : (ratingValue >= 2.5 ? 'fas fa-star-half-alt' : 'far fa-star')}"></i>
+            
+            <!-- Star 4 -->
+            <i th:class="${ratingValue >= 4 ? 'fas fa-star' : (ratingValue >= 3.5 ? 'fas fa-star-half-alt' : 'far fa-star')}"></i>
+            
+            <!-- Star 5 -->
+            <i th:class="${ratingValue >= 5 ? 'fas fa-star' : (ratingValue >= 4.5 ? 'fas fa-star-half-alt' : 'far fa-star')}"></i>
+        </th:block>
+    </div>
+</body>
+</html>
