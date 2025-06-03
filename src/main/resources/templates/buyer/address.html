@@ -53,7 +53,7 @@
     
     <!-- Google Maps API for address autocomplete -->
     <script async loading="async"
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZ4uh8I6fcp9WXJ8au3HZ8l8yKe2vSkes&libraries=places&callback=initAutocomplete">
+            src="https://maps.googleapis.com/maps/api/js?key=api_key&libraries=places&callback=initAutocomplete">
     </script>
 </head>
 <body>
@@ -134,13 +134,13 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label for="ward" class="form-label">Ward/Commune</label>
-                                    <select class="form-control" id="ward" name="wardCode" disabled>
-                                        <option value="">Select Ward/Commune (Optional)</option>
+                                    <select class="form-control" id="ward" name="wardCode" disabled required>
+                                        <option value="">Select Ward/Commune</option>
                                     </select>
                                     <!-- Hidden field to store the ward name -->
                                     <input type="hidden" id="wardName" th:field="*{ward}">
                                     <div class="invalid-feedback">
-                                        Ward/Commune might not be available
+                                        Ward is required
                                     </div>
                                 </div>
                             </div>

@@ -27,19 +27,19 @@
         </header>
 
         <!-- Highlighted Latest Post -->
-        <section class="latest-post-highlight mb-5">
+        <section class="latest-post-highlight mb-5" th:if="${latestBlog != null}">
             <div class="card latest-post-card flex-md-row">
                 <div class="col-md-6">
-                    <img th:src="@{/images/blog-latest-post.jpg}" class="card-img-top card-img-md-left h-100 object-fit-cover" alt="Should You Feel Embarrassed for Reading Kids Books?">
+                    <img th:src="@{/images/blog-latest-post.jpg}" class="card-img-top card-img-md-left h-100 object-fit-cover" th:alt="${latestBlog.title}">
                 </div>
                 <div class="col-md-6">
                     <div class="card-body p-md-5 d-flex flex-column justify-content-center">
-                        <p class="blog-post-meta small text-muted mb-1">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                        <h2 class="card-title latest-post-title mb-3"><a href="#">Should You Feel Embarrassed for Reading Kids Books?</a></h2>
-                        <p class="card-text latest-post-excerpt text-muted">
-                            Bad habits repeat themselves again and again not because you don't want to change, but because you have the wrong system for change.
+                        <p class="blog-post-meta small text-muted mb-1" th:text="${#dates.format(latestBlog.createdDate, 'dd MMM, yyyy')} + ' • by ' + ${latestBlog.user.fullName}">24 Oct, 2023 • by Author Name</p>
+                        <h2 class="card-title latest-post-title mb-3"><a th:href="@{/blog/{id}(id=${latestBlog.blogId})}" th:text="${latestBlog.title}">Latest Blog Title</a></h2>
+                        <p class="card-text latest-post-excerpt text-muted" th:text="${#strings.abbreviate(latestBlog.content, 150)}">
+                            Blog excerpt...
                         </p>
-                        <a href="#" class="btn btn-link read-more-link ps-0 mt-2">Read More <i class="fas fa-arrow-right ms-1"></i></a>
+                        <a th:href="@{/blog/{id}(id=${latestBlog.blogId})}" class="btn btn-link read-more-link ps-0 mt-2">Read More <i class="fas fa-arrow-right ms-1"></i></a>
                     </div>
                 </div>
             </div>
@@ -49,18 +49,21 @@
         <section class="blog-filters-search mb-4">
             <div class="row justify-content-between align-items-center">
                 <div class="col-md-6 mb-3 mb-md-0">
-                    <form class="d-flex blog-search-form">
-                        <input class="form-control me-2" type="search" placeholder="Search blog posts..." aria-label="Search blog posts">
+                    <form class="d-flex blog-search-form" th:action="@{/blog}" method="get">
+                        <input class="form-control me-2" type="search" name="search" th:value="${search}" placeholder="Search blog posts..." aria-label="Search blog posts">
+                        <input type="hidden" name="sort" th:value="${sort}"> 
                         <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
                     </form>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <select class="form-select form-select-sm" aria-label="Filter posts">
-                        <option selected value="latest">Sort by Latest</option>
-                        <option value="oldest">Sort by Oldest</option>
-                        <option value="popular">Sort by Popularity</option>
-                        <!-- Add more filter options as needed -->
-                    </select>
+                    <form id="sortForm" th:action="@{/blog}" method="get">
+                        <input type="hidden" name="search" th:value="${search}"> 
+                        <select class="form-select form-select-sm" name="sort" aria-label="Filter posts" onchange="document.getElementById('sortForm').submit()">
+                            <option value="latest" th:selected="${sort == 'latest'}">Sort by Latest</option>
+                            <option value="oldest" th:selected="${sort == 'oldest'}">Sort by Oldest</option>
+                            <option value="popular" th:selected="${sort == 'popular'}">Sort by Popularity</option>
+                        </select>
+                    </form>
                 </div>
             </div>
         </section>
@@ -68,110 +71,62 @@
         <!-- Blog Posts Grid -->
         <section class="blog-posts-grid">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4">
-                <!-- Blog Post Card (Repeat this structure) -->
-                <div class="col">
-                    <div class="card blog-post-card h-100"> <!-- Reuse .blog-post-card from index.html styles -->
-                        <a href="#"><img th:src="@{/images/blog-post-embarrassed.jpg}" class="card-img-top" alt="Blog Post 1"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                            <h5 class="card-title blog-title"><a href="#">Should You Feel Embarrassed for Reading Kids Books?</a></h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
+                <!-- Blog Post Card (Dynamic Blogs) -->
+                <div class="col" th:each="blog : ${blogs}" th:if="${latestBlog == null || blog.blogId != latestBlog.blogId}">
                     <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-benefits.jpg}" class="card-img-top" alt="Blog Post 2"></a>
+                        <a th:href="@{/blog/{id}(id=${blog.blogId})}"><img th:src="@{/images/blog-post-default.jpg}" class="card-img-top" th:alt="${blog.title}"></a>
                         <div class="card-body">
-                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                            <h5 class="card-title blog-title"><a href="#">Benefits of Reading: Getting Smart, Thin, Healthy, Happy</a></h5>
+                            <p class="blog-post-meta small text-muted">
+                                <span th:text="${#dates.format(blog.createdDate, 'dd MMM, yyyy')}">Date</span>
+                                <span class="mx-1">•</span> by 
+                                <a href="#" class="text-muted" th:text="${blog.user.fullName}">Author Name</a>
+                            </p>
+                            <h5 class="card-title blog-title">
+                                <a th:href="@{/blog/{id}(id=${blog.blogId})}" th:text="${blog.title}">Blog Title</a>
+                            </h5>
                         </div>
                     </div>
                 </div>
-                <div class="col">
-                    <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-anne-bogel.jpg}" class="card-img-top" alt="Blog Post 3"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                            <h5 class="card-title blog-title"><a href="#">Anne Bogel's 5 Tips to Restore Your Love of Reading</a></h5>
-                        </div>
+                
+                <!-- Empty state when no blogs are found -->
+                <div class="col-12 text-center py-5" th:if="${#lists.isEmpty(blogs)}">
+                    <div class="empty-state">
+                        <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                        <h4>No Blog Posts Found</h4>
+                        <p class="text-muted">We couldn't find any blog posts matching your criteria.</p>
+                        <a th:href="@{/blog}" class="btn btn-outline-primary mt-3">View All Blogs</a>
                     </div>
                 </div>
-                <div class="col">
-                    <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-london-fair.jpg}" class="card-img-top" alt="Blog Post 4"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                            <h5 class="card-title blog-title"><a href="#">The London Book Fair is to be packed with exciting</a></h5>
-                        </div>
-                    </div>
-                </div>
-                <!-- Row 2 -->
-                <div class="col">
-                    <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-laurie-petrou.jpg}" class="card-img-top" alt="Laurie Petrou"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                            <h5 class="card-title blog-title"><a href="#">Laurie Petrou on editing her debutnovel</a></h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-why-choose.jpg}" class="card-img-top" alt="Why choose Bookix"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                            <h5 class="card-title blog-title"><a href="#">Why choose Bookix? What do we have?</a></h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-furniture.jpg}" class="card-img-top" alt="Furniture and comfortable space"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                            <h5 class="card-title blog-title"><a href="#">Furniture and comfortable space help to read books more effectively</a></h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-building-library.jpg}" class="card-img-top" alt="Building a library"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">24 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Ali Tufan</a></p>
-                            <h5 class="card-title blog-title"><a href="#">Building a library – Prepare the future for a genius</a></h5>
-                        </div>
-                    </div>
-                </div>
-                <!-- Row 3 -->
-                <div class="col">
-                    <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-attractive-themes-1.jpg}" class="card-img-top" alt="Attractive Bookstore Themes"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">10 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Floyd Miles</a></p>
-                            <h5 class="card-title blog-title"><a href="#">5 Attractive Bookstore WordPress Themes</a></h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card blog-post-card h-100">
-                        <a href="#"><img th:src="@{/images/blog-post-attractive-themes-2.jpg}" class="card-img-top" alt="Attractive Bookstore Themes"></a>
-                        <div class="card-body">
-                            <p class="blog-post-meta small text-muted">10 Oct, 2023 <span class="mx-1">•</span> by <a href="#" class="text-muted">Floyd Miles</a></p>
-                            <h5 class="card-title blog-title"><a href="#">5 Attractive Bookstore WordPress Themes</a></h5>
-                        </div>
-                    </div>
-                </div>
-                <!-- Add more blog posts as needed to fill the grid -->
             </div>
         </section>
 
         <!-- Pagination -->
-        <nav aria-label="Blog page navigation" class="mt-5 d-flex justify-content-center">
-            <ul class="pagination"> <!-- Re-use pagination styles -->
-                <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-left"></i></a></li>
-                <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a></li>
+        <nav th:if="${totalPages > 1}" aria-label="Blog page navigation" class="mt-5 d-flex justify-content-center">
+            <ul class="pagination">
+                <!-- Previous page -->
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled' : ''">
+                    <a class="page-link" 
+                       th:href="@{/blog(page=${currentPage - 1}, sort=${sort}, search=${search})}" 
+                       tabindex="-1" th:aria-disabled="${currentPage == 0}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                
+                <!-- Page numbers -->
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                    th:classappend="${currentPage == i} ? 'active' : ''" th:if="${i < 5}">
+                    <a class="page-link" 
+                       th:href="@{/blog(page=${i}, sort=${sort}, search=${search})}"
+                       th:text="${i + 1}" th:aria-current="${currentPage == i} ? 'page' : null">1</a>
+                </li>
+                
+                <!-- Next page -->
+                <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled' : ''">
+                    <a class="page-link" 
+                       th:href="@{/blog(page=${currentPage + 1}, sort=${sort}, search=${search})}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
             </ul>
         </nav>
     </div> <!-- /.container -->

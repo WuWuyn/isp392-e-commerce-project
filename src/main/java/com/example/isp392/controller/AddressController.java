@@ -2,11 +2,15 @@ package com.example.isp392.controller;
 
 import com.example.isp392.dto.AddressDTO;
 import com.example.isp392.model.User;
+import com.example.isp392.repository.UserRepository;
 import com.example.isp392.service.AddressService;
 import com.example.isp392.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -15,27 +19,38 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for handling address management
  * Manages user addresses with proper authentication
+ * Supports both regular and OAuth2 users
  */
 @Controller
 @RequestMapping("/buyer")
 public class AddressController {
 
-    // Services used for business logic
+    private static final Logger log = LoggerFactory.getLogger(AddressController.class);
+    
+    // Services and repositories used for business logic
     private final AddressService addressService;
     private final UserService userService;
+    private final UserRepository userRepository;
+    private final HttpSession httpSession;
 
     /**
      * Constructor for dependency injection (Constructor Injection instead of @Autowired)
      * @param addressService service for address operations
      * @param userService service for user operations
+     * @param userRepository repository for direct user database access
+     * @param httpSession HTTP session for retrieving session attributes
      */
-    public AddressController(AddressService addressService, UserService userService) {
+    public AddressController(AddressService addressService, UserService userService, UserRepository userRepository, HttpSession httpSession) {
         this.addressService = addressService;
         this.userService = userService;
+        this.userRepository = userRepository;
+        this.httpSession = httpSession;
     }
 
     /**
@@ -45,17 +60,11 @@ public class AddressController {
      */
     @GetMapping("/addresses")
     public String viewAddresses(Model model) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        if (userOptional.isEmpty()) {
+        // Get current authenticated user with OAuth2 support
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/buyer/login";
         }
-        
-        User user = userOptional.get();
 
         // Get user's roles for sidebar
         List<String> roles = userService.getUserRoles(user);
@@ -76,17 +85,11 @@ public class AddressController {
      */
     @GetMapping("/addresses/new")
     public String showAddAddressForm(Model model) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        if (userOptional.isEmpty()) {
+        // Get current authenticated user with OAuth2 support
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/buyer/login";
         }
-        
-        User user = userOptional.get();
 
         // Get user's roles for sidebar
         List<String> roles = userService.getUserRoles(user);
@@ -115,17 +118,11 @@ public class AddressController {
             RedirectAttributes redirectAttributes,
             Model model
     ) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        if (userOptional.isEmpty()) {
+        // Get current authenticated user with OAuth2 support
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/buyer/login";
         }
-        
-        User user = userOptional.get();
         
         // Check for validation errors
         if (bindingResult.hasErrors()) {
@@ -160,17 +157,11 @@ public class AddressController {
             Model model,
             RedirectAttributes redirectAttributes
     ) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        if (userOptional.isEmpty()) {
+        // Get current authenticated user with OAuth2 support
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/buyer/login";
         }
-        
-        User user = userOptional.get();
 
         // Get user's roles for sidebar
         List<String> roles = userService.getUserRoles(user);
@@ -209,17 +200,11 @@ public class AddressController {
             RedirectAttributes redirectAttributes,
             Model model
     ) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        if (userOptional.isEmpty()) {
+        // Get current authenticated user with OAuth2 support
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/buyer/login";
         }
-        
-        User user = userOptional.get();
 
         // Check for validation errors
         if (bindingResult.hasErrors()) {
@@ -253,17 +238,11 @@ public class AddressController {
             @PathVariable int addressId,
             RedirectAttributes redirectAttributes
     ) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        if (userOptional.isEmpty()) {
+        // Get current authenticated user with OAuth2 support
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/buyer/login";
         }
-        
-        User user = userOptional.get();
 
         try {
             // Delete the address
@@ -287,17 +266,11 @@ public class AddressController {
             @PathVariable int addressId,
             RedirectAttributes redirectAttributes
     ) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        if (userOptional.isEmpty()) {
+        // Get current authenticated user with OAuth2 support
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/buyer/login";
         }
-        
-        User user = userOptional.get();
 
         try {
             // Set as default
@@ -308,5 +281,56 @@ public class AddressController {
         }
         
         return "redirect:/buyer/addresses";
+    }
+    
+    /**
+     * Helper method to get the current authenticated user, supporting both regular and OAuth2 users
+     * @return User object or null if not authenticated or not found
+     */
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return null;
+        }
+        
+        // First try to get user ID from session (set by OAuth2LoginSuccessHandler)
+        Integer userId = (Integer) httpSession.getAttribute("USER_ID");
+        if (userId != null) {
+            Optional<User> userById = userRepository.findById(userId);
+            if (userById.isPresent()) {
+                User user = userById.get();
+                log.debug("Found user from session USER_ID: id={}, name={}", user.getUserId(), user.getFullName());
+                return user;
+            }
+        }
+        
+        String email;
+        
+        // Check if authentication is from OAuth2 (Google)
+        if (auth instanceof OAuth2AuthenticationToken) {
+            OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
+            email = oauth2User.getAttribute("email");
+            log.debug("Getting OAuth2 user with email: {}", email);
+        } else {
+            // Regular form login user
+            email = auth.getName();
+            log.debug("Getting regular user with email: {}", email);
+        }
+        
+        if (email == null) {
+            log.warn("Could not extract email from authentication: {}", auth.getPrincipal());
+            return null;
+        }
+        
+        // Find user by email
+        Optional<User> userOptional = userService.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            log.warn("No user found for email: {}", email);
+            return null;
+        }
+        
+        User user = userOptional.get();
+        log.debug("Found user: id={}, name={}", user.getUserId(), user.getFullName());
+        return user;
     }
 }

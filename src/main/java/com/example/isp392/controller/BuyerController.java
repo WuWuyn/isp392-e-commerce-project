@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -18,14 +20,19 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for buyer-related operations
+ * Handles both local and OAuth2 (Google) authentication
  */
 @Controller
 @RequestMapping("/buyer")
 public class BuyerController {
 
+    private static final Logger log = LoggerFactory.getLogger(BuyerController.class);
+    
     private final UserService userService;
 
     /**
@@ -119,24 +126,68 @@ public class BuyerController {
      * @return account info page view
      */
     @GetMapping("/account-info")
-    public String showAccountInfo(Model model) {
-        // Get authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            model.addAttribute("user", user);
-            // Get and add roles to the model using the user object
-            model.addAttribute("roles", userService.getUserRoles(user));
-            return "buyer/account-info";
-        } else {
-            // If user not found, redirect to login
+    public String showAccountInfo(Model model, Authentication authentication) {
+        // Get user with OAuth2 support
+        User user = getCurrentUser(authentication);
+        if (user == null) {
+            log.warn("No user found in showAccountInfo");
             return "redirect:/buyer/login";
         }
+        
+        // Check if this is an OAuth2 authentication
+        boolean isOAuth2User = authentication instanceof OAuth2AuthenticationToken;
+        model.addAttribute("isOAuth2User", isOAuth2User);
+        
+        // If OAuth2 user, add OAuth2 user details to model
+        if (isOAuth2User) {
+            OAuth2User oauth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
+            model.addAttribute("oauth2User", oauth2User);
+            
+            // Log OAuth2 attributes for debugging
+            log.debug("OAuth2 user attributes: {}", oauth2User.getAttributes());
+        }
+        
+        // Add user and roles to model
+        model.addAttribute("user", user);
+        model.addAttribute("roles", userService.getUserRoles(user));
+        
+        log.debug("Showing account info for user: id={}, name={}", 
+                 user.getUserId(), user.getFullName());
+        
+        return "buyer/account-info";
+    }
+    
+    /**
+     * Handle OAuth2 login success
+     * @param authentication OAuth2 authentication object
+     * @param model Model to add attributes
+     * @return redirect to account info page
+     */
+    @GetMapping("/oauth2-login-success")
+    public String handleOAuth2LoginSuccess(Authentication authentication, Model model) {
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2User oauth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
+            String email = oauth2User.getAttribute("email");
+            String name = oauth2User.getAttribute("name");
+            
+            // Log the successful OAuth2 login with detailed attributes
+            log.info("OAuth2 login success for user: email={}, name={}", email, name);
+            log.debug("OAuth2 user attributes: {}", oauth2User.getAttributes());
+            
+            // Find user in database to verify proper creation/update
+            Optional<User> userOptional = userService.findByEmail(email);
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                log.info("User found in database: id={}, name={}", 
+                         user.getUserId(), user.getFullName());
+            } else {
+                log.warn("OAuth2 user not found in database after login success");
+            }
+        } else {
+            log.warn("Non-OAuth2 authentication in OAuth2 success handler");
+        }
+        
+        return "redirect:/buyer/account-info";
     }
 
     /**
@@ -146,21 +197,22 @@ public class BuyerController {
      */
     @GetMapping("/edit-info")
     public String showEditInfoPage(Model model) {
-        // Get authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            model.addAttribute("user", user);
-            return "buyer/account-edit-info";
-        } else {
-            // If user not found, redirect to login
+        // Get authenticated user with OAuth2 support
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/buyer/login";
         }
+        
+        // Add user and roles to model
+        model.addAttribute("user", user);
+        model.addAttribute("roles", userService.getUserRoles(user));
+        
+        // Check authentication type
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isOAuth2User = authentication instanceof OAuth2AuthenticationToken;
+        model.addAttribute("isOAuth2User", isOAuth2User);
+        
+        return "buyer/account-edit-info";
     }
     
     /**
@@ -182,13 +234,27 @@ public class BuyerController {
             HttpServletRequest request) {
         
         try {
-            // Get authenticated user
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String email = auth.getName();
+            // Get authenticated user with OAuth2 support
+            User currentUser = getCurrentUser();
+            if (currentUser == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "User not found. Please login again.");
+                return "redirect:/buyer/login";
+            }
+            
+            String email = currentUser.getEmail();
+            log.debug("Updating info for user: {}", email);
             
             // Parse date from string
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            Date parsedDate = dateFormat.parse(dateOfBirth);
+            Date parsedDate = null;
+            try {
+                if (dateOfBirth != null && !dateOfBirth.isEmpty()) {
+                    parsedDate = dateFormat.parse(dateOfBirth);
+                }
+            } catch (Exception e) {
+                log.warn("Error parsing date: {}", e.getMessage());
+                // Continue with null date if parsing fails
+            }
             
             // Process profile picture if uploaded
             String profilePicUrl = null;
@@ -212,20 +278,23 @@ public class BuyerController {
                     
                     // Set profile picture URL that will be mapped by our resource handler
                     profilePicUrl = "/uploads/profile-pictures/" + fileName;
+                    log.debug("Profile picture saved: {}", profilePicUrl);
                 } catch (Exception e) {
                     // Log error but continue with other user info updates
-                    System.err.println("Error uploading profile picture: " + e.getMessage());
+                    log.error("Error uploading profile picture: {}", e.getMessage());
                 }
             }
             
             // Update user info with profile picture
             userService.updateUserInfo(email, fullName, phone, gender, parsedDate, profilePicUrl);
+            log.info("User info updated successfully for: {}", email);
             
             // Add success message
             redirectAttributes.addFlashAttribute("successMessage", "Your information has been updated successfully.");
             return "redirect:/buyer/account-info";
         } catch (Exception e) {
             // Handle update errors
+            log.error("Error updating user info: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/buyer/edit-info";
         }
@@ -240,9 +309,22 @@ public class BuyerController {
     @GetMapping("/change-password")
     public String showChangePasswordForm(Model model) {
         try {
-            // Get authenticated user
+            // Get authentication from SecurityContextHolder
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String email = auth.getName();
+            
+            // Check if this is an OAuth2 authentication
+            boolean isOAuth2User = auth instanceof OAuth2AuthenticationToken;
+            model.addAttribute("isOAuth2User", isOAuth2User);
+            
+            String email;
+            if (isOAuth2User) {
+                OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
+                email = oauth2User.getAttribute("email");
+                log.debug("OAuth2 user accessing change password page: {}", email);
+            } else {
+                email = auth.getName();
+                log.debug("Regular user accessing change password page: {}", email);
+            }
             
             // Get user by email
             Optional<User> userOpt = userService.findByEmail(email);
@@ -257,6 +339,7 @@ public class BuyerController {
                 return "redirect:/buyer/login";
             }
         } catch (Exception e) {
+            log.error("Error displaying change password form: {}", e.getMessage());
             // Handle any errors
             return "redirect:/buyer/login";
         }
@@ -276,6 +359,17 @@ public class BuyerController {
             @ModelAttribute("confirmPassword") String confirmPassword,
             RedirectAttributes redirectAttributes) {
         
+        // Check if user is authenticated with OAuth2
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isOAuth2User = auth instanceof OAuth2AuthenticationToken;
+        
+        // Prevent Google users from changing passwords
+        if (isOAuth2User) {
+            log.warn("Google OAuth2 user attempted to change password");
+            redirectAttributes.addFlashAttribute("errorMessage", "Google account users cannot change their password here. Please use your Google account settings.");
+            return "redirect:/buyer/change-password";
+        }
+        
         // Check if passwords match
         if (!newPassword.equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute("errorMessage", "New password and confirmation do not match.");
@@ -283,8 +377,7 @@ public class BuyerController {
         }
         
         try {
-            // Get authenticated user
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            // Use the existing auth variable
             String email = auth.getName();
             
             // Update password
@@ -342,7 +435,7 @@ public class BuyerController {
     @GetMapping("/cart")
     public String showCart(Model model) {
         try {
-            // Get authenticated user
+            // Use the existing auth variable
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String email = auth.getName();
             
@@ -373,9 +466,60 @@ public class BuyerController {
      * @return true if user is authenticated, false otherwise
      */
     private boolean isUserAuthenticated() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null && 
-               authentication.isAuthenticated() && 
-               !authentication.getName().equals("anonymousUser");
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
     }
+
+    /**
+     * Helper method to get the current authenticated user, supporting both regular and OAuth2 users
+     * @return User object or null if not authenticated or not found
+     */
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return getCurrentUser(auth);
+    }
+
+    /**
+     * Helper method to get the current authenticated user from Authentication object
+     * Supports both regular and OAuth2 users
+     * @param auth Authentication object
+     * @return User object or null if not authenticated or not found
+     */
+    private User getCurrentUser(Authentication auth) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return null;
+        }
+
+        String email;
+
+        // Check if authentication is from OAuth2 (Google)
+        if (auth instanceof OAuth2AuthenticationToken) {
+            OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
+            email = oauth2User.getAttribute("email");
+            log.debug("Getting OAuth2 user with email: {}", email);
+        } else {
+            // Regular form login user
+            email = auth.getName();
+            log.debug("Getting regular user with email: {}", email);
+        }
+
+        if (email == null) {
+            log.warn("Could not extract email from authentication: {}", auth.getPrincipal());
+            return null;
+        }
+
+        // Find user by email
+        Optional<User> userOptional = userService.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            log.warn("No user found for email: {}", email);
+            return null;
+        }
+
+        User user = userOptional.get();
+        log.debug("Found user: id={}, name={}", user.getUserId(), user.getFullName());
+        return user;
+    }
+
+    // ... (rest of the code remains the same)
 }
+

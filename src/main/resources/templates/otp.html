@@ -142,7 +142,7 @@
         A 6-digit One-Time Password has been sent to your registered email.
     </p>
 
-    <form id="otpForm">
+    <form id="otpForm" action="/password-reset/otp" method="post">
         <div class="otp-input-fields mb-4">
             <input type="text" class="form-control otp-input" id="otp-1" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
             <input type="text" class="form-control otp-input" id="otp-2" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
@@ -212,7 +212,7 @@
 
         if (otpForm) {
             otpForm.addEventListener('submit', function(event) {
-                event.preventDefault(); // Prevent default form submission for now
+                event.preventDefault(); // Prevent immediate submission to validate first
                 let otpValue = "";
                 otpInputs.forEach(input => {
                     otpValue += input.value;
@@ -221,8 +221,8 @@
 
                 if (otpValue.length === 6) {
                     console.log('Verifying OTP:', otpValue);
-                    alert('OTP Submitted: ' + otpValue); // Replace with actual verification logic
-                    // Example: this.submit(); // To actually submit the form to a backend
+                    // Actually submit the form to the server
+                    this.submit();
                 } else {
                     alert('Please enter all 6 digits of the OTP.');
                 }
