@@ -309,7 +309,7 @@ public class BuyerController {
     @GetMapping("/change-password")
     public String showChangePasswordForm(Model model) {
         try {
-            // Get authentication from SecurityContextHolder
+            // Get authenticated user
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             
             // Check if this is an OAuth2 authentication
@@ -377,7 +377,8 @@ public class BuyerController {
         }
         
         try {
-            // Use the existing auth variable
+            // Get authenticated user
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String email = auth.getName();
             
             // Update password
@@ -435,7 +436,7 @@ public class BuyerController {
     @GetMapping("/cart")
     public String showCart(Model model) {
         try {
-            // Use the existing auth variable
+            // Get authenticated user
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String email = auth.getName();
             
@@ -522,4 +523,3 @@ public class BuyerController {
 
     // ... (rest of the code remains the same)
 }
-

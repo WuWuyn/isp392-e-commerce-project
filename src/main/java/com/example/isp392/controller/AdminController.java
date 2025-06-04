@@ -45,10 +45,10 @@ public class AdminController {
     public String showAdminLoginPage(Model model) {
         // Check if user is already authenticated
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
+        if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser") && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
             // If user is authenticated and has ADMIN role, redirect to product management
             return "redirect:/admin/products";
-        }
+        }     
         
         // No active menu for login page
         model.addAttribute("activeMenu", "");

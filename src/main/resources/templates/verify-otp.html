@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot Password - BOOKIX</title>
+    <title>Verify OTP - ReadHub</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome for icons -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    <!-- Custom CSS (shared style.css + page specific) -->
-    <link rel="stylesheet" href="style.css"> <!-- Link to your main style.css if it exists -->
+    <!-- Custom CSS -->
     <style>
-        /* Page Specific Styles (can be moved to style.css if preferred) */
-        body.auth-page { /* More generic class for login/forgot/signup pages */
-            background-color: #F8F5F0; /* Light beige background */
+        body.auth-page {
+            background-color: #F8F5F0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -25,21 +23,21 @@
             font-family: 'Open Sans', sans-serif;
         }
 
-        .auth-container { /* Replaces login-container for more general use */
+        .auth-container {
             background-color: #FFFFFF;
             padding: 2.5rem;
             border-radius: 8px;
             box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 420px;
-            text-align: center; /* Center text within the container */
+            text-align: center;
         }
 
-        .auth-logo { /* Replaces login-logo */
+        .auth-logo {
             font-family: 'Lora', serif;
             font-size: 2.5rem;
             font-weight: 700;
-            color: #2C3E50; /* Dark Teal/Slate */
+            color: #2C3E50;
             margin-bottom: 1rem;
         }
         .auth-logo a {
@@ -61,18 +59,18 @@
             margin-bottom: 2rem;
         }
 
-        .form-control-auth { /* Replaces form-control-login */
+        .form-control-auth {
             height: calc(1.5em + .75rem + 8px);
             border-radius: 0.25rem;
             font-size: 0.95rem;
-            text-align: left; /* Align placeholder text left */
+            text-align: left;
         }
         .form-control-auth:focus {
             border-color: #2C3E50;
             box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
         }
 
-        .btn-auth-primary { /* Replaces btn-login-primary */
+        .btn-auth-primary {
             background-color: #2C3E50;
             border-color: #2C3E50;
             color: #FFFFFF;
@@ -85,41 +83,12 @@
             color: #FFFFFF;
         }
 
-        .or-separator {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: #6c757d;
-            margin: 1.25rem 0;
+        .otp-info {
+            margin-bottom: 1.5rem;
             font-size: 0.9rem;
-        }
-        .or-separator::before,
-        .or-separator::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid #dee2e6;
-        }
-        .or-separator:not(:empty)::before {
-            margin-right: .5em;
-        }
-        .or-separator:not(:empty)::after {
-            margin-left: .5em;
+            color: #555;
         }
 
-        .create-account-section {
-            margin-top: 2rem;
-        }
-        .btn-create-account {
-            background-color: transparent;
-            border: 1px solid #2C3E50;
-            color: #2C3E50;
-            font-weight: 600;
-            padding: 0.65rem;
-        }
-        .btn-create-account:hover {
-            background-color: #2C3E50;
-            color: #FFFFFF;
-        }
         .back-to-login-link {
             display: block;
             margin-top: 1.5rem;
@@ -134,7 +103,19 @@
         .back-to-login-link a:hover {
             text-decoration: underline;
         }
-
+        
+        .resend-otp {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        .resend-otp a {
+            color: #2C3E50;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .resend-otp a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body class="auth-page">
@@ -144,9 +125,9 @@
         <a href="/">ReadHub</a>
     </div>
 
-    <h1 class="auth-title">Forgot Your Password?</h1>
+    <h1 class="auth-title">Verify OTP</h1>
     <p class="auth-subtitle">
-        No worries! Enter your email address below and we'll send you a link to reset it.
+        Enter the verification code sent to your email.
     </p>
 
     <!-- Display success messages -->
@@ -159,18 +140,26 @@
         <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
     </div>
 
-    <form th:action="@{/password-reset/forgot}" method="post">
+    <div class="otp-info">
+        <p>We've sent a 6-digit code to <strong th:text="${maskedEmail ?: 'your email'}">your email</strong></p>
+        <p>The code will expire in <strong>5 minutes</strong>.</p>
+    </div>
+
+    <form th:action="@{/password-reset/verify-otp}" method="post">
         <div class="mb-3">
-            <label for="email" class="form-label visually-hidden">Email address</label>
-            <input type="email" class="form-control form-control-auth" id="email" name="email" placeholder="Enter your email address" required autofocus>
+            <label for="otp" class="form-label visually-hidden">OTP Code</label>
+            <input type="text" class="form-control form-control-auth" id="otp" name="otp" 
+                   placeholder="Enter 6-digit code" required autofocus 
+                   pattern="[0-9]{6}" maxlength="6" minlength="6"
+                   inputmode="numeric">
+            <div class="invalid-feedback">Please enter a valid 6-digit code</div>
         </div>
 
-        <button type="submit" class="btn btn-auth-primary w-100 mt-2">Reset Password</button>
+        <button type="submit" class="btn btn-auth-primary w-100 mt-2">Verify Code</button>
     </form>
 
-    <div class="create-account-section">
-        <div class="or-separator">New to ReadHub?</div>
-        <a th:href="@{/buyer/signup}" class="btn btn-create-account w-100">Create an account</a>
+    <div class="resend-otp">
+        <p>Didn't receive a code? <a th:href="@{/password-reset/resend-otp}">Resend OTP</a></p>
     </div>
 
     <div class="back-to-login-link">
@@ -179,9 +168,7 @@
 
 </main>
 
-<!-- Bootstrap JS Bundle (Popper.js included) -->
+<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Font Awesome JS (if using fas fa-arrow-left) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
 </body>
 </html>

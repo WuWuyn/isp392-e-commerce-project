@@ -5,6 +5,15 @@
     <title>Title</title>
 </head>
 <body>
-<h1>Seller Sign up</h1>
+<form th:action="@{/seller/signup}" method="post">
+    <h1>Seller Sign up</h1>
+    <!-- error and success message display -->
+    <div th:if="${param.error}">
+        <p style="color: red">Error: [[${session.error}]]</p>
+    </div>
+    <div th:if="${param.success}">
+        <p style="color: green">Success: [[${session.success}]]</p>
+    </div>
+</form>
 </body>
 </html>

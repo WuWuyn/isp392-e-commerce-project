@@ -50,8 +50,7 @@
                 <!-- Author Bio -->
                 <section class="author-bio-section my-5 p-4 rounded">
                     <div class="d-flex align-items-center">
-                        <img th:src="${blog.user.profilePicUrl != null ? blog.user.profilePicUrl : '/images/default-avatar.jpg'}"
-                             th:alt="${blog.user.fullName}" class="author-avatar rounded-circle me-3">
+                        <img th:src="@{/images/avatar-placeholder.jpg}" th:alt="${blog.user.fullName}" class="author-avatar rounded-circle me-3">
                         <div>
                             <h5 class="author-name mb-0" th:text="${blog.user.fullName}">Author Name</h5>
                         </div>
@@ -82,9 +81,30 @@
                     <h3 class="comments-title mb-4">Leave a Reply <span class="text-muted small">(or view existing comments below)</span></h3>
                     <!-- Comment Form -->
                     <form class="comment-form mb-5" th:action="@{/blog/{id}/comment(id=${blog.blogId})}" method="post">
+                        <p class="comment-notes small text-muted mb-3">Your email address will not be published. Required fields are marked <span class="required">*</span></p>
                         <div class="mb-3">
                             <label for="commentText" class="form-label">Comment <span class="required">*</span></label>
                             <textarea class="form-control" id="commentText" name="comment" rows="5" required></textarea>
+                        </div>
+                        <div class="row" th:if="${#authorization.expression('!isAuthenticated()')}">
+                            <div class="col-md-4 mb-3">
+                                <label for="commentAuthor" class="form-label">Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="commentAuthor" name="author" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="commentEmail" class="form-label">Email <span class="required">*</span></label>
+                                <input type="email" class="form-control" id="commentEmail" name="email" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="commentWebsite" class="form-label">Website</label>
+                                <input type="url" class="form-control" id="commentWebsite" name="url">
+                            </div>
+                        </div>
+                        <div class="form-check mb-3" th:if="${#authorization.expression('!isAuthenticated()')}">
+                            <input class="form-check-input" type="checkbox" value="" id="saveCommentInfo" name="wp-comment-cookies-consent">
+                            <label class="form-check-label" for="saveCommentInfo">
+                                Save my name, email, and website in this browser for the next time I comment.
+                            </label>
                         </div>
                         <button type="submit" class="btn btn-dark submit-comment-btn">Post Comment</button>
                     </form>
@@ -94,13 +114,12 @@
                     <div class="comment-list" th:if="${!blog.comments.isEmpty()}">
                         <!-- Single Comment Item -->
                         <div class="comment-item d-flex mb-4 pb-3 border-bottom" th:each="comment : ${blog.comments}">
-                            <img th:src="${comment.user.profilePicUrl != null ? comment.user.profilePicUrl : '/images/default-avatar.jpg'}"
-                                 th:alt="${comment.user.fullName}" class="commenter-avatar rounded-circle me-3">
+                            <img th:src="@{/images/avatar-placeholder.png}" th:alt="${comment.user.fullName}" class="commenter-avatar rounded-circle me-3">
                             <div class="comment-content">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h6 class="commenter-name mb-0" th:text="${comment.user.fullName}">
                                         Commenter Name
-                                        <span th:if="${comment.user.userId == blog.user.userId}" class="badge bg-primary-subtle text-primary-emphasis rounded-pill small ms-1">Author</span>
+                                        <span th:if="${comment.user.id == blog.user.id}" class="badge bg-primary-subtle text-primary-emphasis rounded-pill small ms-1">Author</span>
                                     </h6>
                                     <span class="comment-date text-muted small" th:text="${comment.createdDate != null ? #dates.format(comment.createdDate, 'dd MMM yyyy - hh:mm a') : 'Date unavailable'}">Comment Date</span>
                                 </div>

@@ -120,45 +120,12 @@ public class CategoryController {
      * Get a specific category by ID
      * 
      * @param id Category ID
-     * @return Category object or null with proper field names for JavaScript
+     * @return Category object or null
      */
     @GetMapping("/{id}")
     @ResponseBody
-    public CategoryDTO getCategoryById(@PathVariable Integer id) {
-        Category category = categoryService.findById(id).orElse(null);
-        if (category == null) {
-            return null;
-        }
-        
-        // Create a DTO to ensure field names match what JavaScript expects
-        CategoryDTO dto = new CategoryDTO();
-        dto.setCategoryId(category.getCategoryId());
-        dto.setCategoryName(category.getCategoryName());
-        dto.setCategoryDescription(category.getCategoryDescription());
-        dto.setActive(category.isActive()); // Map isActive to active for JavaScript
-        return dto;
-    }
-    
-    /**
-     * Simple DTO class for Category to ensure consistent field naming with JavaScript
-     */
-    private static class CategoryDTO {
-        private int categoryId;
-        private String categoryName;
-        private String categoryDescription;
-        private boolean active; // Note: named 'active' to match JavaScript expectations
-        
-        public int getCategoryId() { return categoryId; }
-        public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
-        
-        public String getCategoryName() { return categoryName; }
-        public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
-        
-        public String getCategoryDescription() { return categoryDescription; }
-        public void setCategoryDescription(String categoryDescription) { this.categoryDescription = categoryDescription; }
-        
-        public boolean isActive() { return active; }
-        public void setActive(boolean active) { this.active = active; }
+    public Category getCategoryById(@PathVariable Integer id) {
+        return categoryService.findById(id).orElse(null);
     }
 
     /**
