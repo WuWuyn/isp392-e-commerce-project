@@ -205,19 +205,39 @@ public class SecurityConfig {
         http
             .securityMatcher("/seller/**")
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/seller/login").permitAll()
+                .requestMatchers(
+                    "/seller/signup",
+                    "/seller/login",
+                    "/seller/register"
+                ).permitAll()
                 .anyRequest().hasRole("SELLER")
             )
             .formLogin(form -> form
                 .loginPage("/seller/login")
                 .loginProcessingUrl("/seller/process_login")
-                .defaultSuccessUrl("/seller/dashboard")
+                .defaultSuccessUrl("/seller/account", true)  // Always redirect here after login
                 .failureUrl("/seller/login?error")
                 .permitAll()
+            )
+            .rememberMe(remember -> remember
+                .key("readhubSellerSecretKey") // Secret key for token signature
+                .tokenValiditySeconds(2592000) // 30 days in seconds
+                .rememberMeParameter("remember-me") // Match the checkbox name in the form
+                .userDetailsService(userService) // Use our custom UserDetailsService
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/seller/login")
+                .successHandler(oAuth2LoginSuccessHandler) // Use custom success handler
+                .failureUrl("/seller/login?error=oauth2")
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(customOAuth2UserService())
+                )
             )
             .logout(logout -> logout
                 .logoutUrl("/seller/logout")
                 .logoutSuccessUrl("/seller/login?logout")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll()
             )
             .csrf(csrf -> csrf.disable());
