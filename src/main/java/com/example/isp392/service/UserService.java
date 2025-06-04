@@ -11,7 +11,10 @@ import com.example.isp392.repository.UserRoleRepository;
 // No imports needed for annotations since we use constructor injection
 import java.security.SecureRandom;
 import java.util.Base64;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,7 +22,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.web.multipart.MultipartFile;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
@@ -30,7 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
-
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
@@ -46,7 +49,7 @@ public class UserService implements UserDetailsService {
      * @param userRoleRepository Repository for user-role relationship data access
      * @param passwordEncoder Password encoder for securely storing passwords
      */
-    public UserService(UserRepository userRepository, 
+    public UserService(UserRepository userRepository,
                       RoleRepository roleRepository,
                       UserRoleRepository userRoleRepository,
                       PasswordEncoder passwordEncoder) {
@@ -173,15 +176,19 @@ public class UserService implements UserDetailsService {
     
     /**
      * Update user information
-     * @param email the user's email
-     * @param fullName the user's full name
-     * @param phone the user's phone number
-     * @param gender the user's gender (0: Male, 1: Female, 2: Other)
+     *
+     * @param email              the user's email
+     * @param fullName           the user's full name
+     * @param phone              the user's phone number
+     * @param gender             the user's gender (0: Male, 1: Female, 2: Other)
+     * @param dateOfBirth
+     * @param profilePictureFile
+     * @param request
      * @return the updated user
      * @throws RuntimeException if user not found
      */
     @Transactional
-    public User updateUserInfo(String email, String fullName, String phone, int gender) {
+    public User updateUserInfo(String email, String fullName, String phone, int gender, String dateOfBirth, MultipartFile profilePictureFile, HttpServletRequest request) {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
@@ -356,4 +363,52 @@ public class UserService implements UserDetailsService {
         // Use the password encoder to check if the given password matches the stored password
         return passwordEncoder.matches(password, user.getPassword());
     }
+
+    public void registerNewUser(UserRegistrationDTO userRegistrationDTO, String seller) {
+    }
+
+
+    @Transactional
+    public void deleteUserById(Integer userId) { // <--- THAM SỐ LÀ Integer
+        log.info("UserService: Attempting to delete user with ID: {}", userId);
+        if (userId == null) {
+            log.error("UserService: userId is null, cannot delete.");
+            // Có thể throw new IllegalArgumentException("User ID cannot be null");
+            return;
+        }
+
+        try {
+            // userRepository.findById(userId) sẽ mong đợi Integer và userId của bạn giờ là Integer
+            Optional<User> userOptional = userRepository.findById(userId);
+            if (userOptional.isPresent()) {
+                log.info("UserService: User found with ID: {}. Proceeding with deletion.", userId);
+
+                // Xóa các bản ghi phụ thuộc nếu cần (và nếu chúng chưa được xử lý bằng Cascade)
+                // Ví dụ: orderRepository.deleteByUserId(userId); // Giả sử có phương thức này
+
+                userRepository.deleteById(userId); // Gọi với Integer userId
+
+                log.info("UserService: Call to userRepository.deleteById({}) completed.", userId);
+
+                if (userRepository.existsById(userId)) { // Gọi với Integer userId
+                    log.error("UserService: CRITICAL - User with ID {} STILL EXISTS after deletion attempt!", userId);
+                } else {
+                    log.info("UserService: User with ID {} successfully confirmed as deleted from repository.", userId);
+                }
+            } else {
+                log.warn("UserService: User with ID {} not found in repository. Cannot delete.", userId);
+            }
+        } catch (DataIntegrityViolationException dive) {
+            log.error("UserService: DataIntegrityViolationException while deleting user {}: {}", userId, dive.getMessage(), dive);
+            // throw dive; // Cân nhắc re-throw để controller có thể xử lý chi tiết hơn
+        } catch (Exception e) {
+            log.error("UserService: Unexpected error while deleting user {}: {}", userId, e.getMessage(), e);
+            // throw new RuntimeException("Error deleting user", e); // Cân nhắc re-throw
+        }
+    }
+
+    // ... các phương thức khác của UserService ...
+    // Đảm bảo tất cả các phương thức khác trong UserService
+    // nếu làm việc với userId cũng mong đợi hoặc trả về Integer nếu cần.
 }
+

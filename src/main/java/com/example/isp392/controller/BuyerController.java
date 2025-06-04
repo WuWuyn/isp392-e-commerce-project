@@ -4,11 +4,13 @@ import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.User;
 import com.example.isp392.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -521,5 +523,59 @@ public class BuyerController {
     }
 
     // ... (rest of the code remains the same)
+    // Hiển thị form xác nhận xóa tài khoản
+    @GetMapping("/account-deletion") // Đổi tên mapping này cho rõ ràng
+    public String showAccountDeletionConfirmationPage(Authentication authentication, Model model, RedirectAttributes redirectAttributes) {
+        User currentUser = getCurrentUser(authentication);
+        if (currentUser == null) {
+            // Should not happen if security is configured correctly, but good to check
+            redirectAttributes.addFlashAttribute("errorMessage", "You must be logged in to delete your account.");
+            return "redirect:/buyer/login";
+        }
+        // You can add user details to the model if needed on the confirmation page
+        // model.addAttribute("userEmail", currentUser.getEmail());
+        log.debug("Showing account deletion confirmation page for user ID: {}", currentUser.getUserId());
+        return "buyer/delete-account"; // Đúng tên file template
+    }
+
+    // Method to handle the actual account deletion
+    // This mapping should match the th:action in your delete-account-confirmation.html form
+    @PostMapping("/perform-delete-account")
+    public String performAccountDeletion(Authentication authentication,
+                                         HttpServletRequest request,
+                                         HttpServletResponse response,
+                                         RedirectAttributes redirectAttributes) {
+        User currentUser = getCurrentUser(authentication);
+
+        if (currentUser == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "User not authenticated. Please log in.");
+            log.warn("Attempt to delete account without authentication.");
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            // userId bây giờ sẽ là Integer nếu User.getUserId() trả về Integer
+            Integer userId = currentUser.getUserId(); // Đảm bảo User.getUserId() trả về Integer
+            if (userId == null) { // Kiểm tra thêm cho chắc chắn
+                log.error("User ID is null for current user: {}", currentUser.getEmail());
+                redirectAttributes.addFlashAttribute("errorMessage", "Could not retrieve user ID.");
+                return "redirect:/buyer/account-info"; // Hoặc trang phù hợp
+            }
+
+            log.info("Attempting to delete account for user ID: {}", userId);
+            userService.deleteUserById(userId); // Truyền Integer userId
+            log.info("Account successfully deleted for user ID: {}", userId);
+
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Your account has been successfully deleted.");
+            return "redirect:/buyer/login";
+
+        } catch (Exception e) {
+            log.error("Error deleting account for user ID: {}: {}", currentUser.getUserId(), e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while deleting your account. Please try again or contact support.");
+            return "redirect:/buyer/account-deletion";
+        }
+    }
 }
 
