@@ -32,8 +32,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     
     public OAuth2LoginSuccessHandler(UserService userService) {
         this.userService = userService;
-        // Default URL will be determined based on user role
-        setDefaultTargetUrl("/");
+        // Set default target URL to account info page
+        setDefaultTargetUrl("/buyer/account-info");
     }
     
     @Override
@@ -65,7 +65,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 
                 // Store user ID in session for quicker retrieval
                 request.getSession().setAttribute("USER_ID", user.getUserId());
-                
+     
                 // Determine the target URL based on user role
                 Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
                 String targetUrl = "/"; // Default
