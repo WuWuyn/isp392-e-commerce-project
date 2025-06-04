@@ -118,6 +118,11 @@ function initLocationSelectors() {
             if (wardSelect) {
                 wardSelect.innerHTML = '<option value="">Select ward</option>';
                 wardSelect.disabled = this.value === '';
+                
+                // Make sure ward is marked as required
+                if (wardSelect.hasAttribute('required')) {
+                    wardSelect.setAttribute('required', 'required');
+                }
             }
             
             // Fetch wards for selected district

@@ -1,5 +1,8 @@
 package com.example.isp392.config;
 
+import com.example.isp392.repository.RoleRepository;
+import com.example.isp392.repository.UserRoleRepository;
+import com.example.isp392.service.CustomOAuth2UserService;
 import com.example.isp392.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +14,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Security configuration for Spring Security
@@ -19,9 +24,14 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     /**
      * Constructor with explicit dependency injection
@@ -29,9 +39,16 @@ public class SecurityConfig {
      * @param userService User service for authentication
      * @param passwordEncoder Password encoder from PasswordConfig
      */
-    public SecurityConfig(UserService userService, PasswordEncoder passwordEncoder) {
+    public SecurityConfig(UserService userService, PasswordEncoder passwordEncoder,
+                       RoleRepository roleRepository, UserRoleRepository userRoleRepository,
+                       OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.roleRepository = roleRepository;
+        this.userRoleRepository = userRoleRepository;
+        this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
+        
+        log.info("SecurityConfig initialized with OAuth2LoginSuccessHandler");
     }
 
     /**
@@ -58,6 +75,15 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
+    
+    /**
+     * Bean for custom OAuth2 user service
+     * @return CustomOAuth2UserService
+     */
+    @Bean
+    public CustomOAuth2UserService customOAuth2UserService() {
+        return new CustomOAuth2UserService(userService, roleRepository, userRoleRepository);
+    }
 
     /**
      * Security filter chain for public resources
@@ -71,7 +97,8 @@ public class SecurityConfig {
         http
             .securityMatcher("/css/**", "/js/**", "/images/**", "/webjars/**", "/error/**",
                     "/", "/about-contact", "/all-category", "/blog/**", "/blog-single",
-                    "/terms-policy", "/product-detail", "/favicon.ico")
+                    "/terms-policy", "/product-detail", "/favicon.ico", 
+                    "/password-reset/**")
             .authorizeHttpRequests(authorize -> authorize
                 .anyRequest().permitAll()
             )
@@ -122,25 +149,43 @@ public class SecurityConfig {
     @Order(3)
     public SecurityFilterChain buyerFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/buyer/**")
+            .securityMatcher("/buyer/**", "/login/oauth2/**", "/oauth2/**")
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(
                     "/buyer/signup",
                     "/buyer/login",
-                    "/buyer/register"
+                    "/buyer/register",
+                    "/login/oauth2/**",
+                    "/oauth2/**"
                 ).permitAll()
                 .anyRequest().hasRole("BUYER")
             )
             .formLogin(form -> form
                 .loginPage("/buyer/login")
                 .loginProcessingUrl("/buyer/process_login")
-                .defaultSuccessUrl("/buyer/account-info")
+                .defaultSuccessUrl("/buyer/account-info", true) // Redirect to account-info page with true to always redirect
                 .failureUrl("/buyer/login?error")
                 .permitAll()
+            )
+            .rememberMe(remember -> remember
+                .key("readhubSecretKey") // Secret key for token signature
+                .tokenValiditySeconds(2592000) // 30 days in seconds
+                .rememberMeParameter("remember-me") // Match the checkbox name in the form
+                .userDetailsService(userService) // Use our custom UserDetailsService
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/buyer/login")
+                .successHandler(oAuth2LoginSuccessHandler) // Use custom success handler
+                .failureUrl("/buyer/login?error=oauth2")
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(customOAuth2UserService())
+                )
             )
             .logout(logout -> logout
                 .logoutUrl("/buyer/logout")
                 .logoutSuccessUrl("/buyer/login?logout")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll()
             )
             .csrf(csrf -> csrf.disable());
@@ -158,34 +203,48 @@ public class SecurityConfig {
     @Order(4)
     public SecurityFilterChain sellerFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/seller/**")
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(
-                                "/seller/login",
-                                "/seller/registration",
-                                "/seller/process_registration",
-                                "/seller/registration-success"
-                        ).permitAll()
-                        .anyRequest().hasRole("SELLER")
+            .securityMatcher("/seller/**")
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(
+                    "/seller/signup",
+                    "/seller/login",
+                    "/seller/register"
+                ).permitAll()
+                .anyRequest().hasRole("SELLER")
+            )
+            .formLogin(form -> form
+                .loginPage("/seller/login")
+                .loginProcessingUrl("/seller/process_login")
+                .defaultSuccessUrl("/seller/account", true)  // Always redirect here after login
+                .failureUrl("/seller/login?error")
+                .permitAll()
+            )
+            .rememberMe(remember -> remember
+                .key("readhubSellerSecretKey") // Secret key for token signature
+                .tokenValiditySeconds(2592000) // 30 days in seconds
+                .rememberMeParameter("remember-me") // Match the checkbox name in the form
+                .userDetailsService(userService) // Use our custom UserDetailsService
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/seller/login")
+                .successHandler(oAuth2LoginSuccessHandler) // Use custom success handler
+                .failureUrl("/seller/login?error=oauth2")
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(customOAuth2UserService())
                 )
-                .formLogin(form -> form
-                        .loginPage("/seller/login")
-                        .loginProcessingUrl("/seller/process_login")
-                        .defaultSuccessUrl("/seller/dashboard")
-                        .failureUrl("/seller/login?error")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/seller/logout")
-                        .logoutSuccessUrl("/seller/login?logout")
-                        .permitAll()
-                )
-                .csrf(csrf -> csrf.disable());
-
+            )
+            .logout(logout -> logout
+                .logoutUrl("/seller/logout")
+                .logoutSuccessUrl("/seller/login?logout")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID", "remember-me")
+                .permitAll()
+            )
+            .csrf(csrf -> csrf.disable());
+            
         return http.build();
     }
-
-
+    
     /**
      * Default security filter chain to catch all other requests
      * @param http HttpSecurity
@@ -207,7 +266,4 @@ public class SecurityConfig {
             
         return http.build();
     }
-
-
-
 }

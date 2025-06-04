@@ -7,6 +7,11 @@ import com.example.isp392.model.UserRole;
 import com.example.isp392.repository.RoleRepository;
 import com.example.isp392.repository.UserRepository;
 import com.example.isp392.repository.UserRoleRepository;
+
+// No imports needed for annotations since we use constructor injection
+import java.security.SecureRandom;
+import java.util.Base64;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -132,6 +137,9 @@ public class UserService implements UserDetailsService {
         return savedUser;
     }
 
+
+
+
     /**
      * Find user by email
      * @param email the email to search for
@@ -140,17 +148,26 @@ public class UserService implements UserDetailsService {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+    
+    /**
+     * Find user by email and return the user object directly
+     * @param email the email to search for
+     * @return User if found, null otherwise
+     */
+    public User findByEmailDirectly(String email) {
+        return userRepository.findByEmail(email).orElse(null);
+    }
 
     /**
-     * Get user roles
+     * Get user roles with the ROLE_ prefix for Spring Security
      * @param user the user
-     * @return list of roles for the user
+     * @return list of roles for the user with ROLE_ prefix
      */
     @Transactional(readOnly = true)
     public List<String> getUserRoles(User user) {
         return userRoleRepository.findByUser(user).stream()
                 .filter(UserRole::isRoleActiveForUser)
-                .map(userRole -> userRole.getRole().getRoleName())
+                .map(userRole -> "ROLE_" + userRole.getRole().getRoleName())
                 .collect(Collectors.toList());
     }
     
@@ -202,6 +219,50 @@ public class UserService implements UserDetailsService {
         
         // Save and return updated user
         return userRepository.save(user);
+    }
+    
+    /**
+     * Save a user to the database
+     * @param user the user to save
+     * @return the saved user
+     */
+    @Transactional
+    public User saveUser(User user) {
+        // Validate and set defaults for primitive fields to prevent null errors
+        if (user.getGender() < 0 || user.getGender() > 2) {
+            user.setGender(2); // Default to 'Other' if invalid
+        }
+        
+        // Ensure all other required fields are not null
+        if (user.getDateOfBirth() == null) {
+            user.setDateOfBirth(new Date());
+        }
+        
+        if (user.getFullName() == null) {
+            user.setFullName("Google User");
+        }
+        
+        return userRepository.save(user);
+    }
+    
+    /**
+     * Generate a random password for OAuth2 users
+     * @return a random password string
+     */
+    public String generateRandomPassword() {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[20];
+        random.nextBytes(bytes);
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+    
+    /**
+     * Encode a password using the password encoder
+     * @param password the raw password
+     * @return the encoded password
+     */
+    public String encodePassword(String password) {
+        return passwordEncoder.encode(password);
     }
     
     /**
@@ -260,5 +321,39 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
         
         return true;
+    }
+    
+    /**
+     * Change user password directly (for password reset)
+     * @param user the user to update
+     * @param newPassword the new password (not encoded)
+     * @return the updated user
+     */
+    @Transactional
+    public User changeUserPassword(User user, String newPassword) {
+        // Check if user is OAuth2 user
+        if (user.isOAuth2User()) {
+            throw new RuntimeException("Cannot change password for OAuth2 user");
+        }
+        
+        // Encode and update the password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        return userRepository.save(user);
+    }
+    
+    /**
+     * Check if a given password matches the user's current password
+     * @param user the user to check
+     * @param password the password to check (not encoded)
+     * @return true if the password matches the user's current password, false otherwise
+     */
+    public boolean checkIfValidOldPassword(User user, String password) {
+        // Check if user is OAuth2 user (they don't have a password to check)
+        if (user.isOAuth2User()) {
+            return false;
+        }
+        
+        // Use the password encoder to check if the given password matches the stored password
+        return passwordEncoder.matches(password, user.getPassword());
     }
 }

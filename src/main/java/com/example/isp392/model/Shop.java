@@ -44,18 +44,6 @@ public class Shop {
     @Column(name = "address", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String address;
 
-    @Column(name = "tax_code", length = 20)
-    private String taxCode;
-
-    @Column(name = "identification_file_url", length = 500)
-    private String identificationFileUrl;
-
-    @Column(name = "status", nullable = false)
-    private String status;
-
-    @Column(name = "rejection_reason", length = 500)
-    private String rejectionReason;
-
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "registration_date", nullable = false, updatable = false)
     private Timestamp registrationDate;
@@ -65,6 +53,9 @@ public class Shop {
 
     @Column(name = "identification_file_url", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String identificationFileUrl;
+
+    @Column(name = "status", nullable = false)
+    private int status;
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Book> books = new ArrayList<>();
