@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Admin Panel</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/admin-style.css">
+
+    <style>
+        /* Custom styles for badges based on status */
+        .badge.bg-success-light { background-color: #e9f7ef; color: #157347; }
+        .badge.bg-danger-light { background-color: #f8d7da; color: #842029; }
+        .badge.bg-warning-light { background-color: #fff3cd; color: #664d03; }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body class="admin-body">
+
+<div class="d-flex">
+    <aside class="admin-sidebar vh-100 p-3 d-flex flex-column position-fixed">
+        <div>
+            <a href="/admin/dashboard" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none admin-logo-link">
+                <span class="fs-4 admin-logo-text">ReadHub</span>
+                <span class="fs-5 ms-2 admin-panel-text">Admin Panel</span>
+            </a>
+            <hr class="text-white-50">
+            <ul class="nav nav-pills flex-column mb-auto admin-nav-menu">
+                <li class="nav-item">
+                    <a th:href="@{/admin/dashboard}" class="nav-link text-white" th:classappend="${activeMenu == 'dashboard' ? 'active' : ''}">
+                        <i class="fas fa-home fa-fw me-2"></i> Home
+                    </a>
+                </li>
+                <li>
+                    <a href="#productSubmenu" data-bs-toggle="collapse" class="nav-link text-white d-flex justify-content-between align-items-center" th:classappend="${activeMenu == 'product' ? 'active' : ''}">
+                        <span><i class="fas fa-book fa-fw me-2"></i> Product</span>
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <ul class="collapse list-unstyled ms-3" id="productSubmenu" th:classappend="${activeMenu == 'product' ? 'show' : ''}">
+                    </ul>
+                </li>
+                <li>
+                    <a href="#" class="nav-link text-white">
+                        <i class="fas fa-shopping-cart fa-fw me-2"></i> Orders
+                    </a>
+                </li>
+                <li>
+                    <a href="#userSubmenu" data-bs-toggle="collapse" class="nav-link text-white d-flex justify-content-between align-items-center active" aria-expanded="true">
+                        <span><i class="fas fa-users fa-fw me-2"></i> Users</span>
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <ul class="collapse list-unstyled ms-3 show" id="userSubmenu">
+                        <li>
+                            <a th:href="@{/admin/users}" class="nav-link text-white sub-link active">
+                                <i class="fas fa-list-ul fa-fw me-2"></i> User List
+                            </a>
+                        </li>
+                        <li>
+                            <a href="@{/admin/users/details/{id}(id=${user.userId})}" class="nav-link text-white sub-link">
+                                <i class="fas fa-user-check fa-fw me-2"></i> User Details
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <div class="mt-auto">
+            <hr class="text-white-50">
+            <a href="#" class="btn btn-primary w-100 support-btn">
+                <i class="fas fa-question-circle me-2"></i> Support
+            </a>
+        </div>
+    </aside>
+
+    <main class="admin-main-content flex-grow-1 p-4">
+        <div class="admin-topbar position-fixed top-0 start-0 w-100 bg-white d-flex align-items-center px-4" style="left: 260px !important;">
+            <h1 class="page-title-placeholder m-0">User Management</h1>
+        </div>
+
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="page-section-title mb-0">All Registered Users</h2>
+                <button class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add New User
+                </button>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <form th:action="@{/admin/users}" method="get">
+                        <div class="row g-3 align-items-center">
+
+                            <div class="col-lg-5 col-md-12">
+                                <div class="input-group">
+                                    <input type="text" name="keyword" class="form-control" placeholder="Search by name, email..." th:value="${keyword}">
+                                    <button class="btn btn-outline-secondary" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-7 col-md-12">
+                                <div class="d-flex justify-content-lg-end align-items-center gap-2">
+                                    <select name="role" class="form-select" style="min-width: 150px;">
+                                        <option value="">All Roles</option>
+                                        <option value="BUYER" th:selected="${role == 'BUYER'}">Buyer</option>
+                                        <option value="SELLER" th:selected="${role == 'SELLER'}">Seller</option>
+                                        <option value="ADMIN" th:selected="${role == 'ADMIN'}">Admin</option>
+                                    </select>
+
+                                    <select name="status" class="form-select" style="min-width: 150px;">
+                                        <option value="">All Statuses</option>
+                                        <option value="Active" th:selected="${status == 'Active'}">Active</option>
+                                        <option value="Inactive" th:selected="${status == 'Inactive'}">Inactive</option>
+                                    </select>
+
+                                    <button type="submit" class="btn btn-primary">Filter</button>
+                                    <a th:href="@{/admin/users}" class="btn btn-light">Clear</a>
+                                </div>
+                            </div>
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 admin-table">
+                            <thead>
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Date Of Birth</th>
+                                <th scope="col" class="text-center">Status</th>
+                                <th scope="col" class="text-center">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="user : ${users}">
+                                <th scope="row" th:text="'#USR' + ${user.userId}"></th>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img th:src="${user.profilePicUrl != null && !user.profilePicUrl.isEmpty() ? user.profilePicUrl : '/images/default-avatar.png'}"
+                                             alt="Avatar" class="user-avatar">
+                                        <span th:text="${user.fullName}"></span>
+                                    </div>
+                                </td>
+                                <td th:text="${user.email}"></td>
+                                <td>
+                                    <div th:each="userRole : ${user.userRoles}">
+                                        <span class="badge bg-info text-dark me-1" th:text="${userRole.role.roleName}"></span>
+                                    </div>
+                                </td>
+                                <td th:text="${#dates.format(user.dateOfBirth, 'dd-MM-yyyy')}"></td>
+                                <td class="text-center">
+                                    <span th:if="${!user.userRoles.isEmpty()}" class="badge bg-success-light rounded-pill">Active</span>
+                                    <span th:if="${user.userRoles.isEmpty()}" class="badge bg-danger-light rounded-pill">Inactive</span>
+                                </td>
+                                <td class="text-center">
+                                    <a th:href="@{/admin/users/details/{id}(id=${user.userId})}" class="btn btn-sm btn-outline-secondary" title="View Details"><i class="fas fa-eye"></i></a>
+
+                                    <a th:href="@{'/admin/users/edit/' + ${user.userId}}" class="btn btn-sm btn-outline-primary mx-1" title="Edit User"><i class="fas fa-edit"></i></a>
+                                    <a th:href="@{'/admin/users/delete/' + ${user.userId}}" class="btn btn-sm btn-outline-danger" title="Delete User"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <div class="text-muted small">
+                        Showing 1 to 4 of 25 entries
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -9,9 +9,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-
+import org.springframework.web.bind.annotation.RequestParam;
 import java.util.Optional;
-
+import org.springframework.web.bind.annotation.PathVariable;
 /**
  * Controller for handling admin-related requests
  * This controller manages the admin login page and admin panel pages
@@ -124,5 +124,54 @@ public class AdminController {
     public String defaultAdminPage(Model model) {
         model.addAttribute("activeMenu", "product");
         return "redirect:/admin/products";
+    }
+    @GetMapping("/users")
+    public String showUserManagementPage(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "role", required = false) String role,
+            @RequestParam(value = "status", required = false) String status, // Giữ lại cho tương lai
+            Model model) {
+
+        // --- Phần top-bar giữ nguyên ---
+        Optional<User> adminUserOpt = adminService.getCurrentAdminUser();
+        if (adminUserOpt.isPresent()) {
+            User adminUser = adminUserOpt.get();
+            model.addAttribute("user", adminUser);
+            model.addAttribute("roles", userService.getUserRoles(adminUser));
+            String firstName = adminService.extractFirstName(adminUser.getFullName());
+            model.addAttribute("firstName", firstName);
+        }
+        // --- Kết thúc phần top-bar ---
+
+        // 1. Gọi phương thức searchUsers mới với các tham số từ URL
+        java.util.List<User> userList = userService.searchUsers(keyword, role);
+
+        // 2. Đưa danh sách đã lọc vào model
+        model.addAttribute("users", userList);
+
+        // 3. Gửi lại các giá trị đã lọc ra view để hiển thị trên form
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("role", role);
+        model.addAttribute("status", status);
+
+        // 4. Đặt trạng thái active cho menu sidebar
+        model.addAttribute("activeMenu", "user");
+        model.addAttribute("activeSubMenu", "user-list");
+
+        return "admin/user/user-list";
+    }
+    @GetMapping("/users/details/{id}")
+    public String showUserDetailsPage(@PathVariable("id") Integer userId, Model model) {
+        // Tối ưu: Gọi service để thêm thông tin admin
+        adminService.addAdminInfoToModel(model);
+
+        try {
+            User user = userService.findUserById(userId); // Phương thức này giờ đã lấy cả địa chỉ
+            model.addAttribute("user", user);
+            model.addAttribute("activeMenu", "user");
+            return "admin/user/user-details";
+        } catch (RuntimeException e) {
+            return "redirect:/admin/users?error=UserNotFound";
+        }
     }
 }
