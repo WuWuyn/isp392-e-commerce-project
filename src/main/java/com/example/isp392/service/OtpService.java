@@ -16,133 +16,163 @@ import java.util.Optional;
 @Service
 public class OtpService {
     private static final Logger log = LoggerFactory.getLogger(OtpService.class);
-    
+
     private final UserService userService;
     private final OtpTokenRepository otpTokenRepository;
     private final EmailService emailService;
-    
+
     @Value("${app.otp.max-attempts:3}")
     private int maxAttempts;
-    
-    public OtpService(UserService userService, 
-                     OtpTokenRepository otpTokenRepository,
-                     EmailService emailService) {
+
+    public OtpService(UserService userService,
+                      OtpTokenRepository otpTokenRepository,
+                      EmailService emailService) {
         this.userService = userService;
         this.otpTokenRepository = otpTokenRepository;
         this.emailService = emailService;
     }
-    
+
+    // --- Chức năng Xóa Tài khoản ---
+
     /**
-     * Generate OTP for password reset and send to user's email
-     * @param email User's email
-     * @return true if OTP was generated and sent, false otherwise
+     * Tạo và gửi một mã OTP cho mục đích xóa tài khoản.
+     * Phương thức này sẽ tìm hoặc tạo một token mới và gửi nó qua email.
+     * @param user Đối tượng User đang yêu cầu xóa tài khoản.
+     * @return true nếu OTP được gửi thành công, false nếu thất bại.
+     */
+    @Transactional
+    public boolean generateAndSendOtpForAccountDeletion(User user) {
+        String otp = generateOtp();
+
+        OtpToken otpToken = otpTokenRepository.findByUser(user)
+                .orElse(new OtpToken(otp, user));
+
+        // Cập nhật token với mã OTP mới và reset lại trạng thái
+        otpToken.setOtp(otp);
+        otpToken.setExpiryDate(new Date(System.currentTimeMillis() + OtpToken.EXPIRATION));
+        otpToken.setUsed(false);
+        otpToken.setAttempts(0);
+
+        otpTokenRepository.save(otpToken);
+
+        return emailService.sendOtpEmail(user.getEmail(), otp);
+    }
+
+    /**
+     * Xác thực mã OTP do người dùng cung cấp cho việc xóa tài khoản.
+     * @param providedOtp Mã OTP người dùng nhập vào.
+     * @param user Người dùng đang thực hiện xác thực.
+     * @return true nếu OTP hợp lệ và chưa hết hạn/sử dụng, ngược lại trả về false.
+     */
+    @Transactional
+    public boolean validateOtpForUser(String providedOtp, User user) {
+        Optional<OtpToken> tokenOpt = otpTokenRepository.findByUser(user);
+
+        if (tokenOpt.isEmpty()) {
+            log.warn("Attempt to validate OTP for user {} but no token found.", user.getEmail());
+            return false;
+        }
+
+        OtpToken token = tokenOpt.get();
+
+        if (token.isUsed() || token.isExpired() || !token.getOtp().equals(providedOtp)) {
+            token.incrementAttempts();
+            otpTokenRepository.save(token);
+            log.warn("Invalid OTP attempt for user {}. OTP used: {}, expired: {}, provided: {}, actual: {}",
+                    user.getEmail(), token.isUsed(), token.isExpired(), providedOtp, token.getOtp());
+            return false;
+        }
+
+        token.setUsed(true);
+        otpTokenRepository.save(token);
+
+        return true;
+    }
+
+    // --- Chức năng Đặt lại Mật khẩu ---
+
+    /**
+     * Tạo OTP cho việc đặt lại mật khẩu và gửi đến email của người dùng.
+     * @param email Email của người dùng.
+     * @return true nếu OTP được tạo và gửi thành công, false nếu không.
      */
     @Transactional
     public boolean generateOtpForPasswordReset(String email) {
-        // Check if user exists and is not an OAuth2 user
         Optional<User> userOpt = userService.findByEmail(email);
-        if (userOpt.isEmpty()) {
-            log.info("Password reset requested for non-existent user: {}", email);
+        if (userOpt.isEmpty() || userOpt.get().isOAuth2User()) {
+            log.info("Password reset requested for non-existent or OAuth2 user: {}", email);
             return false;
         }
-        
+
         User user = userOpt.get();
-        
-        // Don't allow password reset for OAuth2 users
-        if (user.isOAuth2User()) {
-            log.info("Password reset requested for OAuth2 user: {}", email);
-            return false;
-        }
-        
-        // Find existing OTP token for this user
-        Optional<OtpToken> existingTokenOpt = otpTokenRepository.findByUser(user);
-        OtpToken otpToken;
-        
-        // Generate 6-digit OTP
         String otp = generateOtp();
-        
-        if (existingTokenOpt.isPresent()) {
-            // Update existing token
-            otpToken = existingTokenOpt.get();
-            otpToken.setOtp(otp);
-            otpToken.setExpiryDate(new Date(System.currentTimeMillis() + OtpToken.EXPIRATION));
-            otpToken.setUsed(false);
-            otpToken.setAttempts(0);
-        } else {
-            // Create new token
-            otpToken = new OtpToken(otp, user);
-        }
-        
-        // Save the token
+
+        OtpToken otpToken = otpTokenRepository.findByUser(user)
+                .orElse(new OtpToken(otp, user));
+
+        otpToken.setOtp(otp);
+        otpToken.setExpiryDate(new Date(System.currentTimeMillis() + OtpToken.EXPIRATION));
+        otpToken.setUsed(false);
+        otpToken.setAttempts(0);
+
         otpTokenRepository.save(otpToken);
-        
-        // Send OTP via email
+
         return emailService.sendOtpEmail(user.getEmail(), otp);
     }
-    
+
     /**
-     * Verify OTP and reset password if valid
-     * @param otp OTP code
-     * @param newPassword New password
-     * @return Verification result
+     * Xác thực OTP và đặt lại mật khẩu nếu hợp lệ.
+     * @param otp Mã OTP.
+     * @param newPassword Mật khẩu mới.
+     * @return Kết quả xác thực (SUCCESS, INVALID_OTP, etc.).
      */
     @Transactional
     public VerificationResult verifyOtpAndResetPassword(String otp, String newPassword) {
         Optional<OtpToken> tokenOpt = otpTokenRepository.findByOtp(otp);
-        
-        // OTP not found
+
         if (tokenOpt.isEmpty()) {
             return VerificationResult.INVALID_OTP;
         }
-        
+
         OtpToken token = tokenOpt.get();
-        
-        // OTP already used
-        if (token.isUsed()) {
-            return VerificationResult.OTP_ALREADY_USED;
-        }
-        
-        // OTP expired
-        if (token.isExpired()) {
-            return VerificationResult.OTP_EXPIRED;
-        }
-        
-        // Increment attempts and check if max attempts reached
+
+        if (token.isUsed()) return VerificationResult.OTP_ALREADY_USED;
+        if (token.isExpired()) return VerificationResult.OTP_EXPIRED;
+
         token.incrementAttempts();
         if (token.getAttempts() > maxAttempts) {
             otpTokenRepository.save(token);
             return VerificationResult.MAX_ATTEMPTS_REACHED;
         }
-        
-        // Save the token with incremented attempts (if verification fails)
+
         if (!otp.equals(token.getOtp())) {
             otpTokenRepository.save(token);
             return VerificationResult.INVALID_OTP;
         }
-        
-        // OTP is valid, reset password
+
         User user = token.getUser();
         userService.changeUserPassword(user, newPassword);
-        
-        // Mark OTP as used
+
         token.setUsed(true);
         otpTokenRepository.save(token);
-        
+
         return VerificationResult.SUCCESS;
     }
-    
+
+    // --- Phương thức private và Enum ---
+
     /**
-     * Generate 6-digit OTP
-     * @return 6-digit OTP code
+     * Tạo một mã OTP ngẫu nhiên gồm 6 chữ số.
+     * @return Chuỗi OTP 6 chữ số.
      */
     private String generateOtp() {
         SecureRandom random = new SecureRandom();
         int otp = 100000 + random.nextInt(900000);
         return String.valueOf(otp);
     }
-    
+
     /**
-     * Verification result enum
+     * Enum định nghĩa các kết quả có thể xảy ra khi xác thực OTP (dùng cho đặt lại mật khẩu).
      */
     public enum VerificationResult {
         SUCCESS,

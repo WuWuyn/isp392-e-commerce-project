@@ -23,7 +23,7 @@ import java.util.Optional;
 public class BookService {
 
     private final BookRepository bookRepository;
-    
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -74,7 +74,7 @@ public class BookService {
         Pageable pageable = PageRequest.of(page, size, sort);
         return bookRepository.findByCategory(category, pageable);
     }
-    
+
     /**
      * Advanced search method to find books with multiple filters
      */
@@ -89,115 +89,117 @@ public class BookService {
             int size,
             String sortField,
             String sortDirection) {
-        
+
         // Create a criteria builder
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Book> query = cb.createQuery(Book.class);
         Root<Book> book = query.from(Book.class);
-        
+
         // Create a list to hold all predicates
         List<Predicate> predicates = new ArrayList<>();
-        
+
         // Add title search predicate if search query is provided
         if (searchQuery != null && !searchQuery.trim().isEmpty()) {
             predicates.add(cb.like(cb.lower(book.get("title")), "%" + searchQuery.toLowerCase() + "%"));
         }
-        
+
         // Add category filters if category IDs are provided
         if (categoryIds != null && !categoryIds.isEmpty()) {
             // Create a join with the categories
             Join<Book, Category> categoryJoin = book.join("categories");
             predicates.add(categoryJoin.get("categoryId").in(categoryIds));
         }
-        
+
         // Add publisher filters if publisher IDs are provided
         if (publisherIds != null && !publisherIds.isEmpty()) {
             Join<Book, Publisher> publisherJoin = book.join("publisher");
             predicates.add(publisherJoin.get("publisherId").in(publisherIds));
         }
-        
+
         // Add price range filters if provided
         if (minPrice != null) {
             predicates.add(cb.ge(book.get("sellingPrice"), minPrice));
         }
-        
+
         if (maxPrice != null) {
             predicates.add(cb.le(book.get("sellingPrice"), maxPrice));
         }
-        
+
         // Add rating filter if provided
         if (minRating != null) {
             predicates.add(cb.ge(book.get("averageRating"), new BigDecimal(minRating)));
         }
-        
+
         // Add predicates to the query
         if (!predicates.isEmpty()) {
             query.where(cb.and(predicates.toArray(new Predicate[0])));
         }
-        
+
         // Add sorting
         if ("ASC".equalsIgnoreCase(sortDirection)) {
             query.orderBy(cb.asc(book.get(sortField)));
         } else {
             query.orderBy(cb.desc(book.get(sortField)));
         }
-        
+
         // Create count query for pagination
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Book> countRoot = countQuery.from(Book.class);
-        
+
         // Apply the same predicates to the count query
         if (!predicates.isEmpty()) {
             // We need to recreate the joins and predicates for the count query
             List<Predicate> countPredicates = new ArrayList<>();
-            
+
             if (searchQuery != null && !searchQuery.trim().isEmpty()) {
                 countPredicates.add(cb.like(cb.lower(countRoot.get("title")), "%" + searchQuery.toLowerCase() + "%"));
             }
-            
+
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 Join<Book, Category> categoryJoin = countRoot.join("categories");
                 countPredicates.add(categoryJoin.get("categoryId").in(categoryIds));
             }
-            
+
             if (publisherIds != null && !publisherIds.isEmpty()) {
                 Join<Book, Publisher> publisherJoin = countRoot.join("publisher");
                 countPredicates.add(publisherJoin.get("publisherId").in(publisherIds));
             }
-            
+
             if (minPrice != null) {
                 countPredicates.add(cb.ge(countRoot.get("sellingPrice"), minPrice));
             }
-            
+
             if (maxPrice != null) {
                 countPredicates.add(cb.le(countRoot.get("sellingPrice"), maxPrice));
             }
-            
+
             if (minRating != null) {
                 countPredicates.add(cb.ge(countRoot.get("averageRating"), new BigDecimal(minRating)));
             }
-            
+
             countQuery.where(cb.and(countPredicates.toArray(new Predicate[0])));
         }
-        
+
         countQuery.select(cb.count(countRoot));
-        
+
         // Execute queries
         TypedQuery<Book> typedQuery = entityManager.createQuery(query);
         TypedQuery<Long> typedCountQuery = entityManager.createQuery(countQuery);
-        
+
         // Apply pagination
         typedQuery.setFirstResult(page * size);
         typedQuery.setMaxResults(size);
-        
+
         // Get results
         List<Book> books = typedQuery.getResultList();
         Long total = typedCountQuery.getSingleResult();
-        
+
         // Create a pageable object for the response
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDirection), sortField));
-        
+
         // Return a Page implementation
         return new PageImpl<>(books, pageable, total);
     }
+
+
 }

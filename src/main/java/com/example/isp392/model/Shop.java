@@ -55,7 +55,7 @@ public class Shop {
     private String identificationFileUrl;
 
     @Column(name = "status", nullable = false)
-    private int status;
+    private int status; // 0: PENDING, 1: APPROVED, 2: REJECTED, 3: BANNED
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Book> books = new ArrayList<>();

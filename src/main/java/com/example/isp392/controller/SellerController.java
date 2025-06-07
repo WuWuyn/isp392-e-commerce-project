@@ -97,7 +97,7 @@ public class SellerController {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String email = auth.getName();
-            boolean updated = userService.updateUserInfo(email, fullName, phone, gender, dateOfBirth, profilePictureFile, request);
+            boolean updated = userService.updateUserInfo(email, fullName, phone, gender, dateOfBirth, profilePictureFile, request).isOAuth2User();
             if (updated) {
                 redirectAttributes.addFlashAttribute("successMessage", "Your information has been updated successfully.");
             } else {

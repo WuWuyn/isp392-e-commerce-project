@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
 
 import java.util.Optional;
 
@@ -17,15 +18,16 @@ import java.util.Optional;
 public class AdminService {
 
     private final UserRepository userRepository;
-    
+    private final UserService userService;
     /**
      * Constructor with explicit dependency injection
      * Using constructor injection instead of @Autowired for better clarity and testability
      * 
      * @param userRepository repository for user data access
      */
-    public AdminService(UserRepository userRepository) {
+    public AdminService(UserRepository userRepository, UserService userService) {
         this.userRepository = userRepository;
+        this.userService = userService;
     }
     
     /**
@@ -59,5 +61,13 @@ public class AdminService {
         // Split by space and return the first part
         String[] parts = fullName.trim().split("\\s+");
         return parts.length > 0 ? parts[0] : fullName;
+    }
+
+    public void addAdminInfoToModel(Model model) {
+        getCurrentAdminUser().ifPresent(adminUser -> {
+            model.addAttribute("user", adminUser);
+            model.addAttribute("roles", userService.getUserRoles(adminUser));
+            model.addAttribute("firstName", extractFirstName(adminUser.getFullName()));
+        });
     }
 }
