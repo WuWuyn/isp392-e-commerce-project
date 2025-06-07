@@ -10,14 +10,14 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-// SỬA LỖI CÚ PHÁP: Dùng dấu phẩy (,) để kế thừa nhiều interface
+// <<< SỬA LỖI CÚ PHÁP: Dùng dấu phẩy (,) để kế thừa nhiều interface
 public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecificationExecutor<User> {
 
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
 
-    // GIỮ NGUYÊN PHƯƠNG THỨC NÀY: Để giải quyết Lazy Loading cho addresses
+    // <<< BỔ SUNG: Phương thức này để giải quyết Lazy Loading cho trang user-details
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.addresses WHERE u.userId = :userId")
     Optional<User> findByIdWithAddresses(@Param("userId") Integer userId);
 }

@@ -23,6 +23,18 @@
                 </a>
                 <ul class="collapse list-unstyled ms-3" id="productSubmenu"
                     th:classappend="${activeMenu == 'product' ? 'show' : ''}">
+                    <li>
+                        <a th:href="@{/admin/products}" class="nav-link text-white sub-link"
+                           th:classappend="${activeSubMenu == 'product-list' ? 'active' : ''}">
+                            <i class="fas fa-list-ul fa-fw me-2"></i> Product Manage
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/admin/products/add}" class="nav-link text-white sub-link"
+                           th:classappend="${activeSubMenu == 'product-add' ? 'active' : ''}">
+                            <i class="fas fa-plus fa-fw me-2"></i> Add New Product
+                        </a>
+                    </li>
                 </ul>
             </li>
             <li>
@@ -44,7 +56,14 @@
                             <i class="fas fa-list-ul fa-fw me-2"></i> User List
                         </a>
                     </li>
+                    <li>
+                        <a th:href="@{/admin/seller-approvals}" class="nav-link text-white sub-link"
+                           th:classappend="${activeSubMenu == 'seller-approval' ? 'active' : ''}">
+                            <i class="fas fa-store-alt fa-fw me-2"></i> Seller Approval Queue
+                        </a>
+                    </li>
                 </ul>
+
             </li>
             <li>
                 <a href="#" class="nav-link text-white">

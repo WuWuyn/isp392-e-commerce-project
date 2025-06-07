@@ -11,12 +11,17 @@ import com.example.isp392.repository.UserRoleRepository;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Base64;
+
+import jakarta.persistence.criteria.JoinType;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -263,49 +268,50 @@ public class UserService implements UserDetailsService {
     }
 
     // <<< SỬA LỖI & CẬP NHẬT: THAY THẾ TOÀN BỘ PHƯƠNG THỨC NÀY >>>
+
+    /**
+     * <<< HOÀN CHỈNH: Hỗ trợ tìm kiếm và trả về kết quả đã được PHÂN TRANG
+     * @return Một trang (Page) chứa danh sách User và thông tin phân trang.
+     */
     @Transactional(readOnly = true)
-    public java.util.List<User> searchUsers(String keyword, String role) {
-
-        // Cú pháp mới cho Specification (phù hợp với Spring Boot 3)
+    public Page<User> searchUsers(String keyword, String role, Pageable pageable) {
         Specification<User> spec = (root, query, criteriaBuilder) -> {
-
-            // Tạo một danh sách để chứa tất cả các điều kiện (Predicate)
             List<Predicate> predicates = new ArrayList<>();
 
-            // 1. Thêm điều kiện tìm kiếm theo keyword (tên hoặc email) nếu keyword tồn tại
             if (keyword != null && !keyword.trim().isEmpty()) {
                 String keywordPattern = "%" + keyword.toLowerCase().trim() + "%";
-
-                Predicate keywordPredicate = criteriaBuilder.or(
+                predicates.add(criteriaBuilder.or(
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("fullName")), keywordPattern),
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), keywordPattern)
-                );
-                predicates.add(keywordPredicate);
+                ));
             }
-
-            // 2. Thêm điều kiện lọc theo role nếu role tồn tại
             if (role != null && !role.trim().isEmpty()) {
-                // Join từ User -> UserRole -> Role để lấy roleName
-                // Sử dụng Join từ 'jakarta.persistence.criteria.Join'
-                Join<User, com.example.isp392.model.UserRole> userRoleJoin = root.join("userRoles");
-                Join<com.example.isp392.model.UserRole, com.example.isp392.model.Role> roleJoin = userRoleJoin.join("role");
-
-                Predicate rolePredicate = criteriaBuilder.equal(roleJoin.get("roleName"), role.trim());
-                predicates.add(rolePredicate);
+                Join<User, UserRole> userRoleJoin = root.join("userRoles", JoinType.LEFT);
+                Join<UserRole, Role> roleJoin = userRoleJoin.join("role");
+                predicates.add(criteriaBuilder.equal(roleJoin.get("roleName"), role.trim()));
+                query.distinct(true);
             }
-
-            // Kết hợp tất cả các điều kiện lại với nhau bằng phép AND
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
-
-        // Thực thi truy vấn với Specification đã được xây dựng
-        return userRepository.findAll(spec);
+        return userRepository.findAll(spec, pageable);
     }
+
+    /**
+     * <<< HOÀN CHỈNH: Sửa lỗi Lazy Loading cho cả addresses và orders
+     * @return Đối tượng User đã được tải đầy đủ thông tin chi tiết.
+     */
     @Transactional(readOnly = true)
     public User findUserById(Integer userId) {
-        // Gọi phương thức findByIdWithAddresses để lấy cả địa chỉ
-        return userRepository.findByIdWithAddresses(userId)
+        // 1. Lấy User và tải sẵn danh sách addresses bằng JOIN FETCH từ repository
+        User user = userRepository.findByIdWithAddresses(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        // 2. Trong khi transaction còn mở, "đánh thức" thêm các danh sách khác
+        Hibernate.initialize(user.getOrders());
+        Hibernate.initialize(user.getReviewsWritten());
+
+        // 3. Trả về đối tượng User đã được tải đầy đủ thông tin
+        return user;
     }
-    
+
 }

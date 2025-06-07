@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Approval Queue - ReadHub Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-style.css}">
+</head>
+<body class="admin-body">
+
+<div th:replace="~{fragments/admin-sidebar :: admin-sidebar-content}"></div>
+
+<div class="admin-main-content">
+    <div th:replace="~{fragments/admin-topbar :: admin-topbar-content}"></div>
+
+    <main class="container-fluid p-4">
+        <h3 class="mb-4 page-section-title">Seller Approval Queue</h3>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                        <tr>
+                            <th>Shop Name</th>
+                            <th>Contact Info</th>
+                            <th>Registration Date</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!-- Giả sử bạn truyền một list các 'shops' đang chờ duyệt từ controller -->
+                        <tr th:each="shop : ${pendingShops}">
+                            <td th:text="${shop.shopName}">The Book Nook</td>
+                            <td>
+                                <div th:text="${shop.user.fullName}"></div>
+                                <div class="small text-muted" th:text="${shop.contactEmail}"></div>
+                            </td>
+                            <td th:text="${#dates.format(shop.registrationDate, 'dd-MM-yyyy HH:mm')}"></td>
+                            <td class="text-muted" style="max-width: 300px;" th:text="${shop.description}">A cozy corner for book lovers.</td>
+                            <td>
+                                <form th:action="@{/admin/seller-approvals/approve/{id}(id=${shop.shopId})}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success me-1">Approve</button>
+                                </form>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" th:data-bs-target="'#rejectModal-' + ${shop.shopId}">
+                                    Reject
+                                </button>
+
+                                <!-- Reject Modal -->
+                                <div class="modal fade" th:id="'rejectModal-' + ${shop.shopId}" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form th:action="@{/admin/seller-approvals/reject/{id}(id=${shop.shopId})}" method="post">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="rejectModalLabel">Reason for Rejection</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="rejectionReason" class="form-label">Please provide a reason for rejecting this seller application.</label>
+                                                        <textarea class="form-control" id="rejectionReason" name="reason" rows="3" required></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                    <button type="submit" class="btn btn-danger">Submit Rejection</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(pendingShops)}">
+                            <td colspan="5" class="text-center text-muted p-4">No pending seller applications.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
