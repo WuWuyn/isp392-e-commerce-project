@@ -147,7 +147,7 @@
                         <i class="far fa-calendar-alt me-2 text-secondary"></i>
                         <div>
                             <span class="info-label">Publication date</span>
-                            <span class="info-value" th:text="${#dates.format(book.publicationDate, 'MMMM d, yyyy')}">October 16, 2023</span>
+                            <span class="info-value" th:text="${#temporals.format(book.publicationDate, 'MMMM d, yyyy')}">October 16, 2023</span>
                         </div>
                     </div>
                     <div class="info-item" th:if="${book.dimensions != null}">
@@ -211,7 +211,7 @@
                     <!-- Single Review Item (Dynamic from database) -->
                     <div class="review-item d-flex mb-4 pb-3 border-bottom" th:each="review : ${bookReviews}">
                         <!-- Default avatar if user has no profile image -->
-                        <img th:src="${review.user.profileImageUrl != null ? review.user.profileImageUrl : '/images/default-avatar.jpg'}" 
+                        <img th:src="${review.user.profilePicUrl != null ? review.user.profilePicUrl : '/images/default-avatar.jpg'}"
                              th:alt="${review.user.fullName}" class="reviewer-avatar rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
                         
                         <div class="review-content">
@@ -224,7 +224,7 @@
                                     </span>
                                 </h6>
                                 <!-- Format date nicely -->
-                                <span class="review-date text-muted small" th:text="${#dates.format(review.createdDate, 'dd MMM, yyyy')}">Date</span>
+                                <span class="review-date text-muted small" th:text="${#temporals.format(review.createdDate, 'dd MMM, yyyy')}">Date</span>
                             </div>
                             
                             <!-- Use star-rating fragment for consistent display -->

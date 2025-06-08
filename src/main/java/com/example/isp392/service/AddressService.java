@@ -38,7 +38,7 @@ public class AddressService {
      * @param userId the ID of the user
      * @return list of address DTOs
      */
-    public List<AddressDTO> getAllAddressesByUser(int userId) {
+    public List<AddressDTO> getAllAddressesByUser(Integer userId) {
         // Find all addresses for the user from repository
         List<UserAddress> addresses = addressRepository.findByUserUserId(userId);
         
@@ -54,7 +54,7 @@ public class AddressService {
      * @param userId the user ID
      * @return the address DTO if found
      */
-    public Optional<AddressDTO> getAddressByIdAndUser(int addressId, int userId) {
+    public Optional<AddressDTO> getAddressByIdAndUser(Integer addressId, Integer userId) {
         // Find specific address for the user and convert to DTO if found
         return addressRepository.findByAddressIdAndUserUserId(addressId, userId)
                 .map(this::convertToDTO);
@@ -67,7 +67,7 @@ public class AddressService {
      * @return the created address DTO
      */
     @Transactional
-    public AddressDTO createAddress(AddressDTO addressDTO, int userId) {
+    public AddressDTO createAddress(AddressDTO addressDTO, Integer userId) {
         // Find the user
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -101,7 +101,7 @@ public class AddressService {
      * @return the updated address DTO
      */
     @Transactional
-    public AddressDTO updateAddress(int addressId, AddressDTO addressDTO, int userId) {
+    public AddressDTO updateAddress(Integer addressId, AddressDTO addressDTO, Integer userId) {
         // Find the address
         UserAddress address = addressRepository.findByAddressIdAndUserUserId(addressId, userId)
                 .orElseThrow(() -> new RuntimeException("Address not found or doesn't belong to user"));
@@ -147,7 +147,7 @@ public class AddressService {
      * @throws RuntimeException if address is default
      */
     @Transactional
-    public boolean deleteAddress(int addressId, int userId) {
+    public boolean deleteAddress(Integer addressId, Integer userId) {
         // Find the address
         UserAddress address = addressRepository.findByAddressIdAndUserUserId(addressId, userId)
                 .orElseThrow(() -> new RuntimeException("Address not found or doesn't belong to user"));

@@ -4,7 +4,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -17,7 +21,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private int userId;
+    private Integer userId;
 
     @Column(name = "email", unique = true, nullable = false, length = 255)
     private String email;
@@ -32,7 +36,7 @@ public class User {
     private String phone;
 
     @Column(name = "date_of_birth", nullable = false)
-    private Date dateOfBirth;
+    private LocalDate dateOfBirth;
 
     /**
      * Gender: 0 - Male, 1 - Female, 2 - Other
@@ -45,6 +49,9 @@ public class User {
     
     @Column(name = "is_oauth2_user", nullable = false, columnDefinition = "BIT DEFAULT 0")
     private boolean isOAuth2User = false;
+
+    @Column(name = "is_active")
+    private boolean isActive = true;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<UserRole> userRoles = new HashSet<>();

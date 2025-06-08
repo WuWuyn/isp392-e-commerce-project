@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -16,7 +16,7 @@ public class BookReview {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "review_id")
-    private int reviewId;
+    private Integer reviewId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -28,7 +28,7 @@ public class BookReview {
     private OrderItem orderItem; // Entity OrderItem đã được định nghĩa trước đó
 
     @Column(name = "rating", nullable = false)
-    private int rating; // Thường là 1-5
+    private Integer rating; // Thường là 1-5
 
     @Column(name = "title", columnDefinition = "NVARCHAR(500)")
     private String title;
@@ -38,7 +38,7 @@ public class BookReview {
     private String content;
 
     @Column(name = "created_date", nullable = false)
-    private Timestamp createdDate;
+    private LocalDateTime createdDate;
 
     @Column(name = "img_url_1", columnDefinition = "NVARCHAR(MAX)")
     private String imgUrl1;
