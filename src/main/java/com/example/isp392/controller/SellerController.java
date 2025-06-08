@@ -45,23 +45,15 @@ public class SellerController {
         return "seller/seller-signup";
     }
 
-    @PostMapping("/signup")
-    public String registerSeller(
-            @Valid @ModelAttribute("userRegistrationDTO") UserRegistrationDTO userRegistrationDTO,
-            BindingResult bindingResult,
-            RedirectAttributes redirectAttributes) {
-        if (bindingResult.hasErrors()) {
-            return "seller/seller-signup";
-        }
-        try {
-            userService.registerNewUser(userRegistrationDTO, "SELLER");
-            redirectAttributes.addFlashAttribute("successMessage", "Registration successful! Please login.");
+    @GetMapping("/dashboard")
+    public String showDashboard(Model model, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if (user == null) {
             return "redirect:/seller/login";
-        } catch (Exception e) {
-            log.error("Error registering seller: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/seller/signup";
         }
+        model.addAttribute("user", user);
+        model.addAttribute("roles", userService.getUserRoles(user));
+        return "seller/dashboard";
     }
 
     @GetMapping("/account")
@@ -83,32 +75,6 @@ public class SellerController {
         }
         model.addAttribute("user", user);
         return "seller/account-edit-info";
-    }
-
-    @PostMapping("/edit-info")
-    public String updateUserInfo(
-            @ModelAttribute("fullName") String fullName,
-            @ModelAttribute("phone") String phone,
-            @ModelAttribute("gender") int gender,
-            @ModelAttribute("dateOfBirth") String dateOfBirth,
-            @RequestParam(value = "profilePictureFile", required = false) MultipartFile profilePictureFile,
-            RedirectAttributes redirectAttributes,
-            HttpServletRequest request) {
-        try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String email = auth.getName();
-            boolean updated = userService.updateUserInfo(email, fullName, phone, gender, dateOfBirth, profilePictureFile, request);
-            if (updated) {
-                redirectAttributes.addFlashAttribute("successMessage", "Your information has been updated successfully.");
-            } else {
-                redirectAttributes.addFlashAttribute("errorMessage", "Failed to update information.");
-            }
-            return "redirect:/seller/edit-info";
-        } catch (Exception e) {
-            log.error("Error updating seller info: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/seller/edit-info";
-        }
     }
 
     @GetMapping("/change-password")

@@ -215,19 +215,19 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginPage("/seller/login")
                 .loginProcessingUrl("/seller/process_login")
-                .defaultSuccessUrl("/seller/account", true)  // Always redirect here after login
+                .defaultSuccessUrl("/seller/dashboard", true)  // Changed from /seller/account to /seller/dashboard
                 .failureUrl("/seller/login?error")
                 .permitAll()
             )
             .rememberMe(remember -> remember
-                .key("readhubSellerSecretKey") // Secret key for token signature
-                .tokenValiditySeconds(2592000) // 30 days in seconds
-                .rememberMeParameter("remember-me") // Match the checkbox name in the form
-                .userDetailsService(userService) // Use our custom UserDetailsService
+                .key("readhubSellerSecretKey")
+                .tokenValiditySeconds(2592000)
+                .rememberMeParameter("remember-me")
+                .userDetailsService(userService)
             )
             .oauth2Login(oauth2 -> oauth2
                 .loginPage("/seller/login")
-                .successHandler(oAuth2LoginSuccessHandler) // Use custom success handler
+                .successHandler(oAuth2LoginSuccessHandler)
                 .failureUrl("/seller/login?error=oauth2")
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService())
