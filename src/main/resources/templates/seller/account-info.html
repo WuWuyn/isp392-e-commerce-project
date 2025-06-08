@@ -166,7 +166,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="fw-bold">Date of Birth:</label>
-                            <p th:text="${user.dateOfBirth != null ? #dates.format(user.dateOfBirth, 'dd MMM yyyy') : 'Not provided'}">01 Jan 1990</p>
+                            <p th:text="${user.dateOfBirth != null ? #temporals.format(user.dateOfBirth, 'dd MMM yyyy') : 'Not provided'}">01 Jan 1990</p>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="fw-bold">Account Type:</label>

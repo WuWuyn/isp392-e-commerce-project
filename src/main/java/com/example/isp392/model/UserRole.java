@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -17,7 +17,7 @@ public class UserRole {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_role_id")
-    private int userRoleId;
+    private Integer userRoleId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false) // Tên cột khóa ngoại trong CSDL
@@ -27,20 +27,19 @@ public class UserRole {
     @JoinColumn(name = "role_id", nullable = false) // Tên cột khóa ngoại trong CSDL
     private Role role;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "role_assignment_date", nullable = false, updatable = false)
-    private Timestamp roleAssignmentDate;
+    private LocalDateTime roleAssignmentDate;
 
     @Column(name = "is_role_active_for_user", nullable = false)
     private boolean isRoleActiveForUser = true;
 
     public UserRole() {
-        this.roleAssignmentDate = new Timestamp(System.currentTimeMillis());
+        this.roleAssignmentDate = LocalDateTime.now();
     }
 
     public UserRole(User user, Role role) {
         this.user = user;
         this.role = role;
-        this.roleAssignmentDate = new Timestamp(System.currentTimeMillis());
+        this.roleAssignmentDate = LocalDateTime.now();
     }
 }

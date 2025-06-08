@@ -5,6 +5,8 @@ import com.example.isp392.model.User;
 import com.example.isp392.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -17,11 +19,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Controller for buyer-related operations
@@ -245,11 +245,10 @@ public class BuyerController {
             log.debug("Updating info for user: {}", email);
             
             // Parse date from string
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            Date parsedDate = null;
+            LocalDate parsedDate = null;
             try {
                 if (dateOfBirth != null && !dateOfBirth.isEmpty()) {
-                    parsedDate = dateFormat.parse(dateOfBirth);
+                    parsedDate = LocalDate.parse(dateOfBirth, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                 }
             } catch (Exception e) {
                 log.warn("Error parsing date: {}", e.getMessage());
@@ -447,79 +446,71 @@ public class BuyerController {
                 model.addAttribute("user", user);
                 model.addAttribute("roles", userService.getUserRoles(user));
                 
-                // TODO: Add cart items to the model once cart functionality is implemented
-                // model.addAttribute("cartItems", cartService.getCartItemsForUser(user));
+                // More cart logic would go here...
                 
                 return "buyer/cart";
             } else {
-                // Redirect to login if user not found (shouldn't happen with proper authentication)
                 return "redirect:/buyer/login";
             }
         } catch (Exception e) {
-            // Handle any errors and redirect to login
+            log.error("Error displaying cart: {}", e.getMessage());
             return "redirect:/buyer/login";
         }
     }
-
+    
+    // Helper methods for authentication
+    
     /**
      * Check if user is authenticated
      * @return true if user is authenticated, false otherwise
      */
     private boolean isUserAuthenticated() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
+        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal());
     }
-
+    
     /**
-     * Helper method to get the current authenticated user, supporting both regular and OAuth2 users
-     * @return User object or null if not authenticated or not found
+     * Get current user from SecurityContextHolder
+     * @return User object or null if not authenticated
      */
     private User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return getCurrentUser(auth);
     }
-
+    
     /**
-     * Helper method to get the current authenticated user from Authentication object
-     * Supports both regular and OAuth2 users
+     * Get user from Authentication object with OAuth2 support
      * @param auth Authentication object
-     * @return User object or null if not authenticated or not found
+     * @return User object or null if not authenticated
      */
     private User getCurrentUser(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             return null;
         }
-
-        String email;
-
-        // Check if authentication is from OAuth2 (Google)
+        
+        String email = null;
+        
+        // Handle different authentication types
         if (auth instanceof OAuth2AuthenticationToken) {
             OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
             email = oauth2User.getAttribute("email");
-            log.debug("Getting OAuth2 user with email: {}", email);
         } else {
-            // Regular form login user
             email = auth.getName();
-            log.debug("Getting regular user with email: {}", email);
         }
-
+        
         if (email == null) {
-            log.warn("Could not extract email from authentication: {}", auth.getPrincipal());
+            log.warn("Email is null for authenticated user");
             return null;
         }
-
+        
         // Find user by email
         Optional<User> userOptional = userService.findByEmail(email);
+        
         if (userOptional.isEmpty()) {
-            log.warn("No user found for email: {}", email);
-            return null;
+            log.warn("User not found in database: {}", email);
         }
-
-        User user = userOptional.get();
-        log.debug("Found user: id={}, name={}", user.getUserId(), user.getFullName());
-        return user;
+        
+        return userOptional.orElse(null);
     }
-
-    // ... (rest of the code remains the same)
 }
 

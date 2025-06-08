@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "otp_tokens")
@@ -23,7 +23,7 @@ public class OtpToken {
     private User user;
     
     @Column(nullable = false)
-    private Date expiryDate;
+    private LocalDateTime expiryDate;
     
     @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
     private int attempts = 0;
@@ -31,11 +31,11 @@ public class OtpToken {
     @Column(nullable = false, columnDefinition = "BIT DEFAULT 0")
     private boolean used = false;
     
-    // Default 5-minute expiration (in milliseconds)
-    public static final int EXPIRATION = 5 * 60 * 1000;
+    // Default 5-minute expiration (in seconds)
+    public static final int EXPIRATION = 5 * 60;
     
     // Add setter for expiryDate
-    public void setExpiryDate(Date expiryDate) {
+    public void setExpiryDate(LocalDateTime expiryDate) {
         this.expiryDate = expiryDate;
     }
     
@@ -45,11 +45,11 @@ public class OtpToken {
     public OtpToken(String otp, User user) {
         this.otp = otp;
         this.user = user;
-        this.expiryDate = new Date(System.currentTimeMillis() + EXPIRATION);
+        this.expiryDate = LocalDateTime.now().plusSeconds(EXPIRATION);
     }
     
     public boolean isExpired() {
-        return new Date().after(this.expiryDate);
+        return LocalDateTime.now().isAfter(this.expiryDate);
     }
     
     public void incrementAttempts() {
