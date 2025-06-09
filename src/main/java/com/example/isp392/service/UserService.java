@@ -134,9 +134,6 @@ public class UserService implements UserDetailsService {
         return savedUser;
     }
 
-
-
-
     /**
      * Find user by email
      * @param email the email to search for
@@ -153,6 +150,15 @@ public class UserService implements UserDetailsService {
      */
     public User findByEmailDirectly(String email) {
         return userRepository.findByEmail(email).orElse(null);
+    }
+
+    /**
+     * Retrieve a User object by username (email).
+     * @param username the email of the user.
+     * @return User object if found, null otherwise.
+     */
+    public User getUserByUsername(String username) {
+        return userRepository.findByEmail(username).orElse(null);
     }
 
     /**
