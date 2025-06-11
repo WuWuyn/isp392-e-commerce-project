@@ -14,6 +14,16 @@ import java.util.List;
 @Table(name = "shops")
 public class Shop {
 
+    /**
+     * Enum representing the approval status of a shop
+     */
+    public enum ApprovalStatus {
+        PENDING,
+        APPROVED,
+        REJECTED,
+        SUSPENDED
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "shop_id")
@@ -53,7 +63,7 @@ public class Shop {
     @Column(name = "contact_phone", nullable = false, length = 20)
     private String contactPhone;
 
-    @Column(name  = "tax_code", nullable = false, length = 15)
+    @Column(name = "tax_code", nullable = false, length = 15)
     private String taxCode;
 
     @Column(name = "identification_file_url", nullable = false, columnDefinition = "NVARCHAR(MAX)")
@@ -83,12 +93,5 @@ public class Shop {
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Book> books = new ArrayList<>();
 
-}
-
-enum ApprovalStatus {
-    PENDING,
-    APPROVED,
-    REJECTED,
-    SUSPENDED
 }
 

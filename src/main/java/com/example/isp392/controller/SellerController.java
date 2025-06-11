@@ -219,7 +219,6 @@ public class SellerController {
         }
     }
 
-
     @GetMapping("/change-password")
     public String showChangePasswordForm(Model model) {
         try {

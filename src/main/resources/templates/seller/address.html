@@ -1,291 +1,157 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Account Information - ReadHub Seller</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap"
-          rel="stylesheet">
-    <link rel="stylesheet" th:href="@{/css/seller-style.css}">
-    <style>
-        body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: #F8F5F0;
-            color: #333;
-        }
-        .navbar-brand {
-            font-family: 'Lora', serif;
-            font-weight: 700;
-            font-size: 1.8rem;
-            color: #2C3E50;
-        }
-        .section-title {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: #2C3E50;
-            border-bottom: 2px solid #2C3E50;
-            padding-bottom: 0.5rem;
-        }
-        .account-container {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .profile-image {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .default-profile {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background-color: #E9ECEF;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: #6c757d;
-            border: 3px solid #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .btn-primary {
-            background-color: #2C3E50;
-            border-color: #2C3E50;
-        }
-        .btn-primary:hover {
-            background-color: #1e2b37;
-            border-color: #1e2b37;
-        }
-        .btn-outline-primary {
-            color: #2C3E50;
-            border-color: #2C3E50;
-        }
-        .btn-outline-primary:hover {
-            background-color: #2C3E50;
-            border-color: #2C3E50;
-        }
-        .account-sidebar {
-            border-radius: 8px;
-            background-color: #fff;
-            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
-            margin-bottom: 2rem;
-        }
-        .account-sidebar .list-group-item {
-            border: none;
-            border-left: 4px solid transparent;
-            font-weight: 600;
-        }
-        .account-sidebar .list-group-item.active {
-            background-color: #f8f9fa;
-            color: #2C3E50;
-            border-left: 4px solid #2C3E50;
-        }
-        .account-sidebar .list-group-item i {
-            margin-right: 10px;
-            color: #6c757d;
-        }
-        .account-sidebar .list-group-item.active i {
-            color: #2C3E50;
-        }
-        .stat-card {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #2C3E50;
-        }
-        .stat-card h4 {
-            font-size: 1rem;
-            color: #6c757d;
-            margin-bottom: 0.5rem;
-        }
-        .stat-card p {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0;
-            color: #2C3E50;
-        }
-        .stat-card i {
-            font-size: 2.5rem;
-            color: #e9ecef;
-            position: absolute;
-            right: 1.5rem;
-        }
-    </style>
+    <title th:text="${isEdit ? 'Edit Address' : 'Add New Address'}">Address Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-
-<!-- Seller Topbar -->
-<div th:replace="fragments/seller-topbar :: seller-topbar"></div>
-
-<main class="account-page py-5 bg-light">
-    <div class="container">
-        <nav aria-label="breadcrumb mb-4">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a th:href="@{/seller/dashboard}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a th:href="@{/seller/account}">Account Information</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Edit Personal Information</li>
-            </ol>
-        </nav>
-
+    <div class="container-fluid">
         <div class="row">
-            <!-- Account Sidebar using fragment - using info as active tab since edit-info is part of account info -->
-            <div class="col-lg-3 mb-4">
-                <div th:replace="fragments/seller-account-sidebar :: seller-sidebar"></div>
-            </div>
-
-            <!-- Edit Account Content -->
-            <section class="col-lg-9 account-content">
-                <div class="card">
-                    <div class="card-header bg-white py-3">
-                        <h4 class="mb-0" th:text="${isEdit ? 'Edit Address' : 'Create New Address'}">Create New
-                            Address</h4>
+            <!-- Include the common header -->
+            <div th:replace="~{fragments/header :: header}"></div>
+            
+            <div class="container mt-4 mb-5">
+                <div class="row">
+                    <!-- Sidebar -->
+                    <div class="col-md-3 mb-4">
+                        <div th:replace="~{fragments/seller-account-sidebar :: seller-sidebar}"></div>
                     </div>
-                    <div class="card-body p-4">
-                        <div th:if="${param.success}" class="alert alert-success mb-4">
-                            Address saved successfully!
-                        </div>
-                        <div th:if="${param.error}" class="alert alert-danger mb-4">
-                            Error saving address. Please try again. <span th:if="${errorMessage}"
-                                                                          th:text="${errorMessage}"></span>
-                        </div>
-                        <form th:action="${isEdit ? '/buyer/addresses/update/' + address?.addressId : '/buyer/addresses/create'}"
-                              th:object="${address}" method="post" id="addressForm" novalidate>
-                            <input type="hidden" th:if="${isEdit}" th:field="*{addressId}">
-                            <div class="mb-3">
-                                <label for="recipientName" class="form-label">Recipient Name</label>
-                                <input type="text" class="form-control" id="recipientName" th:field="*{recipientName}"
-                                       placeholder="Enter recipient name" required minlength="2" maxlength="100">
-                                <div class="invalid-feedback" th:if="${#fields.hasErrors('recipientName')}"
-                                     th:errors="*{recipientName}">
-                                    Recipient name is required and must be between 2-100 characters
+                    
+                    <!-- Main Content -->
+                    <div class="col-md-9">
+                        <div class="card shadow-sm">
+                            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+                                <h5 class="mb-0" th:text="${isEdit ? 'Edit Address' : 'Add New Address'}">Address Form</h5>
+                                <a th:href="@{/seller/addresses}" class="btn btn-light btn-sm">
+                                    <i class="fas fa-arrow-left"></i> Back to Addresses
+                                </a>
+                            </div>
+                            <div class="card-body">
+                                <!-- Alert Messages -->
+                                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <span th:text="${errorMessage}"></span>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                
+                                <!-- Address Form -->
+                                <form th:action="${isEdit ? 
+                                               '/seller/addresses/update/' + address.addressId : 
+                                               '/seller/addresses/create'}" 
+                                      method="post" th:object="${address}" class="needs-validation" novalidate>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="fullName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="fullName" th:field="*{fullName}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}">
+                                                Please provide a valid name.
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="recipientPhone" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="recipientPhone" th:field="*{recipientPhone}"
-                                       placeholder="Enter phone number" required
-                                       pattern="^(\+84|84|0)[3|5|7|8|9][0-9]{8}$">
-                                <div class="invalid-feedback" th:if="${#fields.hasErrors('recipientPhone')}"
-                                     th:errors="*{recipientPhone}">
-                                    Valid phone number is required (e.g., 0912345678)
+                                        <div class="col-md-6">
+                                            <label for="phoneNumber" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="phoneNumber" th:field="*{phoneNumber}" 
+                                                   pattern="[0-9]{10}" title="Please enter a valid 10-digit phone number" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}">
+                                                Please provide a valid phone number.
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="company" class="form-label">Company (Optional)</label>
-                                <input type="text" class="form-control" id="company" th:field="*{company}"
-                                       placeholder="Enter company name" maxlength="255">
-                                <div class="invalid-feedback" th:if="${#fields.hasErrors('company')}"
-                                     th:errors="*{company}">
-                                    Company name must be less than 255 characters
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-4 mb-3 mb-md-0">
-                                    <label for="province" class="form-label">Province/City</label>
-                                    <select class="form-control" id="province" name="provinceCode" required>
-                                        <option value="">Select Province/City</option>
-                                    </select>
-                                    <!-- Hidden field to store the province name -->
-                                    <input type="hidden" id="provinceName" th:field="*{province}">
-                                    <div class="invalid-feedback">
-                                        Province is required
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <label for="detailAddress" class="form-label">Address Details <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="detailAddress" th:field="*{detailAddress}" required
+                                                   placeholder="Street number, Building name, etc.">
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('detailAddress')}" th:errors="*{detailAddress}">
+                                                Please provide a valid address.
                                     </div>
                                 </div>
-                                <div class="col-md-4 mb-3 mb-md-0">
-                                    <label for="district" class="form-label">District</label>
-                                    <select class="form-control" id="district" name="districtCode" required disabled>
-                                        <option value="">Select District</option>
-                                    </select>
-                                    <!-- Hidden field to store the district name -->
-                                    <input type="hidden" id="districtName" th:field="*{district}">
-                                    <div class="invalid-feedback">
-                                        District is required
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <label for="ward" class="form-label">Ward <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="ward" th:field="*{ward}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('ward')}" th:errors="*{ward}">
+                                                Required field.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="district" class="form-label">District <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="district" th:field="*{district}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('district')}" th:errors="*{district}">
+                                                Required field.
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="ward" class="form-label">Ward/Commune</label>
-                                    <select class="form-control" id="ward" name="wardCode" disabled required>
-                                        <option value="">Select Ward/Commune</option>
-                                    </select>
-                                    <!-- Hidden field to store the ward name -->
-                                    <input type="hidden" id="wardName" th:field="*{ward}">
-                                    <div class="invalid-feedback">
-                                        Ward is required
+                                            <label for="province" class="form-label">Province <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="province" th:field="*{province}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('province')}" th:errors="*{province}">
+                                                Required field.
                                     </div>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="addressDetail" class="form-label">Address Details (Street, House
-                                    No.)</label>
-                                <textarea class="form-control" id="addressDetail" th:field="*{addressDetail}"
-                                          rows="2" placeholder="e.g., 123 Nguyen Hue Street"
-                                          required maxlength="500"></textarea>
-                                <div class="invalid-feedback" th:if="${#fields.hasErrors('addressDetail')}"
-                                     th:errors="*{addressDetail}">
-                                    Address details are required and must be less than 500 characters
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="isDefault" th:field="*{isDefault}">
+                                                <label class="form-check-label" for="isDefault">
+                                                    Set as Default Address
+                                                </label>
+                                                <div class="form-text">This will be your default address for all book operations.</div>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label d-block">Address Type</label>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="addressType"
-                                           id="addressType0" value="0" th:field="*{addressType}" required>
-                                    <label class="form-check-label" for="addressType0">Residential</label>
                                 </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="addressType"
-                                           id="addressType1" value="1" th:field="*{addressType}" required>
-                                    <label class="form-check-label" for="addressType1">Company</label>
-                                </div>
-                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('addressType')}"
-                                     th:errors="*{addressType}">
-                                    Please select an address type
+                                    
+                                    <div class="row mt-4">
+                                        <div class="col-md-12 text-end">
+                                            <a th:href="@{/seller/addresses}" class="btn btn-secondary me-2">Cancel</a>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> 
+                                                <span th:text="${isEdit ? 'Update Address' : 'Save Address'}">Save</span>
+                                            </button>
                                 </div>
                             </div>
-                            <div class="mb-4 form-check" th:if="${!isEdit || (address != null && !address.default)}">
-                                <input type="checkbox" class="form-check-input" id="setDefault" th:field="*{default}">
-                                <label class="form-check-label" for="setDefault">Set as Default Address</label>
+                                </form>
                             </div>
-                            <div class="mb-4 alert alert-info" th:if="${isEdit && address != null && address.default}">
-                                <i class="fas fa-info-circle me-2"></i> This is your default address
                             </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i> Save Address
-                            </button>
-                            <a th:href="@{/buyer/addresses}" class="btn btn-secondary ms-2">
-                                <i class="fas fa-times me-1"></i> Cancel
-                            </a>
-                        </form>
                     </div>
                 </div>
-            </section>
+            </div>
+            
+            <!-- Include the common footer -->
+            <div th:replace="~{fragments/footer :: footer}"></div>
         </div>
     </div>
-</main>
-
-<!-- Bootstrap JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Custom JS -->
-<script th:src="@{/js/seller.js}"></script>
-<!-- Account edit validation - reusing existing file -->
-<script th:src="@{/js/account-edit-validation.js}"></script>
+    
+    <!-- JavaScript for form validation -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-
-
+        // Form validation script
+        (function() {
+            'use strict'
+            
+            // Fetch all forms to which we want to apply validation
+            var forms = document.querySelectorAll('.needs-validation')
+            
+            // Loop over them and prevent submission
+            Array.prototype.slice.call(forms)
+                .forEach(function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
 </script>
 </body>
 </html>

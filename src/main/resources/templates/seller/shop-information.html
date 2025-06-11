@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Information</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Include the common header -->
+            <div th:replace="~{fragments/header :: header}"></div>
+            
+            <div class="container mt-4 mb-5">
+                <div class="row">
+                    <!-- Sidebar -->
+                    <div class="col-md-3 mb-4">
+                        <div th:replace="~{fragments/seller-account-sidebar :: seller-sidebar}"></div>
+                    </div>
+                    
+                    <!-- Main Content -->
+                    <div class="col-md-9">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Shop Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Alert Messages -->
+                                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <span th:text="${successMessage}"></span>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <span th:text="${errorMessage}"></span>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                
+                                <!-- Shop Information Status Banner -->
+                                <div th:if="${shop.shopId != null}" class="mb-4">
+                                    <div th:class="${'alert ' + 
+                                        (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).APPROVED ? 'alert-success' : 
+                                        (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).PENDING ? 'alert-warning' : 
+                                        (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).REJECTED ? 'alert-danger' : 
+                                        'alert-secondary')))}">
+                                        <strong>Status:</strong> 
+                                        <span th:text="${shop.approvalStatus}">PENDING</span>
+                                        
+                                        <div th:if="${shop.reasonForStatus != null && !shop.reasonForStatus.isEmpty()}" class="mt-2">
+                                            <strong>Reason:</strong> <span th:text="${shop.reasonForStatus}"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Shop Information Form -->
+                                <form th:action="@{/seller/shop-information/save}" method="post" 
+                                      th:object="${shop}" enctype="multipart/form-data" class="needs-validation" novalidate>
+                                    
+                                    <input type="hidden" th:field="*{shopId}" />
+                                    <input type="hidden" th:field="*{userId}" />
+                                    <input type="hidden" th:field="*{approvalStatus}" />
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-md-12">
+                                            <h5 class="border-bottom pb-2">Basic Information</h5>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Shop Name -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <label for="shopName" class="form-label">Shop Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="shopName" th:field="*{shopName}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('shopName')}" th:errors="*{shopName}">
+                                                Please provide a valid shop name.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Description -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <label for="description" class="form-label">Shop Description</label>
+                                            <textarea class="form-control" id="description" th:field="*{description}" rows="3"></textarea>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
+                                                Description too long.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Shop Logo -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <label for="logoFile" class="form-label">Shop Logo</label>
+                                            <input class="form-control" type="file" id="logoFile" name="logoFile" accept="image/*">
+                                            <div th:if="${shop.logoUrl != null}" class="mt-2">
+                                                <img th:src="${shop.logoUrl}" alt="Current Logo" class="img-thumbnail" style="max-height: 100px;">
+                                                <input type="hidden" th:field="*{logoUrl}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Shop Cover Image -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <label for="coverImageFile" class="form-label">Cover Image</label>
+                                            <input class="form-control" type="file" id="coverImageFile" name="coverImageFile" accept="image/*">
+                                            <div th:if="${shop.coverImageUrl != null}" class="mt-2">
+                                                <img th:src="${shop.coverImageUrl}" alt="Current Cover" class="img-thumbnail" style="max-height: 100px;">
+                                                <input type="hidden" th:field="*{coverImageUrl}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-4 mt-4">
+                                        <div class="col-md-12">
+                                            <h5 class="border-bottom pb-2">Shop Address</h5>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Shop Address -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <label for="shopDetailAddress" class="form-label">Detailed Address <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="shopDetailAddress" th:field="*{shopDetailAddress}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('shopDetailAddress')}" th:errors="*{shopDetailAddress}">
+                                                Please provide a valid address.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Ward, District, Province -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <label for="shopWard" class="form-label">Ward <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="shopWard" th:field="*{shopWard}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('shopWard')}" th:errors="*{shopWard}">
+                                                Required field.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="shopDistrict" class="form-label">District <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="shopDistrict" th:field="*{shopDistrict}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('shopDistrict')}" th:errors="*{shopDistrict}">
+                                                Required field.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="shopProvince" class="form-label">Province <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="shopProvince" th:field="*{shopProvince}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('shopProvince')}" th:errors="*{shopProvince}">
+                                                Required field.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-4 mt-4">
+                                        <div class="col-md-12">
+                                            <h5 class="border-bottom pb-2">Contact Information</h5>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Contact Information -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="contactEmail" class="form-label">Contact Email <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control" id="contactEmail" th:field="*{contactEmail}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('contactEmail')}" th:errors="*{contactEmail}">
+                                                Please provide a valid email.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="contactPhone" class="form-label">Contact Phone <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="contactPhone" th:field="*{contactPhone}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('contactPhone')}" th:errors="*{contactPhone}">
+                                                Please provide a valid phone number.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Tax Information and Identification -->
+                                    <div class="row mb-4 mt-4">
+                                        <div class="col-md-12">
+                                            <h5 class="border-bottom pb-2">Business Information</h5>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="taxCode" class="form-label">Tax Code <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="taxCode" th:field="*{taxCode}" required>
+                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}">
+                                                Please provide a valid tax code.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="identificationFile" class="form-label">Identification Document <span class="text-danger">*</span></label>
+                                            <input class="form-control" type="file" id="identificationFile" name="identificationFile" 
+                                                   th:required="${shop.identificationFileUrl == null}">
+                                            <div th:if="${shop.identificationFileUrl != null}" class="mt-2">
+                                                <span class="badge bg-success">Document Uploaded</span>
+                                                <input type="hidden" th:field="*{identificationFileUrl}">
+                                            </div>
+                                            <div class="form-text">Upload a scanned copy of your business registration or ID card.</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Submit Button -->
+                                    <div class="row mt-4">
+                                        <div class="col-md-12 text-end">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> Save Shop Information
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Include the common footer -->
+            <div th:replace="~{fragments/footer :: footer}"></div>
+        </div>
+    </div>
+    
+    <!-- JavaScript for form validation -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form validation script
+        (function() {
+            'use strict'
+            
+            // Fetch all forms to which we want to apply validation
+            var forms = document.querySelectorAll('.needs-validation')
+            
+            // Loop over them and prevent submission
+            Array.prototype.slice.call(forms)
+                .forEach(function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    </script>
+</body>
+</html>
