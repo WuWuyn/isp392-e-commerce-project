@@ -1,13 +1,8 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.dto.UserRegistrationDTO;
-import com.example.isp392.model.Order;
-import com.example.isp392.model.OrderStatus;
 import com.example.isp392.model.User;
-import com.example.isp392.service.OrderService;
 import com.example.isp392.service.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -17,8 +12,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Controller
 @RequestMapping("/seller")
@@ -26,12 +22,9 @@ public class SellerController {
 
     private static final Logger log = LoggerFactory.getLogger(SellerController.class);
     private final UserService userService;
-    private final OrderService orderService; // <<< THÊM OrderService
 
-    // <<< CẬP NHẬT CONSTRUCTOR
-    public SellerController(UserService userService, OrderService orderService) {
+    public SellerController(UserService userService) {
         this.userService = userService;
-        this.orderService = orderService;
     }
 
     @GetMapping("/login")
@@ -99,6 +92,7 @@ public class SellerController {
     }
 
 
+
 //    @PostMapping("/edit-info")
 //    public String updateUserInfo(
 //            @ModelAttribute("fullName") String fullName,
@@ -141,7 +135,7 @@ public class SellerController {
                 log.debug("Regular seller accessing change password page: {}", email);
             }
             Optional<User> userOpt = userService.findByEmail(email);
-            if (userOpt.isPresent()) {
+            if(userOpt.isPresent()) {
                 User user = userOpt.get();
                 model.addAttribute("user", user);
                 model.addAttribute("roles", userService.getUserRoles(user));
@@ -189,62 +183,10 @@ public class SellerController {
     }
 
     @GetMapping("/orders")
-    public String showOrdersPage(Model model, Authentication authentication) {
-        User currentUser = getCurrentUser(authentication);
-        if (currentUser == null) {
-            return "redirect:/seller/login";
-        }
-
-        // Lấy danh sách đơn hàng thật từ database
-        List<Order> orders = orderService.getOrdersForSeller(currentUser.getUserId());
-
-        model.addAttribute("user", currentUser); // Dùng cho sidebar và topbar
-        model.addAttribute("roles", userService.getUserRoles(currentUser)); // Dùng cho sidebar
-        model.addAttribute("orders", orders); // Gửi danh sách đơn hàng sang view
-        model.addAttribute("allStatuses", OrderStatus.values()); // Gửi tất cả các trạng thái sang view
-
+    public String showOrdersPage(Model model) {
+        // Placeholder for seller orders
         return "seller/orders";
     }
-    @GetMapping("/orders/{id}")
-    public String showOrderDetailPage(@PathVariable("id") Integer id, Model model, Authentication authentication) {
-        User currentUser = getCurrentUser(authentication);
-        if (currentUser == null) {
-            return "redirect:/seller/login";
-        }
-
-        Optional<Order> orderOpt = orderService.findOrderById(id);
-        if (orderOpt.isPresent()) {
-            model.addAttribute("order", orderOpt.get());
-            model.addAttribute("user", currentUser);
-            return "seller/order-detail"; // Trả về trang chi tiết mới
-        } else {
-            // Xử lý trường hợp không tìm thấy đơn hàng
-            return "redirect:/seller/orders";
-        }
-    }
-
-    // <<< THÊM PHƯƠNG THỨC MỚI ĐỂ CẬP NHẬT TRẠNG THÁI
-    @PostMapping("/orders/update-status/{orderId}")
-    public String updateOrderStatus(@PathVariable("orderId") Integer orderId,
-                                    @RequestParam("status") OrderStatus newStatus,
-                                    RedirectAttributes redirectAttributes) {
-
-        // Bạn có thể thêm logic kiểm tra xem người bán có quyền cập nhật đơn hàng này không
-
-        boolean isUpdated = orderService.updateOrderStatus(orderId, newStatus);
-
-        if (isUpdated) {
-            redirectAttributes.addFlashAttribute("successMessage", "Order status updated successfully.");
-        } else {
-            redirectAttributes.addFlashAttribute("errorMessage", "Failed to update order status. Order not found.");
-        }
-
-        return "redirect:/seller/orders";
-    }
-
-
-
-
 
     @GetMapping("/cart")
     public String showCart(Model model) {
@@ -252,7 +194,7 @@ public class SellerController {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String email = auth.getName();
             Optional<User> userOpt = userService.findByEmail(email);
-            if (userOpt.isPresent()) {
+            if(userOpt.isPresent()) {
                 User user = userOpt.get();
                 model.addAttribute("user", user);
                 return "seller/cart";

@@ -1,13 +1,5 @@
 package com.example.isp392.service;
 
-import com.example.isp392.model.Role;
-import com.example.isp392.model.User;
-import com.example.isp392.model.UserRole;
-import com.example.isp392.repository.RoleRepository;
-import com.example.isp392.repository.UserRoleRepository;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,11 +10,21 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import com.example.isp392.model.Role;
+import com.example.isp392.model.User;
+import com.example.isp392.model.UserRole;
+import com.example.isp392.repository.RoleRepository;
+import com.example.isp392.repository.UserRoleRepository;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
+
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service to handle OAuth2 user authentication

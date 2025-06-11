@@ -7,13 +7,11 @@ import com.example.isp392.model.UserRole;
 import com.example.isp392.repository.RoleRepository;
 import com.example.isp392.repository.UserRepository;
 import com.example.isp392.repository.UserRoleRepository;
-import jakarta.persistence.criteria.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.authentication.DisabledException;
+
+// No imports needed for annotations since we use constructor injection
+import java.security.SecureRandom;
+import java.util.Base64;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,16 +20,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
-    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -42,16 +40,16 @@ public class UserService implements UserDetailsService {
      * Constructor with explicit dependency injection
      * This is preferred over field injection with @Autowired as it makes dependencies clear,
      * ensures they're required, and makes testing easier
-     *
+     * 
      * @param userRepository Repository for user data access
      * @param roleRepository Repository for role data access
      * @param userRoleRepository Repository for user-role relationship data access
      * @param passwordEncoder Password encoder for securely storing passwords
      */
-    public UserService(UserRepository userRepository,
-                       RoleRepository roleRepository,
-                       UserRoleRepository userRoleRepository,
-                       PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, 
+                      RoleRepository roleRepository,
+                      UserRoleRepository userRoleRepository,
+                      PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
@@ -67,29 +65,26 @@ public class UserService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        // === THÊM ĐOẠN KIỂM TRA TRẠNG THÁI ===
-        if (!user.isActive()) {
-            throw new DisabledException("User account has been deactivated.");
-        }
-        // ===================================
-
-        // ... (phần code còn lại giữ nguyên)
+        // Get user roles
         List<UserRole> userRoles = userRoleRepository.findByUser(user);
+        
+        // Map roles to authorities
         Collection<SimpleGrantedAuthority> authorities = userRoles.stream()
                 .filter(UserRole::isRoleActiveForUser)
                 .map(userRole -> new SimpleGrantedAuthority("ROLE_" + userRole.getRole().getRoleName()))
                 .collect(Collectors.toList());
 
+        // Return Spring Security UserDetails
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
                 authorities
         );
     }
-
 
     /**
      * Register a new buyer user
@@ -109,11 +104,11 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(registrationDTO.getPassword())); // Encode password
         user.setFullName(registrationDTO.getFullName());
         user.setPhone(registrationDTO.getPhoneNumber());
-
+        
         // Parse and set date of birth
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         user.setDateOfBirth(LocalDate.parse(registrationDTO.getDateOfBirth(), dateFormatter));
-
+        
         // Set gender (0 - Male, 1 - Female, 2 - Other)
         String genderStr = registrationDTO.getGender().toLowerCase();
         if ("male".equals(genderStr)) {
@@ -123,7 +118,7 @@ public class UserService implements UserDetailsService {
         } else {
             user.setGender(2); // Other
         }
-
+        
         // Save user
         User savedUser = userRepository.save(user);
 
@@ -150,7 +145,7 @@ public class UserService implements UserDetailsService {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
-
+    
     /**
      * Find user by email and return the user object directly
      * @param email the email to search for
@@ -158,6 +153,15 @@ public class UserService implements UserDetailsService {
      */
     public User findByEmailDirectly(String email) {
         return userRepository.findByEmail(email).orElse(null);
+    }
+
+    /**
+     * Retrieve a User object by username (email).
+     * @param username the email of the user.
+     * @return User object if found, null otherwise.
+     */
+    public User getUserByUsername(String username) {
+        return userRepository.findByEmail(username).orElse(null);
     }
 
     /**
@@ -172,7 +176,7 @@ public class UserService implements UserDetailsService {
                 .map(userRole -> "ROLE_" + userRole.getRole().getRoleName())
                 .collect(Collectors.toList());
     }
-
+    
     /**
      * Update user information
      * @param email the user's email
@@ -187,16 +191,16 @@ public class UserService implements UserDetailsService {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-
+        
         // Update user information
         user.setFullName(fullName);
         user.setPhone(phone);
         user.setGender(gender);
-
+        
         // Save and return updated user
         return userRepository.save(user);
     }
-
+    
     /**
      * Update user information including date of birth
      * @param email the user's email
@@ -212,17 +216,17 @@ public class UserService implements UserDetailsService {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-
+        
         // Update user information
         user.setFullName(fullName);
         user.setPhone(phone);
         user.setGender(gender);
         user.setDateOfBirth(dateOfBirth);
-
+        
         // Save and return updated user
         return userRepository.save(user);
     }
-
+    
     /**
      * Save a user to the database
      * @param user the user to save
@@ -234,19 +238,19 @@ public class UserService implements UserDetailsService {
         if (user.getGender() < 0 || user.getGender() > 2) {
             user.setGender(2); // Default to 'Other' if invalid
         }
-
+        
         // Ensure all other required fields are not null
         if (user.getDateOfBirth() == null) {
             user.setDateOfBirth(LocalDate.now());
         }
-
+        
         if (user.getFullName() == null) {
             user.setFullName("Google User");
         }
-
+        
         return userRepository.save(user);
     }
-
+    
     /**
      * Generate a random password for OAuth2 users
      * @return a random password string
@@ -257,7 +261,7 @@ public class UserService implements UserDetailsService {
         random.nextBytes(bytes);
         return Base64.getEncoder().encodeToString(bytes);
     }
-
+    
     /**
      * Encode a password using the password encoder
      * @param password the raw password
@@ -266,7 +270,7 @@ public class UserService implements UserDetailsService {
     public String encodePassword(String password) {
         return passwordEncoder.encode(password);
     }
-
+    
     /**
      * Update user information including date of birth and profile picture
      * @param email the user's email
@@ -283,22 +287,22 @@ public class UserService implements UserDetailsService {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-
+        
         // Update user information
         user.setFullName(fullName);
         user.setPhone(phone);
         user.setGender(gender);
         user.setDateOfBirth(dateOfBirth);
-
+        
         // Update profile picture URL if provided
         if (profilePicUrl != null && !profilePicUrl.isEmpty()) {
             user.setProfilePicUrl(profilePicUrl);
         }
-
+        
         // Save and return updated user
         return userRepository.save(user);
     }
-
+    
     /**
      * Update user password
      * @param email the user's email
@@ -312,19 +316,19 @@ public class UserService implements UserDetailsService {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-
+        
         // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             return false; // Current password is incorrect
         }
-
+        
         // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-
+        
         return true;
     }
-
+    
     /**
      * Change user password directly (for password reset)
      * @param user the user to update
@@ -337,12 +341,12 @@ public class UserService implements UserDetailsService {
         if (user.isOAuth2User()) {
             throw new RuntimeException("Cannot change password for OAuth2 user");
         }
-
+        
         // Encode and update the password
         user.setPassword(passwordEncoder.encode(newPassword));
         return userRepository.save(user);
     }
-
+    
     /**
      * Check if a given password matches the user's current password
      * @param user the user to check
@@ -354,99 +358,8 @@ public class UserService implements UserDetailsService {
         if (user.isOAuth2User()) {
             return false;
         }
-
+        
         // Use the password encoder to check if the given password matches the stored password
         return passwordEncoder.matches(password, user.getPassword());
     }
-
-    /**
-     * Find user by ID.
-     * @param userId The ID of the user to find.
-     * @return The found User.
-     * @throws RuntimeException if user is not found.
-     */
-    public User findUserById(Integer userId) {
-        return userRepository.findByIdWithAddresses(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-    }
-
-    /**
-     * Search for users based on keyword and role with pagination.
-     * @param keyword The keyword to search in full name or email.
-     * @param role The role to filter by.
-     * @param pageable Pagination information.
-     * @return A Page of users matching the criteria.
-     */
-    public Page<User> searchUsers(String keyword, String role, Pageable pageable) {
-        Specification<User> spec = createSpecification(keyword, role);
-        return userRepository.findAll(spec, pageable);
-    }
-
-    /**
-     * Creates a Specification for dynamic query based on keyword and role.
-     * @param keyword The keyword to search.
-     * @param role The role to filter.
-     * @return a Specification for User.
-     */
-    private Specification<User> createSpecification(String keyword, String role) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // Predicate for keyword search
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                String likePattern = "%" + keyword.toLowerCase() + "%";
-                Predicate keywordPredicate = criteriaBuilder.or(
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("fullName")), likePattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), likePattern)
-                );
-                predicates.add(keywordPredicate);
-            }
-
-            // Predicate for role filtering
-            if (role != null && !role.trim().isEmpty()) {
-                Predicate rolePredicate = criteriaBuilder.equal(
-                        root.join("userRoles").join("role").get("roleName"),
-                        role.toUpperCase()
-                );
-                predicates.add(rolePredicate);
-            }
-            // To prevent duplicates when joining
-            query.distinct(true);
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-    @Transactional
-    public void deactivateUser(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-
-        user.setActive(false);
-        userRepository.save(user);
-        log.info("User account for {} has been deactivated.", email);
-    }
-
-    @Transactional
-    public void updateUserActivationStatus(Integer userId, boolean isActive) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
-
-        user.setActive(isActive);
-        userRepository.save(user);
-        log.info("Activation status for user ID {} has been updated to {}.", userId, isActive);
-    }
-
-    @Transactional
-    public void deleteUserById(Integer userId) {
-        // Kiểm tra xem user có tồn tại không trước khi xóa
-        if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found with ID: " + userId);
-        }
-        userRepository.deleteById(userId);
-        log.info("Successfully deleted user with ID: {}", userId);
-    }
-
-
-
-
 }

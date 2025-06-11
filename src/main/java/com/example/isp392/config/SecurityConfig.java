@@ -4,8 +4,6 @@ import com.example.isp392.repository.RoleRepository;
 import com.example.isp392.repository.UserRoleRepository;
 import com.example.isp392.service.CustomOAuth2UserService;
 import com.example.isp392.service.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -16,6 +14,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Security configuration for Spring Security
