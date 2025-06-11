@@ -6,4 +6,11 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ShopRepository extends JpaRepository<Shop, Integer> {
+
+    /**
+     * Find a shop by user ID
+     * @param userId the user ID
+     * @return the shop or null if not found
+     */
+    Shop findByUserUserId(Integer userId);
 }
