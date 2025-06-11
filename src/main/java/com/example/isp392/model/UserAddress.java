@@ -14,7 +14,7 @@ public class UserAddress {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "address_id")
-    private int addressId;
+    private Integer addressId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -42,7 +42,7 @@ public class UserAddress {
     private String company;
 
     @Column(name = "address_type")
-    private int address_type;       //0: Nha rieng, 1: company
+    private Integer address_type;       //0: Nha rieng, 1: company
 
     @Column(name = "is_default", nullable = false)
     private boolean isDefault = false;

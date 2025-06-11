@@ -4,12 +4,12 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "blog")
+@Table(name = "blogs")
 @Getter
 @Setter
 public class Blog {
@@ -17,7 +17,7 @@ public class Blog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "blog_id")
-    private int blogId;
+    private Integer blogId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -32,11 +32,12 @@ public class Blog {
     private String content;
 
     @Column(name = "created_date", nullable = false)
-    private Timestamp createdDate;
+    private LocalDateTime createdDate;
 
     @Column(name = "views_count", nullable = false, columnDefinition = "INT DEFAULT 0")
-    private int viewsCount = 0;
+    private Integer viewsCount = 0;
 
+    // Kiểm tra xem bài viết có bị khóa không?
     @Column(name = "is_locked", nullable = false, columnDefinition = "BIT DEFAULT 0")
     private boolean isLocked = false;
 

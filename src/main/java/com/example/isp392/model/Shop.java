@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +17,7 @@ public class Shop {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "shop_id")
-    private int shopId;
+    private Integer shopId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
@@ -35,18 +35,23 @@ public class Shop {
     @Column(name = "cover_image_url", columnDefinition = "NVARCHAR(MAX)")
     private String coverImageUrl;
 
+    @Column(name = "shop_detail_address", columnDefinition = "NVARCHAR(500)")
+    private String shopDetailAddress;
+
+    @Column(name = "shop_ward", columnDefinition = "NVARCHAR(255)")
+    private String shopWard;
+
+    @Column(name = "shop_district", columnDefinition = "NVARCHAR(255)")
+    private String shopDistrict;
+
+    @Column(name = "shop_province", columnDefinition = "NVARCHAR(255)")
+    private String shopProvince;
+
     @Column(name = "contact_email", nullable = false, length = 255)
     private String contactEmail;
 
     @Column(name = "contact_phone", nullable = false, length = 20)
     private String contactPhone;
-
-    @Column(name = "address", nullable = false, columnDefinition = "NVARCHAR(MAX)")
-    private String address;
-
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "registration_date", nullable = false, updatable = false)
-    private Timestamp registrationDate;
 
     @Column(name  = "tax_code", nullable = false, length = 15)
     private String taxCode;
@@ -54,10 +59,36 @@ public class Shop {
     @Column(name = "identification_file_url", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String identificationFileUrl;
 
-    @Column(name = "status", nullable = false)
-    private int status; // 0: PENDING, 1: APPROVED, 2: REJECTED, 3: BANNED
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false)
+    private ApprovalStatus approval_status;
+
+    @Column(name = "reason_for_status", columnDefinition = "NVARCHAR(MAX)")
+    private String reasonForStatus;
+
+    @Column(name = "request_at")
+    private LocalDateTime requestAt;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_approver_id")
+    private User adminApproverId;
+
+    // Trường này sẽ được set sau khi đăng ký thành công và được admin phê duyệt
+    @Column(name = "registration_date", nullable = false, updatable = false)
+    private LocalDateTime registrationDate;
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Book> books = new ArrayList<>();
 
 }
+
+enum ApprovalStatus {
+    PENDING,
+    APPROVED,
+    REJECTED,
+    SUSPENDED
+}
+

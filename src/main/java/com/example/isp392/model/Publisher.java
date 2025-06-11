@@ -16,7 +16,7 @@ public class Publisher {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "publisher_id")
-    private int publisherId;
+    private Integer publisherId;
 
     @Column(name = "publisher_name", columnDefinition = "NVARCHAR(500)") // Example field
     private String publisherName;

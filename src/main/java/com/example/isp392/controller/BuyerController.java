@@ -2,15 +2,16 @@ package com.example.isp392.controller;
 
 import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.User;
+import com.example.isp392.service.CartService;
 import com.example.isp392.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,11 +20,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Controller for buyer-related operations
@@ -36,6 +35,7 @@ public class BuyerController {
     private static final Logger log = LoggerFactory.getLogger(BuyerController.class);
 
     private final UserService userService;
+    private final CartService cartService;
 
     /**
      * Constructor with explicit dependency injection
@@ -43,9 +43,11 @@ public class BuyerController {
      * ensures they're required, and makes testing easier
      *
      * @param userService Service for user-related operations
+     * @param cartService Service for cart-related operations
      */
-    public BuyerController(UserService userService) {
+    public BuyerController(UserService userService, CartService cartService) {
         this.userService = userService;
+        this.cartService = cartService;
     }
 
     /**
@@ -154,7 +156,7 @@ public class BuyerController {
         model.addAttribute("roles", userService.getUserRoles(user));
 
         log.debug("Showing account info for user: id={}, name={}",
-                user.getUserId(), user.getFullName());
+                 user.getUserId(), user.getFullName());
 
         return "buyer/account-info";
     }
@@ -181,7 +183,7 @@ public class BuyerController {
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
                 log.info("User found in database: id={}, name={}",
-                        user.getUserId(), user.getFullName());
+                         user.getUserId(), user.getFullName());
             } else {
                 log.warn("OAuth2 user not found in database after login success");
             }
@@ -247,11 +249,10 @@ public class BuyerController {
             log.debug("Updating info for user: {}", email);
 
             // Parse date from string
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            Date parsedDate = null;
+            LocalDate parsedDate = null;
             try {
                 if (dateOfBirth != null && !dateOfBirth.isEmpty()) {
-                    parsedDate = dateFormat.parse(dateOfBirth);
+                    parsedDate = LocalDate.parse(dateOfBirth, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                 }
             } catch (Exception e) {
                 log.warn("Error parsing date: {}", e.getMessage());
@@ -265,7 +266,7 @@ public class BuyerController {
                     // Generate unique filename
                     String originalFilename = profilePictureFile.getOriginalFilename();
                     String fileName = System.currentTimeMillis() + "_" +
-                            (originalFilename != null ? originalFilename : "profile.jpg");
+                                     (originalFilename != null ? originalFilename : "profile.jpg");
 
                     // Get upload directory path - use the same path configured in FileUploadConfig
                     String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/profile-pictures/";
@@ -448,133 +449,70 @@ public class BuyerController {
                 User user = userOpt.get();
                 model.addAttribute("user", user);
                 model.addAttribute("roles", userService.getUserRoles(user));
-
-                // TODO: Add cart items to the model once cart functionality is implemented
-                // model.addAttribute("cartItems", cartService.getCartItemsForUser(user));
+                model.addAttribute("cart", cartService.getCartForUser(user));
 
                 return "buyer/cart";
             } else {
-                // Redirect to login if user not found (shouldn't happen with proper authentication)
                 return "redirect:/buyer/login";
             }
         } catch (Exception e) {
-            // Handle any errors and redirect to login
+            log.error("Error displaying cart: {}", e.getMessage());
             return "redirect:/buyer/login";
         }
     }
 
+    // Helper methods for authentication
+    
     /**
      * Check if user is authenticated
      * @return true if user is authenticated, false otherwise
      */
     private boolean isUserAuthenticated() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
+        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal());
     }
-
+    
     /**
-     * Helper method to get the current authenticated user, supporting both regular and OAuth2 users
-     * @return User object or null if not authenticated or not found
+     * Get current user from SecurityContextHolder
+     * @return User object or null if not authenticated
      */
     private User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return getCurrentUser(auth);
     }
-
+    
     /**
-     * Helper method to get the current authenticated user from Authentication object
-     * Supports both regular and OAuth2 users
+     * Get user from Authentication object with OAuth2 support
      * @param auth Authentication object
-     * @return User object or null if not authenticated or not found
+     * @return User object or null if not authenticated
      */
     private User getCurrentUser(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             return null;
         }
-
-        String email;
-
-        // Check if authentication is from OAuth2 (Google)
+        
+        String email = null;
+        
+        // Handle different authentication types
         if (auth instanceof OAuth2AuthenticationToken) {
             OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
             email = oauth2User.getAttribute("email");
-            log.debug("Getting OAuth2 user with email: {}", email);
         } else {
-            // Regular form login user
             email = auth.getName();
-            log.debug("Getting regular user with email: {}", email);
         }
-
+        
         if (email == null) {
-            log.warn("Could not extract email from authentication: {}", auth.getPrincipal());
+            log.warn("Email is null for authenticated user");
             return null;
         }
-
+        
         // Find user by email
         Optional<User> userOptional = userService.findByEmail(email);
+        
         if (userOptional.isEmpty()) {
-            log.warn("No user found for email: {}", email);
-            return null;
+            log.warn("User not found in database: {}", email);
         }
-
-        User user = userOptional.get();
-        log.debug("Found user: id={}, name={}", user.getUserId(), user.getFullName());
-        return user;
-    }
-
-    // ... (rest of the code remains the same)
-    // Hiển thị form xác nhận xóa tài khoản
-    @GetMapping("/account-deletion") // Đổi tên mapping này cho rõ ràng
-    public String showAccountDeletionConfirmationPage(Authentication authentication, Model model, RedirectAttributes redirectAttributes) {
-        User currentUser = getCurrentUser(authentication);
-        if (currentUser == null) {
-            // Should not happen if security is configured correctly, but good to check
-            redirectAttributes.addFlashAttribute("errorMessage", "You must be logged in to delete your account.");
-            return "redirect:/buyer/login";
-        }
-        // You can add user details to the model if needed on the confirmation page
-        // model.addAttribute("userEmail", currentUser.getEmail());
-        log.debug("Showing account deletion confirmation page for user ID: {}", currentUser.getUserId());
-        return "buyer/delete-account"; // Đúng tên file template
-    }
-
-    // Method to handle the actual account deletion
-    // This mapping should match the th:action in your delete-account-confirmation.html form
-    @PostMapping("/perform-delete-account")
-    public String performAccountDeletion(Authentication authentication,
-                                         HttpServletRequest request,
-                                         HttpServletResponse response,
-                                         RedirectAttributes redirectAttributes) {
-        User currentUser = getCurrentUser(authentication);
-
-        if (currentUser == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "User not authenticated. Please log in.");
-            log.warn("Attempt to delete account without authentication.");
-            return "redirect:/buyer/login";
-        }
-
-        try {
-            // userId bây giờ sẽ là Integer nếu User.getUserId() trả về Integer
-            Integer userId = currentUser.getUserId(); // Đảm bảo User.getUserId() trả về Integer
-            if (userId == null) { // Kiểm tra thêm cho chắc chắn
-                log.error("User ID is null for current user: {}", currentUser.getEmail());
-                redirectAttributes.addFlashAttribute("errorMessage", "Could not retrieve user ID.");
-                return "redirect:/buyer/account-info"; // Hoặc trang phù hợp
-            }
-
-            log.info("Attempting to delete account for user ID: {}", userId);
-            userService.deleteUserById(userId); // Truyền Integer userId
-            log.info("Account successfully deleted for user ID: {}", userId);
-
-            new SecurityContextLogoutHandler().logout(request, response, authentication);
-
-            redirectAttributes.addFlashAttribute("successMessage", "Your account has been successfully deleted.");
-            return "redirect:/buyer/login";
-
-        } catch (Exception e) {
-            log.error("Error deleting account for user ID: {}: {}", currentUser.getUserId(), e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while deleting your account. Please try again or contact support.");
-            return "redirect:/buyer/account-deletion";
-        }
+        
+        return userOptional.orElse(null);
     }
 }

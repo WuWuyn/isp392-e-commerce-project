@@ -87,7 +87,7 @@
                                     <label for="editDateOfBirth" class="form-label">Date of Birth</label>
                                     <div class="input-group">
                                         <input type="date" class="form-control" id="editDateOfBirth" name="dateOfBirth"
-                                            th:value="${user != null and user.dateOfBirth != null ? #dates.format(user.dateOfBirth, 'yyyy-MM-dd') : ''}">
+                                            th:value="${user != null and user.dateOfBirth != null ? #temporals.format(user.dateOfBirth, 'yyyy-MM-dd') : ''}">
                                     </div>
                                     <div class="invalid-feedback">Please enter a valid date of birth</div>
                                 </div>

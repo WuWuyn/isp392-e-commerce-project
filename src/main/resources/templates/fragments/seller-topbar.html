@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Topbar</title>
+</head>
+<body>
+    <nav th:fragment="seller-topbar" class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">ReadHub</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <!-- View Store -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/store/{id}(id=${user.userId})}">
+                            <i class="fas fa-store"></i> View Store
+                        </a>
+                    </li>
+                    
+                    <!-- Notifications -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge bg-danger" th:if="${notificationCount > 0}" th:text="${notificationCount}">3</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Notifications</h6></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-shopping-cart me-2"></i> New order received</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-comment me-2"></i> New customer message</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-star me-2"></i> New product review</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-primary" href="#"><i class="fas fa-bell me-2"></i> View All Notifications</a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Account Menu -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i> <span th:text="${user.fullName}">Account</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" th:href="@{/seller/settings/profile}"><i class="fas fa-user me-2"></i> My Profile</a></li>
+                            <li><a class="dropdown-item" th:href="@{/seller/settings/store}"><i class="fas fa-store me-2"></i> Store Settings</a></li>
+                            <li><a class="dropdown-item" th:href="@{/seller/settings/password}"><i class="fas fa-key me-2"></i> Change Password</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/seller/logout}" method="post" class="m-0">
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</body>
+</html> 

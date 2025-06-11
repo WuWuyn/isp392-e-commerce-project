@@ -31,7 +31,7 @@
                 <header class="blog-single-header text-center mb-4">
                     <h1 class="blog-single-title display-5" th:text="${blog.title}">Blog Title</h1>
                     <p class="blog-single-meta text-muted">
-                        <span class="post-date" th:text="${#dates.format(blog.createdDate, 'dd MMM, yyyy')}">Date</span>
+                        <span class="post-date" th:text="${#temporals.format(blog.createdDate, 'dd MMM, yyyy')}">Date</span>
                         <span class="mx-1">•</span>
                         by <a href="#" class="text-muted" th:text="${blog.user.fullName}">Author Name</a>
                         <span class="mx-1">•</span>
@@ -50,7 +50,8 @@
                 <!-- Author Bio -->
                 <section class="author-bio-section my-5 p-4 rounded">
                     <div class="d-flex align-items-center">
-                        <img th:src="@{/images/avatar-placeholder.jpg}" th:alt="${blog.user.fullName}" class="author-avatar rounded-circle me-3">
+                        <img th:src="${blog.user.profilePicUrl != null ? blog.user.profilePicUrl : '/images/default-avatar.jpg'}"
+                             th:alt="${blog.user.fullName}" class="author-avatar rounded-circle me-3">
                         <div>
                             <h5 class="author-name mb-0" th:text="${blog.user.fullName}">Author Name</h5>
                         </div>
@@ -114,14 +115,15 @@
                     <div class="comment-list" th:if="${!blog.comments.isEmpty()}">
                         <!-- Single Comment Item -->
                         <div class="comment-item d-flex mb-4 pb-3 border-bottom" th:each="comment : ${blog.comments}">
-                            <img th:src="@{/images/avatar-placeholder.png}" th:alt="${comment.user.fullName}" class="commenter-avatar rounded-circle me-3">
+                            <img th:src="${comment.user.profilePicUrl != null ? comment.user.profilePicUrl : '/images/default-avatar.jpg'}"
+                                 th:alt="${comment.user.fullName}" class="commenter-avatar rounded-circle me-3">
                             <div class="comment-content">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h6 class="commenter-name mb-0" th:text="${comment.user.fullName}">
                                         Commenter Name
-                                        <span th:if="${comment.user.id == blog.user.id}" class="badge bg-primary-subtle text-primary-emphasis rounded-pill small ms-1">Author</span>
+                                        <span th:if="${comment.user.userId == blog.user.userId}" class="badge bg-primary-subtle text-primary-emphasis rounded-pill small ms-1">Author</span>
                                     </h6>
-                                    <span class="comment-date text-muted small" th:text="${comment.createdDate != null ? #dates.format(comment.createdDate, 'dd MMM yyyy - hh:mm a') : 'Date unavailable'}">Comment Date</span>
+                                    <span class="comment-date text-muted small" th:text="${comment.createdDate != null ? #temporals.format(comment.createdDate, 'dd MMM yyyy - hh:mm a') : 'Date unavailable'}">Comment Date</span>
                                 </div>
                                 <p class="comment-text mt-1 mb-2" th:text="${comment.content}">Comment text goes here.</p>
                             </div>
