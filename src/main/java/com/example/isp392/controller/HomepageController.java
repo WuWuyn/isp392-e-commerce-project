@@ -1,28 +1,30 @@
 package com.example.isp392.controller;
 
-import com.example.isp392.model.Blog;
-import com.example.isp392.model.Book;
-import com.example.isp392.model.Category;
 import com.example.isp392.model.User;
-import com.example.isp392.repository.CategoryRepository;
-import com.example.isp392.service.BlogService;
-import com.example.isp392.service.BookService;
 import com.example.isp392.service.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+
+import com.example.isp392.model.Blog;
+import com.example.isp392.model.Book;
+import com.example.isp392.model.Category;
+import com.example.isp392.repository.CategoryRepository;
+import com.example.isp392.service.BlogService;
+import com.example.isp392.service.BookService;
+import org.springframework.data.domain.Page;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for homepage-related operations

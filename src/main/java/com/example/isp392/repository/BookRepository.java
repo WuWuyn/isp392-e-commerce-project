@@ -6,17 +6,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Integer> {
 
     // Tìm sách theo tiêu đề (phân trang)
     Page<Book> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+    
+    // Tìm sách theo tiêu đề đã được chuẩn hóa (không dấu, chữ thường)
+    Page<Book> findByNormalizedTitleContaining(String normalizedTitle, Pageable pageable);
     
     // Tìm sách theo danh mục (phân trang)
     @Query("SELECT b FROM Book b JOIN b.categories c WHERE c = ?1")
@@ -33,7 +34,4 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
     // Tìm những sách có giảm giá (selling_price < original_price)
     @Query("SELECT b FROM Book b WHERE b.sellingPrice < b.originalPrice")
     List<Book> findDiscountedBooks(Pageable pageable);
-
-    @Query("SELECT b FROM Book b LEFT JOIN FETCH b.publisher LEFT JOIN FETCH b.categories WHERE b.book_id = :bookId")
-    Optional<Book> findByIdWithDetails(@Param("bookId") Integer bookId);
 }

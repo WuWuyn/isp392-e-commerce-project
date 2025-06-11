@@ -6,10 +6,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
-
+import java.util.regex.Pattern;
 
 
 @Getter
@@ -29,6 +30,9 @@ public class Book {
 
     @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String title;
+
+    @Column(name = "normalized_title", length = 500)
+    private String normalizedTitle;
 
     @Column(name = "publication_date")
     private LocalDate publicationDate;
@@ -93,5 +97,25 @@ public class Book {
     )
     private Set<Category> categories = new HashSet<>();
 
-
+    @PrePersist
+    @PreUpdate
+    public void updateNormalizedTitle() {
+        if (this.title != null && !this.title.isEmpty()) {
+            // Chuẩn hóa Unicode và loại bỏ dấu
+            String normalized = Normalizer.normalize(this.title, Normalizer.Form.NFD);
+            Pattern diacriticalPattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+            String withoutDiacritics = diacriticalPattern.matcher(normalized).replaceAll("");
+            
+            // Chuyển về chữ thường
+            String lowercase = withoutDiacritics.toLowerCase();
+            
+            // Thay thế nhiều khoảng trắng liên tiếp bằng một khoảng trắng
+            String normalizedSpaces = lowercase.replaceAll("\\s+", " ");
+            
+            // Loại bỏ khoảng trắng ở đầu và cuối chuỗi
+            this.normalizedTitle = normalizedSpaces.trim();
+        } else {
+            this.normalizedTitle = null;
+        }
+    }
 }
