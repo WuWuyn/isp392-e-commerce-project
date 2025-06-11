@@ -6,10 +6,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Date;
+import java.text.Normalizer;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 
 @Getter
@@ -21,7 +22,7 @@ public class Book {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "book_id")
-    private int book_id;
+    private Integer book_id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shop_id", nullable = false)
@@ -30,14 +31,17 @@ public class Book {
     @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String title;
 
+    @Column(name = "normalized_title", length = 500)
+    private String normalizedTitle;
+
     @Column(name = "publication_date")
-    private Date publicationDate;
+    private LocalDate publicationDate;
 
     @Column(name = "isbn", length = 20)
     private String isbn;
 
     @Column(name = "number_of_pages")
-    private int numberOfPages;
+    private Integer numberOfPages;
 
     @Lob
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
@@ -63,23 +67,27 @@ public class Book {
     @Column(name = "sku", columnDefinition = "VARCHAR(50)")
     private String sku;
 
-    @Column(name = "average_rating", precision = 3, scale = 2) // decimal(3,2) means 3 total digits, 2 after decimal
-    private BigDecimal averageRating;
+    @Column(name = "average_rating", precision = 2, scale = 1) // decimal(3,1) means 3 total digits, 2 after decimal
+    private BigDecimal averageRating = BigDecimal.ZERO;
 
     @Column(name = "total_reviews")
-    private int totalReviews;
+    private Integer totalReviews;
 
     @Column(name = "date_added")
-    private Date dateAdded;
+    private LocalDate dateAdded;
 
-    @Column(name = "original_price", columnDefinition = "BIGINT")
-    private BigInteger originalPrice;
+    @Column(name = "original_price", nullable = false, precision = 18, scale = 0)
+    private BigDecimal originalPrice;
 
-    @Column(name = "selling_price", columnDefinition = "BIGINT")
-    private BigInteger sellingPrice;
+    @Column(name = "selling_price", precision = 18, scale = 0)
+    private BigDecimal sellingPrice;
 
     @Column(name = "stock_quantity")
-    private int stockQuantity;
+    private Integer stockQuantity;
+
+    // Kiểm tra xem comment bài viết có bị khóa không?
+    @Column(name = "is_active", nullable = false, columnDefinition = "BIT DEFAULT 0")
+    private boolean isActive = false;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(
@@ -88,4 +96,16 @@ public class Book {
             inverseJoinColumns = @JoinColumn(name = "category_id") // Foreign key for Category in join table
     )
     private Set<Category> categories = new HashSet<>();
+
+    @PrePersist
+    @PreUpdate
+    public void updateNormalizedTitle() {
+        if (this.title != null && !this.title.isEmpty()) {
+            String normalized = Normalizer.normalize(this.title, Normalizer.Form.NFD);
+            Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+            this.normalizedTitle = pattern.matcher(normalized).replaceAll("").toLowerCase();
+        } else {
+            this.normalizedTitle = null;
+        }
+    }
 }

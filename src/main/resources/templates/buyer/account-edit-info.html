@@ -9,7 +9,8 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap"
+          rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 
     <style>
@@ -35,7 +36,7 @@
         </nav>
 
         <div class="row">
-            <!-- Account Sidebar using fragment - using info as active tab since edit-info is part of account info -->            
+            <!-- Account Sidebar using fragment - using info as active tab since edit-info is part of account info -->
             <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('info')}"></div>
 
             <!-- Edit Account Content -->
@@ -45,16 +46,36 @@
                         <h4 class="mb-0">Edit Personal Information</h4>
                     </div>
                     <div class="card-body p-4">
-                        <form th:action="@{/buyer/update-info}" method="post" enctype="multipart/form-data"> <!-- Updated to support file uploads -->
+                        <form th:action="@{/buyer/update-info}" method="post" enctype="multipart/form-data">
+                            <!-- Updated to support file uploads -->
+                            <!-- Success message -->
+                            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show"
+                                 role="alert">
+                                <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                            </div>
+
+                            <!-- Error message -->
+                            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show"
+                                 role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                            </div>
                             <div class="row mb-4 align-items-center">
                                 <div class="col-md-3 text-center text-md-start mb-3 mb-md-0">
                                     <div class="position-relative d-inline-block">
                                         <img th:src="${user != null and user.profilePicUrl != null ? user.profilePicUrl : '/images/avatar-placeholder.png'}"
-                                             alt="User Avatar" class="rounded-circle border" width="100" height="100" id="avatarPreviewEdit">
-                                        <label for="avatarUploadEdit" class="avatar-edit-btn position-absolute bottom-0 end-0 bg-white rounded-circle p-1" style="cursor: pointer;">
+                                             alt="User Avatar" class="rounded-circle border" width="100" height="100"
+                                             id="avatarPreviewEdit">
+                                        <label for="avatarUploadEdit"
+                                               class="avatar-edit-btn position-absolute bottom-0 end-0 bg-white rounded-circle p-1"
+                                               style="cursor: pointer;">
                                             <i class="fas fa-pencil-alt text-primary"></i>
                                         </label>
-                                        <input type="file" id="avatarUploadEdit" name="profilePictureFile" class="d-none" accept="image/*" onchange="previewImage(this)">
+                                        <input type="file" id="avatarUploadEdit" name="profilePictureFile"
+                                               class="d-none" accept="image/*" onchange="previewImage(this)">
                                     </div>
                                     <script>
                                         function previewImage(input) {
@@ -71,12 +92,15 @@
                                 <div class="col-md-9">
                                     <div class="mb-3">
                                         <label for="editFullName" class="form-label">Full Name</label>
-                                        <input type="text" class="form-control" id="editFullName" name="fullName" th:value="${user != null ? user.fullName : 'Vũ Khánh Huyền'}" required>
+                                        <input type="text" class="form-control" id="editFullName" name="fullName"
+                                               th:value="${user != null ? user.fullName : 'Vũ Khánh Huyền'}" required>
                                         <div class="invalid-feedback">Full name is required</div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="editPhone" class="form-label">Phone Number</label>
-                                        <input type="text" class="form-control" id="editPhone" name="phone" th:value="${user != null ? user.phone : ''}" placeholder="Enter your phone number">
+                                        <input type="text" class="form-control" id="editPhone" name="phone"
+                                               th:value="${user != null ? user.phone : ''}"
+                                               placeholder="Enter your phone number">
                                         <div class="invalid-feedback">Please enter a valid Vietnamese phone number</div>
                                     </div>
                                 </div>
@@ -87,7 +111,7 @@
                                     <label for="editDateOfBirth" class="form-label">Date of Birth</label>
                                     <div class="input-group">
                                         <input type="date" class="form-control" id="editDateOfBirth" name="dateOfBirth"
-                                            th:value="${user != null and user.dateOfBirth != null ? #dates.format(user.dateOfBirth, 'yyyy-MM-dd') : ''}">
+                                               th:value="${user != null and user.dateOfBirth != null ? #temporals.format(user.dateOfBirth, 'yyyy-MM-dd') : ''}">
                                     </div>
                                     <div class="invalid-feedback">Please enter a valid date of birth</div>
                                 </div>
@@ -95,15 +119,21 @@
                                     <label class="form-label">Gender</label>
                                     <div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="gender" id="editGenderMale" value="0" th:checked="${user != null and user.gender == 0}">
+                                            <input class="form-check-input" type="radio" name="gender"
+                                                   id="editGenderMale" value="0"
+                                                   th:checked="${user != null and user.gender == 0}">
                                             <label class="form-check-label" for="editGenderMale">Male</label>
                                         </div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="gender" id="editGenderFemale" value="1" th:checked="${user != null and user.gender == 1}">
+                                            <input class="form-check-input" type="radio" name="gender"
+                                                   id="editGenderFemale" value="1"
+                                                   th:checked="${user != null and user.gender == 1}">
                                             <label class="form-check-label" for="editGenderFemale">Female</label>
                                         </div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="gender" id="editGenderOther" value="2" th:checked="${user != null and user.gender == 2}">
+                                            <input class="form-check-input" type="radio" name="gender"
+                                                   id="editGenderOther" value="2"
+                                                   th:checked="${user != null and user.gender == 2}">
                                             <label class="form-check-label" for="editGenderOther">Other</label>
                                         </div>
                                     </div>

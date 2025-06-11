@@ -15,9 +15,12 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class BookService {
@@ -31,6 +34,16 @@ public class BookService {
         this.bookRepository = bookRepository;
         // We don't need to store these repositories as fields since they're only used in Criteria API queries
         // But we still need them in the constructor for dependency injection
+    }
+
+    // Utility method to remove diacritical marks (accents) from a string
+    private String removeDiacriticalMarks(String input) {
+        if (input == null) {
+            return null;
+        }
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
+        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        return pattern.matcher(normalized).replaceAll("").toLowerCase();
     }
 
     // Lấy tất cả sách
@@ -61,11 +74,21 @@ public class BookService {
         return bookRepository.findDiscountedBooks(pageable);
     }
 
-    // Tìm kiếm sách theo tiêu đề (phân trang)
+    // Tìm kiếm sách theo tiêu đề (phân trang) - hỗ trợ tìm kiếm không dấu
     public Page<Book> searchBooksByTitle(String title, int page, int size, String sortField, String sortDirection) {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
         Pageable pageable = PageRequest.of(page, size, sort);
-        return bookRepository.findByTitleContainingIgnoreCase(title, pageable);
+        
+        // If title is empty, return all books
+        if (title == null || title.trim().isEmpty()) {
+            return bookRepository.findAll(pageable);
+        }
+        
+        // Chuẩn hóa chuỗi tìm kiếm - bỏ dấu và chuyển thành chữ thường
+        String normalizedTitle = removeDiacriticalMarks(title);
+        
+        // Sử dụng trường normalizedTitle để tìm kiếm hiệu quả
+        return bookRepository.findByNormalizedTitleContaining(normalizedTitle, pageable);
     }
 
     // Tìm kiếm sách theo danh mục (phân trang)
@@ -90,6 +113,19 @@ public class BookService {
             String sortField,
             String sortDirection) {
         
+        // If we only have a search query with no other filters, use the optimized title search
+        if (searchQuery != null && !searchQuery.trim().isEmpty() && 
+            (categoryIds == null || categoryIds.isEmpty()) && 
+            (publisherIds == null || publisherIds.isEmpty()) && 
+            minPrice == null && maxPrice == null && minRating == null) {
+            
+            // Sử dụng phương thức tìm kiếm tối ưu nếu chỉ có điều kiện tìm kiếm theo tiêu đề
+            String normalizedQuery = removeDiacriticalMarks(searchQuery);
+            Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
+            Pageable pageable = PageRequest.of(page, size, sort);
+            return bookRepository.findByNormalizedTitleContaining(normalizedQuery, pageable);
+        }
+        
         // Create a criteria builder
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Book> query = cb.createQuery(Book.class);
@@ -100,7 +136,8 @@ public class BookService {
         
         // Add title search predicate if search query is provided
         if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-            predicates.add(cb.like(cb.lower(book.get("title")), "%" + searchQuery.toLowerCase() + "%"));
+            String normalizedQuery = removeDiacriticalMarks(searchQuery);
+            predicates.add(cb.like(book.get("normalizedTitle"), "%" + normalizedQuery + "%"));
         }
         
         // Add category filters if category IDs are provided
@@ -152,7 +189,8 @@ public class BookService {
             List<Predicate> countPredicates = new ArrayList<>();
             
             if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-                countPredicates.add(cb.like(cb.lower(countRoot.get("title")), "%" + searchQuery.toLowerCase() + "%"));
+                String normalizedQuery = removeDiacriticalMarks(searchQuery);
+                countPredicates.add(cb.like(countRoot.get("normalizedTitle"), "%" + normalizedQuery + "%"));
             }
             
             if (categoryIds != null && !categoryIds.isEmpty()) {

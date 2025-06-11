@@ -5,8 +5,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigInteger;
-
 @Getter
 @Setter
 @Entity
@@ -16,7 +14,7 @@ public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "cart_item_id")
-    private int cartItemId;
+    private Integer cartItemId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id", nullable = false)
@@ -27,8 +25,5 @@ public class CartItem {
     private Book book;
 
     @Column(name = "quantity", nullable = false)
-    private int quantity;
-
-    @Column(name = "unit_price", nullable = false, columnDefinition = "BIGINT")
-    private BigInteger unitPrice;
+    private Integer quantity;
 }

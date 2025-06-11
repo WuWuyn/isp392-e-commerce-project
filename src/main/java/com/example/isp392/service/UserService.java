@@ -21,9 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -106,8 +106,8 @@ public class UserService implements UserDetailsService {
         user.setPhone(registrationDTO.getPhoneNumber());
         
         // Parse and set date of birth
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        user.setDateOfBirth(dateFormat.parse(registrationDTO.getDateOfBirth()));
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        user.setDateOfBirth(LocalDate.parse(registrationDTO.getDateOfBirth(), dateFormatter));
         
         // Set gender (0 - Male, 1 - Female, 2 - Other)
         String genderStr = registrationDTO.getGender().toLowerCase();
@@ -137,9 +137,6 @@ public class UserService implements UserDetailsService {
         return savedUser;
     }
 
-
-
-
     /**
      * Find user by email
      * @param email the email to search for
@@ -156,6 +153,15 @@ public class UserService implements UserDetailsService {
      */
     public User findByEmailDirectly(String email) {
         return userRepository.findByEmail(email).orElse(null);
+    }
+
+    /**
+     * Retrieve a User object by username (email).
+     * @param username the email of the user.
+     * @return User object if found, null otherwise.
+     */
+    public User getUserByUsername(String username) {
+        return userRepository.findByEmail(username).orElse(null);
     }
 
     /**
@@ -206,7 +212,7 @@ public class UserService implements UserDetailsService {
      * @throws RuntimeException if user not found
      */
     @Transactional
-    public User updateUserInfo(String email, String fullName, String phone, int gender, Date dateOfBirth) {
+    public User updateUserInfo(String email, String fullName, String phone, int gender, LocalDate dateOfBirth) {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
@@ -235,7 +241,7 @@ public class UserService implements UserDetailsService {
         
         // Ensure all other required fields are not null
         if (user.getDateOfBirth() == null) {
-            user.setDateOfBirth(new Date());
+            user.setDateOfBirth(LocalDate.now());
         }
         
         if (user.getFullName() == null) {
@@ -277,7 +283,7 @@ public class UserService implements UserDetailsService {
      * @throws RuntimeException if user not found
      */
     @Transactional
-    public User updateUserInfo(String email, String fullName, String phone, int gender, Date dateOfBirth, String profilePicUrl) {
+    public User updateUserInfo(String email, String fullName, String phone, int gender, LocalDate dateOfBirth, String profilePicUrl) {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));

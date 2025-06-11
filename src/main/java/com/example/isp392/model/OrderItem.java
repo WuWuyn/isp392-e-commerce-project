@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigInteger;
+import java.math.BigDecimal;
 
 @Entity
 @Getter
@@ -15,7 +15,7 @@ public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_item_id")
-    private int orderItemId;
+    private Integer orderItemId;
 
     // Many OrderItems belong to One Order
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,18 +28,18 @@ public class OrderItem {
     private Book book;
 
     @Column(name = "quantity", nullable = false)
-    private int quantity;
+    private Integer quantity;
 
-    @Column(name = "unit_price", nullable = false, columnDefinition = "BIGINT")
+    @Column(name = "unit_price", nullable = false, precision = 18, scale = 0)
     // Price of a single unit of the book AT THE TIME OF ORDER.
     // This is important because book prices can change.
-    private BigInteger unitPrice;
+    private BigDecimal unitPrice;
 
-    @Column(name = "subtotal", nullable = false, columnDefinition = "BIGINT")
+    @Column(name = "subtotal", nullable = false, precision = 18, scale = 0)
     // Calculated as quantity * unit_price. Can be calculated or stored.
     // Storing it can simplify some queries but introduces redundancy.
     // For this entity, we'll assume it's calculated and set before saving.
-    private BigInteger subtotal;
+    private BigDecimal subtotal;
 
     // Trong OrderItem.java
     @OneToOne(mappedBy = "orderItem", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

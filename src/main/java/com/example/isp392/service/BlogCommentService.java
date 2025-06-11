@@ -13,8 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,7 +75,7 @@ public class BlogCommentService {
             comment.setBlogPost(blog);
             comment.setUser(user);
             comment.setContent(content);
-            comment.setCreatedDate(Timestamp.from(Instant.now()));
+            comment.setCreatedDate(LocalDateTime.now());
             
             return blogCommentRepository.save(comment);
         }

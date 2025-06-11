@@ -16,8 +16,8 @@ import com.example.isp392.model.UserRole;
 import com.example.isp392.repository.RoleRepository;
 import com.example.isp392.repository.UserRoleRepository;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -118,7 +118,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             
             // Set default values required by the database
             newUser.setPhone("Not provided"); // Default phone
-            newUser.setDateOfBirth(new Date()); // Default date of birth
+            newUser.setDateOfBirth(LocalDate.now()); // Default date of birth
             newUser.setGender(2); // Default gender as Other
             
             // For OAuth2 users, we don't have a password, so we'll generate a random one

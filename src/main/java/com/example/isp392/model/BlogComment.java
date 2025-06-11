@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "blog_comments")
@@ -15,7 +15,7 @@ public class BlogComment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "comment_id")
-    private int commentId;
+    private Integer commentId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "blog_id", nullable = false)
@@ -30,6 +30,9 @@ public class BlogComment {
     private String content;
 
     @Column(name = "created_date")
-    private Timestamp createdDate;
+    private LocalDateTime createdDate;
 
+    // Kiểm tra xem comment bài viết có bị khóa không?
+    @Column(name = "is_locked", nullable = false, columnDefinition = "BIT DEFAULT 0")
+    private boolean isLocked = false;
 }
