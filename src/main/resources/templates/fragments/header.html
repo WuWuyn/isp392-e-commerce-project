@@ -90,15 +90,7 @@
                     <a th:href="@{/buyer/login}" class="nav-link" sec:authorize="!isAuthenticated()"><i class="fas fa-user"></i> <span class="d-none d-lg-inline">Login</span></a>
                     
                     <!-- Shopping Cart - Link to cart page or login if not authenticated -->
-                    <a th:href="@{/buyer/cart}" class="nav-link position-relative" sec:authorize="isAuthenticated()">
-                        <i class="fas fa-shopping-cart"></i> <span class="d-none d-lg-inline">Cart</span>
-                        <!-- Cart count badge - Only show when authenticated and cart has items -->
-                        <span id="headerCartCountBadge" th:if="${cart != null && cart.items != null && !cart.items.isEmpty()}" 
-                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-count" 
-                              style="font-size: 0.65rem; transform: translate(-50%, -30%);" 
-                              th:text="${#aggregates.sum(cart.items.![quantity])}">0</span>
-                    </a>
-                    <a th:href="@{/buyer/login}" class="nav-link position-relative" sec:authorize="!isAuthenticated()">
+                    <a th:href="${#authorization.expression('isAuthenticated()') ? '/buyer/cart' : '/buyer/login'}" class="nav-link">
                         <i class="fas fa-shopping-cart"></i> <span class="d-none d-lg-inline">Cart</span>
                     </a>
                 </div>

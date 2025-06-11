@@ -32,6 +32,10 @@ public class BookService {
         // We don't need to store these repositories as fields since they're only used in Criteria API queries
         // But we still need them in the constructor for dependency injection
     }
+    public Optional<Book> getBookById(Integer bookId) {
+        // SỬA LẠI ĐỂ GỌI PHƯƠNG THỨC MỚI
+        return bookRepository.findByIdWithDetails(bookId);
+    }
 
     // Lấy tất cả sách
     public List<Book> getAllBooks() {
@@ -199,5 +203,13 @@ public class BookService {
         
         // Return a Page implementation
         return new PageImpl<>(books, pageable, total);
+    }
+    public Book save(Book book) {
+        return bookRepository.save(book);
+    }
+
+
+    public void deleteById(int id) {
+        bookRepository.deleteById(id);
     }
 }
