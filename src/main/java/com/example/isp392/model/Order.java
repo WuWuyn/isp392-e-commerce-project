@@ -105,24 +105,3 @@ public class Order {
     private String cancellationReason;
 }
 
-// Enum for Order Status
-enum OrderStatus {
-    PENDING,        // Order placed, awaiting payment or processing
-    PROCESSING,     // Order is being prepared
-    SHIPPED,        // Order has been shipped
-    DELIVERED,      // Order has been delivered
-    CANCELLED,      // Order was cancelled
-}
-
-// Enum for Payment Status
-enum PaymentStatus {
-    PENDING,        // Payment initiated but not yet confirmed
-    PAID,           // Payment successful
-    FAILED,         // Payment attempt failed
-    REFUNDED,       // Payment was refunded
-}
-
-enum PaymentMethod {
-    COD,
-    PayPal
-}

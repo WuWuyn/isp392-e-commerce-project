@@ -37,7 +37,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-3"><p class="mb-1 detail-label">Author(s)</p><p class="detail-value" th:text="${book.authors}"></p></div>
                             <div class="col-md-6 mb-3"><p class="mb-1 detail-label">Publisher</p><p class="detail-value" th:text="${book.publisher?.publisherName}"></p></div>
-                            <div class="col-md-6 mb-3"><p class="mb-1 detail-label">Publication Date</p><p class="detail-value" th:text="${book.publicationDate != null ? #dates.format(book.publicationDate, 'dd-MM-yyyy') : 'N/A'}"></p></div>
+                            <div class="col-md-6 mb-3"><p class="mb-1 detail-label">Publication Date</p><p class="detail-value" th:text="${book.publicationDate != null ? #temporals.format(book.publicationDate, 'dd-MM-yyyy') : 'N/A'}"></p></div>
                             <div class="col-md-6 mb-3"><p class="mb-1 detail-label">ISBN</p><p class="detail-value" th:text="${book.isbn}"></p></div>
                             <div class="col-md-6 mb-3"><p class="mb-1 detail-label">Selling Price</p><p class="detail-value fs-5 text-danger fw-bold" th:text="${#numbers.formatDecimal(book.sellingPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p></div>
                             <div class="col-md-6 mb-3"><p class="mb-1 detail-label">Stock Quantity</p><p class="detail-value fs-5" th:text="${book.stockQuantity}"></p></div>

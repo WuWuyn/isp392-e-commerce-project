@@ -53,7 +53,7 @@ public class Shop {
     @Column(name = "contact_phone", nullable = false, length = 20)
     private String contactPhone;
 
-    @Column(name  = "tax_code", nullable = false, length = 15)
+    @Column(name = "tax_code", nullable = false, length = 15)
     private String taxCode;
 
     @Column(name = "identification_file_url", nullable = false, columnDefinition = "NVARCHAR(MAX)")

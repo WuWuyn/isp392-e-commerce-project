@@ -29,7 +29,7 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
                 <form th:action="@{/admin/products}" method="get" class="d-flex my-2 my-md-0 me-auto">
-                    <input class="form-control form-control-sm" type="search" name="keyword" placeholder="Search by Title/Category..." th:value="${keyword}" aria-label="Search" style="min-width: 300px;">
+                    <input class="form-control form-control-sm" type="search" name="keyword" placeholder="Search by Title" th:value="${keyword}" aria-label="Search" style="min-width: 300px;">
                     <button class="btn btn-sm btn-primary ms-2" type="submit">Search</button>
                     <a th:href="@{/admin/products}" class="btn btn-sm btn-secondary ms-2">Reset</a>
                 </form>

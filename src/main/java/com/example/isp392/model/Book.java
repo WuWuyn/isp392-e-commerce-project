@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 
+
 @Getter
 @Setter
 @Entity
@@ -91,4 +92,6 @@ public class Book {
             inverseJoinColumns = @JoinColumn(name = "category_id") // Foreign key for Category in join table
     )
     private Set<Category> categories = new HashSet<>();
+
+
 }

@@ -97,7 +97,8 @@
                                 <div>
                                     <p class="mb-0 fw-medium">Request Account Deletion</p>
                                 </div>
-                                <button type="button" class="btn btn-outline-danger btn-sm">Request</button>
+                                <!-- Đảm bảo th:href trỏ đúng đến mapping mới trong controller -->
+                                <a th:href="@{/buyer/account-deletion}" class="btn btn-outline-danger btn-sm">Request</a>
                             </div>
                             <hr class="my-4">
 
@@ -117,6 +118,7 @@
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </section>
         </div>

@@ -32,7 +32,6 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <!-- Giả sử bạn truyền một list các 'shops' đang chờ duyệt từ controller -->
                         <tr th:each="shop : ${pendingShops}">
                             <td th:text="${shop.shopName}">The Book Nook</td>
                             <td>
@@ -42,6 +41,10 @@
                             <td th:text="${#dates.format(shop.registrationDate, 'dd-MM-yyyy HH:mm')}"></td>
                             <td class="text-muted" style="max-width: 300px;" th:text="${shop.description}">A cozy corner for book lovers.</td>
                             <td>
+                                <a th:href="@{/admin/shops/detail/{id}(id=${shop.shopId})}" class="btn btn-sm btn-info me-1" title="View Details">
+                                    <i class="fas fa-search-plus"></i>
+                                </a>
+
                                 <form th:action="@{/admin/seller-approvals/approve/{id}(id=${shop.shopId})}" method="post" class="d-inline">
                                     <button type="submit" class="btn btn-sm btn-success me-1">Approve</button>
                                 </form>
@@ -49,7 +52,6 @@
                                     Reject
                                 </button>
 
-                                <!-- Reject Modal -->
                                 <div class="modal fade" th:id="'rejectModal-' + ${shop.shopId}" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">

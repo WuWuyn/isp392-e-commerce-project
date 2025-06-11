@@ -1,9 +1,11 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.model.Book;
+import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
+import com.example.isp392.repository.ShopRepository;
 import com.example.isp392.service.AdminService;
 import com.example.isp392.service.BookService;
 import com.example.isp392.service.UserService;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -26,9 +29,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.Optional;
 
+/**
+ * Controller for handling admin-related requests
+ * This controller manages the admin login page and admin panel pages
+ */
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
@@ -38,35 +45,80 @@ public class AdminController {
     private final BookService bookService;
     private final CategoryRepository categoryRepository;
     private final PublisherRepository publisherRepository;
+    private final ShopRepository shopRepository;
 
-    public AdminController(UserService userService, AdminService adminService, BookService bookService, CategoryRepository categoryRepository, PublisherRepository publisherRepository) {
+    public AdminController(UserService userService, AdminService adminService, BookService bookService,
+                           CategoryRepository categoryRepository, PublisherRepository publisherRepository,
+                           ShopRepository shopRepository) { // <<< THÊM VÀO CONSTRUCTOR
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
         this.categoryRepository = categoryRepository;
         this.publisherRepository = publisherRepository;
+        this.shopRepository = shopRepository; // <<< GÁN DEPENDENCY
     }
 
+    /**
+     * Display admin login page
+     * This page is accessible to everyone, but only admin users can successfully login
+     *
+     * @return the admin login view
+     */
     @GetMapping("/login")
-    public String showAdminLoginPage() {
+    public String showAdminLoginPage(Model model) {
+        // Check if user is already authenticated
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser") && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
-            return "redirect:/admin/dashboard";
+            // If user is authenticated and has ADMIN role, redirect to product management
+            return "redirect:/admin/products";
         }
+
+        // No active menu for login page
+        model.addAttribute("activeMenu", "");
+
         return "admin/admin-login";
     }
 
-    @GetMapping({"", "/"})
-    public String root() {
-        return "redirect:/admin/dashboard";
-    }
+    /**
+     * Display product management page
+     * This page is only accessible to authenticated users with ADMIN role
+     *
+     * @param model Model to add attributes
+     * @return the product management view
+     */
 
+
+    /**
+     * Display dashboard page
+     * This page is only accessible to authenticated users with ADMIN role
+     *
+     * @param model Model to add attributes
+     * @return the dashboard view
+     */
     @GetMapping("/dashboard")
     public String showDashboardPage(Model model) {
-        adminService.addAdminInfoToModel(model);
+        // Use AdminService to get the current admin user
+        Optional<User> adminUserOpt = adminService.getCurrentAdminUser();
+
+        if (adminUserOpt.isPresent()) {
+            User adminUser = adminUserOpt.get();
+            model.addAttribute("user", adminUser);
+            model.addAttribute("roles", userService.getUserRoles(adminUser));
+            String firstName = adminService.extractFirstName(adminUser.getFullName());
+            model.addAttribute("firstName", firstName);
+        }
+
+        // Add active menu information for sidebar highlighting
         model.addAttribute("activeMenu", "dashboard");
+
         return "admin/dashboard";
     }
+
+    /**
+     * Default admin page - redirects to product management
+     *
+     * @return redirect to product management page
+     */
 
     @GetMapping("/users")
     public String showUserManagementPage(
@@ -102,8 +154,6 @@ public class AdminController {
             return "redirect:/admin/users?error=UserNotFound";
         }
     }
-
-
     // === VÙNG QUẢN LÝ SẢN PHẨM (PRODUCTS) -
 
     @GetMapping("/products")
@@ -129,7 +179,6 @@ public class AdminController {
 
         return "admin/product/product-management";
     }
-
     @GetMapping("/products/add")
     public String showAddProductForm(Model model) {
         adminService.addAdminInfoToModel(model);
@@ -146,8 +195,13 @@ public class AdminController {
         if (result.hasErrors()) {
             return "admin/product/add-product";
         }
-        book.setDateAdded(new Date());
+
+        Shop defaultShop = shopRepository.findById(1)
+                .orElseThrow(() -> new RuntimeException("Error: Default Shop with ID 1 not found in the database!"));
+        book.setShop(defaultShop);
+        book.setDateAdded(LocalDate.now());
         bookService.save(book);
+
         redirectAttributes.addFlashAttribute("successMessage", "Book added successfully!");
         return "redirect:/admin/products";
     }
@@ -256,4 +310,71 @@ public class AdminController {
         return "redirect:/admin/products";
     }
 
+    @GetMapping("/users/edit/{id}")
+    public String showEditUserForm(@PathVariable("id") Integer userId, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            User user = userService.findUserById(userId);
+            adminService.addAdminInfoToModel(model);
+            model.addAttribute("user", user);
+            model.addAttribute("activeMenu", "user");
+            return "admin/user/edit-user"; // Trả về trang edit-user.html
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "User not found!");
+            return "redirect:/admin/users";
+        }
+    }
+
+    // PHƯƠNG THỨC 2: XỬ LÝ VIỆC CẬP NHẬT
+    @PostMapping("/users/update/{id}")
+    public String updateUserByAdmin(@PathVariable("id") Integer userId,
+                                    @RequestParam("isActive") boolean isActive,
+                                    Authentication authentication, // Thêm tham số này
+                                    RedirectAttributes redirectAttributes) {
+
+        // === THÊM LỚP BẢO VỆ ĐỂ NGĂN ADMIN TỰ VÔ HIỆU HÓA ===
+        UserDetails loggedInUser = (UserDetails) authentication.getPrincipal();
+        String loggedInUsername = loggedInUser.getUsername();
+
+        User userToUpdate = userService.findUserById(userId);
+
+        // Nếu người dùng đang cố gắng tự vô hiệu hóa chính mình
+        if (userToUpdate.getEmail().equals(loggedInUsername) && !isActive) {
+            redirectAttributes.addFlashAttribute("errorMessage", "You cannot deactivate your own account.");
+            return "redirect:/admin/users";
+        }
+
+        try {
+            userService.updateUserActivationStatus(userId, isActive);
+            redirectAttributes.addFlashAttribute("successMessage", "User status has been updated successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating user status: " + e.getMessage());
+        }
+        return "redirect:/admin/users";
+    }
+
+    @PostMapping("/users/delete/{id}")
+    public String deleteUser(@PathVariable("id") Integer userId, Authentication authentication, RedirectAttributes redirectAttributes) {
+
+        // Lấy thông tin admin đang đăng nhập
+        UserDetails loggedInUser = (UserDetails) authentication.getPrincipal();
+        String loggedInUsername = loggedInUser.getUsername();
+
+        // Lấy thông tin user sắp bị xóa
+        User userToDelete = userService.findUserById(userId);
+
+        // KIỂM TRA NGĂN ADMIN TỰ XÓA
+        if (userToDelete.getEmail().equals(loggedInUsername)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: You cannot delete your own admin account.");
+            return "redirect:/admin/users";
+        }
+
+        try {
+            userService.deleteUserById(userId);
+            redirectAttributes.addFlashAttribute("successMessage", "User '" + userToDelete.getFullName() + "' has been permanently deleted.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting user: " + e.getMessage());
+        }
+
+        return "redirect:/admin/users";
+    }
 }

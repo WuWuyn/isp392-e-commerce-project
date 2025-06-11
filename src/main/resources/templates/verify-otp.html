@@ -103,7 +103,7 @@
         .back-to-login-link a:hover {
             text-decoration: underline;
         }
-
+        
         .resend-otp {
             margin-top: 1rem;
             font-size: 0.9rem;
@@ -148,8 +148,8 @@
     <form th:action="@{/password-reset/verify-otp}" method="post">
         <div class="mb-3">
             <label for="otp" class="form-label visually-hidden">OTP Code</label>
-            <input type="text" class="form-control form-control-auth" id="otp" name="otp"
-                   placeholder="Enter 6-digit code" required autofocus
+            <input type="text" class="form-control form-control-auth" id="otp" name="otp" 
+                   placeholder="Enter 6-digit code" required autofocus 
                    pattern="[0-9]{6}" maxlength="6" minlength="6"
                    inputmode="numeric">
             <div class="invalid-feedback">Please enter a valid 6-digit code</div>

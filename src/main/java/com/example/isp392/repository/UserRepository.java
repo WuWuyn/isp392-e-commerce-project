@@ -17,7 +17,6 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 
     boolean existsByEmail(String email);
 
-    // <<< BỔ SUNG: Phương thức này để giải quyết Lazy Loading cho trang user-details
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.addresses WHERE u.userId = :userId")
     Optional<User> findByIdWithAddresses(@Param("userId") Integer userId);
 }

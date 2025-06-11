@@ -22,17 +22,17 @@ public class AdminService {
     /**
      * Constructor with explicit dependency injection
      * Using constructor injection instead of @Autowired for better clarity and testability
-     * 
+     *
      * @param userRepository repository for user data access
      */
     public AdminService(UserRepository userRepository, UserService userService) {
         this.userRepository = userRepository;
         this.userService = userService;
     }
-    
+
     /**
      * Get the currently authenticated admin user
-     * 
+     *
      * @return Optional containing the admin user if found and authenticated
      */
     @Transactional(readOnly = true)
@@ -42,14 +42,14 @@ public class AdminService {
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return Optional.empty();
         }
-        
+
         // Find the user by email
         return userRepository.findByEmail(auth.getName());
     }
-    
+
     /**
      * Extract the first name from a full name
-     * 
+     *
      * @param fullName the full name to extract from
      * @return the first name (first word) or the full name if no spaces
      */
@@ -57,7 +57,7 @@ public class AdminService {
         if (fullName == null || fullName.isEmpty()) {
             return "";
         }
-        
+
         // Split by space and return the first part
         String[] parts = fullName.trim().split("\\s+");
         return parts.length > 0 ? parts[0] : fullName;
