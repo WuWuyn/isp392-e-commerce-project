@@ -28,10 +28,12 @@ public class DatabaseInitializer {
             int updatedCount = 0;
             
             for (Book book : books) {
-                // Cập nhật lại tất cả các sách để đảm bảo xử lý khoảng trắng đúng
-                book.updateNormalizedTitle();
-                bookRepository.save(book);
-                updatedCount++;
+                if (book.getNormalizedTitle() == null || book.getNormalizedTitle().isEmpty()) {
+                    // Gọi phương thức để cập nhật normalizedTitle
+                    book.updateNormalizedTitle();
+                    bookRepository.save(book);
+                    updatedCount++;
+                }
             }
             
             logger.info("Đã cập nhật normalizedTitle cho {} cuốn sách.", updatedCount);

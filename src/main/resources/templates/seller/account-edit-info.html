@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Account Information - ReadHub Seller</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/seller-style.css}">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8F5F0;
+            color: #333;
+        }
+        .navbar-brand {
+            font-family: 'Lora', serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: #2C3E50;
+        }
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2C3E50;
+            border-bottom: 2px solid #2C3E50;
+            padding-bottom: 0.5rem;
+        }
+        .account-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .profile-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .default-profile {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #E9ECEF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #6c757d;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-primary:hover {
+            background-color: #1e2b37;
+            border-color: #1e2b37;
+        }
+        .btn-outline-primary {
+            color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-outline-primary:hover {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .account-sidebar {
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+        .account-sidebar .list-group-item {
+            border: none;
+            border-left: 4px solid transparent;
+            font-weight: 600;
+        }
+        .account-sidebar .list-group-item.active {
+            background-color: #f8f9fa;
+            color: #2C3E50;
+            border-left: 4px solid #2C3E50;
+        }
+        .account-sidebar .list-group-item i {
+            margin-right: 10px;
+            color: #6c757d;
+        }
+        .account-sidebar .list-group-item.active i {
+            color: #2C3E50;
+        }
+        .stat-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #2C3E50;
+        }
+        .stat-card h4 {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+        .stat-card p {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0;
+            color: #2C3E50;
+        }
+        .stat-card i {
+            font-size: 2.5rem;
+            color: #e9ecef;
+            position: absolute;
+            right: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Seller Topbar -->
+<div th:replace="fragments/seller-topbar :: seller-topbar"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <nav aria-label="breadcrumb mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/seller/dashboard}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/seller/account}">Account Information</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit Personal Information</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Account Sidebar using fragment - using info as active tab since edit-info is part of account info -->
+            <div class="col-lg-3 mb-4">
+                <div th:replace="fragments/seller-account-sidebar :: seller-sidebar"></div>
+            </div>
+
+            <!-- Edit Account Content -->
+            <section class="col-lg-9">
+                <div class="card">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="mb-0">Edit Personal Information</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Success message -->
+                        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show"
+                             role="alert">
+                            <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+
+                        <!-- Error message -->
+                        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show"
+                             role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+
+                        <form th:action="@{/seller/update-info}" method="post" enctype="multipart/form-data"
+                              id="editProfileForm">
+                            <div class="row mb-4 align-items-center">
+                                <div class="col-md-3 text-center text-md-start mb-3 mb-md-0">
+                                    <div class="position-relative d-inline-block">
+                                        <img th:src="${user != null and user.profilePicUrl != null ? user.profilePicUrl : '/images/avatar-placeholder.png'}"
+                                             alt="User Avatar" class="rounded-circle border" width="100" height="100"
+                                             id="avatarPreviewEdit">
+                                        <label for="avatarUploadEdit"
+                                               class="avatar-edit-btn position-absolute bottom-0 end-0 bg-white rounded-circle p-1">
+                                            <i class="fas fa-pencil-alt text-primary"></i>
+                                        </label>
+                                        <input type="file" id="avatarUploadEdit" name="profilePictureFile"
+                                               class="d-none" accept="image/*" onchange="previewImage(this)">
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="mb-3">
+                                        <label for="editFullName" class="form-label">Full Name <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="editFullName" name="fullName"
+                                               th:value="${user != null ? user.fullName : ''}" required>
+                                        <div class="invalid-feedback">Full name is required</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="editPhone" class="form-label">Phone Number <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="editPhone" name="phone"
+                                               th:value="${user != null ? user.phone : ''}"
+                                               placeholder="Enter your phone number" required>
+                                        <div class="invalid-feedback">Please enter a valid Vietnamese phone number</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="editDateOfBirth" class="form-label">Date of Birth</label>
+                                    <div class="input-group">
+                                        <input type="date" class="form-control" id="editDateOfBirth" name="dateOfBirth"
+                                               th:value="${user != null and user.dateOfBirth != null ? #temporals.format(user.dateOfBirth, 'yyyy-MM-dd') : ''}">
+                                    </div>
+                                    <div class="invalid-feedback">Please enter a valid date of birth</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Gender</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gender"
+                                                   id="editGenderMale" value="0"
+                                                   th:checked="${user != null and user.gender == 0}">
+                                            <label class="form-check-label" for="editGenderMale">Male</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gender"
+                                                   id="editGenderFemale" value="1"
+                                                   th:checked="${user != null and user.gender == 1}">
+                                            <label class="form-check-label" for="editGenderFemale">Female</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gender"
+                                                   id="editGenderOther" value="2"
+                                                   th:checked="${user != null and user.gender == 2}">
+                                            <label class="form-check-label" for="editGenderOther">Other</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Email field (readonly) -->
+                            <div class="mb-3">
+                                <label for="editEmail" class="form-label">Email Address</label>
+                                <input type="email" class="form-control bg-light" id="editEmail"
+                                       th:value="${user != null ? user.email : ''}" readonly>
+                                <small class="form-text text-muted">Your email address cannot be changed directly.
+                                    Please contact support for assistance.</small>
+                            </div>
+
+                            <div class="d-flex mt-4">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                <a th:href="@{/seller/account-info}" class="btn btn-secondary ms-2">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/seller.js}"></script>
+<!-- Account edit validation - reusing existing file -->
+<script th:src="@{/js/account-edit-validation.js}"></script>
+<!-- Preview image script -->
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('avatarPreviewEdit').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+</body>
+</html>

@@ -133,7 +133,7 @@
         <div class="row">
             <!-- Include Sidebar -->
             <div class="col-lg-3 mb-4">
-                <div th:replace="fragments/seller-sidebar :: seller-sidebar"></div>
+                <div th:replace="fragments/seller-account-sidebar :: seller-sidebar"></div>
             </div>
             
             <div class="col-lg-9">
@@ -179,9 +179,6 @@
                     <div class="mt-3">
                         <a th:href="@{/seller/edit-info}" class="btn btn-outline-primary me-2">
                             <i class="fas fa-edit me-2"></i> Edit Information
-                        </a>
-                        <a th:href="@{/seller/change-password}" class="btn btn-outline-primary">
-                            <i class="fas fa-key me-2"></i> Change Password
                         </a>
                     </div>
                 </div>

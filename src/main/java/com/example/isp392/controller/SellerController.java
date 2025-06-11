@@ -3,6 +3,7 @@ package com.example.isp392.controller;
 import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.User;
 import com.example.isp392.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -11,8 +12,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
+import java.io.File;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,18 +42,6 @@ public class SellerController {
         return "seller/seller-signup";
     }
 
-
-    @GetMapping("/dashboard")
-    public String showDashboard(Model model, Authentication authentication) {
-        User user = getCurrentUser(authentication);
-        if (user == null) {
-            return "redirect:/seller/login";
-        }
-        model.addAttribute("user", user);
-        model.addAttribute("roles", userService.getUserRoles(user));
-        return "seller/dashboard";
-    }
-
 //    @PostMapping("/signup")
 //    public String registerSeller(
 //            @Valid @ModelAttribute("userRegistrationDTO") UserRegistrationDTO userRegistrationDTO,
@@ -69,55 +61,159 @@ public class SellerController {
 //        }
 //    }
 
-
-    @GetMapping("/account")
-    public String showAccountInfo(Model model, Authentication authentication) {
+    @GetMapping("/dashboard")
+    public String showDashboard(Model model, Authentication authentication) {
         User user = getCurrentUser(authentication);
         if (user == null) {
             return "redirect:/seller/login";
         }
         model.addAttribute("user", user);
         model.addAttribute("roles", userService.getUserRoles(user));
+        return "seller/dashboard";
+    }
+
+    /**
+     * Display account info page
+     *
+     * @param model Model to add attributes
+     * @return account info page view
+     */
+    @GetMapping("/account-info")
+    public String showAccountInfo(Model model, Authentication authentication) {
+        // Get user with OAuth2 support
+        User user = getCurrentUser(authentication);
+        if (user == null) {
+            log.warn("No user found in showAccountInfo");
+            return "redirect:/seller/login";
+        }
+
+        // Check if this is an OAuth2 authentication
+        boolean isOAuth2User = authentication instanceof OAuth2AuthenticationToken;
+        model.addAttribute("isOAuth2User", isOAuth2User);
+
+        // If OAuth2 user, add OAuth2 user details to model
+        if (isOAuth2User) {
+            OAuth2User oauth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
+            model.addAttribute("oauth2User", oauth2User);
+
+            // Log OAuth2 attributes for debugging
+            log.debug("OAuth2 user attributes: {}", oauth2User.getAttributes());
+        }
+
+        // Add user and roles to model
+        model.addAttribute("user", user);
+        model.addAttribute("roles", userService.getUserRoles(user));
+
+        log.debug("Showing account info for user: id={}, name={}",
+                user.getUserId(), user.getFullName());
+
         return "seller/account-info";
     }
 
     @GetMapping("/edit-info")
     public String showEditInfoPage(Model model) {
+        // Get authenticated user with OAuth2 support
         User user = getCurrentUser();
         if (user == null) {
             return "redirect:/seller/login";
         }
+
+        // Add user and roles to model
         model.addAttribute("user", user);
+        model.addAttribute("roles", userService.getUserRoles(user));
+
+        // Check authentication type
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isOAuth2User = authentication instanceof OAuth2AuthenticationToken;
+        model.addAttribute("isOAuth2User", isOAuth2User);
+
         return "seller/account-edit-info";
     }
 
+    /**
+     * Process update user info form submission
+     *
+     * @param fullName           user's full name
+     * @param phone              user's phone number
+     * @param gender             user's gender (0: Male, 1: Female, 2: Other)
+     * @param redirectAttributes for flash attributes
+     * @return redirect to account info page
+     */
+    @PostMapping("/update-info")
+    public String updateUserInfo(
+            @ModelAttribute("fullName") String fullName,
+            @ModelAttribute("phone") String phone,
+            @ModelAttribute("gender") int gender,
+            @ModelAttribute("dateOfBirth") String dateOfBirth,
+            @RequestParam(value = "profilePictureFile", required = false) MultipartFile profilePictureFile,
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
 
+        try {
+            // Get authenticated user with OAuth2 support
+            User currentUser = getCurrentUser();
+            if (currentUser == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "User not found. Please login again.");
+                return "redirect:/seller/login";
+            }
 
-//    @PostMapping("/edit-info")
-//    public String updateUserInfo(
-//            @ModelAttribute("fullName") String fullName,
-//            @ModelAttribute("phone") String phone,
-//            @ModelAttribute("gender") int gender,
-//            @ModelAttribute("dateOfBirth") String dateOfBirth,
-//            @RequestParam(value = "profilePictureFile", required = false) MultipartFile profilePictureFile,
-//            RedirectAttributes redirectAttributes,
-//            HttpServletRequest request) {
-//        try {
-//            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//            String email = auth.getName();
-//            boolean updated = userService.updateUserInfo(email, fullName, phone, gender, dateOfBirth, profilePictureFile, request);
-//            if (updated) {
-//                redirectAttributes.addFlashAttribute("successMessage", "Your information has been updated successfully.");
-//            } else {
-//                redirectAttributes.addFlashAttribute("errorMessage", "Failed to update information.");
-//            }
-//            return "redirect:/seller/edit-info";
-//        } catch (Exception e) {
-//            log.error("Error updating seller info: {}", e.getMessage());
-//            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-//            return "redirect:/seller/edit-info";
-//        }
-//    }
+            String email = currentUser.getEmail();
+            log.debug("Updating info for user: {}", email);
+
+            // Parse date from string
+            LocalDate parsedDate = null;
+            try {
+                if (dateOfBirth != null && !dateOfBirth.isEmpty()) {
+                    parsedDate = LocalDate.parse(dateOfBirth, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                }
+            } catch (Exception e) {
+                log.warn("Error parsing date: {}", e.getMessage());
+                // Continue with null date if parsing fails
+            }
+
+            // Process profile picture if uploaded
+            String profilePicUrl = null;
+            if (profilePictureFile != null && !profilePictureFile.isEmpty()) {
+                try {
+                    // Generate unique filename
+                    String originalFilename = profilePictureFile.getOriginalFilename();
+                    String fileName = System.currentTimeMillis() + "_" +
+                            (originalFilename != null ? originalFilename : "profile.jpg");
+
+                    // Get upload directory path - use the same path configured in FileUploadConfig
+                    String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/profile-pictures/";
+                    File uploadDirectory = new File(uploadDir);
+                    if (!uploadDirectory.exists()) {
+                        uploadDirectory.mkdirs();
+                    }
+
+                    // Save file to server
+                    File destFile = new File(uploadDir + File.separator + fileName);
+                    profilePictureFile.transferTo(destFile);
+
+                    // Set profile picture URL that will be mapped by our resource handler
+                    profilePicUrl = "/uploads/profile-pictures/" + fileName;
+                    log.debug("Profile picture saved: {}", profilePicUrl);
+                } catch (Exception e) {
+                    // Log error but continue with other user info updates
+                    log.error("Error uploading profile picture: {}", e.getMessage());
+                }
+            }
+
+            // Update user info with profile picture
+            userService.updateUserInfo(email, fullName, phone, gender, parsedDate, profilePicUrl);
+            log.info("User info updated successfully for: {}", email);
+
+            // Add success message
+            redirectAttributes.addFlashAttribute("successMessage", "Your information has been updated successfully.");
+            return "redirect:/seller/account-info";
+        } catch (Exception e) {
+            // Handle update errors
+            log.error("Error updating user info: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/seller/edit-info";
+        }
+    }
 
     @GetMapping("/change-password")
     public String showChangePasswordForm(Model model) {
@@ -135,7 +231,7 @@ public class SellerController {
                 log.debug("Regular seller accessing change password page: {}", email);
             }
             Optional<User> userOpt = userService.findByEmail(email);
-            if(userOpt.isPresent()) {
+            if (userOpt.isPresent()) {
                 User user = userOpt.get();
                 model.addAttribute("user", user);
                 model.addAttribute("roles", userService.getUserRoles(user));
@@ -182,6 +278,8 @@ public class SellerController {
         }
     }
 
+
+
     @GetMapping("/orders")
     public String showOrdersPage(Model model) {
         // Placeholder for seller orders
@@ -194,7 +292,7 @@ public class SellerController {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String email = auth.getName();
             Optional<User> userOpt = userService.findByEmail(email);
-            if(userOpt.isPresent()) {
+            if (userOpt.isPresent()) {
                 User user = userOpt.get();
                 model.addAttribute("user", user);
                 return "seller/cart";
