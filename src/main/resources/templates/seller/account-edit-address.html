@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"> <!-- Character encoding -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsive viewport -->
+    <title>My Addresses</title> <!-- Page title -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> <!-- Font Awesome icons -->
+    <link rel="stylesheet" th:href="@{/css/style.css}"> <!-- Custom CSS -->
+</head>
+<body>
+    <div class="container-fluid"> <!-- Main container -->
+        <div class="row">
+            <!-- Include the common header -->
+            <div th:replace="~{fragments/header :: header}"></div>
+            
+            <div class="container mt-4 mb-5"> <!-- Content container with margin -->
+                <div class="row">
+                    <!-- Sidebar -->
+                    <div class="col-md-3 mb-4"> <!-- Left sidebar column -->
+                        <div th:replace="~{fragments/seller-account-sidebar :: seller-sidebar}"></div> <!-- Include seller sidebar -->
+                    </div>
+                    
+                    <!-- Main Content -->
+                    <div class="col-md-9"> <!-- Main content column -->
+                        <div class="card shadow-sm"> <!-- Card with shadow -->
+                            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white"> <!-- Card header -->
+                                <h5 class="mb-0">My Addresses</h5> <!-- Section title -->
+                                <a th:href="@{/seller/addresses/new}" class="btn btn-light btn-sm"> <!-- Add new address button -->
+                                    <i class="fas fa-plus"></i> Add New Address 
+                                </a>
+                            </div>
+                            <div class="card-body"> <!-- Card body -->
+                                <!-- Alert Messages -->
+                                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert"> <!-- Success alert -->
+                                    <span th:text="${successMessage}"></span> <!-- Success message -->
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> <!-- Close button -->
+                                </div>
+                                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert"> <!-- Error alert -->
+                                    <span th:text="${errorMessage}"></span> <!-- Error message -->
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> <!-- Close button -->
+                                </div>
+                                
+                                <!-- Empty Address State -->
+                                <div th:if="${addresses.isEmpty()}" class="text-center py-4"> <!-- Empty state container -->
+                                    <div class="mb-3">
+                                        <i class="fas fa-map-marker-alt fa-3x text-muted"></i> <!-- Address icon -->
+                                    </div>
+                                    <p class="lead">You don't have any saved addresses yet.</p> <!-- Empty state message -->
+                                    <a th:href="@{/seller/addresses/new}" class="btn btn-primary"> <!-- Add first address button -->
+                                        <i class="fas fa-plus"></i> Add Your First Address
+                                    </a>
+                                </div>
+                                
+                                <!-- Address List -->
+                                <div th:unless="${addresses.isEmpty()}" class="address-list"> <!-- Address list container -->
+                                    <div th:each="address : ${addresses}" class="card mb-3"> <!-- Address card, repeat for each address -->
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-9"> <!-- Address details column -->
+                                                    <h5 class="card-title mb-2">
+                                                        <span th:text="${address.fullName}">John Doe</span> <!-- Recipient name -->
+                                                        <span th:if="${address.isDefault}" class="badge bg-primary ms-2">Default</span> <!-- Default badge -->
+                                                    </h5>
+                                                    <p class="card-text mb-1">
+                                                        <i class="fas fa-phone text-muted me-2"></i> <!-- Phone icon -->
+                                                        <span th:text="${address.phoneNumber}">123-456-7890</span> <!-- Phone number -->
+                                                    </p>
+                                                    <p class="card-text mb-1">
+                                                        <i class="fas fa-map-marker-alt text-muted me-2"></i> <!-- Address icon -->
+                                                        <span th:text="${address.detailAddress}">123 Street</span>, <!-- Street address -->
+                                                        <span th:text="${address.ward}">Ward</span>, <!-- Ward -->
+                                                        <span th:text="${address.district}">District</span>, <!-- District -->
+                                                        <span th:text="${address.province}">Province</span> <!-- Province -->
+                                                    </p>
+                                                </div>
+                                                <div class="col-md-3 text-end"> <!-- Actions column -->
+                                                    <div class="btn-group-vertical btn-group-sm w-100"> <!-- Vertical button group -->
+                                                        <a th:href="@{'/seller/addresses/edit/' + ${address.addressId}}" 
+                                                           class="btn btn-outline-secondary mb-1"> <!-- Edit button -->
+                                                            <i class="fas fa-edit"></i> Edit
+                                                        </a>
+                                                        <a th:if="${!address.isDefault}" 
+                                                           th:href="@{'/seller/addresses/set-default/' + ${address.addressId}}" 
+                                                           class="btn btn-outline-primary mb-1"> <!-- Set as default button (if not default) -->
+                                                            <i class="fas fa-check"></i> Set as Default
+                                                        </a>
+                                                        <a th:href="@{'/seller/addresses/delete/' + ${address.addressId}}" 
+                                                           class="btn btn-outline-danger"
+                                                           onclick="return confirm('Are you sure you want to delete this address?');"> <!-- Delete button with confirmation -->
+                                                            <i class="fas fa-trash"></i> Delete
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Include the common footer -->
+            <div th:replace="~{fragments/footer :: footer}"></div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JavaScript for interactive components -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
