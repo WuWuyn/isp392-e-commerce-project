@@ -123,13 +123,13 @@
             <!-- Description -->
             <div class="product-content-block mb-5">
                 <h3 class="section-subheader-line"><span>Description</span></h3>
-                <!-- Hiển thị mô tả sách từ cơ sở dữ liệu -->
+                <!-- Display book description from database -->
                 <div th:if="${book.description != null and !book.description.isEmpty()}">
-                    <!-- Hiển thị đoạn mô tả nguyên bản, có thể chứa HTML formatting -->
+                    <!-- Display original description, may contain HTML formatting -->
                     <div th:utext="${book.description}"></div>
                 </div>
                 
-                <!-- Hiển thị thông báo nếu không có mô tả -->
+                <!-- Display message if no description available -->
                 <div th:if="${book.description == null or book.description.isEmpty()}">
                     <p class="text-muted">No description available for this book.</p>
                 </div>

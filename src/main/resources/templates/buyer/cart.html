@@ -202,7 +202,7 @@
                                 <table class="table align-middle">
                                     <thead>
                                         <tr>
-                                            <th><input type="checkbox" id="selectAll" class="form-check-input"> <span class="ms-1 small">Chọn</span></th>
+                                            <th><input type="checkbox" id="selectAll" class="form-check-input"></th>
                                             <th>Book</th>
                                             <th class="text-center">Price</th>
                                             <th class="text-center">Quantity</th>
@@ -258,7 +258,7 @@
                                         <i class="fas fa-arrow-left me-1"></i> Continue Shopping
                                     </a>
                                     <span class="ms-2 text-muted">
-                                        <i class="fas fa-info-circle me-1"></i> Tick các sản phẩm bạn muốn thanh toán
+                                        <i class="fas fa-info-circle me-1"></i> Select the items you want to checkout
                                     </span>
                                 </div>
                             </div>
@@ -276,31 +276,33 @@
                     <div class="card-body p-4">
                         <div class="cart-summary">
                             <div class="summary-item">
-                                <span>Tổng tiền đã chọn</span>
+                                <span>Selected Items Total</span>
                                 <span id="subtotalValue" class="fw-bold">0 VND</span>
                             </div>
                             <!-- Discount code input section -->
                             <div class="mt-3 mb-3">
-                                <label for="discountCode" class="form-label">Mã giảm giá</label>
+                                <label for="discountCode" class="form-label">Discount Code</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="discountCode" placeholder="Nhập mã giảm giá">
-                                    <button class="btn btn-outline-secondary" type="button" id="applyDiscountBtn">Áp dụng</button>
+                                    <input type="text" class="form-control" id="discountCode" placeholder="Enter discount code">
+                                    <button class="btn btn-outline-secondary" type="button" id="applyDiscountBtn">Apply</button>
                                 </div>
                                 <div id="discountMessage" class="form-text text-success mt-1" style="display: none;"></div>
                                 <div id="discountError" class="form-text text-danger mt-1" style="display: none;"></div>
                             </div>
                             <!-- Discount amount -->
                             <div class="summary-item" id="discountSection" style="display: none;">
-                                <span>Giảm giá</span>
+                                <span>Discount</span>
                                 <span id="discountValue" class="text-danger">0 VND</span>
                             </div>
                             <div class="summary-item summary-total">
-                                <span>Thành tiền</span>
+                                <span>Total Amount</span>
                                 <span id="totalValue">0 VND</span>
                             </div>
-                            <a th:href="@{/buyer/checkout}" class="btn btn-primary mt-3 w-100 checkout-btn disabled" title="Vui lòng chọn ít nhất một sản phẩm để thanh toán">
-                                <i class="fas fa-lock me-2"></i> Tiến hành thanh toán
-                            </a>
+                            <div>
+                                <button type="button" class="btn btn-primary checkout-btn w-100" onclick="proceedToCheckout()">
+                                    <i class="fas fa-shopping-cart me-1"></i> Proceed to Checkout
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -320,7 +322,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const selectAll = document.getElementById('selectAll');
-        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+        // Sử dụng hàm để lấy danh sách checkbox hiện tại thay vì lưu trữ tĩnh
+        const getItemCheckboxes = () => document.querySelectorAll('.item-checkbox');
         const qtyButtons = document.querySelectorAll('.qty-btn');
         const removeButtons = document.querySelectorAll('.remove-item');
         const subtotalSpan = document.getElementById('subtotalValue');
@@ -422,26 +425,13 @@
             }
             
             // Update checkout button state
-            if (checkoutBtn) {
-                const hasSelectedItems = Array.from(itemCheckboxes).some(cb => cb.checked);
-                checkoutBtn.disabled = !hasSelectedItems;
-                
-                if (!hasSelectedItems) {
-                    checkoutBtn.href = 'javascript:void(0)';
-                    checkoutBtn.classList.add('disabled');
-                    checkoutBtn.title = 'Vui lòng chọn ít nhất một sản phẩm để thanh toán';
-                } else {
-                    checkoutBtn.href = checkoutBtn.getAttribute('data-href') || '/buyer/checkout';
-                    checkoutBtn.classList.remove('disabled');
-                    checkoutBtn.title = '';
-                }
-            }
+            updateCheckoutButtonState();
             
             updateAllQuantityBadges();
         }
 
         // Initialize the cart summary when page loads
-        if (itemCheckboxes.length > 0) {
+        if (getItemCheckboxes().length > 0) {
             // Default: no items selected initially
             updateCartSummary();
             
@@ -463,7 +453,7 @@
                 }
                 
                 // Check if any items are selected
-                const hasSelectedItems = Array.from(itemCheckboxes).some(cb => cb.checked);
+                const hasSelectedItems = Array.from(getItemCheckboxes()).some(cb => cb.checked);
                 if (!hasSelectedItems) {
                     showDiscountError('Vui lòng chọn ít nhất một sản phẩm để áp dụng mã giảm giá');
                     return;
@@ -560,7 +550,7 @@
 
         if (selectAll) {
             selectAll.addEventListener('change', () => {
-                itemCheckboxes.forEach(cb => {
+                getItemCheckboxes().forEach(cb => {
                     cb.checked = selectAll.checked;
                     
                     // Update row highlighting
@@ -575,12 +565,16 @@
             });
         }
 
-        itemCheckboxes.forEach(cb => {
-            cb.addEventListener('change', () => {
+        // Sử dụng event delegation cho các checkbox thay vì gắn sự kiện trực tiếp
+        document.querySelector('table').addEventListener('change', function(e) {
+            if (e.target.classList.contains('item-checkbox')) {
+                // Checkbox item thay đổi
+                const cb = e.target;
+                
                 // Update "select all" checkbox state
                 if (selectAll) {
-                    const allChecked = Array.from(itemCheckboxes).every(c => c.checked);
-                    const someChecked = Array.from(itemCheckboxes).some(c => c.checked);
+                    const allChecked = Array.from(getItemCheckboxes()).every(c => c.checked);
+                    const someChecked = Array.from(getItemCheckboxes()).some(c => c.checked);
                     
                     selectAll.checked = allChecked;
                     selectAll.indeterminate = someChecked && !allChecked;
@@ -596,7 +590,7 @@
                 
                 // Update cart summary based on selected items
                 updateCartSummary();
-            });
+            }
         });
 
         // CSRF setup
@@ -615,8 +609,11 @@
             // Store original href
             checkoutBtn.setAttribute('data-href', checkoutBtn.getAttribute('href'));
             
+            // Không cần thêm event listener vì đã có onclick="proceedToCheckout()"
+            // Xóa bỏ event listener cũ để tránh xung đột
+            /*
             checkoutBtn.addEventListener('click', (e) => {
-                const selectedIds = Array.from(itemCheckboxes)
+                const selectedIds = Array.from(getItemCheckboxes())
                     .filter(cb => cb.checked)
                     .map(cb => cb.value);
                 
@@ -635,6 +632,7 @@
                 window.location.href = redirectUrl;
                 return false;
             });
+            */
         }
 
         qtyButtons.forEach(btn => {
@@ -706,6 +704,86 @@
                 }
             });
         });
+
+        // Update checkout button state
+        function updateCheckoutButtonState() {
+            const hasSelectedItems = Array.from(getItemCheckboxes()).some(cb => cb.checked);
+            console.log("Has selected items:", hasSelectedItems);
+            
+            if (checkoutBtn) {
+                checkoutBtn.disabled = !hasSelectedItems;
+                
+                if (hasSelectedItems) {
+                    checkoutBtn.classList.remove('disabled');
+                    checkoutBtn.removeAttribute('title');
+                } else {
+                    checkoutBtn.classList.add('disabled');
+                    checkoutBtn.setAttribute('title', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+                }
+                
+                console.log("Checkout button state updated. Disabled:", checkoutBtn.disabled);
+            }
+        }
+
+        // Proceed to checkout function
+        window.proceedToCheckout = function() {
+            console.group("Checkout Process");
+            console.log("proceedToCheckout function called");
+            
+            const selectedIds = Array.from(getItemCheckboxes())
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            console.log("Selected items for checkout:", selectedIds);
+
+            if (selectedIds.length === 0) {
+                console.log("No items selected, showing alert");
+                console.groupEnd();
+                alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+                return;
+            }
+
+            try {
+                // Tạo URL checkout với đường dẫn cố định
+                const checkoutUrl = new URL('/buyer/checkout', window.location.origin);
+                // Thêm tham số items vào URL
+                checkoutUrl.searchParams.append('items', selectedIds.join(','));
+                
+                console.log("Redirecting to:", checkoutUrl.toString());
+                console.groupEnd();
+                
+                // Chuyển hướng đến trang checkout
+                window.location.href = checkoutUrl.toString();
+            } catch (error) {
+                console.error("Error during checkout:", error);
+                console.groupEnd();
+                alert('Có lỗi xảy ra khi xử lý thanh toán. Vui lòng thử lại.');
+            }
+        };
+
+        // Initialize checkout button state
+        updateCheckoutButtonState();
+
+        // Debug function to check the state of important elements
+        function debugCartState() {
+            console.group("Cart Debug Info");
+            console.log("Checkout button:", checkoutBtn);
+            console.log("Checkout button disabled:", checkoutBtn ? checkoutBtn.disabled : "N/A");
+            console.log("Item checkboxes count:", getItemCheckboxes().length);
+            console.log("Selected items:", Array.from(getItemCheckboxes()).filter(cb => cb.checked).length);
+            console.log("Selected item IDs:", Array.from(getItemCheckboxes()).filter(cb => cb.checked).map(cb => cb.value));
+            console.groupEnd();
+        }
+        
+        // Call debug function on page load and after any state change
+        debugCartState();
+        
+        // Add debug call to updateCartSummary
+        const originalUpdateCartSummary = updateCartSummary;
+        updateCartSummary = function() {
+            originalUpdateCartSummary();
+            debugCartState();
+        };
     });
 </script>
 
