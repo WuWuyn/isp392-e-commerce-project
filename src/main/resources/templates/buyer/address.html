@@ -52,9 +52,7 @@
     <script th:src="@{/js/address-location.js}" defer></script>
     
     <!-- Google Maps API for address autocomplete -->
-    <script async loading="async"
-            src="https://maps.googleapis.com/maps/api/js?key=api_key&libraries=places&callback=initAutocomplete">
-    </script>
+
 </head>
 <body>
 <div th:replace="~{fragments/header :: header-content}"></div>
@@ -104,9 +102,9 @@
                             <div class="mb-3">
                                 <label for="company" class="form-label">Company (Optional)</label>
                                 <input type="text" class="form-control" id="company" th:field="*{company}"
-                                       placeholder="Enter company name" maxlength="255">
+                                       placeholder="Enter company name" maxlength="50">
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('company')}" th:errors="*{company}">
-                                    Company name must be less than 255 characters
+                                    Company name must be less than 50 characters
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -192,95 +190,7 @@
 <div th:replace="~{fragments/footer :: footer-content}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Complete list of Vietnam provinces/cities
-    const vietnamData = {
-        "An Giang": { "Long Xuyên": ["Mỹ Bình", "Mỹ Long"], "Châu Đốc": ["Vĩnh Mỹ"] },
-        "Bà Rịa - Vũng Tàu": { "Vũng Tàu": ["Phường 1", "Phường 2"] },
-        "Bắc Giang": { "Bắc Giang": ["Dĩnh Kế", "Song Mai"] },
-        "Bắc Kạn": { "Bắc Kạn": ["Đức Xuân", "Nguyễn Thị Minh Khai"] },
-        "Bạc Liêu": { "Bạc Liêu": ["Phường 2", "Phường 3"] },
-        "Bắc Ninh": { "Bắc Ninh": ["Đại Phúc", "Vũ Ninh"] },
-        "Bến Tre": { "Bến Tre": ["Phường 4", "Phường 5"] },
-        "Bình Định": { "Quy Nhơn": ["Lý Thường Kiệt", "Ngô Mây"] },
-        "Bình Dương": { "Thủ Dầu Một": ["Phú Cường", "Phú Lợi"] },
-        "Bình Phước": { "Đồng Xoài": ["Tân Bình", "Tân Phú"] },
-        "Bình Thuận": { "Phan Thiết": ["Mũi Né", "Phú Thủy"] },
-        "Cà Mau": { "Cà Mau": ["Phường 5", "Phường 9"] },
-        "Cần Thơ": { "Ninh Kiều": ["Cái Khế", "An Hội"] },
-        "Cao Bằng": { "Cao Bằng": ["Hòa Chung", "Ngọc Xuân"] },
-        "Đà Nẵng": { "Hải Châu": ["Hải Châu I", "Hòa Thuận Đông"] },
-        "Đắk Lắk": { "Buôn Ma Thuột": ["Tân Lợi", "Thành Nhất"] },
-        "Đắk Nông": { "Gia Nghĩa": ["Nghĩa Đức", "Nghĩa Thành"] },
-        "Điện Biên": { "Điện Biên Phủ": ["Mường Thanh", "Nam Thanh"] },
-        "Đồng Nai": { "Biên Hòa": ["Tân Phong", "Quang Vinh"] },
-        "Đồng Tháp": { "Cao Lãnh": ["Phường 1", "Phường 2"] },
-        "Gia Lai": { "Pleiku": ["Hội Thương", "Ia Kring"] },
-        "Hà Giang": { "Hà Giang": ["Nguyễn Trãi", "Trần Phú"] },
-        "Hà Nam": { "Phủ Lý": ["Lê Hồng Phong", "Quang Trung"] },
-        "Hà Nội": { "Ba Đình": ["Phúc Xá", "Trúc Bạch"], "Hoàn Kiếm": ["Hàng Bạc", "Cửa Đông"], "Đống Đa": ["Cát Linh", "Láng Thượng"] },
-        "Hà Tĩnh": { "Hà Tĩnh": ["Bắc Hà", "Nam Hà"] },
-        "Hải Dương": { "Hải Dương": ["Bình Hàn", "Ngọc Châu"] },
-        "Hải Phòng": { "Hồng Bàng": ["Hạ Lý", "Hùng Vương"] },
-        "Hậu Giang": { "Vị Thanh": ["Phường I", "Phường V"] },
-        "Hòa Bình": { "Hòa Bình": ["Đồng Tiến", "Hữu Nghị"] },
-        "Hưng Yên": { "Hưng Yên": ["Hiến Nam", "Quang Trung"] },
-        "Khánh Hòa": { "Nha Trang": ["Lộc Thọ", "Phước Tiến"] },
-        "Kiên Giang": { "Rạch Giá": ["Vĩnh Thanh", "Vĩnh Lợi"] },
-        "Kon Tum": { "Kon Tum": ["Quang Trung", "Thống Nhất"] },
-        "Lai Châu": { "Lai Châu": ["Đoàn Kết", "Quyết Thắng"] },
-        "Lâm Đồng": { "Đà Lạt": ["Phường 1", "Phường 2"] },
-        "Lạng Sơn": { "Lạng Sơn": ["Hoàng Văn Thụ", "Tam Thanh"] },
-        "Lào Cai": { "Lào Cai": ["Phố Mới", "Bắc Cường"] },
-        "Long An": { "Tân An": ["Phường 2", "Phường 5"] },
-        "Nam Định": { "Nam Định": ["Hạ Long", "Vị Hoàng"] },
-        "Nghệ An": { "Vinh": ["Hồng Sơn", "Đông Vĩnh"] },
-        "Ninh Bình": { "Ninh Bình": ["Đông Thành", "Tân Thành"] },
-        "Ninh Thuận": { "Phan Rang-Tháp Chàm": ["Đông Hải", "Mỹ Hương"] },
-        "Phú Thọ": { "Việt Trì": ["Gia Cẩm", "Tiên Cát"] },
-        "Phú Yên": { "Tuy Hòa": ["Phường 1", "Phường 5"] },
-        "Quảng Bình": { "Đồng Hới": ["Hải Thành", "Đồng Phú"] },
-        "Quảng Nam": { "Tam Kỳ": ["An Mỹ", "Hòa Hương"] },
-        "Quảng Ngãi": { "Quảng Ngãi": ["Lê Hồng Phong", "Nghĩa Chánh"] },
-        "Quảng Ninh": { "Hạ Long": ["Hà Khẩu", "Bạch Đằng"] },
-        "Quảng Trị": { "Đông Hà": ["Phường 1", "Phường 5"] },
-        "Sóc Trăng": { "Sóc Trăng": ["Phường 2", "Phường 3"] },
-        "Sơn La": { "Sơn La": ["Chiềng Lề", "Tô Hiệu"] },
-        "Tây Ninh": { "Tây Ninh": ["Phường 1", "Phường 3"] },
-        "Thái Bình": { "Thái Bình": ["Lê Hồng Phong", "Đề Thám"] },
-        "Thái Nguyên": { "Thái Nguyên": ["Quang Trung", "Trưng Vương"] },
-        "Thanh Hóa": { "Thanh Hóa": ["Ba Đình", "Đông Thọ"] },
-        "Thừa Thiên Huế": { "Huế": ["Phú Nhuận", "Tây Lộc"] },
-        "Tiền Giang": { "Mỹ Tho": ["Phường 4", "Phường 7"] },
-        "Trà Vinh": { "Trà Vinh": ["Phường 2", "Phường 3"] },
-        "Tuyên Quang": { "Tuyên Quang": ["Phan Thiết", "Tân Quang"] },
-        "Vĩnh Long": { "Vĩnh Long": ["Phường 2", "Phường 5"] },
-        "Vĩnh Phúc": { "Vĩnh Yên": ["Đồng Tâm", "Tích Sơn"] },
-        "Yên Bái": { "Yên Bái": ["Hồng Hà", "Yên Ninh"] },
-        "Hồ Chí Minh": { "Quận 1": ["Bến Nghé", "Bến Thành"], "Quận 3": ["Phường 1", "Phường 2"], "Quận 7": ["Tân Phong", "Tân Phú"] }
-    };
 
-    let autocomplete;
-
-    function initAutocomplete() {
-        const addressAutocompleteInput = document.getElementById('addressAutocomplete');
-        if (!addressAutocompleteInput) {
-            console.error("Address autocomplete input field (id='addressAutocomplete') not found.");
-            return;
-        }
-
-        try {
-            autocomplete = new google.maps.places.Autocomplete(addressAutocompleteInput, {
-                types: ['address'],
-                componentRestrictions: { country: 'vn' }
-            });
-            autocomplete.setFields(['address_components', 'formatted_address', 'name']);
-            autocomplete.addListener('place_changed', fillInAddress);
-            populateProvinces();
-            console.log("Google Places Autocomplete and dropdowns initialized for Vietnam.");
-        } catch (error) {
-            console.error("Error initializing Google Places Autocomplete:", error);
-        }
-    }
 
     function populateProvinces() {
         const provinceSelect = document.getElementById('province');
@@ -643,7 +553,10 @@
                         companyInput.classList.remove('is-invalid', 'is-valid');
                         const feedback = companyInput.nextElementSibling;
                         if (feedback && feedback.classList.contains('invalid-feedback')) {
-                            feedback.style.display = 'none';
+                          `1-
+
+
+                              feedback.style.display = 'none';
                         }
                     }
                 }

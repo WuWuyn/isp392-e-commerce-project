@@ -46,20 +46,4 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      */
     @Query("SELECT o FROM Order o WHERE o.user.userId = :userId ORDER BY o.orderDate DESC")
     List<Order> findRecentOrdersByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
-
-    /**
-     * Find all orders for a specific seller by navigating through book->shop->user relationship
-     * @param sellerId the seller ID (user ID of the seller)
-     * @return list of orders belonging to the seller
-     */
-    @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE b.shop.user.userId = :sellerId")
-    List<Order> findOrdersBySellerId(@Param("sellerId") Integer sellerId);
-
-    /**
-     * Find a specific order by ID and eagerly fetch its items.
-     * @param orderId the order ID
-     * @return the order with its items if found
-     */
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.orderId = :orderId")
-    Optional<Order> findByIdWithItems(@Param("orderId") Integer orderId);
 } 

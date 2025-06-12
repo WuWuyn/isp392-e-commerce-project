@@ -101,19 +101,9 @@ public class Book {
     @PreUpdate
     public void updateNormalizedTitle() {
         if (this.title != null && !this.title.isEmpty()) {
-            // Chuẩn hóa Unicode và loại bỏ dấu
             String normalized = Normalizer.normalize(this.title, Normalizer.Form.NFD);
-            Pattern diacriticalPattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-            String withoutDiacritics = diacriticalPattern.matcher(normalized).replaceAll("");
-            
-            // Chuyển về chữ thường
-            String lowercase = withoutDiacritics.toLowerCase();
-            
-            // Thay thế nhiều khoảng trắng liên tiếp bằng một khoảng trắng
-            String normalizedSpaces = lowercase.replaceAll("\\s+", " ");
-            
-            // Loại bỏ khoảng trắng ở đầu và cuối chuỗi
-            this.normalizedTitle = normalizedSpaces.trim();
+            Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+            this.normalizedTitle = pattern.matcher(normalized).replaceAll("").toLowerCase();
         } else {
             this.normalizedTitle = null;
         }
