@@ -1,5 +1,6 @@
 package com.example.isp392.repository;
 
+import com.example.isp392.model.User;
 import com.example.isp392.model.UserAddress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -54,4 +55,7 @@ public interface UserAddressRepository extends JpaRepository<UserAddress, Intege
      * @return the default address if exists
      */
     Optional<UserAddress> findByUserUserIdAndIsDefaultTrue(int userId);
+
+    List<UserAddress> findByUser(User user);
+    UserAddress findByUserAndIsDefaultTrue(User user);
 }

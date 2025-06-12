@@ -5,11 +5,17 @@ import com.example.isp392.model.Cart;
 import com.example.isp392.model.CartItem;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.CartRepository;
+import com.example.isp392.repository.CartItemRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -21,6 +27,9 @@ public class CartService {
     private final BookService bookService;
 
     private final UserService userService;
+
+    @Autowired
+    private CartItemRepository cartItemRepository;
 
     public CartService(CartRepository cartRepository, BookService bookService, UserService userService) {
         this.cartRepository = cartRepository;
@@ -108,5 +117,31 @@ public class CartService {
         Cart cart = getCartForUser(user);
         cart.getItems().clear();
         cartRepository.save(cart);
+    }
+
+    public List<CartItem> getSelectedCartItems(User user, String[] bookIds) {
+        try {
+            List<Integer> bookIdList = Arrays.stream(bookIds)
+                    .filter(StringUtils::hasText)
+                    .map(id -> {
+                        try {
+                            return Integer.parseInt(id.trim());
+                        } catch (NumberFormatException e) {
+                            return null;
+                        }
+                    })
+                    .filter(id -> id != null)
+                    .toList();
+            
+            if (bookIdList.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            return cartItemRepository.findByCartUserAndBookIds(user, bookIdList);
+        } catch (Exception e) {
+            // Log the error
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 }
