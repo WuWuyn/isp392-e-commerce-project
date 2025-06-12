@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar -->
+            <div th:replace="fragments/buyer-account-sidebar :: sidebar('orders')"></div>
+            
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <div class="card rounded-4 shadow-sm">
+                    <div class="card-header bg-white border-0 pt-4">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                                <li class="breadcrumb-item"><a th:href="@{/buyer/orders}">Order History</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Order Details #<span th:text="${order.orderId}"></span></li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-7">
+                                <div class="account-container rounded-4 p-4">
+                                    <h5 class="mb-3"><i class="fas fa-shipping-fast me-2"></i>Shipping Information</h5>
+                                    <hr class="my-3">
+                                    <div class="detail-row mb-2"><span class="label">Recipient:</span> <span class="value" th:text="${order.recipientName}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Phone Number:</span> <span class="value" th:text="${order.recipientPhone}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Address:</span> <span class="value text-end" th:text="${order.shippingAddressDetail + ', ' + order.shippingWard + ', ' + order.shippingDistrict + ', ' + order.shippingProvince}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Address Type:</span> <span class="value" th:text="${order.shippingAddressType == 0 ? 'Home' : 'Company'}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Shipping Company:</span> <span class="value" th:text="${order.shippingCompany}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.notes}"><span class="label">Notes:</span> <span class="value" th:text="${order.notes}"></span></div>
+                                </div>
+
+                                <div class="account-container rounded-4 p-4 mt-4">
+                                    <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Information</h5>
+                                    <hr class="my-3">
+                                    <div class="detail-row mb-2"><span class="label">Payment Method:</span> <span class="value" th:text="${order.paymentMethod}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Payment Status:</span> <span class="value" th:text="${order.paymentStatus}"></span></div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <div class="account-container rounded-4 p-4">
+                                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Order Information</h5>
+                                    <hr class="my-3">
+                                    <div class="detail-row mb-2"><span class="label">Order Date:</span> <span class="value" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></div>
+                                    <div class="detail-row mb-2">
+                                        <span class="label">Status:</span> 
+                                        <span th:class="'order-status status-' + ${#strings.toLowerCase(order.orderStatus)}"
+                                              th:text="${order.orderStatus}">
+                                        </span>
+                                    </div>
+                                    <div class="detail-row mb-2" th:if="${order.updatedAt}"><span class="label">Last Updated:</span> <span class="value" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.cancelledAt}"><span class="label">Cancellation Date:</span> <span class="value" th:text="${#temporals.format(order.cancelledAt, 'dd/MM/yyyy HH:mm')}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.cancellationReason}"><span class="label">Cancellation Reason:</span> <span class="value" th:text="${order.cancellationReason}"></span></div>
+                                </div>
+
+                                <div class="account-container rounded-4 p-4 mt-4">
+                                    <h5 class="mb-3"><i class="fas fa-dollar-sign me-2"></i>Cost Summary</h5>
+                                    <hr class="my-3">
+                                    <div class="detail-row mb-2"><span class="label">Subtotal:</span> <span class="value" th:text="${#numbers.formatDecimal(order.subTotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Shipping Fee:</span> <span class="value" th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Discount:</span> <span class="value text-danger" th:text="${'-' + #numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></div>
+                                    <hr class="my-2">
+                                    <div class="detail-row fs-5"><span class="label">Total Payment:</span> <span class="value text-primary" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="account-container rounded-4 p-4 mt-4">
+                            <h5 class="section-title mb-3">Products in Order</h5>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th class="border-top-0">Product</th>
+                                            <th class="border-top-0">Price</th>
+                                            <th class="border-top-0">Quantity</th>
+                                            <th class="text-end border-top-0">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="item : ${order.orderItems}">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img th:src="${item.book.coverImgUrl}" alt="Book cover" class="rounded-3 me-3" style="width: 60px; height: auto;">
+                                                    <div>
+                                                        <h6 class="mb-1" th:text="${item.book.title}"></h6>
+                                                        <small class="text-muted" th:if="${item.book.authors != null}" th:text="${'Author: ' + item.book.authors}"></small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'"></td>
+                                            <td th:text="${item.quantity}"></td>
+                                            <td class="text-end">
+                                                <span th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
+                                                <!-- Rebuy button for individual item -->
+                                                <div class="mt-2" th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}">
+                                                    <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.book_id} + '/rebuy'}"
+                                                          method="post" class="d-inline-block">
+                                                        <input type="hidden" name="quantity" th:value="${item.quantity}"/>
+                                                        <button type="submit" class="btn btn-sm btn-outline-success rounded-3">
+                                                            <i class="fas fa-sync-alt"></i> Rebuy Item
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="mt-4 d-flex justify-content-between">
+                                <a th:href="@{/buyer/orders}" class="btn btn-outline-secondary rounded-3">
+                                    <i class="fas fa-arrow-left"></i> Back to Order History
+                                </a>
+                                <div>
+                                    <!-- Display rebuy button only if order is delivered -->
+                                    <form th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}" 
+                                          th:action="@{'/buyer/orders/' + ${order.orderId} + '/rebuy'}" 
+                                          method="post"
+                                          class="d-inline-block">
+                                        <button type="submit" class="btn btn-primary rounded-3">
+                                            <i class="fas fa-sync-alt"></i> Rebuy
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/script.js}"></script>
+<!-- Initialize Bootstrap components -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize all dropdowns
+        var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+        dropdownElementList.forEach(function(dropdownToggleEl) {
+            new bootstrap.Dropdown(dropdownToggleEl);
+        });
+    });
+</script>
+</body>
+</html> 

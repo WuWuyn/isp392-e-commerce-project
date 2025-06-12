@@ -3,6 +3,8 @@ package com.example.isp392.service;
 import com.example.isp392.model.Book;
 import com.example.isp392.model.Cart;
 import com.example.isp392.model.CartItem;
+import com.example.isp392.model.Order;
+import com.example.isp392.model.OrderItem;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.CartRepository;
 import com.example.isp392.repository.CartItemRepository;
@@ -143,5 +145,39 @@ public class CartService {
             e.printStackTrace();
             return new ArrayList<>();
         }
+    }
+
+    /**
+     * Get cart for a user
+     * @param user the user whose cart to get
+     * @return the user's cart
+     */
+    public Cart getCart(User user) {
+        return getCartForUser(user);
+    }
+
+    /**
+     * Transfer items from cart to order
+     * @param cart the source cart
+     * @param order the target order
+     */
+    public void transferCartItemsToOrder(Cart cart, Order order) {
+        for (CartItem cartItem : cart.getItems()) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setBook(cartItem.getBook());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setUnitPrice(cartItem.getBook().getSellingPrice());
+            orderItem.setOrder(order);
+            order.getOrderItems().add(orderItem);
+        }
+    }
+
+    /**
+     * Clear all items from a cart
+     * @param cart the cart to clear
+     */
+    public void clearCart(Cart cart) {
+        cart.getItems().clear();
+        cartRepository.save(cart);
     }
 }
