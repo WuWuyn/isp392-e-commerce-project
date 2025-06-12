@@ -302,7 +302,7 @@ public class CartController {
      */
     @PostMapping("/update-qty")
     @ResponseBody
-    public ResponseEntity<String> updateQuantity(@RequestBody java.util.Map<String, Object> payload) {
+    public ResponseEntity<String> updateQuantity(@RequestBody Map<String, Object> payload) {
         Optional<User> userOptional = getAuthenticatedUser();
         if (userOptional.isEmpty()) {
             return ResponseEntity.badRequest().body("User not authenticated");
