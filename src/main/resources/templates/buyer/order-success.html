@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/buyer-layout}">
+<head>
+    <title>Đặt hàng thành công</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container my-5">
+        <div class="text-center">
+            <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+            <h2 class="mt-4">Đặt hàng thành công!</h2>
+            <p class="lead">Cảm ơn bạn đã mua sắm tại BookStore</p>
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Thông tin đơn hàng #<span th:text="${order.orderId}"></span></h5>
+                    <div class="row mt-3">
+                        <div class="col-md-6 text-start">
+                            <p><strong>Ngày đặt hàng:</strong> <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></p>
+                            <p><strong>Phương thức thanh toán:</strong> <span th:text="${order.paymentMethod}"></span></p>
+                            <p><strong>Trạng thái thanh toán:</strong> <span th:text="${order.paymentStatus}"></span></p>
+                        </div>
+                        <div class="col-md-6 text-start">
+                            <p><strong>Tổng tiền hàng:</strong> <span th:text="${#numbers.formatDecimal(order.subTotal, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                            <p><strong>Phí vận chuyển:</strong> <span th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                            <p><strong>Giảm giá:</strong> <span th:text="${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                            <p><strong>Tổng thanh toán:</strong> <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="/buyer/orders" class="btn btn-primary me-2">Xem đơn hàng của tôi</a>
+                <a href="/buyer/home" class="btn btn-outline-primary">Tiếp tục mua sắm</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html> 
