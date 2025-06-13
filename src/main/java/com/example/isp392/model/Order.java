@@ -57,7 +57,7 @@ public class Order {
 
     //Phí ship
     @Column(name = "shipping_fee", nullable = false, precision = 18, scale = 0)
-    private BigDecimal shippingFee;
+    private BigDecimal shippingFee = BigDecimal.ZERO;
 
     //Tiền khi áp mã giảm giá
     @Column(name = "discount_amount", nullable = false, precision = 18, scale = 0)
