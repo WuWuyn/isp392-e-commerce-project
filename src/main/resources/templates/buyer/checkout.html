@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - ReadHub</title>
+    <!-- CSRF Protection -->
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}"/>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .checkout-section {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            color: #333;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .address-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .address-card:hover {
+            border-color: #2c7be5;
+            box-shadow: 0 2px 8px rgba(44,123,229,0.1);
+        }
+        .address-card.selected {
+            border-color: #2c7be5;
+            background-color: rgba(44,123,229,0.05);
+        }
+        .address-type {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        .recipient-info {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .address-detail {
+            color: #495057;
+            margin-bottom: 0;
+        }
+        .order-summary {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .summary-total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c7be5;
+            border-top: 1px solid #dee2e6;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        .book-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .book-image {
+            width: 80px;
+            height: 120px;
+            object-fit: cover;
+            margin-right: 15px;
+        }
+        .book-details {
+            flex-grow: 1;
+        }
+        .book-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .book-price {
+            color: #2c7be5;
+            font-weight: 600;
+        }
+        .quantity-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .payment-method {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .payment-method:hover {
+            border-color: #2c7be5;
+        }
+        .payment-method.selected {
+            border-color: #2c7be5;
+            background-color: rgba(44,123,229,0.05);
+        }
+        .payment-method img {
+            height: 30px;
+            object-fit: contain;
+        }
+        #newAddressForm {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .address-toggle {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .address-toggle:hover {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="py-5 bg-light">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/buyer/cart}">Shopping Cart</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+            </ol>
+        </nav>
+
+        <form id="checkoutForm" th:action="@{/buyer/process-checkout}" method="post">
+        <div class="row">
+                <!-- Left Column -->
+            <div class="col-lg-8">
+                <!-- Shipping Address Section -->
+                <div class="checkout-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        Shipping Address
+                    </h2>
+                    
+                        <!-- Address Selection Dropdown -->
+                        <div class="mb-4">
+                            <label for="addressSelect" class="form-label">Select Shipping Address</label>
+                            <select class="form-select" id="addressSelect" name="existingAddressId" required>
+                                <option value="">Choose an address...</option>
+                                <option value="new">+ Add New Address</option>
+                                <th:block th:each="address : ${userAddresses}">
+                                    <option th:value="${address.addressId}" 
+                                            th:selected="${address.isDefault()}"
+                                            th:data-recipient-name="${address.recipientName}"
+                                            th:data-recipient-phone="${address.recipientPhone}"
+                                            th:data-province="${address.province}"
+                                            th:data-district="${address.district}"
+                                            th:data-ward="${address.ward}"
+                                            th:data-address-detail="${address.addressDetail}"
+                                            th:data-company="${address.company}"
+                                            th:data-type="${address.address_type}">
+                                        [[${address.addressDetail + ', ' + address.ward + ', ' + address.district + ', ' + address.province}]]
+                                        [[${address.isDefault() ? '(Default)' : ''}]]
+                                    </option>
+                                </th:block>
+                            </select>
+                            <div class="invalid-feedback">Please select a shipping address</div>
+                        </div>
+
+                        <!-- Selected Address Details -->
+                        <div id="selectedAddressDetails" class="card mb-4" style="display: none;">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-3 text-muted">Selected Address Details</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Recipient:</strong> 
+                                            <span id="displayRecipientName"></span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Phone:</strong> 
+                                            <span id="displayRecipientPhone"></span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Type:</strong> 
+                                            <span id="displayAddressType"></span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Address:</strong>
+                                            <span id="displayAddressDetail"></span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Area:</strong>
+                                            <span id="displayArea"></span>
+                                        </p>
+                                        <p class="mb-2" id="displayCompanyContainer" style="display: none;">
+                                            <strong>Company:</strong>
+                                            <span id="displayCompany"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- New Address Form -->
+                        <div id="newAddressForm" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="recipientName" class="form-label">Recipient Name</label>
+                                    <input type="text" class="form-control" id="recipientName" name="recipientName" 
+                                           required minlength="2" maxlength="100">
+                                    <div class="invalid-feedback">Recipient name must be 2-100 characters</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="recipientPhone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="recipientPhone" name="recipientPhone" 
+                                           required pattern="^(\+84|84|0)[3|5|7|8|9][0-9]{8}$">
+                                    <div class="invalid-feedback">Please enter a valid Vietnamese phone number</div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="province" class="form-label">Province/City</label>
+                                    <select class="form-select" id="province" name="province" required>
+                                        <option value="">Select Province/City</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select a province</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="district" class="form-label">District</label>
+                                    <select class="form-select" id="district" name="district" required disabled>
+                                        <option value="">Select District</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select a district</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="ward" class="form-label">Ward</label>
+                                    <select class="form-select" id="ward" name="ward" required disabled>
+                                        <option value="">Select Ward</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select a ward</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="addressDetail" class="form-label">Address Details</label>
+                                <input type="text" class="form-control" id="addressDetail" name="addressDetail" 
+                                       required maxlength="500">
+                                <div class="invalid-feedback">Please enter address details (max 500 characters)</div>
+                        </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="company" class="form-label">Company (Optional)</label>
+                                    <input type="text" class="form-control" id="company" name="company" maxlength="255">
+                                    <div class="invalid-feedback">Company name must be less than 255 characters</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label d-block">Address Type</label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="addressType" 
+                                               id="addressType0" value="0" required checked>
+                                        <label class="form-check-label" for="addressType0">Home</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="addressType" 
+                                               id="addressType1" value="1" required>
+                                        <label class="form-check-label" for="addressType1">Company</label>
+                                    </div>
+                                    <div class="invalid-feedback">Please select an address type</div>
+                            </div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="saveAddress" name="saveAddress">
+                                <label class="form-check-label" for="saveAddress">
+                                    Save this address for future use
+                                </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Items Section -->
+                <div class="checkout-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-shopping-bag me-2"></i>
+                        Order Items
+                    </h2>
+                    
+                    <div class="order-items">
+                        <div th:each="item : ${selectedItems}" class="book-item">
+                            <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}" 
+                                 alt="Book Cover" class="book-image">
+                            <div class="book-details">
+                                <h5 class="book-title" th:text="${item.book.title}">Book Title</h5>
+                                <p class="mb-1" th:if="${item.book.publisher != null}">
+                                    <small class="text-muted">
+                                        <i class="fas fa-store-alt me-1"></i>
+                                        <span th:text="${item.book.publisher.publisherName}">Publisher Name</span>
+                                    </small>
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="book-price" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                    <span class="quantity-badge" th:text="'Quantity: ' + ${item.quantity}">Quantity: 1</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <!-- Payment Method Section -->
+                    <div class="checkout-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-credit-card me-2"></i>
+                            Payment Method
+                        </h2>
+                        
+                        <div class="payment-methods">
+                            <div class="payment-method selected" data-payment="COD">
+                                <div class="d-flex align-items-center">
+                                    <input type="radio" name="paymentMethod" value="COD" class="form-check-input me-3" checked>
+                                    <div>
+                                        <strong>Cash on Delivery (COD)</strong>
+                                        <p class="mb-0 text-muted small">Pay when you receive your order</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="payment-method mt-3" data-payment="VNPAY">
+                                <div class="d-flex align-items-center">
+                                    <input type="radio" name="paymentMethod" value="VNPAY" class="form-check-input me-3">
+                                    <div class="d-flex align-items-center">
+                                        <div>
+                                            <strong>VNPay</strong>
+                                            <p class="mb-0 text-muted small">Pay securely with VNPay</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Notes -->
+                    <div class="checkout-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-pencil-alt me-2"></i>
+                            Order Notes
+                        </h2>
+                        <div class="mb-3">
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Add any special instructions or notes for your order"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Order Summary -->
+            <div class="col-lg-4">
+                <div class="checkout-section">
+                    <h2 class="section-title">Order Summary</h2>
+                    <div class="order-summary">
+                        <div class="summary-item">
+                            <span>Subtotal</span>
+                            <span th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                        </div>
+
+                            <!-- Discount Code Section -->
+                            <div class="mb-3">
+                                <label for="discountCode" class="form-label">Discount Code</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="discountCode" name="discountCode" 
+                                           th:value="${discountCode}" placeholder="Enter discount code">
+                                    <button class="btn btn-outline-secondary" type="button" id="applyDiscountBtn">Apply</button>
+                                </div>
+                                <div id="discountMessage" class="form-text text-success mt-1" style="display: none;"></div>
+                                <div id="discountError" class="form-text text-danger mt-1" style="display: none;"></div>
+                            </div>
+
+                            <!-- Discount Amount (if applied) -->
+                            <div class="summary-item" id="discountSection" th:style="${discountAmount != null && discountAmount > 0 ? 'display: block' : 'display: none'}">
+                                <span>Discount</span>
+                                <span class="text-danger" th:text="${discountAmount != null ? '-' + #numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT') + ' VND' : '0 VND'}">0 VND</span>
+                            </div>
+
+                        <div class="summary-item">
+                            <span>Shipping Fee</span>
+                            <span>0 VND</span>
+                        </div>
+
+                        <div class="summary-total">
+                            <span>Total</span>
+                                <span th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 mt-3" id="placeOrderBtn">
+                                <i class="fas fa-lock me-2"></i>
+                                Place Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JavaScript -->
+<script th:src="@{/js/scripts.js}"></script>
+
+<script th:inline="javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize variables
+    const addressSelect = document.getElementById('addressSelect');
+    const newAddressForm = document.getElementById('newAddressForm');
+    const selectedAddressDetails = document.getElementById('selectedAddressDetails');
+    let currentTotal = parseFloat(/*[[${subtotal}]]*/ '0') || 0;
+    let currentDiscount = 0;
+    const shippingFee = 0; // Currently hardcoded to 0
+
+    // Function to update total amount
+    function updateTotal() {
+        const total = Math.max(0, currentTotal - currentDiscount + shippingFee);
+        document.querySelector('.summary-total span:last-child').textContent = 
+            new Intl.NumberFormat('vi-VN').format(total) + ' VND';
+    }
+
+    // Function to display selected address details
+    function displayAddressDetails(option) {
+        if (!option || option.value === '' || option.value === 'new') {
+            selectedAddressDetails.style.display = 'none';
+            return;
+        }
+
+        // Get data from selected option
+        const data = option.dataset;
+        document.getElementById('displayRecipientName').textContent = data.recipientName || '';
+        document.getElementById('displayRecipientPhone').textContent = data.recipientPhone || '';
+        document.getElementById('displayAddressDetail').textContent = data.addressDetail || '';
+        document.getElementById('displayArea').textContent = 
+            `${data.ward}, ${data.district}, ${data.province}`;
+        document.getElementById('displayAddressType').textContent = 
+            data.type === '0' ? 'Home' : 'Company';
+
+        // Handle company display
+        const companyContainer = document.getElementById('displayCompanyContainer');
+        const companySpan = document.getElementById('displayCompany');
+        if (data.company) {
+            companyContainer.style.display = 'block';
+            companySpan.textContent = data.company;
+        } else {
+            companyContainer.style.display = 'none';
+        }
+
+        selectedAddressDetails.style.display = 'block';
+    }
+
+    // Address selection change handler
+    if (addressSelect) {
+        addressSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            if (this.value === 'new') {
+                newAddressForm.style.display = 'block';
+                selectedAddressDetails.style.display = 'none';
+            } else {
+                newAddressForm.style.display = 'none';
+                displayAddressDetails(selectedOption);
+            }
+
+            validateAndSetStatus(this);
+        });
+
+        // Initialize with default selection
+        const defaultOption = addressSelect.options[addressSelect.selectedIndex];
+        if (defaultOption && defaultOption.value && defaultOption.value !== 'new') {
+            displayAddressDetails(defaultOption);
+        }
+    }
+
+    // Form validation
+    const form = document.getElementById('checkoutForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            let isValid = true;
+            
+            // Validate address selection
+            if (addressSelect.value === '') {
+                setValidationVisuals(addressSelect, false, 'Please select a shipping address');
+                isValid = false;
+            }
+
+            // Validate new address form if it's visible
+            if (newAddressForm.style.display === 'block') {
+                const requiredFields = newAddressForm.querySelectorAll('[required]');
+                requiredFields.forEach(field => {
+                    if (field.type === 'radio') {
+                        const radioGroup = document.getElementsByName(field.name);
+                        const isChecked = Array.from(radioGroup).some(radio => radio.checked);
+                        if (!isChecked) {
+                            isValid = false;
+                            const container = field.closest('.mb-3');
+                            if (container) {
+                                container.querySelector('.invalid-feedback').style.display = 'block';
+                            }
+                        }
+                    } else {
+                        const isFieldValid = validateField(field);
+                        if (!isFieldValid) isValid = false;
+                    }
+                });
+            }
+
+            // If form is valid, submit it
+            if (isValid) {
+                // If using VNPay, change form action
+                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                if (paymentMethod === 'VNPAY') {
+                    this.action = '/buyer/vnpay-payment';
+                }
+                this.submit();
+            } else {
+                // Focus first invalid field
+                const firstInvalid = form.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.focus();
+                }
+            }
+        });
+    }
+
+    // Field validation functions
+    function validateField(field) {
+        let isValid = true;
+        const value = field.value.trim();
+
+        switch (field.id) {
+            case 'recipientName':
+                isValid = value.length >= 2 && value.length <= 100;
+                setValidationVisuals(field, isValid, 'Recipient name must be 2-100 characters');
+                break;
+            case 'recipientPhone':
+                isValid = /^(\+84|84|0)[3|5|7|8|9][0-9]{8}$/.test(value);
+                setValidationVisuals(field, isValid, 'Please enter a valid Vietnamese phone number');
+                break;
+            case 'addressDetail':
+                isValid = value.length > 0 && value.length <= 500;
+                setValidationVisuals(field, isValid, 'Address details are required (max 500 characters)');
+                break;
+            case 'company':
+                if (value.length > 0) {
+                    isValid = value.length <= 255;
+                    setValidationVisuals(field, isValid, 'Company name must be less than 255 characters');
+                }
+                break;
+            case 'province':
+            case 'district':
+            case 'ward':
+                isValid = value !== '';
+                setValidationVisuals(field, isValid, `Please select a ${field.id}`);
+                break;
+        }
+
+        return isValid;
+    }
+
+    // Initialize province/district/ward selectors
+    if (document.getElementById('province')) {
+        initializeAddressSelects();
+    }
+
+    // Initialize total
+    updateTotal();
+});
+</script>
+
+</body>
+</html> 

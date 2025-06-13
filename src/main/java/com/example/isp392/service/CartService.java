@@ -3,13 +3,21 @@ package com.example.isp392.service;
 import com.example.isp392.model.Book;
 import com.example.isp392.model.Cart;
 import com.example.isp392.model.CartItem;
+import com.example.isp392.model.Order;
+import com.example.isp392.model.OrderItem;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.CartRepository;
+import com.example.isp392.repository.CartItemRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -21,6 +29,9 @@ public class CartService {
     private final BookService bookService;
 
     private final UserService userService;
+
+    @Autowired
+    private CartItemRepository cartItemRepository;
 
     public CartService(CartRepository cartRepository, BookService bookService, UserService userService) {
         this.cartRepository = cartRepository;
@@ -106,6 +117,66 @@ public class CartService {
 
     public void clearItems(User user) {
         Cart cart = getCartForUser(user);
+        cart.getItems().clear();
+        cartRepository.save(cart);
+    }
+
+    public List<CartItem> getSelectedCartItems(User user, String[] bookIds) {
+        try {
+            List<Integer> bookIdList = Arrays.stream(bookIds)
+                    .filter(StringUtils::hasText)
+                    .map(id -> {
+                        try {
+                            return Integer.parseInt(id.trim());
+                        } catch (NumberFormatException e) {
+                            return null;
+                        }
+                    })
+                    .filter(id -> id != null)
+                    .toList();
+            
+            if (bookIdList.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            return cartItemRepository.findByCartUserAndBookIds(user, bookIdList);
+        } catch (Exception e) {
+            // Log the error
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get cart for a user
+     * @param user the user whose cart to get
+     * @return the user's cart
+     */
+    public Cart getCart(User user) {
+        return getCartForUser(user);
+    }
+
+    /**
+     * Transfer items from cart to order
+     * @param cart the source cart
+     * @param order the target order
+     */
+    public void transferCartItemsToOrder(Cart cart, Order order) {
+        for (CartItem cartItem : cart.getItems()) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setBook(cartItem.getBook());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setUnitPrice(cartItem.getBook().getSellingPrice());
+            orderItem.setOrder(order);
+            order.getOrderItems().add(orderItem);
+        }
+    }
+
+    /**
+     * Clear all items from a cart
+     * @param cart the cart to clear
+     */
+    public void clearCart(Cart cart) {
         cart.getItems().clear();
         cartRepository.save(cart);
     }
