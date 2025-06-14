@@ -2,7 +2,6 @@ package com.example.isp392.service;
 
 import com.example.isp392.model.Blog;
 import com.example.isp392.repository.BlogRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +16,6 @@ public class BlogService {
 
     private final BlogRepository blogRepository;
 
-    @Autowired
     public BlogService(BlogRepository blogRepository) {
         this.blogRepository = blogRepository;
     }

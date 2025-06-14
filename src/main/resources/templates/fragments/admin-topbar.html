@@ -1,54 +1,118 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Topbar Fragment</title>
+</head>
 <body>
-<header th:fragment="admin-topbar-content" class="admin-topbar navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
-    <div class="container-fluid">
-        <button class="btn btn-link d-lg-none me-2" type="button" id="adminSidebarToggle" aria-label="Toggle sidebar">
-            <i class="fas fa-bars"></i>
-        </button>
-        <span class="navbar-brand mb-0 h1 page-title-placeholder">Dashboard</span> <!-- Title will be updated by JS -->
+    <div th:fragment="admin-topbar">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+            <div class="container">
+                <!-- Brand -->
+                <a class="navbar-brand" href="/admin/dashboard">
+                    <span class="fw-bold">ReadHub</span>
+                    <span class="badge bg-primary ms-2">Admin</span>
+                </a>
 
-        <div class="ms-auto d-flex align-items-center">
-            <ul class="navbar-nav flex-row">
-                <li class="nav-item me-3">
-                    <a class="nav-link position-relative" href="#" id="adminMessages" aria-label="Messages">
-                        <i class="fas fa-comment-dots fs-5"></i>
-                    </a>
-                </li>
-                <li class="nav-item me-3">
-                    <a class="nav-link position-relative" href="#" id="adminNotifications" aria-label="Notifications">
-                        <i class="fas fa-bell fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger admin-notification-badge">
-                            99+
-                            <span class="visually-hidden">unread notifications</span>
-                        </span>
-                    </a>
-                </li>
-                <li class="nav-item me-3">
-                    <a class="nav-link" href="#" id="adminMoreOptions" aria-label="More options">
-                        <i class="fas fa-ellipsis-h fs-5"></i>
-                    </a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="adminUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img th:src="${user != null and user.profilePicUrl != null ? user.profilePicUrl : '/images/admin-avatar-placeholder.png'}" 
-                             alt="Admin" width="32" height="32" class="rounded-circle me-2">
-                        <!-- Display the first name from the full name -->
-                        <span class="d-none d-sm-inline" th:if="${user != null}">
-                            <span th:text="${#strings.arraySplit(user.fullName, ' ')[0]}">Admin</span>
-                        </span>
-                        <span class="d-none d-sm-inline" th:unless="${user != null}">Admin</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminUserDropdown">
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog fa-fw me-2"></i>Profile</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog fa-fw me-2"></i>Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" th:href="@{/admin/logout}"><i class="fas fa-sign-out-alt fa-fw me-2"></i>Logout</a></li>
+                <!-- Toggler -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar" 
+                        aria-controls="adminNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Navbar content -->
+                <div class="collapse navbar-collapse" id="adminNavbar">
+                    <ul class="navbar-nav ms-auto align-items-center">
+                        <!-- Search -->
+                        <li class="nav-item me-3">
+                            <form class="d-flex">
+                                <div class="input-group">
+                                    <input class="form-control" type="search" placeholder="Search..." aria-label="Search">
+                                    <button class="btn btn-outline-primary" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </li>
+
+                        <!-- Notifications -->
+                        <li class="nav-item dropdown me-3">
+                            <a class="nav-link position-relative" href="#" id="notificationsDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-bell"></i>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    3
+                                    <span class="visually-hidden">unread notifications</span>
+                                </span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown">
+                                <li><h6 class="dropdown-header">Notifications</h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="fas fa-user-plus text-primary"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <p class="mb-0">New seller registration</p>
+                                                <small class="text-muted">5 minutes ago</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <p class="mb-0">System alert: High server load</p>
+                                                <small class="text-muted">10 minutes ago</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-center" href="/admin/notifications">
+                                        View all notifications
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- User Profile -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="/admin/profile">
+                                        <i class="fas fa-user-circle me-2"></i> Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/admin/settings">
+                                        <i class="fas fa-cog me-2"></i> Settings
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="/logout">
+                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     </ul>
-                </li>
-            </ul>
-        </div>
+                </div>
+            </div>
+        </nav>
     </div>
-</header>
 </body>
 </html>
