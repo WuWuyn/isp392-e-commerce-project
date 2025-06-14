@@ -16,6 +16,9 @@
             </div>
             <h5 class="mb-1" th:text="${user.fullName}">Store Name</h5>
             <p class="text-muted mb-1" th:text="${user.email}">seller@example.com</p>
+            <div class="d-flex justify-content-center mt-2">
+                <span th:each="role : ${roles}" class="badge bg-primary me-1" th:text="${role}">SELLER</span>
+            </div>
         </div>
         <div class="list-group list-group-flush">
             <!-- Dashboard -->

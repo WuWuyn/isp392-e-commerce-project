@@ -104,3 +104,4 @@ public class Order {
     @Column(name = "cancellation_reason", columnDefinition = "NVARCHAR(MAX)")
     private String cancellationReason;
 }
+

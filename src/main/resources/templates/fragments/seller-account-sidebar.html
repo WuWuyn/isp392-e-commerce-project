@@ -6,49 +6,62 @@
     <title>Seller Sidebar</title>
 </head>
 <body>
-<div th:fragment="seller-sidebar" class="account-sidebar">
-    <div class="p-4 text-center border-bottom">
-        <div th:if="${user.profilePicUrl != null && !user.profilePicUrl.isEmpty()}">
-            <img th:src="${user.profilePicUrl}" alt="Profile Picture" class="profile-image mb-3">
+    <div th:fragment="seller-sidebar" class="account-sidebar">
+        <div class="p-4 text-center border-bottom">
+            <div th:if="${user.profilePicUrl != null && !user.profilePicUrl.isEmpty()}">
+                <img th:src="${user.profilePicUrl}" alt="Profile Picture" class="profile-image mb-3">
+            </div>
+            <div th:unless="${user.profilePicUrl != null && !user.profilePicUrl.isEmpty()}" class="default-profile mx-auto mb-3">
+                <i class="fas fa-user"></i>
+            </div>
+            <h5 class="mb-1" th:text="${user.fullName}">Store Name</h5>
+            <p class="text-muted mb-1" th:text="${user.email}">seller@example.com</p>
+            <div class="d-flex justify-content-center mt-2">
+                <span th:each="role : ${roles}" class="badge bg-primary me-1" th:text="${role}">SELLER</span>
+            </div>
         </div>
-        <div th:unless="${user.profilePicUrl != null && !user.profilePicUrl.isEmpty()}"
-             class="default-profile mx-auto mb-3">
-            <i class="fas fa-user"></i>
-        </div>
-        <h5 class="mb-1" th:text="${user.fullName}">Store Name</h5>
-        <p class="text-muted mb-1" th:text="${user.email}">seller@example.com</p>
-        <div class="d-flex justify-content-center mt-2">
-            <span th:each="role : ${roles}" class="badge bg-primary me-1" th:text="${role}">SELLER</span>
+        <div class="list-group list-group-flush">
+            <!-- Dashboard -->
+            <a th:href="@{/seller/dashboard}" class="list-group-item list-group-item-action">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            
+            <!-- Account Management -->
+            <a th:href="@{/seller/account}" class="list-group-item list-group-item-action">
+                <i class="fas fa-user"></i> Personal Information
+            </a>
+            <a th:href="@{/seller/change-password}" class="list-group-item list-group-item-action">
+                <i class="fas fa-key"></i> Change Password
+            </a>
+            <a th:href="@{/seller/addresses}" class="list-group-item list-group-item-action">
+                <i class="fas fa-map-marker-alt"></i> Addresses
+            </a>
+            <a th:href="@{/seller/shop-information}" class="list-group-item list-group-item-action">
+                <i class="fas fa-store"></i> Shop Information
+            </a>
+            
+            <!-- Books -->
+            <a th:href="@{/seller/books}" class="list-group-item list-group-item-action">
+                <i class="fas fa-book"></i> My Books
+            </a>
+            
+            <!-- Orders -->
+            <a th:href="@{/seller/orders}" class="list-group-item list-group-item-action">
+                <i class="fas fa-shopping-cart"></i> Orders
+            </a>
+            
+            <!-- Help -->
+            <a th:href="@{/seller/help}" class="list-group-item list-group-item-action">
+                <i class="fas fa-question-circle"></i> Help & Support
+            </a>
+            
+            <!-- Logout -->
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="list-group-item list-group-item-action text-danger">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
         </div>
     </div>
-    <div class="list-group list-group-flush">
-        <!-- Dashboard -->
-        <a th:href="@{/seller/dashboard}" class="list-group-item list-group-item-action">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a th:href="@{/seller/account}" class="list-group-item list-group-item-action">
-            <i class="fas fa-comments"></i> Personal Infomation
-        </a>
-        <a th:href="@{/seller/change-password}" class="list-group-item list-group-item-action">
-            <i class="fas fa-star"></i> Change Password
-        </a>
-        <a th:href="@{/seller/addresses}" class="list-group-item list-group-item-action">
-            <i class="fas fa-map-marker-alt"></i> Book Address
-        </a>
-        <a th:href="@{/seller/shop-information}" class="list-group-item list-group-item-action">
-            <i class="fas fa-ticket-alt"></i> Shop Information
-        </a>
-        <!-- Help -->
-        <a th:href="@{/seller/help}" class="list-group-item list-group-item-action">
-            <i class="fas fa-question-circle"></i> Help & Support
-        </a>
-        <!-- Logout -->
-        <form th:action="@{/seller/logout}" method="post">
-            <button type="submit" class="list-group-item list-group-item-action text-danger">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-        </form>
-    </div>
-</div>
 </body>
 </html>

@@ -36,25 +36,14 @@ public class BookService {
         // But we still need them in the constructor for dependency injection
     }
 
-    // Utility method to remove diacritical marks (accents) from a string and normalize spaces
+    // Utility method to remove diacritical marks (accents) from a string
     private String removeDiacriticalMarks(String input) {
         if (input == null) {
             return null;
         }
-        
-        // Chuẩn hóa Unicode và loại bỏ dấu
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
-        Pattern diacriticalPattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-        String withoutDiacritics = diacriticalPattern.matcher(normalized).replaceAll("");
-        
-        // Chuyển về chữ thường
-        String lowercase = withoutDiacritics.toLowerCase();
-        
-        // Thay thế nhiều khoảng trắng liên tiếp bằng một khoảng trắng
-        String normalizedSpaces = lowercase.replaceAll("\\s+", " ");
-        
-        // Loại bỏ khoảng trắng ở đầu và cuối chuỗi
-        return normalizedSpaces.trim();
+        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        return pattern.matcher(normalized).replaceAll("").toLowerCase();
     }
 
     // Lấy tất cả sách
