@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="|Shop Details: ${shop.shopName}|">Shop Details</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/admin-style.css}">
+  <style>
+    .detail-label { font-weight: 600; color: #6c757d; }
+    .detail-value { margin-bottom: 1rem; }
+  </style>
+</head>
+<body class="admin-body">
+
+<div th:replace="~{fragments/admin-sidebar :: admin-sidebar-content}"></div>
+
+<div class="admin-main-content">
+  <div th:replace="~{fragments/admin-topbar :: admin-topbar-content}"></div>
+
+  <main class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="mb-0 page-section-title" th:text="${shop.shopName}">Shop Name</h3>
+      <a th:href="@{/admin/seller-approvals}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to Approval Queue</a>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <div class="row g-4">
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <p class="detail-label">Logo</p>
+              <img th:src="${shop.logoUrl != null ? shop.logoUrl : '/images/default-placeholder.png'}" alt="Shop Logo" class="img-fluid rounded border" style="max-height: 200px;">
+            </div>
+            <div class="mb-3">
+              <p class="detail-label">Cover Image</p>
+              <img th:src="${shop.coverImageUrl != null ? shop.coverImageUrl : '/images/default-placeholder.png'}" alt="Cover Image" class="img-fluid rounded border">
+            </div>
+          </div>
+
+          <div class="col-lg-8">
+            <div class="row">
+              <div class="col-md-6 detail-value"><p class="detail-label">Shop ID</p><p th:text="${shop.shopId}"></p></div>
+              <div class="col-md-6 detail-value"><p class="detail-label">Applicant (User ID)</p><p th:text="|${shop.user?.fullName} (ID: ${shop.user?.userId})|"></p></div>
+              <div class="col-md-6 detail-value"><p class="detail-label">Contact Email</p><p th:text="${shop.contactEmail}"></p></div>
+              <div class="col-md-6 detail-value"><p class="detail-label">Contact Phone</p><p th:text="${shop.contactPhone}"></p></div>
+
+              <div class="col-12 detail-value">
+                <p class="detail-label">Address</p>
+                <p th:text="${shop.shopDetailAddress + ', ' + shop.shopWard + ', ' + shop.shopDistrict + ', ' + shop.shopProvince}"></p>
+              </div>
+
+              <div class="col-md-6 detail-value"><p class="detail-label">Tax Code (MST)</p><p th:text="${shop.taxCode} ?: 'N/A'"></p></div>
+
+              <div class="col-md-6 detail-value">
+                <p class="detail-label">Request Date</p>
+                <p th:text="${shop.requestAt != null ? #temporals.format(shop.requestAt, 'HH:mm dd-MMM-yyyy') : 'N/A'}"></p>
+              </div>
+              <div class="col-md-6 detail-value">
+                <p class="detail-label">Approval/Registration Date</p>
+                <p th:text="${shop.registrationDate != null ? #temporals.format(shop.registrationDate, 'HH:mm dd-MMM-yyyy') : 'Pending'}"></p>
+              </div>
+
+              <div class="col-md-6 detail-value">
+                <p class="detail-label">Status</p>
+                <th:block th:switch="${shop.approvalStatus?.name()}">
+                  <span th:case="'PENDING'" class="badge bg-warning text-dark">Pending</span>
+                  <span th:case="'APPROVED'" class="badge bg-success">Approved</span>
+                  <span th:case="'REJECTED'" class="badge bg-danger">Rejected</span>
+                  <span th:case="'SUSPENDED'" class="badge bg-dark">Suspended</span>
+                  <span th:case="*" class="badge bg-secondary">Unknown</span>
+                </th:block>
+              </div>
+
+              <div class="col-md-6 detail-value"><p class="detail-label">Identification File</p>
+                <a th:if="${shop.identificationFileUrl}" th:href="${shop.identificationFileUrl}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-file-alt me-2"></i>View/Download File</a>
+                <span th:unless="${shop.identificationFileUrl}" class="text-muted">Not provided</span>
+              </div>
+            </div>
+            <hr>
+            <div class="mb-3 detail-value"><p class="detail-label">Description</p><div class="p-3 bg-light border rounded" th:text="${shop.description}"></div></div>
+
+            <div class="mb-3 detail-value" th:if="${shop.reasonForStatus != null}">
+              <p class="detail-label text-danger">Reason for Status Change</p>
+              <div class="p-3 bg-light border rounded text-danger" th:text="${shop.reasonForStatus}"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

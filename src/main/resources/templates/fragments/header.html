@@ -67,22 +67,23 @@
                             <i class="fas fa-user"></i> <span class="d-none d-lg-inline" th:text="${user != null ? user.fullName : #authentication.name}">User</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <!-- Show manage account link for buyers -->
                             <li sec:authorize="hasRole('BUYER')"><a class="dropdown-item" th:href="@{/buyer/account-info}"><i class="fas fa-user-circle me-2"></i>Manage Account</a></li>
-                            
-                            <!-- Show admin dashboard link for admins -->
+
+                            <li sec:authorize="hasRole('BUYER') and !hasRole('SELLER')">
+                                <a class="dropdown-item" th:href="@{/buyer/register-shop}">
+                                    <i class="fas fa-store-alt me-2"></i>Seller Registration
+                                </a>
+                            </li>
                             <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/products}"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</a></li>
-                            
-                            <!-- Show seller dashboard link for sellers -->
+
                             <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item" th:href="@{/seller/dashboard}"><i class="fas fa-store me-2"></i>Seller Dashboard</a></li>
-                            
+
                             <li><hr class="dropdown-divider"></li>
-                            
-                            <!-- Default logout option for any authenticated user -->
-                            <li sec:authorize="hasRole('BUYER')"><a class="dropdown-item" th:href="@{/buyer/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item" th:href="@{/seller/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            <li sec:authorize="isAuthenticated() and !hasAnyRole('BUYER', 'ADMIN', 'SELLER')"><a class="dropdown-item" th:href="@{/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+
+                            <li sec:authorize="hasRole('BUYER') and !hasRole('SELLER')"><a class="dropdown-item" th:href="@{/buyer/logout}"><i class="fas fa-sign-out-alt me-2"></i>Log Out</a></li>
+                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/logout}"><i class="fas fa-sign-out-alt me-2"></i>Log Out</a></li>
+                            <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item" th:href="@{/seller/logout}"><i class="fas fa-sign-out-alt me-2"></i>Log Out</a></li>
+                            <li sec:authorize="isAuthenticated() and !hasAnyRole('BUYER', 'ADMIN', 'SELLER')"><a class="dropdown-item" th:href="@{/logout}"><i class="fas fa-sign-out-alt me-2"></i>Log Out</a></li>
                         </ul>
                     </div>
                     

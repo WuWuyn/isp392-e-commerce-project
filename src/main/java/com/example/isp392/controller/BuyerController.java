@@ -1,7 +1,10 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.dto.UserRegistrationDTO;
+import com.example.isp392.model.ApprovalStatus;
+import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
+import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -34,7 +38,7 @@ import java.util.Optional;
 public class BuyerController {
 
     private static final Logger log = LoggerFactory.getLogger(BuyerController.class);
-    
+    private final ShopService shopService;
     private final UserService userService;
 
     /**
@@ -44,8 +48,9 @@ public class BuyerController {
      * 
      * @param userService Service for user-related operations
      */
-    public BuyerController(UserService userService) {
+    public BuyerController(UserService userService, ShopService shopService) {
         this.userService = userService;
+        this.shopService = shopService;
     }
 
     /**
@@ -536,10 +541,7 @@ public class BuyerController {
 
         try {
             String email = authentication.getName();
-            // Gọi service để vô hiệu hóa tài khoản
             userService.deactivateUser(email);
-
-            // Đăng xuất người dùng sau khi vô hiệu hóa
             new SecurityContextLogoutHandler().logout(request, response, authentication);
 
             redirectAttributes.addFlashAttribute("successMessage", "Your account has been successfully deactivated. We're sorry to see you go.");
@@ -551,5 +553,101 @@ public class BuyerController {
             return "redirect:/buyer/account-info";
         }
     }
+    @GetMapping("/register-shop")
+    public String showShopRegistrationForm(Model model, RedirectAttributes redirectAttributes) {
+        User currentUser = getCurrentUser();
+        if (currentUser == null) return "redirect:/buyer/login";
+
+        Optional<Shop> existingShopOpt = shopService.findShopByUserId(currentUser.getUserId());
+
+        if (existingShopOpt.isPresent()) {
+            Shop shop = existingShopOpt.get();
+
+            if (shop.getApprovalStatus() == ApprovalStatus.PENDING) {
+                redirectAttributes.addFlashAttribute("infoMessage", "Yêu cầu đăng ký cửa hàng của bạn đang được xử lý. Vui lòng đợi.");
+                return "redirect:/buyer/account-info";
+            } else if (shop.getApprovalStatus() == ApprovalStatus.APPROVED) {
+                redirectAttributes.addFlashAttribute("infoMessage", "Bạn đã là người bán hàng!");
+                return "redirect:/buyer/account-info";
+            } else if (shop.getApprovalStatus() == ApprovalStatus.REJECTED) {
+                // === THAY ĐỔI QUAN TRỌNG BẮT ĐẦU TỪ ĐÂY ===
+                // Thay vì redirect, chúng ta sẽ render lại trang đăng ký
+                // và gửi thông tin shop cũ cùng lý do từ chối.
+
+                // Thêm shop đã có vào model để form có thể điền lại dữ liệu cũ
+                model.addAttribute("shop", shop);
+
+                // Thêm lý do từ chối để hiển thị trên trang
+                model.addAttribute("rejectionReason", shop.getReasonForStatus());
+
+                // Trả về trang đăng ký để người dùng sửa và nộp lại
+                return "buyer/seller-registration";
+                // === KẾT THÚC THAY ĐỔI ===
+            }
+        }
+
+        // Nếu chưa có shop nào, tạo shop mới như bình thường
+        model.addAttribute("shop", new Shop());
+        return "buyer/seller-registration";
+    }
+
+    @PostMapping("/register-shop")
+    public String processShopRegistration(
+            @ModelAttribute("shop") Shop shop,
+            @RequestParam("logoFile") MultipartFile logoFile,
+            @RequestParam("coverImageFile") MultipartFile coverImageFile,
+            @RequestParam("identificationFile") MultipartFile identificationFile,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return "redirect:/buyer/login";
+        }
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("shop", shop);
+            return "buyer/seller-registration";
+        }
+
+        try {
+            // Chúng ta cần tìm xem user đã có shop record chưa
+            Optional<Shop> existingShopOpt = shopService.findShopByUserId(currentUser.getUserId());
+
+            Shop shopToSave;
+            if (existingShopOpt.isPresent()) {
+                // Nếu đã có, cập nhật bản ghi cũ
+                shopToSave = existingShopOpt.get();
+
+                // Cập nhật thông tin từ form
+                shopToSave.setShopName(shop.getShopName());
+                shopToSave.setContactEmail(shop.getContactEmail());
+                shopToSave.setContactPhone(shop.getContactPhone());
+                shopToSave.setShopDetailAddress(shop.getShopDetailAddress());
+                shopToSave.setShopWard(shop.getShopWard());
+                shopToSave.setShopDistrict(shop.getShopDistrict());
+                shopToSave.setShopProvince(shop.getShopProvince());
+                shopToSave.setDescription(shop.getDescription());
+                shopToSave.setTaxCode(shop.getTaxCode());
+
+            } else {
+                // Nếu chưa, đây là shop mới
+                shopToSave = shop;
+            }
+
+            // Service sẽ xử lý việc lưu file và reset trạng thái
+            shopService.registerNewShop(shopToSave, currentUser, logoFile, coverImageFile, identificationFile);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Yêu cầu đăng ký của bạn đã được gửi lại thành công! Vui lòng chờ phê duyệt.");
+            return "redirect:/buyer/account-info";
+        } catch (IOException e) {
+            log.error("Lỗi khi đăng ký shop: {}", e.getMessage());
+            model.addAttribute("errorMessage", "Đã xảy ra lỗi khi tải file lên. Vui lòng thử lại.");
+            model.addAttribute("shop", shop);
+            return "buyer/seller-registration";
+        }
+    }
+
 }
 

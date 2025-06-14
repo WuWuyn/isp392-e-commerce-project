@@ -43,10 +43,10 @@ public class UserService implements UserDetailsService {
      * This is preferred over field injection with @Autowired as it makes dependencies clear,
      * ensures they're required, and makes testing easier
      *
-     * @param userRepository Repository for user data access
-     * @param roleRepository Repository for role data access
+     * @param userRepository     Repository for user data access
+     * @param roleRepository     Repository for role data access
      * @param userRoleRepository Repository for user-role relationship data access
-     * @param passwordEncoder Password encoder for securely storing passwords
+     * @param passwordEncoder    Password encoder for securely storing passwords
      */
     public UserService(UserRepository userRepository,
                        RoleRepository roleRepository,
@@ -60,6 +60,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Load user by username (email) for Spring Security authentication
+     *
      * @param email the email as username
      * @return UserDetails for authentication
      * @throws UsernameNotFoundException if user not found
@@ -93,6 +94,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Register a new buyer user
+     *
      * @param registrationDTO the registration data
      * @return the created user
      */
@@ -144,6 +146,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Find user by email
+     *
      * @param email the email to search for
      * @return Optional containing the user if found
      */
@@ -153,6 +156,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Find user by email and return the user object directly
+     *
      * @param email the email to search for
      * @return User if found, null otherwise
      */
@@ -162,6 +166,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Get user roles with the ROLE_ prefix for Spring Security
+     *
      * @param user the user
      * @return list of roles for the user with ROLE_ prefix
      */
@@ -175,10 +180,11 @@ public class UserService implements UserDetailsService {
 
     /**
      * Update user information
-     * @param email the user's email
+     *
+     * @param email    the user's email
      * @param fullName the user's full name
-     * @param phone the user's phone number
-     * @param gender the user's gender (0: Male, 1: Female, 2: Other)
+     * @param phone    the user's phone number
+     * @param gender   the user's gender (0: Male, 1: Female, 2: Other)
      * @return the updated user
      * @throws RuntimeException if user not found
      */
@@ -199,10 +205,11 @@ public class UserService implements UserDetailsService {
 
     /**
      * Update user information including date of birth
-     * @param email the user's email
-     * @param fullName the user's full name
-     * @param phone the user's phone number
-     * @param gender the user's gender (0: Male, 1: Female, 2: Other)
+     *
+     * @param email       the user's email
+     * @param fullName    the user's full name
+     * @param phone       the user's phone number
+     * @param gender      the user's gender (0: Male, 1: Female, 2: Other)
      * @param dateOfBirth the user's date of birth
      * @return the updated user
      * @throws RuntimeException if user not found
@@ -225,6 +232,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Save a user to the database
+     *
      * @param user the user to save
      * @return the saved user
      */
@@ -249,6 +257,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Generate a random password for OAuth2 users
+     *
      * @return a random password string
      */
     public String generateRandomPassword() {
@@ -260,6 +269,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Encode a password using the password encoder
+     *
      * @param password the raw password
      * @return the encoded password
      */
@@ -269,11 +279,12 @@ public class UserService implements UserDetailsService {
 
     /**
      * Update user information including date of birth and profile picture
-     * @param email the user's email
-     * @param fullName the user's full name
-     * @param phone the user's phone number
-     * @param gender the user's gender (0: Male, 1: Female, 2: Other)
-     * @param dateOfBirth the user's date of birth
+     *
+     * @param email         the user's email
+     * @param fullName      the user's full name
+     * @param phone         the user's phone number
+     * @param gender        the user's gender (0: Male, 1: Female, 2: Other)
+     * @param dateOfBirth   the user's date of birth
      * @param profilePicUrl the URL of the user's profile picture (can be null)
      * @return the updated user
      * @throws RuntimeException if user not found
@@ -301,9 +312,10 @@ public class UserService implements UserDetailsService {
 
     /**
      * Update user password
-     * @param email the user's email
+     *
+     * @param email           the user's email
      * @param currentPassword the user's current password
-     * @param newPassword the user's new password
+     * @param newPassword     the user's new password
      * @return true if password was updated successfully, false otherwise
      * @throws RuntimeException if user not found
      */
@@ -327,7 +339,8 @@ public class UserService implements UserDetailsService {
 
     /**
      * Change user password directly (for password reset)
-     * @param user the user to update
+     *
+     * @param user        the user to update
      * @param newPassword the new password (not encoded)
      * @return the updated user
      */
@@ -345,7 +358,8 @@ public class UserService implements UserDetailsService {
 
     /**
      * Check if a given password matches the user's current password
-     * @param user the user to check
+     *
+     * @param user     the user to check
      * @param password the password to check (not encoded)
      * @return true if the password matches the user's current password, false otherwise
      */
@@ -361,6 +375,7 @@ public class UserService implements UserDetailsService {
 
     /**
      * Find user by ID.
+     *
      * @param userId The ID of the user to find.
      * @return The found User.
      * @throws RuntimeException if user is not found.
@@ -372,8 +387,9 @@ public class UserService implements UserDetailsService {
 
     /**
      * Search for users based on keyword and role with pagination.
-     * @param keyword The keyword to search in full name or email.
-     * @param role The role to filter by.
+     *
+     * @param keyword  The keyword to search in full name or email.
+     * @param role     The role to filter by.
      * @param pageable Pagination information.
      * @return A Page of users matching the criteria.
      */
@@ -384,8 +400,9 @@ public class UserService implements UserDetailsService {
 
     /**
      * Creates a Specification for dynamic query based on keyword and role.
+     *
      * @param keyword The keyword to search.
-     * @param role The role to filter.
+     * @param role    The role to filter.
      * @return a Specification for User.
      */
     private Specification<User> createSpecification(String keyword, String role) {
@@ -416,6 +433,7 @@ public class UserService implements UserDetailsService {
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
+
     @Transactional
     public void deactivateUser(String email) {
         User user = userRepository.findByEmail(email)
@@ -446,7 +464,28 @@ public class UserService implements UserDetailsService {
         log.info("Successfully deleted user with ID: {}", userId);
     }
 
+    @Transactional
+    public void upgradeUserToSeller(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
+        Role sellerRole = roleRepository.findByRoleName("SELLER")
+                .orElseThrow(() -> new RuntimeException("Error: SELLER role not found."));
 
+        boolean hasSellerRole = user.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().equals(sellerRole));
 
+        if (!hasSellerRole) {
+            UserRole newUserRole = new UserRole(user, sellerRole);
+            user.getUserRoles().add(newUserRole);
+            userRepository.save(user);
+            log.info("Upgraded user with ID {} to SELLER.", userId);
+        } else {
+            // Ghi log nếu người dùng đã là SELLER để tránh xử lý thừa
+            log.warn("User with ID {} is already a SELLER.", userId);
+        }
+
+    }
+
+    
 }

@@ -8,6 +8,7 @@ import com.example.isp392.repository.PublisherRepository;
 import com.example.isp392.repository.ShopRepository;
 import com.example.isp392.service.AdminService;
 import com.example.isp392.service.BookService;
+import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -46,16 +48,18 @@ public class AdminController {
     private final CategoryRepository categoryRepository;
     private final PublisherRepository publisherRepository;
     private final ShopRepository shopRepository;
+    private final ShopService shopService;
 
     public AdminController(UserService userService, AdminService adminService, BookService bookService,
                            CategoryRepository categoryRepository, PublisherRepository publisherRepository,
-                           ShopRepository shopRepository) { // <<< THÊM VÀO CONSTRUCTOR
+                           ShopRepository shopRepository, ShopService shopService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
         this.categoryRepository = categoryRepository;
         this.publisherRepository = publisherRepository;
-        this.shopRepository = shopRepository; // <<< GÁN DEPENDENCY
+        this.shopRepository = shopRepository;
+        this.shopService = shopService;
     }
 
     /**
@@ -377,4 +381,64 @@ public class AdminController {
 
         return "redirect:/admin/users";
     }
+    @GetMapping("/seller-approvals")
+    public String showSellerApprovalQueue(Model model) {
+        adminService.addAdminInfoToModel(model);
+        List<Shop> pendingShops = shopService.getPendingShops();
+        model.addAttribute("pendingShops", pendingShops);
+        model.addAttribute("activeMenu", "seller");
+        model.addAttribute("activeSubMenu", "seller-approval");
+        return "admin/seller-approval";
+    }
+
+    @GetMapping("/shops/detail/{id}")
+    public String showShopDetailPage(@PathVariable("id") Integer shopId, Model model) {
+        adminService.addAdminInfoToModel(model);
+        Shop shop = shopRepository.findById(shopId).orElse(null);
+        if(shop == null) return "redirect:/admin/seller-approvals";
+
+        model.addAttribute("shop", shop);
+        model.addAttribute("activeMenu", "seller");
+        return "admin/shop-detail";
+    }
+
+    // === CÁC PHƯƠNG THỨC CẦN SỬA ĐỔI ===
+
+    @PostMapping("/seller-approvals/approve/{id}")
+    public String approveSeller(@PathVariable("id") Integer shopId, RedirectAttributes redirectAttributes, Authentication authentication) {
+        try {
+            // Lấy thông tin admin đang đăng nhập
+            User currentAdmin = adminService.getCurrentAdminUser()
+                    .orElseThrow(() -> new IllegalStateException("Admin user not found in session. Please login again."));
+
+            // Gọi service với đủ tham số
+            shopService.approveShop(shopId, currentAdmin);
+            redirectAttributes.addFlashAttribute("successMessage", "Shop has been approved successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
+        }
+        return "redirect:/admin/seller-approvals";
+    }
+
+    @PostMapping("/seller-approvals/reject/{id}")
+    public String rejectSeller(@PathVariable("id") Integer shopId, @RequestParam("reason") String reason, RedirectAttributes redirectAttributes, Authentication authentication) {
+        try {
+            if (reason == null || reason.trim().isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Reason for rejection cannot be empty.");
+                return "redirect:/admin/seller-approvals";
+            }
+
+            // Lấy thông tin admin đang đăng nhập
+            User currentAdmin = adminService.getCurrentAdminUser()
+                    .orElseThrow(() -> new IllegalStateException("Admin user not found in session. Please login again."));
+
+            // Gọi service với đủ tham số
+            shopService.rejectShop(shopId, reason, currentAdmin);
+            redirectAttributes.addFlashAttribute("successMessage", "The shop application has been rejected.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
+        }
+        return "redirect:/admin/seller-approvals";
+    }
+
 }

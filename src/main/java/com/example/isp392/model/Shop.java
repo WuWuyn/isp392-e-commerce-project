@@ -61,7 +61,7 @@ public class Shop {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "approval_status", nullable = false)
-    private ApprovalStatus approval_status;
+    private ApprovalStatus approvalStatus;
 
     @Column(name = "reason_for_status", columnDefinition = "NVARCHAR(MAX)")
     private String reasonForStatus;
@@ -83,12 +83,8 @@ public class Shop {
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Book> books = new ArrayList<>();
 
+
 }
 
-enum ApprovalStatus {
-    PENDING,
-    APPROVED,
-    REJECTED,
-    SUSPENDED
-}
+
 
