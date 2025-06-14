@@ -9,7 +9,6 @@ import com.example.isp392.model.User;
 import com.example.isp392.repository.CartRepository;
 import com.example.isp392.repository.CartItemRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -30,10 +29,10 @@ public class CartService {
 
     private final UserService userService;
 
-    @Autowired
-    private CartItemRepository cartItemRepository;
+    private final CartItemRepository cartItemRepository;
 
-    public CartService(CartRepository cartRepository, BookService bookService, UserService userService) {
+    public CartService(CartItemRepository cartItemRepository, CartRepository cartRepository, BookService bookService, UserService userService) {
+        this.cartItemRepository = cartItemRepository;
         this.cartRepository = cartRepository;
         this.bookService = bookService;
         this.userService = userService;

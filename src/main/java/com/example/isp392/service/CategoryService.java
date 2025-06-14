@@ -71,13 +71,34 @@ public class CategoryService {
     }
 
     /**
-     * Find categories containing the name (case insensitive) with pagination
-     * @param categoryName Category name to search for
+     * Find categories by name containing (case insensitive)
+     * @param name Category name to search for
      * @param pageable Pagination information
      * @return Page of matching categories
      */
-    public Page<Category> findByCategoryNameContainingIgnoreCase(String categoryName, Pageable pageable) {
-        return categoryRepository.findByCategoryNameContainingIgnoreCase(categoryName, pageable);
+    public Page<Category> findByNameContaining(String name, Pageable pageable) {
+        return categoryRepository.findByCategoryNameContainingIgnoreCase(name, pageable);
+    }
+
+    /**
+     * Find categories by name containing and active status
+     * @param name Category name to search for
+     * @param isActive Active status to filter by
+     * @param pageable Pagination information
+     * @return Page of matching categories
+     */
+    public Page<Category> findByNameContainingAndActive(String name, boolean isActive, Pageable pageable) {
+        return categoryRepository.findByCategoryNameContainingIgnoreCaseAndIsActive(name, isActive, pageable);
+    }
+
+    /**
+     * Find categories by active status
+     * @param isActive Active status to filter by
+     * @param pageable Pagination information
+     * @return Page of matching categories
+     */
+    public Page<Category> findByActive(boolean isActive, Pageable pageable) {
+        return categoryRepository.findByIsActive(isActive, pageable);
     }
     
     /**
@@ -98,24 +119,7 @@ public class CategoryService {
     }
     
     /**
-     * Toggle category active status
-     * @param id Category ID
-     * @param active New active status
-     * @return Updated category or empty optional if not found
-     */
-    @Transactional
-    public Optional<Category> toggleActive(Integer id, boolean active) {
-        Optional<Category> categoryOpt = categoryRepository.findById(id);
-        if (categoryOpt.isPresent()) {
-            Category category = categoryOpt.get();
-            category.setActive(active);
-            return Optional.of(categoryRepository.save(category));
-        }
-        return Optional.empty();
-    }
-    
-    /**
-     * Set multiple categories' active status
+     * Toggle multiple categories' active status
      * @param ids List of category IDs
      * @param active New active status
      * @return Number of categories updated
@@ -124,7 +128,11 @@ public class CategoryService {
     public int toggleActiveMultiple(List<Integer> ids, boolean active) {
         int count = 0;
         for (Integer id : ids) {
-            if (toggleActive(id, active).isPresent()) {
+            Optional<Category> category = categoryRepository.findById(id);
+            if (category.isPresent()) {
+                Category existingCategory = category.get();
+                existingCategory.setActive(active);
+                categoryRepository.save(existingCategory);
                 count++;
             }
         }

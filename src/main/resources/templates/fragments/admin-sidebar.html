@@ -1,95 +1,81 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Sidebar Fragment</title>
+</head>
 <body>
-<aside th:fragment="admin-sidebar-content" class="admin-sidebar vh-100 p-3 d-flex flex-column position-fixed">
-    <div>
-        <a th:href="@{/admin/dashboard}" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none admin-logo-link">
-            <!-- Option 1: Text Logo -->
-            <span class="fs-4 admin-logo-text">ReadHub</span>
-            <!-- Option 2: Image Logo (if you have a white version) -->
-            <!-- <img th:src="@{/images/logo-white.png}" alt="Bookix Admin" height="30"> -->
-            <span class="fs-5 ms-2 admin-panel-text">Admin Panel</span>
-        </a>
-        <hr class="text-white-50">
-        <ul class="nav nav-pills flex-column mb-auto admin-nav-menu">
-            <li class="nav-item">
-                <a th:href="@{/admin/dashboard}" class="nav-link text-white" th:classappend="${activeMenu == 'dashboard' ? 'active' : ''}" aria-current="page">
-                    <i class="fas fa-home fa-fw me-2"></i>
-                    Home
-                </a>
-            </li>
-            <li>
-                <a href="#productSubmenu" data-bs-toggle="collapse" class="nav-link text-white d-flex justify-content-between align-items-center"
-                   th:classappend="${activeMenu == 'product' ? 'active' : ''}">
-                    <span><i class="fas fa-book fa-fw me-2"></i> Product</span>
-                    <i class="fas fa-chevron-down fa-xs"></i>
-                </a>
-                <ul class="collapse list-unstyled ms-3" id="productSubmenu"
-                    th:classappend="${activeMenu == 'product' ? 'show' : ''}">
-                    <li>
-                        <a th:href="@{/admin/product/list}" class="nav-link text-white sub-link"
-                           th:classappend="${activeSubMenu == 'product-list' ? 'active' : ''}">
-                            <i class="fas fa-list fa-fw me-2"></i> Book List
-                        </a>
-                    </li>
-                    <li>
-                        <a th:href="@{/admin/product/add}" class="nav-link text-white sub-link"
-                           th:classappend="${activeSubMenu == 'product-add' ? 'active' : ''}">
-                            <i class="fas fa-plus-circle fa-fw me-2"></i> Add New Book
-                        </a>
-                    </li>
-                    <li>
-                        <a th:href="@{/admin/product/categories}" class="nav-link text-white sub-link"
-                           th:classappend="${activeSubMenu == 'product-categories' ? 'active' : ''}">
-                            <i class="fas fa-tags fa-fw me-2"></i> Categories
-                        </a>
-                    </li>
-                    <li>
-                        <a th:href="@{/admin/product/inventory}" class="nav-link text-white sub-link"
-                           th:classappend="${activeSubMenu == 'product-inventory' ? 'active' : ''}">
-                            <i class="fas fa-boxes fa-fw me-2"></i> Inventory
-                        </a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <a href="#" class="nav-link text-white">
-                    <i class="fas fa-shopping-cart fa-fw me-2"></i>
-                    Orders
-                </a>
-            </li>
-            <li>
-                <a href="#" class="nav-link text-white">
-                    <i class="fas fa-users fa-fw me-2"></i>
-                    Users
-                </a>
-            </li>
-            <li>
-                <a href="#" class="nav-link text-white">
-                    <i class="fas fa-chart-line fa-fw me-2"></i>
-                    Growth Center
-                </a>
-            </li>
-            <li>
-                <a href="#" class="nav-link text-white">
-                    <i class="fas fa-bullhorn fa-fw me-2"></i>
-                    Marketing Center <span class="badge bg-warning text-dark ms-1">New</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" class="nav-link text-white">
-                    <i class="fas fa-cogs fa-fw me-2"></i>
-                    Settings
-                </a>
-            </li>
-        </ul>
+    <div th:fragment="admin-sidebar" class="account-sidebar">
+        <div class="p-4 text-center border-bottom">
+            <div th:if="${user.profilePicUrl != null and !user.profilePicUrl.isEmpty()}">
+                <img th:src="${user.profilePicUrl}" alt="Profile Picture" class="profile-image mb-3">
+            </div>
+            <div th:unless="${user.profilePicUrl != null and !user.profilePicUrl.isEmpty()}" class="default-profile mx-auto mb-3">
+                <i class="fas fa-user"></i>
+            </div>
+            <h5 class="mb-1" th:text="${user.fullName}">Admin Name</h5>
+            <p class="text-muted mb-1" th:text="${user.email}">admin@example.com</p>
+            <div class="d-flex justify-content-center mt-2">
+                <span th:each="roleName : ${roles}" class="badge bg-primary me-1" th:text="${roleName.replace('ROLE_', '')}">ADMIN</span>
+            </div>
+        </div>
+        <div class="list-group list-group-flush">
+            <!-- Dashboard -->
+            <a th:href="@{/admin/dashboard}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'dashboard' ? 'active' : ''}">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            
+            <!-- User Management -->
+            <a th:href="@{/admin/users}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'users' ? 'active' : ''}">
+                <i class="fas fa-users"></i> User Management
+            </a>
+            
+            <!-- Seller Management -->
+            <a th:href="@{/admin/sellers}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'sellers' ? 'active' : ''}">
+                <i class="fas fa-store"></i> Seller Management
+            </a>
+            
+            <!-- Product Management -->
+            <a th:href="@{/admin/products}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'products' ? 'active' : ''}">
+                <i class="fas fa-book"></i> Product Management
+            </a>
+            
+            <!-- Order Management -->
+            <a th:href="@{/admin/orders}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'orders' ? 'active' : ''}">
+                <i class="fas fa-shopping-cart"></i> Order Management
+            </a>
+            
+            <!-- Category Management -->
+            <a th:href="@{/admin/categories}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'categories' ? 'active' : ''}">
+                <i class="fas fa-tags"></i> Category Management
+            </a>
+            
+            <!-- Blog Management -->
+            <a th:href="@{/admin/blogs}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'blogs' ? 'active' : ''}">
+                <i class="fas fa-blog"></i> Blog Management
+            </a>
+            
+            <!-- Reports -->
+            <a th:href="@{/admin/reports}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'reports' ? 'active' : ''}">
+                <i class="fas fa-chart-bar"></i> Reports & Analytics
+            </a>
+            
+            <!-- Settings -->
+            <a th:href="@{/admin/settings}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'settings' ? 'active' : ''}">
+                <i class="fas fa-cog"></i> System Settings
+            </a>
+            
+            <!-- Profile Settings -->
+            <a th:href="@{/admin/profile}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'profile' ? 'active' : ''}">
+                <i class="fas fa-user-cog"></i> Profile Settings
+            </a>
+            
+            <!-- Logout -->
+            <a href="/logout" class="list-group-item list-group-item-action text-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
     </div>
-    <div class="mt-auto">
-        <hr class="text-white-50">
-        <a href="#" class="btn btn-primary w-100 support-btn">
-            <i class="fas fa-question-circle me-2"></i> Support
-        </a>
-    </div>
-</aside>
 </body>
 </html>

@@ -19,11 +19,11 @@ public class UserRole {
     @Column(name = "user_role_id")
     private Integer userRoleId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false) // Tên cột khóa ngoại trong CSDL
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false) // Tên cột khóa ngoại trong CSDL
     private Role role;
 

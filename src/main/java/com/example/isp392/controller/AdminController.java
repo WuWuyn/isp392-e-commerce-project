@@ -86,7 +86,7 @@ public class AdminController {
         // Add any product-related data here
         // model.addAttribute("products", productService.getAllProducts());
         
-        return "admin/product/product-management";
+        return "admin/products";
     }
     
     /**
@@ -116,6 +116,32 @@ public class AdminController {
     }
     
     /**
+     * Display blog management page
+     * This page is only accessible to authenticated users with ADMIN role
+     * 
+     * @param model Model to add attributes
+     * @return the blog management view
+     */
+    @GetMapping("/blog")
+    public String showBlogManagementPage(Model model) {
+        // Use AdminService to get the current admin user
+        Optional<User> adminUserOpt = adminService.getCurrentAdminUser();
+        
+        if (adminUserOpt.isPresent()) {
+            User adminUser = adminUserOpt.get();
+            model.addAttribute("user", adminUser);
+            model.addAttribute("roles", userService.getUserRoles(adminUser));
+            String firstName = adminService.extractFirstName(adminUser.getFullName());
+            model.addAttribute("firstName", firstName);
+        }
+        
+        // Add active menu information for sidebar highlighting
+        model.addAttribute("activeMenu", "blog");
+        
+        return "admin/blog-management";
+    }
+    
+    /**
      * Default admin page - redirects to product management
      * 
      * @return redirect to product management page
@@ -123,6 +149,6 @@ public class AdminController {
     @GetMapping({"", "/"})
     public String defaultAdminPage(Model model) {
         model.addAttribute("activeMenu", "product");
-        return "redirect:/admin/products";
+        return "redirect:/admin/dashboard";
     }
 }

@@ -228,7 +228,7 @@
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="text-center price-value" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</td>
+                                            <td class="text-center price-value" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT')}">0</td>
                                             <td class="text-center">
                                                 <div class="input-group input-group-sm justify-content-center qty-input-group">
                                                     <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="decrease">
@@ -241,7 +241,7 @@
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td class="text-end item-total" th:text="${#numbers.formatDecimal(item.book.sellingPrice * item.quantity, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</td>
+                                            <td class="text-end item-total" th:text="${#numbers.formatDecimal(item.book.sellingPrice * item.quantity, 0, 'COMMA', 0, 'POINT')}">0</td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-danger remove-item-btn remove-item">
                                                     <i class="fas fa-trash"></i>
@@ -277,7 +277,7 @@
                         <div class="cart-summary">
                             <div class="summary-item">
                                 <span>Selected Items Total</span>
-                                <span id="subtotalValue" class="fw-bold">0 VND</span>
+                                <span id="subtotalValue" class="fw-bold">0</span>
                             </div>
                             <!-- Discount code input section -->
                             <div class="mt-3 mb-3">
@@ -292,11 +292,11 @@
                             <!-- Discount amount -->
                             <div class="summary-item" id="discountSection" style="display: none;">
                                 <span>Discount</span>
-                                <span id="discountValue" class="text-danger">0 VND</span>
+                                <span id="discountValue" class="text-danger">0</span>
                             </div>
                             <div class="summary-item summary-total">
                                 <span>Total Amount</span>
-                                <span id="totalValue">0 VND</span>
+                                <span id="totalValue">0</span>
                             </div>
                             <div>
                                 <button type="button" class="btn btn-primary checkout-btn w-100" onclick="proceedToCheckout()">
@@ -322,7 +322,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const selectAll = document.getElementById('selectAll');
-        // Sử dụng hàm để lấy danh sách checkbox hiện tại thay vì lưu trữ tĩnh
+        // Use a function to get the current list of checkboxes instead of static storage
         const getItemCheckboxes = () => document.querySelectorAll('.item-checkbox');
         const qtyButtons = document.querySelectorAll('.qty-btn');
         const removeButtons = document.querySelectorAll('.remove-item');
@@ -342,18 +342,19 @@
         let subtotalAmount = 0;
         let selectedItemsTotal = 0;
         
-        // Format currency in Vietnamese format
+        // Format currency
         function formatCurrency(amount) {
-            return new Intl.NumberFormat('vi-VN', {
-                style: 'decimal',
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'VND',
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
-            }).format(amount) + ' VND';
+            }).format(amount);
         }
 
         function updateItemTotal(row) {
             const priceText = row.querySelector('td:nth-child(3)').textContent.trim();
-            const price = parseFloat(priceText.replace(/[^\d]/g, ''));
+            const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
             const qty = parseInt(row.querySelector('input[name="quantity"]').value) || 0;
             const totalCell = row.querySelector('td:nth-child(5)');
             
@@ -394,7 +395,7 @@
             
             document.querySelectorAll('tbody tr').forEach(row => {
                 const priceText = row.querySelector('td:nth-child(3)').textContent.trim();
-                const price = parseFloat(priceText.replace(/[^\d]/g, ''));
+                const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
                 const qty = parseInt(row.querySelector('input[name="quantity"]').value) || 0;
                 const isSelected = row.querySelector('.item-checkbox').checked;
                 
@@ -448,14 +449,14 @@
                 const code = discountCodeInput.value.trim();
                 
                 if (!code) {
-                    showDiscountError('Vui lòng nhập mã giảm giá');
+                    showDiscountError('Please enter a discount code');
                     return;
                 }
                 
                 // Check if any items are selected
                 const hasSelectedItems = Array.from(getItemCheckboxes()).some(cb => cb.checked);
                 if (!hasSelectedItems) {
-                    showDiscountError('Vui lòng chọn ít nhất một sản phẩm để áp dụng mã giảm giá');
+                    showDiscountError('Please select at least one product to apply the discount code');
                     return;
                 }
                 
@@ -464,7 +465,7 @@
                 
                 // Show loading state
                 applyDiscountBtn.disabled = true;
-                applyDiscountBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+                applyDiscountBtn.innerHTML = '<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span> Processing...';
                 
                 // Call API to validate discount code
                 fetch('/buyer/cart/apply-discount', {
@@ -480,16 +481,16 @@
                 })
                 .then(data => {
                     applyDiscountBtn.disabled = false;
-                    applyDiscountBtn.textContent = 'Áp dụng';
+                    applyDiscountBtn.textContent = 'Apply';
                     
                     if (data.success) {
                         // Apply discount
                         currentDiscount = data.discountAmount || 0;
-                        showDiscountSuccess(data.message || 'Áp dụng mã giảm giá thành công!');
+                        showDiscountSuccess(data.message || 'Discount code applied successfully!');
                         updateCartSummary();
                     } else {
                         // Show error
-                        showDiscountError(data.message || 'Mã giảm giá không hợp lệ');
+                        showDiscountError(data.message || 'Invalid discount code');
                         currentDiscount = 0;
                         updateCartSummary();
                     }
@@ -497,30 +498,30 @@
                 .catch(error => {
                     console.error('Error:', error);
                     applyDiscountBtn.disabled = false;
-                    applyDiscountBtn.textContent = 'Áp dụng';
+                    applyDiscountBtn.textContent = 'Apply';
                     
                     // Temporary mock implementation until API is fully implemented
                     if (error.message === 'API endpoint not available') {
                         // Check for some test discount codes
                         if (code === 'TEST10') {
                             currentDiscount = subtotalAmount * 0.1; // 10% discount
-                            showDiscountSuccess('Áp dụng mã giảm giá thành công: Giảm 10%');
+                            showDiscountSuccess('Discount code applied successfully: 10% off');
                         } else if (code === 'TEST20') {
                             currentDiscount = subtotalAmount * 0.2; // 20% discount
-                            showDiscountSuccess('Áp dụng mã giảm giá thành công: Giảm 20%');
+                            showDiscountSuccess('Discount code applied successfully: 20% off');
                         } else if (code === 'FREE100') {
                             currentDiscount = 100000; // Fixed 100,000 VND discount
                             if (currentDiscount > subtotalAmount) {
                                 currentDiscount = subtotalAmount;
                             }
-                            showDiscountSuccess('Áp dụng mã giảm giá thành công: Giảm 100,000 VND');
+                            showDiscountSuccess('Discount code applied successfully: 100,000 VND off');
                         } else {
-                            showDiscountError('Mã giảm giá không hợp lệ');
+                            showDiscountError('Invalid discount code');
                             currentDiscount = 0;
                         }
                         updateCartSummary();
                     } else {
-                        showDiscountError('Có lỗi xảy ra khi áp dụng mã giảm giá');
+                        showDiscountError('An error occurred while applying the discount code');
                     }
                 });
             });
@@ -565,10 +566,10 @@
             });
         }
 
-        // Sử dụng event delegation cho các checkbox thay vì gắn sự kiện trực tiếp
+        // Use event delegation for checkboxes instead of directly attaching events
         document.querySelector('table').addEventListener('change', function(e) {
             if (e.target.classList.contains('item-checkbox')) {
-                // Checkbox item thay đổi
+                // Checkbox item changed
                 const cb = e.target;
                 
                 // Update "select all" checkbox state
@@ -595,10 +596,10 @@
 
         // CSRF setup
         function withCsrf(headers = {}) {
-            const csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
+            const csrfTokenMeta = document.querySelector('meta[name=\"_csrf\"]');
             if (csrfTokenMeta) {
                 const token = csrfTokenMeta.getAttribute('content');
-                const headerMeta = document.querySelector('meta[name="_csrf_header"]');
+                const headerMeta = document.querySelector('meta[name=\"_csrf_header\"]');
                 const headerName = headerMeta ? headerMeta.getAttribute('content') : 'X-CSRF-TOKEN';
                 headers[headerName] = token;
             }
@@ -609,8 +610,8 @@
             // Store original href
             checkoutBtn.setAttribute('data-href', checkoutBtn.getAttribute('href'));
             
-            // Không cần thêm event listener vì đã có onclick="proceedToCheckout()"
-            // Xóa bỏ event listener cũ để tránh xung đột
+            // No need to add old event listener as onclick=\"proceedToCheckout()\" already exists
+            // Remove old event listener to avoid conflicts
             /*
             checkoutBtn.addEventListener('click', (e) => {
                 const selectedIds = Array.from(getItemCheckboxes())
@@ -619,7 +620,7 @@
                 
                 if (selectedIds.length === 0) {
                     e.preventDefault();
-                    alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+                    alert('Please select at least one item to checkout');
                     return false;
                 }
                 
@@ -660,11 +661,11 @@
                             updateCartSummary();
                             updateAllQuantityBadges();
                         } else {
-                            alert('Không thể cập nhật số lượng.');
+                            alert('Could not update quantity.');
                         }
                     }).catch(error => {
                         console.error('Error:', error);
-                        alert('Đã xảy ra lỗi khi cập nhật số lượng.');
+                        alert('An error occurred while updating quantity.');
                     });
                 }
             });
@@ -675,7 +676,7 @@
                 const row = btn.closest('tr');
                 const bookId = row.dataset.bookId;
                 
-                if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+                if (confirm('Are you sure you want to remove this item?')) {
                     fetch(`/buyer/cart/remove/${bookId}`, {
                         method: 'POST',
                         headers: withCsrf({'Content-Type': 'application/json'})
@@ -695,11 +696,11 @@
                                 }
                             }, 300);
                         } else {
-                            alert('Không thể xóa sản phẩm.');
+                            alert('Could not remove item.');
                         }
                     }).catch(error => {
                         console.error('Error:', error);
-                        alert('Đã xảy ra lỗi khi xóa sản phẩm.');
+                        alert('An error occurred while removing the item.');
                     });
                 }
             });
@@ -718,7 +719,7 @@
                     checkoutBtn.removeAttribute('title');
                 } else {
                     checkoutBtn.classList.add('disabled');
-                    checkoutBtn.setAttribute('title', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+                    checkoutBtn.setAttribute('title', 'Please select at least one item to checkout');
                 }
                 
                 console.log("Checkout button state updated. Disabled:", checkoutBtn.disabled);
@@ -739,25 +740,25 @@
             if (selectedIds.length === 0) {
                 console.log("No items selected, showing alert");
                 console.groupEnd();
-                alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+                alert('Please select at least one item to checkout');
                 return;
             }
 
             try {
-                // Tạo URL checkout với đường dẫn cố định
+                // Create checkout URL with fixed path
                 const checkoutUrl = new URL('/buyer/checkout', window.location.origin);
-                // Thêm tham số items vào URL
+                // Add items parameter to URL
                 checkoutUrl.searchParams.append('items', selectedIds.join(','));
                 
                 console.log("Redirecting to:", checkoutUrl.toString());
                 console.groupEnd();
                 
-                // Chuyển hướng đến trang checkout
+                // Redirect to checkout page
                 window.location.href = checkoutUrl.toString();
             } catch (error) {
                 console.error("Error during checkout:", error);
                 console.groupEnd();
-                alert('Có lỗi xảy ra khi xử lý thanh toán. Vui lòng thử lại.');
+                alert('An error occurred during checkout. Please try again.');
             }
         };
 

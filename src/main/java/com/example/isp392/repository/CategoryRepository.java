@@ -10,11 +10,18 @@ import java.util.List;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Integer> {
+    // Search by name containing (case insensitive)
     Page<Category> findByCategoryNameContainingIgnoreCase(String categoryName, Pageable pageable);
     
-    // Lấy danh sách các danh mục có isActive = true
+    // Search by name containing and active status
+    Page<Category> findByCategoryNameContainingIgnoreCaseAndIsActive(String categoryName, boolean isActive, Pageable pageable);
+    
+    // Search by active status
+    Page<Category> findByIsActive(boolean isActive, Pageable pageable);
+    
+    // Get all active categories (no pagination)
     List<Category> findByIsActiveTrue();
     
-    // Lấy danh sách các danh mục có isActive = true (với phân trang)
+    // Get all active categories (with pagination)
     Page<Category> findByIsActiveTrue(Pageable pageable);
 }
