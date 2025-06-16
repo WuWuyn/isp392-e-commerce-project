@@ -1,23 +1,34 @@
 package com.example.isp392.controller;
 
+import com.example.isp392.dto.BookFormDTO;
 import com.example.isp392.dto.UserRegistrationDTO;
-import com.example.isp392.model.User;
-import com.example.isp392.service.UserService;
+import com.example.isp392.model.*;
+import com.example.isp392.service.*;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,9 +39,26 @@ public class SellerController {
 
     private static final Logger log = LoggerFactory.getLogger(SellerController.class);
     private final UserService userService;
+    private final BookService bookService;
+    private final ShopService shopService;
+    private final CategoryService categoryService;
+    private final PublisherService publisherService;
 
-    public SellerController(UserService userService) {
+    /**
+     * Constructor for dependency injection
+     * @param userService Service for user-related operations
+     * @param bookService Service for book-related operations
+     * @param shopService Service for shop-related operations
+     * @param categoryService Service for category-related operations
+     * @param publisherService Service for publisher-related operations
+     */
+    public SellerController(UserService userService, BookService bookService, ShopService shopService, 
+                           CategoryService categoryService, PublisherService publisherService) {
         this.userService = userService;
+        this.bookService = bookService;
+        this.shopService = shopService;
+        this.categoryService = categoryService;
+        this.publisherService = publisherService;
     }
 
     @GetMapping("/login")
@@ -43,7 +71,6 @@ public class SellerController {
         model.addAttribute("userRegistrationDTO", new UserRegistrationDTO());
         return "seller/seller-signup";
     }
-
 
 //    @PostMapping("/signup")
 //    public String registerSeller(
@@ -282,7 +309,576 @@ public class SellerController {
         }
     }
 
+    /**
+     * Display list of seller's products with pagination and sorting
+     *
+     * @param model Model to add attributes
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @param searchQuery Search query for product title
+     * @param sortField Field to sort by
+     * @param sortDir Sort direction (asc or desc)
+     * @return seller products view
+     */
+    @GetMapping("/products")
+    public String showProductsPage(
+            Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String searchQuery,
+            @RequestParam(defaultValue = "dateAdded") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        
+        try {
+            // Get current authenticated user
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+            
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                // Redirect to shop creation page if shop doesn't exist
+                model.addAttribute("errorMessage", "You need to set up your shop first before managing products.");
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                return "seller/shop-information";
+            }
 
+            // Create sort object based on parameters
+            Sort sort = Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortField);
+            
+            // Create pageable object for pagination
+            Pageable pageable = PageRequest.of(page, size, sort);
+            
+            // Get books based on shop ID
+            Page<Book> bookPage;
+            if (searchQuery != null && !searchQuery.isEmpty()) {
+                // Search by title within seller's books
+                bookPage = bookService.searchBooksByShopAndTitle(shop.getShopId(), searchQuery, pageable);
+            } else {
+                // Get all seller's books
+                bookPage = bookService.findByShopId(shop.getShopId(), pageable);
+            }
+            
+            // Add attributes for view
+            model.addAttribute("bookPage", bookPage);
+            model.addAttribute("currentPage", page);
+            model.addAttribute("totalPages", bookPage.getTotalPages());
+            model.addAttribute("totalItems", bookPage.getTotalElements());
+            model.addAttribute("sortField", sortField);
+            model.addAttribute("sortDir", sortDir);
+            model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
+            model.addAttribute("searchQuery", searchQuery != null ? searchQuery : "");
+            
+            // For pagination
+            if (bookPage.getTotalPages() > 0) {
+                List<Integer> pageNumbers = IntStream.rangeClosed(1, bookPage.getTotalPages())
+                        .boxed()
+                        .collect(Collectors.toList());
+                model.addAttribute("pageNumbers", pageNumbers);
+            }
+            
+            // Add user information for navigation
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            
+            log.debug("Displaying product list for shop ID: {}, found {} products", 
+                      shop.getShopId(), bookPage.getTotalElements());
+            
+            return "seller/products";
+            
+        } catch (Exception e) {
+            log.error("Error displaying seller products: {}", e.getMessage());
+            return "redirect:/seller/dashboard";
+        }
+    }
+
+    /**
+     * Display form to add a new product
+     *
+     * @param model Model to add attributes
+     * @return add product form view
+     */
+    @GetMapping("/products/add")
+    public String showAddProductForm(Model model) {
+        try {
+            // Get current authenticated user
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+            
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                // Redirect to shop creation page if shop doesn't exist
+                model.addAttribute("errorMessage", "You need to set up your shop first before adding products.");
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                return "seller/shop-information";
+            }
+            
+            // Create empty BookFormDTO
+            BookFormDTO bookForm = new BookFormDTO();
+            bookForm.setShopId(shop.getShopId());
+            bookForm.setPublicationDate(LocalDate.now()); // Default to today
+            bookForm.setStockQuantity(0); // Default stock
+            
+            // Add attributes to the model
+            model.addAttribute("bookForm", bookForm);
+            model.addAttribute("categories", categoryService.findAllActive());
+            model.addAttribute("publishers", publisherService.findAll());
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            
+            log.debug("Displaying add product form for shop ID: {}", shop.getShopId());
+            
+            return "seller/seller-add-product";
+            
+        } catch (Exception e) {
+            log.error("Error displaying add product form: {}", e.getMessage());
+            model.addAttribute("errorMessage", "Error loading form: " + e.getMessage());
+            return "redirect:/seller/products";
+        }
+    }
+
+    /**
+     * Process form to add a new product
+     *
+     * @param bookForm DTO with product information
+     * @param bindingResult Validation results
+     * @param redirectAttributes For flash attributes
+     * @return redirect to products list or back to form with errors
+     */
+    @PostMapping("/products/add")
+    public String processAddProduct(
+            @Valid @ModelAttribute("bookForm") BookFormDTO bookForm,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+        
+        try {
+            // Get current authenticated user
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+            
+            // Debug log to help with form validation issues
+            if (bindingResult.hasErrors()) {
+                log.debug("Validation errors: {}", bindingResult.getAllErrors());
+                bindingResult.getFieldErrors().forEach(error -> 
+                    log.debug("Field error: {} - {}", error.getField(), error.getDefaultMessage())
+                );
+            }
+            
+            // Validation failed, return to form with errors
+            if (bindingResult.hasErrors()) {
+                // Add necessary attributes for the form
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                model.addAttribute("categories", categoryService.findAllActive());
+                model.addAttribute("publishers", publisherService.findAll());
+                
+                // Add validation error summary
+                model.addAttribute("validationErrors", bindingResult.getAllErrors());
+                
+                return "seller/seller-add-product";
+            }
+            
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Shop not found.");
+                return "redirect:/seller/dashboard";
+            }
+            
+            // Ensure the shop ID in the form matches the current user's shop
+            bookForm.setShopId(shop.getShopId());
+            
+            // Check if cover image was uploaded
+            if (bookForm.getCoverImageFile() == null || bookForm.getCoverImageFile().isEmpty()) {
+                model.addAttribute("errorMessage", "Cover image is required.");
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                model.addAttribute("categories", categoryService.findAllActive());
+                model.addAttribute("publishers", publisherService.findAll());
+                return "seller/seller-add-product";
+            }
+            
+            // Handle cover image upload
+            String coverImageUrl;
+            try {
+                coverImageUrl = handleFileUpload(bookForm.getCoverImageFile(), "book-covers");
+                log.debug("Cover image uploaded successfully: {}", coverImageUrl);
+            } catch (IOException e) {
+                log.error("Error uploading cover image: {}", e.getMessage());
+                model.addAttribute("errorMessage", "Error uploading cover image: " + e.getMessage());
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                model.addAttribute("categories", categoryService.findAllActive());
+                model.addAttribute("publishers", publisherService.findAll());
+                return "seller/seller-add-product";
+            }
+            
+            // Create the book
+            Book createdBook = bookService.createBook(bookForm, coverImageUrl);
+            
+            // Add success message
+            redirectAttributes.addFlashAttribute("successMessage", "Product added successfully!");
+            return "redirect:/seller/products";
+            
+        } catch (Exception e) {
+            log.error("Error adding product: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Error adding product: " + e.getMessage());
+            return "redirect:/seller/products/add";
+        }
+    }
+
+    /**
+     * Display form to edit a product
+     *
+     * @param id Book ID to edit
+     * @param model Model to add attributes
+     * @return edit product form view or error redirect
+     */
+    @GetMapping("/products/{id}/edit")
+    public String showEditProductForm(@PathVariable("id") Integer id, Model model) {
+        try {
+            // Get current authenticated user
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+            
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                model.addAttribute("errorMessage", "Shop not found.");
+                return "redirect:/seller/dashboard";
+            }
+            
+            // Get the book by ID
+            Optional<Book> bookOpt = bookService.getBookById(id);
+            if (bookOpt.isEmpty()) {
+                model.addAttribute("errorMessage", "Product not found.");
+                return "redirect:/seller/products";
+            }
+            
+            Book book = bookOpt.get();
+            
+            // Check if the book belongs to the seller's shop
+            if (!book.getShop().getShopId().equals(shop.getShopId())) {
+                model.addAttribute("errorMessage", "You don't have permission to edit this product.");
+                return "redirect:/seller/products";
+            }
+            
+            // Create BookFormDTO from the book entity
+            BookFormDTO bookForm = new BookFormDTO();
+            bookForm.setShopId(shop.getShopId());
+            bookForm.setTitle(book.getTitle());
+            bookForm.setAuthors(book.getAuthors());
+            bookForm.setDescription(book.getDescription());
+            bookForm.setIsbn(book.getIsbn());
+            bookForm.setDimensions(book.getDimensions());
+            bookForm.setNumberOfPages(book.getNumberOfPages());
+            bookForm.setOriginalPrice(book.getOriginalPrice());
+            bookForm.setSellingPrice(book.getSellingPrice());
+            bookForm.setPublicationDate(book.getPublicationDate());
+            bookForm.setSku(book.getSku());
+            bookForm.setStockQuantity(book.getStockQuantity());
+            
+            // Set publisher ID if available
+            if (book.getPublisher() != null) {
+                bookForm.setPublisherId(book.getPublisher().getPublisherId());
+            }
+            
+            // Set selected categories
+            List<Integer> selectedCategoryIds = new ArrayList<>();
+            for (Category category : book.getCategories()) {
+                selectedCategoryIds.add(category.getCategoryId());
+            }
+            bookForm.setCategoryIds(selectedCategoryIds);
+            
+            // Add attributes to the model
+            model.addAttribute("bookForm", bookForm);
+            model.addAttribute("book", book);
+            model.addAttribute("categories", categoryService.findAllActive());
+            model.addAttribute("publishers", publisherService.findAll());
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            
+            return "seller/seller-edit-product";
+            
+        } catch (Exception e) {
+            log.error("Error displaying edit product form: {}", e.getMessage());
+            model.addAttribute("errorMessage", "Error loading product: " + e.getMessage());
+            return "redirect:/seller/products";
+        }
+    }
+
+    /**
+     * Process form to update a product
+     *
+     * @param id Book ID to update
+     * @param bookForm DTO with updated product information
+     * @param bindingResult Validation results
+     * @param redirectAttributes For flash attributes
+     * @return redirect to products list or back to form with errors
+     */
+    @PostMapping("/products/{id}/edit")
+    public String processEditProduct(
+            @PathVariable("id") Integer id,
+            @Valid @ModelAttribute("bookForm") BookFormDTO bookForm,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+        
+        try {
+            // Get current authenticated user
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+            
+            // Validation failed, return to form with errors
+            if (bindingResult.hasErrors()) {
+                // Add necessary attributes for the form
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                model.addAttribute("categories", categoryService.findAllActive());
+                model.addAttribute("publishers", publisherService.findAll());
+                Optional<Book> bookOpt = bookService.getBookById(id);
+                if (bookOpt.isPresent()) {
+                    model.addAttribute("book", bookOpt.get());
+                }
+                
+                return "seller/seller-edit-product";
+            }
+            
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Shop not found.");
+                return "redirect:/seller/dashboard";
+            }
+            
+            // Get the book by ID
+            Optional<Book> bookOpt = bookService.getBookById(id);
+            if (bookOpt.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Product not found.");
+                return "redirect:/seller/products";
+            }
+            
+            Book book = bookOpt.get();
+            
+            // Check if the book belongs to the seller's shop
+            if (!book.getShop().getShopId().equals(shop.getShopId())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "You don't have permission to edit this product.");
+                return "redirect:/seller/products";
+            }
+            
+            // Handle cover image upload if a new one is provided
+            String coverImageUrl = book.getCoverImgUrl(); // Keep existing image by default
+            if (bookForm.getCoverImageFile() != null && !bookForm.getCoverImageFile().isEmpty()) {
+                try {
+                    coverImageUrl = handleFileUpload(bookForm.getCoverImageFile(), "book-covers");
+                } catch (IOException e) {
+                    log.error("Error uploading cover image: {}", e.getMessage());
+                    redirectAttributes.addFlashAttribute("errorMessage", "Error uploading cover image: " + e.getMessage());
+                    return "redirect:/seller/products/" + id + "/edit";
+                }
+            }
+            
+            // Update and save the book
+            Book updatedBook = bookService.updateBook(id, bookForm, coverImageUrl);
+            
+            // Add success message
+            redirectAttributes.addFlashAttribute("successMessage", "Product updated successfully!");
+            return "redirect:/seller/products";
+            
+        } catch (Exception e) {
+            log.error("Error updating product: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating product: " + e.getMessage());
+            return "redirect:/seller/products/" + id + "/edit";
+        }
+    }
+
+    /**
+     * Display product details
+     *
+     * @param id Book ID to view
+     * @param model Model to add attributes
+     * @return product details view or error redirect
+     */
+    @GetMapping("/products/{id}")
+    public String viewProductDetails(@PathVariable("id") Integer id, Model model) {
+        try {
+            // Get current authenticated user
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+            
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                model.addAttribute("errorMessage", "Shop not found.");
+                return "redirect:/seller/dashboard";
+            }
+            
+            // Get the book by ID
+            Optional<Book> bookOpt = bookService.getBookById(id);
+            if (bookOpt.isEmpty()) {
+                model.addAttribute("errorMessage", "Product not found.");
+                return "redirect:/seller/products";
+            }
+            
+            Book book = bookOpt.get();
+            
+            // Check if the book belongs to the seller's shop
+            if (!book.getShop().getShopId().equals(shop.getShopId())) {
+                model.addAttribute("errorMessage", "You don't have permission to view this product.");
+                return "redirect:/seller/products";
+            }
+            
+            // Add attributes to the model
+            model.addAttribute("book", book);
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            
+            return "seller/seller-product-details";
+            
+        } catch (Exception e) {
+            log.error("Error displaying product details: {}", e.getMessage());
+            model.addAttribute("errorMessage", "Error loading product: " + e.getMessage());
+            return "redirect:/seller/products";
+        }
+    }
+
+    /**
+     * Delete a product
+     *
+     * @param id Book ID to delete
+     * @param redirectAttributes For flash attributes
+     * @return redirect to products list
+     */
+    @PostMapping("/products/{id}/delete")
+    public String deleteProduct(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            // Get current authenticated user
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+            
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Shop not found.");
+                return "redirect:/seller/dashboard";
+            }
+            
+            // Get the book by ID
+            Optional<Book> bookOpt = bookService.getBookById(id);
+            if (bookOpt.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Product not found.");
+                return "redirect:/seller/products";
+            }
+            
+            Book book = bookOpt.get();
+            
+            // Check if the book belongs to the seller's shop
+            if (!book.getShop().getShopId().equals(shop.getShopId())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "You don't have permission to delete this product.");
+                return "redirect:/seller/products";
+            }
+            
+            // Delete the book
+            bookService.deleteBook(id);
+            
+            // Add success message
+            redirectAttributes.addFlashAttribute("successMessage", "Product deleted successfully!");
+            return "redirect:/seller/products";
+            
+        } catch (Exception e) {
+            log.error("Error deleting product: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting product: " + e.getMessage());
+            return "redirect:/seller/products";
+        }
+    }
+
+    /**
+     * Handle file upload for product images
+     *
+     * @param file File to upload
+     * @param subDirectory Subdirectory to save the file in
+     * @return URL of the uploaded file
+     * @throws IOException If file upload fails
+     */
+    private String handleFileUpload(MultipartFile file, String subDirectory) throws IOException {
+        // Generate unique filename
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
+        }
+        String fileName = System.currentTimeMillis() + "_" +
+                (originalFilename != null ? originalFilename : "file.jpg");
+        
+        // Get upload directory path
+        String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/" + subDirectory + "/";
+        File uploadDirectory = new File(uploadDir);
+        if (!uploadDirectory.exists()) {
+            uploadDirectory.mkdirs();
+        }
+        
+        // Check if image resizing is needed
+        byte[] fileBytes = file.getBytes();
+        if (file.getContentType() != null && file.getContentType().startsWith("image/")) {
+            // Determine image format
+            String format = extension;
+            if (format.isEmpty() || !isValidImageFormat(format)) {
+                format = "jpg"; // Default to jpg if unknown format
+            }
+            
+            try {
+                // Try to resize the image
+                log.debug("Attempting to resize image: {} ({} bytes)", fileName, fileBytes.length);
+                fileBytes = com.example.isp392.config.FileUploadConfig.resizeImage(fileBytes, format);
+                log.debug("Image resized: {} ({} bytes)", fileName, fileBytes.length);
+            } catch (Exception e) {
+                // If resize fails, use original
+                log.error("Error resizing image: {}", e.getMessage());
+            }
+        }
+        
+        // Save file to server
+        java.nio.file.Path destPath = java.nio.file.Path.of(uploadDir + File.separator + fileName);
+        java.nio.file.Files.write(destPath, fileBytes);
+        log.debug("File saved to: {}", destPath);
+        
+        // Return URL that will be mapped by resource handler
+        return "/uploads/" + subDirectory + "/" + fileName;
+    }
+    
+    /**
+     * Check if the format is a valid image format
+     * 
+     * @param format File extension or format string
+     * @return true if valid image format
+     */
+    private boolean isValidImageFormat(String format) {
+        String[] validFormats = {"jpg", "jpeg", "png", "gif", "webp"};
+        for (String validFormat : validFormats) {
+            if (validFormat.equalsIgnoreCase(format)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @GetMapping("/orders")
     public String showOrdersPage(Model model) {

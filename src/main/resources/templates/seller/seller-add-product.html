@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Book - ReadHub Seller</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap"
+          rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/seller-style.css}">
+    <style>
+        /* Additional inline styles for consistency with dashboard */
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8F5F0;
+            color: #333;
+        }
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2C3E50;
+            border-bottom: 2px solid #2C3E50;
+            padding-bottom: 0.5rem;
+        }
+        .content-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .btn-primary {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-primary:hover {
+            background-color: #1e2b37;
+            border-color: #1e2b37;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+        }
+        @media (max-width: 992px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            color: #2C3E50;
+        }
+        .image-upload-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #imagePreview {
+            margin-bottom: 10px;
+            max-height: 300px;
+            object-fit: contain;
+        }
+        .upload-btn {
+            margin-top: 10px;
+        }
+        .format-error {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* Validation styles */
+        .is-invalid {
+            border-color: #dc3545 !important;
+        }
+
+        .validation-error {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+
+        /* Sticky notification */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1050;
+            width: 350px;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-out;
+            transform: translateX(400px);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        /* Highlight required fields */
+        label .text-danger {
+            font-weight: bold;
+        }
+
+        /* Category validation */
+        .category-selection.is-invalid {
+            border: 1px solid #dc3545;
+            border-radius: 0.25rem;
+            padding: 10px;
+        }
+        
+        /* Error summary box */
+        .validation-summary {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border-left: 5px solid #dc3545;
+            background-color: #f8d7da;
+        }
+        
+        .validation-summary h4 {
+            color: #842029;
+            margin-bottom: 0.5rem;
+        }
+        
+        .validation-summary ul {
+            margin-bottom: 0;
+        }
+        
+        .validation-summary .btn-close {
+            font-size: 0.8rem;
+        }
+        
+        .image-placeholder {
+            max-height: 300px;
+            width: auto;
+            border-radius: 8px;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+<!-- Include Topbar -->
+<div th:replace="fragments/seller-topbar :: seller-topbar"></div>
+
+<!-- Sticky notification for form feedback -->
+<div id="notificationContainer"></div>
+
+<div class="container my-4">
+    <div class="row">
+        <!-- Include Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div th:replace="fragments/seller-sidebar :: seller-sidebar"></div>
+        </div>
+
+        <div class="col-lg-9">
+            <!-- Success message -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Error message -->
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="content-container">
+                <!-- Validation errors summary outside form -->
+                <div id="validationErrorSummary" class="validation-summary alert alert-danger alert-dismissible fade show" 
+                     th:if="${#fields.hasErrors('bookForm.*') or validationErrors != null}" role="alert">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                        <div>
+                            <h4 class="alert-heading">Please fix the following errors:</h4>
+                            <ul id="errorList">
+                                <li th:each="err : ${#fields.errors('bookForm.*')}" th:text="${err}"></li>
+                                <li th:each="err : ${validationErrors}" th:if="${validationErrors != null}" th:text="${err.defaultMessage}"></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                
+                <div class="page-header mb-4">
+                    <div>
+                        <a th:href="@{/seller/products}" class="back-link text-decoration-none"><i
+                                class="fas fa-arrow-left"></i> Back to Products</a>
+                        <h1 class="mt-2">Add New Book</h1>
+                    </div>
+                    <div class="header-actions mt-3 mt-md-0">
+                        <button type="submit" form="addBookForm" class="btn btn-primary ms-2">
+                            <i class="fas fa-plus me-2"></i>Add Product
+                        </button>
+                    </div>
+                </div>
+
+
+                <form id="addBookForm" th:action="@{/seller/products/add}"
+                      th:object="${bookForm}" method="post" enctype="multipart/form-data"
+                      class="form-grid needs-validation" novalidate>
+                    <!-- LEFT COLUMN -->
+                    <div class="form-column">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h2 class="fs-5 fw-bold m-0">Product Image</h2>
+                            </div>
+                            <div class="card-body">
+                                <label for="coverImageFile" class="form-label">Cover Image <span
+                                        class="text-danger">*</span></label>
+
+                                <div class="image-upload-wrapper">
+                                    <img id="imagePreview"
+                                         src="https://placehold.co/300x450/e2e8f0/adb5bd?text=Book+Cover"
+                                         alt="Image preview" class="img-fluid">
+                                    <input type="file" id="coverImageFile" name="coverImageFile"
+                                           accept="image/jpeg,image/png,image/gif,image/webp"
+                                           onchange="previewImage(event)" class="form-control" required>
+                                    <div class="invalid-feedback">Please upload a cover image.</div>
+                                    <div id="imageFormatError" class="format-error">Only JPG, PNG, GIF and WEBP formats
+                                        are allowed.
+                                    </div>
+                                    <label for="coverImageFile" class="btn btn-outline-secondary upload-btn">Select Image</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header bg-white">
+                                <h2 class="fs-5 fw-bold m-0">Categories</h2>
+                            </div>
+                            <div class="card-body">
+                                <label class="form-label">Book Categories <span class="text-danger">*</span></label>
+
+                                <!-- Search box for categories -->
+                                <div class="input-group mb-3">
+                                    <input type="text" id="categorySearch" class="form-control form-control-sm"
+                                           placeholder="Search categories..."
+                                           onkeyup="filterCategories()">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Important message moved above category selection -->
+                                <div class="mb-2">
+                                    <span class="text-danger">Select at least one category</span>
+                                </div>
+
+                                <!-- Category selection without scrollable area -->
+                                <div class="category-selection" th:classappend="${#fields.hasErrors('categoryIds')} ? 'is-invalid' : ''">
+                                    <div th:each="category, status : ${categories}"
+                                         class="form-check mb-2 category-item"
+                                         th:classappend="${status.index >= 10} ? 'd-none category-page-2' : 'category-page-1'">
+                                        <input class="form-check-input" type="checkbox"
+                                               th:value="${category.categoryId}"
+                                               th:id="'category-' + ${category.categoryId}"
+                                               th:field="*{categoryIds}">
+                                        <label class="form-check-label" th:for="'category-' + ${category.categoryId}"
+                                               th:text="${category.categoryName}"></label>
+                                    </div>
+                                    <div class="invalid-feedback">Please select at least one category.</div>
+                                </div>
+
+                                <!-- Pagination controls -->
+                                <div class="d-flex justify-content-end align-items-center mt-3">
+                                    <div class="category-pagination">
+                                        <button type="button" id="prevCategoryPage"
+                                                class="btn btn-sm btn-outline-secondary me-1"
+                                                onclick="changeCategoryPage(-1)" disabled>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <span id="currentCategoryPage" class="mx-2">1</span>
+                                        <button type="button" id="nextCategoryPage"
+                                                class="btn btn-sm btn-outline-secondary ms-1"
+                                                onclick="changeCategoryPage(1)">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN -->
+                    <div class="form-column">
+                        <div class="card mb-4">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h2 class="fs-5 fw-bold m-0">General Information</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label for="title" class="form-label">Book Title <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" id="title" th:field="*{title}" class="form-control"
+                                               placeholder="e.g., The Midnight Library" required
+                                               th:classappend="${#fields.hasErrors('title')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}"
+                                             th:errors="*{title}">Please enter the book title.
+                                        </div>
+                                        <div class="invalid-feedback">Please enter the book title.</div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="authors" class="form-label">Author(s) <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" id="authors" th:field="*{authors}" class="form-control"
+                                               placeholder="e.g., Matt Haig" required
+                                               th:classappend="${#fields.hasErrors('authors')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('authors')}"
+                                             th:errors="*{authors}">Please enter the author name(s).
+                                        </div>
+                                        <div class="invalid-feedback">Please enter the author name(s).</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="publisherId" class="form-label">Publisher <span class="text-danger">*</span></label>
+                                        <select id="publisherId" th:field="*{publisherId}" class="form-select" required
+                                                th:classappend="${#fields.hasErrors('publisherId')} ? 'is-invalid' : ''">
+                                            <option value="">Select a publisher</option>
+                                            <option th:each="publisher : ${publishers}"
+                                                    th:value="${publisher.publisherId}"
+                                                    th:text="${publisher.publisherName}"></option>
+                                        </select>
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('publisherId')}"
+                                             th:errors="*{publisherId}">Please select a publisher.
+                                        </div>
+                                        <div class="invalid-feedback">Please select a publisher.</div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="originalPrice" class="form-label">Original Price <span
+                                                class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="number" id="originalPrice" th:field="*{originalPrice}"
+                                                   class="form-control" placeholder="100000" step="1000" min="1000"
+                                                   required th:classappend="${#fields.hasErrors('originalPrice')} ? 'is-invalid' : ''">
+                                            <span class="input-group-text">VND</span>
+                                        </div>
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('originalPrice')}"
+                                             th:errors="*{originalPrice}">Please enter a valid price (minimum 1,000
+                                            VND).
+                                        </div>
+                                        <div class="invalid-feedback">Please enter a valid price (minimum 1,000 VND).
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="sellingPrice" class="form-label">Selling Price <span
+                                                class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="number" id="sellingPrice" th:field="*{sellingPrice}"
+                                                   class="form-control" placeholder="80000" step="1000" min="1000"
+                                                   required th:classappend="${#fields.hasErrors('sellingPrice')} ? 'is-invalid' : ''">
+                                            <span class="input-group-text">VND</span>
+                                        </div>
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('sellingPrice')}"
+                                             th:errors="*{sellingPrice}">Please enter a valid selling price (50-150% of
+                                            original price).
+                                        </div>
+                                        <div class="invalid-feedback">Please enter a valid selling price (minimum 1,000
+                                            VND).
+                                        </div>
+                                        <small class="form-text text-muted">Selling price must be between 50% and 150%
+                                            of original price.</small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label for="description" class="form-label">Description <span
+                                                class="text-danger">*</span></label>
+                                        <textarea id="description" th:field="*{description}" class="form-control"
+                                                  rows="4" placeholder="Enter a brief description of the book..."
+                                                  required maxlength="2000" oninput="checkCharCount(this)"
+                                                  th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"></textarea>
+                                        <div class="form-text"><span id="charCount">0</span>/2000 characters</div>
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}"
+                                             th:errors="*{description}">Please enter a description.
+                                        </div>
+                                        <div class="invalid-feedback">Please enter a description (max 2000
+                                            characters).
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="publicationDate" class="form-label">Publication Date <span
+                                                class="text-danger">*</span></label>
+                                        <input type="date" id="publicationDate" th:field="*{publicationDate}"
+                                               class="form-control" required
+                                               th:classappend="${#fields.hasErrors('publicationDate')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('publicationDate')}"
+                                             th:errors="*{publicationDate}">Please select a valid publication date.
+                                        </div>
+                                        <div class="invalid-feedback">Please select a valid publication date (not in the
+                                            future).
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="isbn" class="form-label">ISBN <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" id="isbn" th:field="*{isbn}" class="form-control"
+                                               placeholder="e.g., 978-0-7352-1129-2" required
+                                               th:classappend="${#fields.hasErrors('isbn')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('isbn')}"
+                                             th:errors="*{isbn}">Please enter a valid ISBN (10 or 13 digits).
+                                        </div>
+                                        <div class="invalid-feedback">Please enter a valid ISBN (10 or 13 digits).</div>
+                                        <small class="form-text text-muted">Format: ISBN-10 (e.g., 0-306-40615-2) or
+                                            ISBN-13 (e.g., 978-0-306-40615-7)</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="numberOfPages" class="form-label">Number of Pages <span
+                                                class="text-danger">*</span></label>
+                                        <input type="number" id="numberOfPages" th:field="*{numberOfPages}"
+                                               class="form-control" placeholder="e.g., 304" min="1" required
+                                               th:classappend="${#fields.hasErrors('numberOfPages')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('numberOfPages')}"
+                                             th:errors="*{numberOfPages}">Please enter a valid number of pages.
+                                        </div>
+                                        <div class="invalid-feedback">Please enter a valid number of pages (greater than
+                                            0).
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="dimensions" class="form-label">Dimensions <span class="text-danger">*</span></label>
+                                        <input type="text" id="dimensions" th:field="*{dimensions}" class="form-control"
+                                               placeholder="e.g., 16x24x4.2" required
+                                               th:classappend="${#fields.hasErrors('dimensions')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('dimensions')}"
+                                             th:errors="*{dimensions}">Please enter dimensions in the correct format.
+                                        </div>
+                                        <div class="invalid-feedback">Please enter the book dimensions.</div>
+                                        <small class="form-text text-muted">Format: width x height x thickness
+                                            (cm)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h2 class="fs-5 fw-bold m-0">Manage Stock</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="sku" class="form-label">Stock Keeping Unit (SKU) <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" id="sku" th:field="*{sku}" class="form-control"
+                                               placeholder="e.g., BK-MID-LIB-01" required
+                                               th:classappend="${#fields.hasErrors('sku')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('sku')}"
+                                             th:errors="*{sku}">Please enter a SKU.
+                                        </div>
+                                        <div class="invalid-feedback">Please enter a SKU.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="stockQuantity" class="form-label">Stock Quantity <span
+                                                class="text-danger">*</span></label>
+                                        <input type="number" id="stockQuantity" th:field="*{stockQuantity}"
+                                               class="form-control" placeholder="e.g., 2000" min="0" required
+                                               th:classappend="${#fields.hasErrors('stockQuantity')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('stockQuantity')}"
+                                             th:errors="*{stockQuantity}">Please enter a valid stock quantity.
+                                        </div>
+                                        <div class="invalid-feedback">Please enter a valid stock quantity (0 or
+                                            greater).
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden field for shop ID -->
+                        <input type="hidden" th:field="*{shopId}"/>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Client-side validators -->
+<script th:src="@{/js/validator.js}"></script>
+<!-- Book validation JS -->
+<script th:src="@{/js/book-validation.js}"></script>
+<!-- Core seller JS -->
+<script th:src="@{/js/seller.js}"></script>
+<!-- Specific JS for seller add product -->
+<script th:src="@{/js/seller-add-product.js}"></script>
+
+<!-- Common form functions -->
+<script>
+    // Filter categories based on search
+    function filterCategories() {
+        const searchText = document.getElementById('categorySearch').value.toLowerCase().trim();
+        const categoryItems = document.querySelectorAll('.category-item');
+        console.log("Filtering categories with search term:", searchText);
+
+        if (searchText === '') {
+            // If search is empty, show only first page
+            document.getElementById('currentCategoryPage').textContent = '1';
+            updateCategoryPages();
+            return;
+        }
+
+        // Show/hide categories based on search
+        let matchFound = false;
+        categoryItems.forEach(item => {
+            const label = item.querySelector('label').textContent.toLowerCase();
+            const matches = label.includes(searchText);
+
+            item.classList.toggle('d-none', !matches);
+
+            // Remove pagination classes during search
+            item.classList.remove('category-page-1', 'category-page-2');
+
+            if (matches) {
+                matchFound = true;
+                // All matching items are on "page 1" during search
+                item.classList.add('category-page-1');
+            }
+        });
+
+        // Disable pagination during search
+        document.getElementById('prevCategoryPage').disabled = true;
+        document.getElementById('nextCategoryPage').disabled = true;
+        document.getElementById('currentCategoryPage').textContent = matchFound ? '1' : '0';
+    }
+
+    // Change category page
+    function changeCategoryPage(direction) {
+        const currentPage = parseInt(document.getElementById('currentCategoryPage').textContent);
+        const newPage = currentPage + direction;
+        console.log("Changing category page from", currentPage, "to", newPage);
+
+        if (newPage < 1) return;
+
+        // Hide all categories
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.classList.add('d-none');
+        });
+
+        // Show categories for new page
+        document.querySelectorAll('.category-page-' + newPage).forEach(item => {
+            item.classList.remove('d-none');
+        });
+
+        // Update page number
+        document.getElementById('currentCategoryPage').textContent = newPage;
+
+        // Update button states
+        document.getElementById('prevCategoryPage').disabled = (newPage === 1);
+        document.getElementById('nextCategoryPage').disabled = (document.querySelectorAll('.category-page-' + (newPage + 1)).length === 0);
+    }
+
+    // Update category pages display
+    function updateCategoryPages() {
+        const currentPage = parseInt(document.getElementById('currentCategoryPage').textContent);
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.classList.add('d-none');
+        });
+        document.querySelectorAll('.category-page-' + currentPage).forEach(item => {
+            item.classList.remove('d-none');
+        });
+
+        // Update pagination buttons
+        document.getElementById('prevCategoryPage').disabled = (currentPage === 1);
+        document.getElementById('nextCategoryPage').disabled =
+            (document.querySelectorAll('.category-page-' + (currentPage + 1)).length === 0);
+    }
+
+    // Preview uploaded image
+    function previewImage(event) {
+        const input = event.target;
+        const preview = document.getElementById('imagePreview');
+        const errorMsg = document.getElementById('imageFormatError');
+
+        // Reset error message
+        errorMsg.style.display = 'none';
+
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            console.log("File selected:", file.name, "type:", file.type, "size:", file.size);
+
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                preview.src = 'https://placehold.co/300x450/e2e8f0/dc3545?text=Invalid+Format';
+                errorMsg.style.display = 'block';
+                input.value = ''; // Clear the input
+                console.log("Invalid file type");
+                return;
+            }
+
+            // Display preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                // Store in localStorage to preserve on form resubmission
+                localStorage.setItem('bookCoverImageData', e.target.result);
+                console.log("Image preview set");
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Count characters in description
+    function checkCharCount(textarea) {
+        const charCount = textarea.value.length;
+        document.getElementById('charCount').textContent = charCount;
+        console.log("Description character count:", charCount);
+        textarea.setCustomValidity(charCount > 2000 ? 'Description must be 2000 characters or less' : '');
+    }
+    
+    // Initialize form and validation on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Add product page initialized");
+        
+        // Initialize character counter
+        const description = document.getElementById('description');
+        if (description) {
+            checkCharCount(description);
+        }
+
+        // Set up category pages
+        updateCategoryPages();
+        
+        // Restore image preview if in localStorage (for form errors)
+        const imagePreview = document.getElementById('imagePreview');
+        const storedImageData = localStorage.getItem('bookCoverImageData');
+        
+        if (imagePreview && storedImageData) {
+            imagePreview.src = storedImageData;
+            console.log("Restored image preview from localStorage");
+        }
+        
+        // Set max date for publication date (today)
+        const publicationDateField = document.getElementById('publicationDate');
+        if (publicationDateField) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            publicationDateField.setAttribute('max', `${year}-${month}-${day}`);
+            console.log("Publication date max set to:", `${year}-${month}-${day}`);
+        }
+    });
+</script>
+</body>
+</html> 
