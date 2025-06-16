@@ -1,0 +1,294 @@
+/* seller.css - Seller dashboard styles */
+
+body {
+    background-color: #F8F5F0;
+    font-family: 'Open Sans', sans-serif;
+    color: #333;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif;
+    color: #2C3E50;
+    font-weight: 700;
+}
+
+/* Layout Elements */
+.seller-content {
+    margin-left: 0;
+    transition: margin-left 0.3s;
+    padding-top: 60px;
+}
+
+@media (min-width: 992px) {
+    .seller-content {
+        margin-left: 250px;
+    }
+}
+
+/* Topbar */
+.seller-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    z-index: 1030;
+    background-color: #FFFFFF;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    padding: 0 1.5rem;
+}
+
+.seller-topbar .navbar-brand {
+    font-family: 'Lora', serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #2C3E50;
+}
+
+/* Sidebar */
+.seller-sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    z-index: 1020;
+    background-color: #FFFFFF;
+    box-shadow: 1px 0 4px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    transition: transform 0.3s;
+}
+
+@media (max-width: 991px) {
+    .seller-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .seller-sidebar.show {
+        transform: translateX(0);
+    }
+}
+
+.seller-sidebar .nav-link {
+    padding: 0.75rem 1.5rem;
+    color: #495057;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+}
+
+.seller-sidebar .nav-link:hover {
+    background-color: #f8f9fa;
+    color: #2C3E50;
+}
+
+.seller-sidebar .nav-link.active {
+    color: #2C3E50;
+    background-color: #e9ecef;
+    border-left-color: #2C3E50;
+}
+
+.seller-sidebar .nav-link i {
+    margin-right: 0.75rem;
+    width: 20px;
+    text-align: center;
+}
+
+.seller-sidebar .dropdown-menu {
+    background-color: #f8f9fa;
+    border-radius: 0;
+    border: none;
+    padding: 0;
+    margin: 0;
+    position: static !important;
+    transform: none !important;
+    box-shadow: none;
+    display: none;
+}
+
+.seller-sidebar .dropdown-menu.show {
+    display: block;
+}
+
+.seller-sidebar .dropdown-item {
+    padding: 0.75rem 1.5rem 0.75rem 3.5rem;
+    color: #495057;
+}
+
+.seller-sidebar .dropdown-item:hover,
+.seller-sidebar .dropdown-item:focus {
+    background-color: #e9ecef;
+    color: #2C3E50;
+}
+
+.seller-sidebar .dropdown-toggle::after {
+    display: none;
+}
+
+.seller-sidebar .dropdown-arrow {
+    margin-left: auto;
+    transition: transform 0.3s;
+}
+
+.seller-sidebar .dropdown-arrow.rotate {
+    transform: rotate(180deg);
+}
+
+/* Cards and Content */
+.card {
+    border: none;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    background-color: transparent;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.stats-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+/* Tables */
+.table thead th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.row-hover {
+    background-color: #f8f9fa;
+}
+
+/* Buttons */
+.btn {
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background-color: #2C3E50;
+    border-color: #2C3E50;
+}
+
+.btn-primary:hover {
+    background-color: #1e2b37;
+    border-color: #1a252f;
+}
+
+.btn-success {
+    background-color: #27ae60;
+    border-color: #27ae60;
+}
+
+.btn-success:hover {
+    background-color: #219653;
+    border-color: #1e8449;
+}
+
+/* Forms */
+.form-control {
+    border-color: #ced4da;
+    border-radius: 0.25rem;
+}
+
+.form-control:focus {
+    border-color: #2C3E50;
+    box-shadow: 0 0 0 0.25rem rgba(44, 62, 80, 0.1);
+}
+
+/* Overlay for mobile sidebar */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1019;
+    display: none;
+}
+
+.sidebar-overlay.show {
+    display: block;
+}
+
+/* Stats cards - Dashboard */
+.stats-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: 1rem;
+    color: #fff;
+}
+
+.stats-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.stats-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0;
+    color: #2C3E50;
+}
+
+/* Validation styling */
+.is-invalid {
+    border-color: #dc3545;
+}
+
+.validation-error {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Header actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+}
+
+/* Back link */
+.back-link {
+    color: #6c757d;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    text-decoration: none;
+}
+
+.back-link i {
+    margin-right: 0.5rem;
+}
+
+.back-link:hover {
+    color: #2C3E50;
+}
+
+/* Add more custom styles as needed */

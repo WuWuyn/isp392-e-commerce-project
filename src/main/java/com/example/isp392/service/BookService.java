@@ -1,39 +1,66 @@
 package com.example.isp392.service;
 
+import com.example.isp392.dto.BookFormDTO;
 import com.example.isp392.model.Book;
 import com.example.isp392.model.Category;
 import com.example.isp392.model.Publisher;
+import com.example.isp392.model.Shop;
 import com.example.isp392.repository.BookRepository;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
+import com.example.isp392.repository.ShopRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
+import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 public class BookService {
 
+    private static final Logger log = LoggerFactory.getLogger(BookService.class);
+
     private final BookRepository bookRepository;
+    private final CategoryRepository categoryRepository;
+    private final PublisherRepository publisherRepository;
+    private final ShopRepository shopRepository;
     
     @PersistenceContext
     private EntityManager entityManager;
 
-    public BookService(BookRepository bookRepository, CategoryRepository categoryRepository, PublisherRepository publisherRepository) {
+    /**
+     * Constructor for dependency injection
+     * 
+     * @param bookRepository Repository for book data access
+     * @param categoryRepository Repository for category data access
+     * @param publisherRepository Repository for publisher data access
+     * @param shopRepository Repository for shop data access
+     */
+    public BookService(
+            BookRepository bookRepository,
+            CategoryRepository categoryRepository,
+            PublisherRepository publisherRepository,
+            ShopRepository shopRepository) {
         this.bookRepository = bookRepository;
-        // We don't need to store these repositories as fields since they're only used in Criteria API queries
-        // But we still need them in the constructor for dependency injection
+        this.categoryRepository = categoryRepository;
+        this.publisherRepository = publisherRepository;
+        this.shopRepository = shopRepository;
     }
 
     // Utility method to remove diacritical marks (accents) from a string
@@ -96,6 +123,186 @@ public class BookService {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
         Pageable pageable = PageRequest.of(page, size, sort);
         return bookRepository.findByCategory(category, pageable);
+    }
+    
+    /**
+     * Find books by shop ID with pagination and sorting
+     * 
+     * @param shopId ID of the shop
+     * @param pageable Pagination and sorting information
+     * @return Page of books belonging to the shop
+     */
+    public Page<Book> findByShopId(Integer shopId, Pageable pageable) {
+        return bookRepository.findByShopShopId(shopId, pageable);
+    }
+    
+    /**
+     * Search for books by title within a specific shop
+     * 
+     * @param shopId ID of the shop
+     * @param title Search term for book title
+     * @param pageable Pagination and sorting information
+     * @return Page of matching books belonging to the shop
+     */
+    public Page<Book> searchBooksByShopAndTitle(Integer shopId, String title, Pageable pageable) {
+        // If title is empty, return all books from the shop
+        if (title == null || title.trim().isEmpty()) {
+            return findByShopId(shopId, pageable);
+        }
+        
+        // Normalize search query for case-insensitive and accent-insensitive search
+        String normalizedTitle = removeDiacriticalMarks(title);
+        
+        // Search by normalized title within shop's books
+        return bookRepository.findByShopShopIdAndNormalizedTitleContaining(shopId, normalizedTitle, pageable);
+    }
+    
+    /**
+     * Create a new book from BookFormDTO
+     * 
+     * @param bookForm DTO with book information
+     * @param coverImageUrl URL of the uploaded cover image
+     * @return Created book entity
+     */
+    @Transactional
+    public Book createBook(BookFormDTO bookForm, String coverImageUrl) {
+        log.debug("Creating new book: {}", bookForm.getTitle());
+
+        // Create new book entity
+        Book book = new Book();
+        
+        // Set basic book information
+        book.setTitle(bookForm.getTitle());
+        book.setAuthors(bookForm.getAuthors());
+        book.setDescription(bookForm.getDescription());
+        book.setIsbn(bookForm.getIsbn());
+        book.setNumberOfPages(bookForm.getNumberOfPages());
+        book.setDimensions(bookForm.getDimensions());
+        book.setSku(bookForm.getSku());
+        book.setPublicationDate(bookForm.getPublicationDate());
+        book.setOriginalPrice(bookForm.getOriginalPrice());
+        book.setSellingPrice(bookForm.getSellingPrice());
+        book.setStockQuantity(bookForm.getStockQuantity());
+        book.setCoverImgUrl(coverImageUrl);
+        
+        // Set normalized title for search optimization
+        String normalizedTitle = removeDiacriticalMarks(bookForm.getTitle());
+        book.setNormalizedTitle(normalizedTitle);
+        
+        // Set creation date
+        book.setDateAdded(LocalDate.now());
+        
+        // Default values for new book
+        book.setAverageRating(new BigDecimal("0.0"));
+        book.setTotalReviews(0);
+        book.setActive(true); // New books are active by default
+        
+        // Get and set shop
+        Shop shop = shopRepository.findById(bookForm.getShopId())
+                .orElseThrow(() -> new IllegalArgumentException("Shop not found with ID: " + bookForm.getShopId()));
+        book.setShop(shop);
+        
+        // Get and set publisher if provided
+        if (bookForm.getPublisherId() != null) {
+            Publisher publisher = publisherRepository.findById(bookForm.getPublisherId())
+                    .orElseThrow(() -> new IllegalArgumentException("Publisher not found with ID: " + bookForm.getPublisherId()));
+            book.setPublisher(publisher);
+        }
+        
+        // Get and set categories
+        Set<Category> categories = new HashSet<>();
+        for (Integer categoryId : bookForm.getCategoryIds()) {
+            Category category = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found with ID: " + categoryId));
+            categories.add(category);
+        }
+        book.setCategories(categories);
+        
+        // Save and return book
+        Book savedBook = bookRepository.save(book);
+        log.info("Book created successfully with ID: {}", savedBook.getBook_id());
+        
+        return savedBook;
+    }
+    
+    /**
+     * Update an existing book from BookFormDTO
+     * 
+     * @param bookId ID of the book to update
+     * @param bookForm DTO with updated book information
+     * @param coverImageUrl URL of the updated cover image (or null to keep existing)
+     * @return Updated book entity
+     */
+    @Transactional
+    public Book updateBook(Integer bookId, BookFormDTO bookForm, String coverImageUrl) {
+        log.debug("Updating book with ID: {}", bookId);
+        
+        // Find existing book
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Book not found with ID: " + bookId));
+        
+        // Update basic book information
+        book.setTitle(bookForm.getTitle());
+        book.setAuthors(bookForm.getAuthors());
+        book.setDescription(bookForm.getDescription());
+        book.setIsbn(bookForm.getIsbn());
+        book.setNumberOfPages(bookForm.getNumberOfPages());
+        book.setDimensions(bookForm.getDimensions());
+        book.setSku(bookForm.getSku());
+        book.setPublicationDate(bookForm.getPublicationDate());
+        book.setOriginalPrice(bookForm.getOriginalPrice());
+        book.setSellingPrice(bookForm.getSellingPrice());
+        book.setStockQuantity(bookForm.getStockQuantity());
+        
+        // Update cover image if provided
+        if (coverImageUrl != null) {
+            book.setCoverImgUrl(coverImageUrl);
+        }
+        
+        // Update normalized title for search optimization
+        String normalizedTitle = removeDiacriticalMarks(bookForm.getTitle());
+        book.setNormalizedTitle(normalizedTitle);
+        
+        // Update publisher if provided
+        if (bookForm.getPublisherId() != null) {
+            Publisher publisher = publisherRepository.findById(bookForm.getPublisherId())
+                    .orElseThrow(() -> new IllegalArgumentException("Publisher not found with ID: " + bookForm.getPublisherId()));
+            book.setPublisher(publisher);
+        }
+        
+        // Update categories
+        Set<Category> categories = new HashSet<>();
+        for (Integer categoryId : bookForm.getCategoryIds()) {
+            Category category = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found with ID: " + categoryId));
+            categories.add(category);
+        }
+        book.setCategories(categories);
+        
+        // Save and return updated book
+        Book updatedBook = bookRepository.save(book);
+        log.info("Book updated successfully with ID: {}", updatedBook.getBook_id());
+        
+        return updatedBook;
+    }
+    
+    /**
+     * Delete a book by ID
+     * 
+     * @param bookId ID of the book to delete
+     */
+    @Transactional
+    public void deleteBook(Integer bookId) {
+        log.debug("Deleting book with ID: {}", bookId);
+        
+        // Find book to ensure it exists
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Book not found with ID: " + bookId));
+        
+        // Delete book
+        bookRepository.delete(book);
+        
+        log.info("Book deleted successfully with ID: {}", bookId);
     }
     
     /**

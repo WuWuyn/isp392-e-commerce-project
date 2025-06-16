@@ -34,4 +34,23 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
     // Tìm những sách có giảm giá (selling_price < original_price)
     @Query("SELECT b FROM Book b WHERE b.sellingPrice < b.originalPrice")
     List<Book> findDiscountedBooks(Pageable pageable);
+    
+    /**
+     * Find all books belonging to a specific shop with pagination
+     * 
+     * @param shopId ID of the shop
+     * @param pageable pagination information
+     * @return page of books belonging to the shop
+     */
+    Page<Book> findByShopShopId(Integer shopId, Pageable pageable);
+    
+    /**
+     * Search for books by normalized title within a specific shop
+     * 
+     * @param shopId ID of the shop
+     * @param normalizedTitle Normalized title to search for (case insensitive, accent insensitive)
+     * @param pageable pagination information
+     * @return page of matching books belonging to the shop
+     */
+    Page<Book> findByShopShopIdAndNormalizedTitleContaining(Integer shopId, String normalizedTitle, Pageable pageable);
 }
