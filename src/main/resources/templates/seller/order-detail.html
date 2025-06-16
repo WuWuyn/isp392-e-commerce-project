@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details - ReadHub Seller</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/seller-style.css}">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8F5F0;
+            color: #333;
+        }
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2C3E50;
+            border-bottom: 2px solid #2C3E50;
+            padding-bottom: 0.5rem;
+        }
+        .content-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .btn-primary {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-primary:hover {
+            background-color: #1e2b37;
+            border-color: #1e2b37;
+        }
+        .order-summary-card {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        .order-summary-card .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+        }
+        .order-summary-card .card-body {
+            padding: 1.5rem;
+        }
+        .order-info-item {
+            margin-bottom: 0.75rem;
+        }
+        .order-info-item strong {
+            color: #2C3E50;
+        }
+        .order-status-badge {
+            font-size: 0.9rem;
+            padding: 0.5em 0.8em;
+        }
+        .order-item-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .order-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px dashed #eee;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .order-item img {
+            width: 90px;
+            height: 135px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 1rem;
+            border: 1px solid #eee;
+        }
+        .order-item-details {
+            flex-grow: 1;
+        }
+        .order-item-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .order-item-quantity,
+        .order-item-price {
+            font-size: 0.95rem;
+            color: #6c757d;
+        }
+        .order-item-price-total {
+            font-weight: 600;
+            color: #e74c3c;
+        }
+        .total-breakdown {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e9ecef;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        .total-label {
+            font-weight: 600;
+        }
+        .total-value {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+        .grand-total-row {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #e74c3c;
+            border-top: 2px solid #2C3E50;
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+<!-- Include Topbar -->
+<div th:replace="fragments/seller-topbar :: seller-topbar"></div>
+
+<div class="container my-4">
+    <div class="row">
+        <!-- Include Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div th:replace="fragments/seller-account-sidebar :: seller-sidebar"></div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="content-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="section-title mb-0">Order Details</h3>
+                    <a th:href="@{/seller/orders}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-2"></i> Back to Orders
+                    </a>
+                </div>
+
+                <div th:if="${order == null}" class="alert alert-danger">
+                    Order not found.
+                </div>
+
+                <div th:unless="${order == null}">
+                    <!-- Order Summary -->
+                    <div class="order-summary-card card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>Order #<span th:text="${order.orderId}"></span></span>
+                            <span th:classappend="'badge ' + (${order.orderStatus.name()} == 'PENDING' ? 'bg-warning text-dark' : 
+                               (${order.orderStatus.name()} == 'PROCESSING' ? 'bg-info text-dark' : 
+                               (${order.orderStatus.name()} == 'SHIPPED' ? 'bg-primary' : 
+                               (${order.orderStatus.name()} == 'DELIVERED' ? 'bg-success' : 
+                               (${order.orderStatus.name()} == 'CANCELLED' ? 'bg-danger' : 'bg-secondary')))))"
+                               class="order-status-badge" th:text="${order.orderStatus.displayName}">Status</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="order-info-item"><strong>Order Date:</strong> <span th:text="${#temporals.format(order.orderDate, 'dd MMM yyyy HH:mm')}"></span></p>
+                                    <p class="order-info-item"><strong>Payment Method:</strong> <span th:text="${order.paymentMethod.displayName}"></span></p>
+                                    <p class="order-info-item"><strong>Payment Status:</strong> <span th:text="${order.paymentStatus.displayName}"></span></p>
+                                    <p class="order-info-item"><strong>Notes:</strong> <span th:text="${order.notes != null ? order.notes : 'N/A'}"></span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="order-info-item"><strong>Customer Name:</strong> <span th:text="${order.user.fullName}"></span></p>
+                                    <p class="order-info-item"><strong>Customer Email:</strong> <span th:text="${order.user.email}"></span></p>
+                                    <p class="order-info-item"><strong>Customer Phone:</strong> <span th:text="${order.user.phone != null ? order.user.phone : 'N/A'}"></span></p>
+                                    <p class="order-info-item"><strong>Shipping Address:</strong> <span th:text="${order.shippingAddress != null ? order.shippingAddress : 'N/A'}"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Items -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Items in this Order</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="order-item-list">
+                                <li class="order-item" th:each="item : ${order.orderItems}">
+                                    <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}" alt="Book Cover">
+                                    <div class="order-item-details">
+                                        <h6 class="order-item-title" th:text="${item.book.title}">Book Title</h6>
+                                        <p class="order-item-quantity">Quantity: <span th:text="${item.quantity}"></span></p>
+                                        <p class="order-item-price">Unit Price: <span th:text="${#numbers.formatCurrency(item.price)}"></span></p>
+                                    </div>
+                                    <span class="order-item-price-total" th:text="${#numbers.formatCurrency(item.price.multiply(new BigDecimal(item.quantity)))}"></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Price Breakdown -->
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Order Totals</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="total-breakdown">
+                                <div class="total-row">
+                                    <span class="total-label">Subtotal:</span>
+                                    <span class="total-value" th:text="${#numbers.formatCurrency(order.subTotal)}"></span>
+                                </div>
+                                <div class="total-row">
+                                    <span class="total-label">Shipping Fee:</span>
+                                    <span class="total-value" th:text="${#numbers.formatCurrency(order.shippingFee)}"></span>
+                                </div>
+                                <div class="total-row" th:if="${order.discountAmount != null && order.discountAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                                    <span class="total-label">Discount:</span>
+                                    <span class="total-value text-danger">-<span th:text="${#numbers.formatCurrency(order.discountAmount)}"></span></span>
+                                </div>
+                                <div class="total-row grand-total-row">
+                                    <span class="total-label">Total Amount:</span>
+                                    <span class="total-value" th:text="${#numbers.formatCurrency(order.totalAmount)}"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
