@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotion Management - ReadHub</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8F5F0;
+            color: #333;
+        }
+        .navbar-brand {
+            font-family: 'Lora', serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: #2C3E50;
+        }
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2C3E50;
+            border-bottom: 2px solid #2C3E50;
+            padding-bottom: 0.5rem;
+        }
+        .content-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .btn-primary {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-primary:hover {
+            background-color: #1e2b37;
+            border-color: #1e2b37;
+        }
+        .promotion-card {
+            border-left: 4px solid #2C3E50;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .promotion-card:hover {
+            transform: translateX(5px);
+        }
+        .promotion-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status-expired {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        /* Sidebar Styles from Dashboard */
+        .account-sidebar {
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+        .account-sidebar .list-group-item {
+            border: none;
+            border-left: 4px solid transparent;
+            font-weight: 600;
+        }
+        .account-sidebar .list-group-item.active {
+            background-color: #f8f9fa;
+            color: #2C3E50;
+            border-left: 4px solid #2C3E50;
+        }
+        .account-sidebar .list-group-item i {
+            margin-right: 10px;
+            color: #6c757d;
+        }
+        .account-sidebar .list-group-item.active i {
+            color: #2C3E50;
+        }
+        .btn-outline-primary:hover {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .account-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .profile-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .default-profile {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #E9ECEF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #6c757d;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .stat-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #2C3E50;
+        }
+        .stat-card h4 {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+        .stat-card p {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0;
+            color: #2C3E50;
+        }
+        .stat-card i {
+            font-size: 2.5rem;
+            color: #e9ecef;
+            position: absolute;
+            right: 1.5rem;
+        }
+        
+        /* Additional styles for new components */
+        .notification-card {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .activity-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+        
+        .quick-action-btn {
+            width: 100%;
+            margin-bottom: 1rem;
+            text-align: left;
+            padding: 1rem;
+        }
+        
+        .quick-action-btn i {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Topbar -->
+    <div th:replace="fragments/admin-topbar :: admin-topbar"></div>
+
+    <div class="container my-4">
+        <div class="row">
+            <!-- Include Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div th:replace="fragments/admin-sidebar :: admin-sidebar"></div>
+            </div>
+            
+            <div class="col-lg-9">
+                <!-- Success/Error Messages -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Promotion Management Header -->
+                <div class="content-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="section-title mb-0">Promotion Management</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPromotionModal">
+                            <i class="fas fa-plus me-2"></i>Add New Promotion
+                        </button>
+                    </div>
+
+                    <!-- Promotion List -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Description</th>
+                                    <th>Discount</th>
+                                    <th>Valid Until</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="promotion : ${promotions}" th:class="${promotion.isActive ? '' : 'table-secondary'}">
+                                    <td th:text="${promotion.code}">SUMMER2024</td>
+                                    <td th:text="${promotion.description}">Summer Sale Discount</td>
+                                    <td>
+                                        <span th:if="${promotion.discountType == 'PERCENTAGE'}" 
+                                              th:text="${promotion.discountValue + '%'}">10%</span>
+                                        <span th:if="${promotion.discountType == 'FIXED_AMOUNT'}" 
+                                              th:text="${'$' + promotion.discountValue}">$10</span>
+                                    </td>
+                                    <td th:text="${#temporals.format(promotion.endDate, 'dd-MM-yyyy')}">31-12-2024</td>
+                                    <td>
+                                        <span th:class="${'promotion-status ' + 
+                                            (promotion.isActive ? 
+                                                (promotion.endDate.isBefore(T(java.time.LocalDateTime).now()) ? 'status-expired' : 'status-active') 
+                                                : 'status-inactive')}"
+                                              th:text="${promotion.isActive ? 
+                                                (promotion.endDate.isBefore(T(java.time.LocalDateTime).now()) ? 'Expired' : 'Active') 
+                                                : 'Inactive'}">
+                                            Active
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary me-1" 
+                                                th:data-promotion-id="${promotion.promotionId}"
+                                                onclick="editPromotion(this.getAttribute('data-promotion-id'))">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                th:data-promotion-id="${promotion.promotionId}"
+                                                th:if="${promotion.isActive}"
+                                                onclick="confirmDisable(this.getAttribute('data-promotion-id'))">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Promotion Modal -->
+    <div class="modal fade" id="addPromotionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Add New Promotion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="promotionForm" th:action="@{/admin/promotions}" method="POST">
+                        <input type="hidden" id="promotionId" name="promotionId">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Promotion Code*</label>
+                                <input type="text" class="form-control" name="code" required
+                                       pattern="[A-Za-z0-9]+" title="Only letters and numbers allowed">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Discount Type*</label>
+                                <select class="form-select" name="discountType" required>
+                                    <option value="PERCENTAGE">Percentage</option>
+                                    <option value="FIXED_AMOUNT">Fixed Amount</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Discount Value*</label>
+                                <input type="number" class="form-control" name="discountValue" required
+                                       min="0" step="0.01">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Maximum Discount Amount</label>
+                                <input type="number" class="form-control" name="maxDiscountAmount"
+                                       min="0" step="0.01">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Start Date*</label>
+                                <input type="datetime-local" class="form-control" name="startDate" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">End Date*</label>
+                                <input type="datetime-local" class="form-control" name="endDate" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Minimum Order Value</label>
+                                <input type="number" class="form-control" name="minOrderValue"
+                                       min="0" step="0.01">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Usage Limit Per User</label>
+                                <input type="number" class="form-control" name="usageLimitPerUser"
+                                       min="1">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Total Usage Limit</label>
+                                <input type="number" class="form-control" name="totalUsageLimit"
+                                       min="1">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="isActive" id="isActive" checked>
+                                <label class="form-check-label" for="isActive">
+                                    Active
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="promotionForm" class="btn btn-primary">Save Promotion</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disable Confirmation Modal -->
+    <div class="modal fade" id="disablePromotionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Disable</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to disable this promotion? This action cannot be undone.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="disableForm" method="POST" style="display: inline;">
+                        <input type="hidden" id="disablePromotionId" name="promotionId">
+                        <button type="submit" class="btn btn-danger">Disable</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        function editPromotion(promotionId) {
+            fetch(`/admin/promotions/${promotionId}`)
+                .then(response => response.json())
+                .then(promotion => {
+                    document.getElementById('modalTitle').textContent = 'Edit Promotion';
+                    document.getElementById('promotionId').value = promotion.promotionId;
+                    
+                    // Fill form fields
+                    const form = document.getElementById('promotionForm');
+                    form.code.value = promotion.code;
+                    form.description.value = promotion.description;
+                    form.discountType.value = promotion.discountType;
+                    form.discountValue.value = promotion.discountValue;
+                    form.maxDiscountAmount.value = promotion.maxDiscountAmount;
+                    form.minOrderValue.value = promotion.minOrderValue;
+                    form.usageLimitPerUser.value = promotion.usageLimitPerUser;
+                    form.totalUsageLimit.value = promotion.totalUsageLimit;
+                    form.isActive.checked = promotion.isActive;
+                    
+                    // Format dates for datetime-local input
+                    const startDate = new Date(promotion.startDate);
+                    const endDate = new Date(promotion.endDate);
+                    form.startDate.value = startDate.toISOString().slice(0, 16);
+                    form.endDate.value = endDate.toISOString().slice(0, 16);
+                    
+                    // Show modal
+                    new bootstrap.Modal(document.getElementById('addPromotionModal')).show();
+                });
+        }
+
+        function confirmDisable(promotionId) {
+            const form = document.getElementById('disableForm');
+            form.action = `/admin/promotions/${promotionId}/disable`;
+            document.getElementById('disablePromotionId').value = promotionId;
+            new bootstrap.Modal(document.getElementById('disablePromotionModal')).show();
+        }
+
+        // Form validation
+        document.getElementById('promotionForm').addEventListener('submit', function(event) {
+            const startDate = new Date(this.startDate.value);
+            const endDate = new Date(this.endDate.value);
+            
+            if (startDate >= endDate) {
+                event.preventDefault();
+                alert('End date must be after start date');
+            }
+            
+            if (this.discountType.value === 'PERCENTAGE' && parseFloat(this.discountValue.value) > 100) {
+                event.preventDefault();
+                alert('Percentage discount cannot be greater than 100%');
+            }
+        });
+    </script>
+</body>
+</html> 
