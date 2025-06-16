@@ -1,6 +1,7 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.dto.BookFormDTO;
+import com.example.isp392.dto.ShopFormDTO;
 import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.*;
 import com.example.isp392.service.*;
@@ -32,6 +33,7 @@ import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Controller
 @RequestMapping("/seller")
@@ -43,6 +45,7 @@ public class SellerController {
     private final ShopService shopService;
     private final CategoryService categoryService;
     private final PublisherService publisherService;
+    private final OrderService orderService;
 
     /**
      * Constructor for dependency injection
@@ -51,14 +54,16 @@ public class SellerController {
      * @param shopService Service for shop-related operations
      * @param categoryService Service for category-related operations
      * @param publisherService Service for publisher-related operations
+     * @param orderService Service for order-related operations
      */
     public SellerController(UserService userService, BookService bookService, ShopService shopService, 
-                           CategoryService categoryService, PublisherService publisherService) {
+                           CategoryService categoryService, PublisherService publisherService, OrderService orderService) {
         this.userService = userService;
         this.bookService = bookService;
         this.shopService = shopService;
         this.categoryService = categoryService;
         this.publisherService = publisherService;
+        this.orderService = orderService;
     }
 
     @GetMapping("/login")
@@ -881,9 +886,75 @@ public class SellerController {
     }
 
     @GetMapping("/orders")
-    public String showOrdersPage(Model model) {
-        // Placeholder for seller orders
+    public String showOrdersPage(
+            Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            Authentication authentication) {
+
+        User user = getCurrentUser(authentication);
+        if (user == null) {
+            return "redirect:/seller/login";
+        }
+
+        // Get seller's shop to ensure they are a seller
+        Shop shop = shopService.getShopByUserId(user.getUserId());
+        if (shop == null) {
+            model.addAttribute("errorMessage", "You need to set up your shop first to view orders.");
+            return "redirect:/seller/shop-information";
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
+        Page<Order> ordersPage = orderService.findSellerOrders(user.getUserId(), status, dateFrom, dateTo, pageable);
+
+        model.addAttribute("user", user);
+        model.addAttribute("roles", userService.getUserRoles(user));
+        model.addAttribute("ordersPage", ordersPage);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", ordersPage.getTotalPages());
+        model.addAttribute("paramStatus", status);
+        model.addAttribute("paramDateFrom", dateFrom);
+        model.addAttribute("paramDateTo", dateTo);
+
         return "seller/orders";
+    }
+
+    @GetMapping("/orders/{orderId}")
+    public String viewSellerOrderDetail(@PathVariable Integer orderId, Model model, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if (user == null) {
+            return "redirect:/seller/login";
+        }
+
+        // Get seller's shop to ensure they are a seller
+        Shop shop = shopService.getShopByUserId(user.getUserId());
+        if (shop == null) {
+            model.addAttribute("errorMessage", "You need to set up your shop first to view order details.");
+            return "redirect:/seller/shop-information";
+        }
+
+        // Find order and check if any item in the order belongs to this seller's shop
+        Optional<Order> orderOpt = orderService.findOrderById(orderId);
+        if (orderOpt.isEmpty()) {
+            return "redirect:/seller/orders";
+        }
+
+        Order order = orderOpt.get();
+        boolean isSellerOrder = order.getOrderItems().stream()
+                                    .anyMatch(item -> item.getBook().getShop().getUser().getUserId().equals(user.getUserId()));
+        
+        if (!isSellerOrder) {
+            // If the order does not contain any items from this seller's shop, deny access
+            return "redirect:/seller/orders";
+        }
+
+        model.addAttribute("user", user);
+        model.addAttribute("roles", userService.getUserRoles(user));
+        model.addAttribute("order", order);
+        return "seller/order-detail";
     }
 
     @GetMapping("/cart")
@@ -903,6 +974,92 @@ public class SellerController {
             log.error("Error displaying seller cart: {}", e.getMessage());
             return "redirect:/seller/login";
         }
+    }
+
+    @GetMapping("/shop-information/edit")
+    public String showEditShopForm(Model model) {
+        try {
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                model.addAttribute("errorMessage", "Shop information not found. Please register your shop first.");
+                return "redirect:/seller/shop-information";
+            }
+
+            ShopFormDTO shopForm = new ShopFormDTO();
+            shopForm.setShopId(shop.getShopId());
+            shopForm.setShopName(shop.getShopName());
+            shopForm.setDescription(shop.getDescription());
+            shopForm.setShopDetailAddress(shop.getShopDetailAddress());
+            shopForm.setShopWardName(shop.getShopWard());
+            shopForm.setShopDistrictName(shop.getShopDistrict());
+            shopForm.setShopProvinceName(shop.getShopProvince());
+            shopForm.setContactEmail(shop.getContactEmail());
+            shopForm.setContactPhone(shop.getContactPhone());
+            shopForm.setTaxCode(shop.getTaxCode());
+            shopForm.setExistingLogoUrl(shop.getLogoUrl());
+            shopForm.setExistingCoverImageUrl(shop.getCoverImageUrl());
+            shopForm.setExistingIdentificationFileUrl(shop.getIdentificationFileUrl());
+            shopForm.setIsActive(shop.isActive());
+
+            model.addAttribute("shopForm", shopForm);
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+
+            return "seller/seller-edit-shop";
+        } catch (Exception e) {
+            log.error("Error displaying edit shop form: {}", e.getMessage());
+            model.addAttribute("errorMessage", "Error loading shop information: " + e.getMessage());
+            return "redirect:/seller/shop-information";
+        }
+    }
+
+    @PostMapping("/shop-information/edit")
+    public String processEditShop(
+            @Valid @ModelAttribute("shopForm") ShopFormDTO shopForm,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+
+        try {
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/seller/login";
+            }
+
+            if (bindingResult.hasErrors()) {
+                log.debug("Validation errors: {}", bindingResult.getAllErrors());
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                // Re-add existing file URLs if validation fails and no new files were uploaded
+                Shop existingShop = shopService.getShopByUserId(user.getUserId());
+                if (existingShop != null) {
+                    shopForm.setExistingLogoUrl(existingShop.getLogoUrl());
+                    shopForm.setExistingCoverImageUrl(existingShop.getCoverImageUrl());
+                    shopForm.setExistingIdentificationFileUrl(existingShop.getIdentificationFileUrl());
+                }
+                return "seller/seller-edit-shop";
+            }
+            
+            shopService.updateShop(shopForm);
+            redirectAttributes.addFlashAttribute("successMessage", "Shop information updated successfully!");
+            return "redirect:/seller/shop-information";
+        } catch (IllegalArgumentException e) {
+            log.error("Error updating shop: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (IOException e) {
+            log.error("File upload error: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error uploading files: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error updating shop: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "An unexpected error occurred: " + e.getMessage());
+        }
+        // In case of error, redirect back to the edit form or shop info page
+        return "redirect:/seller/shop-information";
     }
 
     // Helper methods for authentication

@@ -150,4 +150,32 @@ public class OrderService {
     public Order save(Order order) {
         return orderRepository.save(order);
     }
+
+    /**
+     * Find all orders for a specific seller with pagination and filtering.
+     * @param sellerId ID of the seller.
+     * @param status Optional order status to filter by.
+     * @param dateFrom Optional start date to filter by.
+     * @param dateTo Optional end date to filter by.
+     * @param pageable Pagination and sorting information.
+     * @return Page of orders belonging to the seller.
+     */
+    public Page<Order> findSellerOrders(Integer sellerId, String status, LocalDate dateFrom, LocalDate dateTo, Pageable pageable) {
+        OrderStatus orderStatus = null;
+        if (status != null && !status.isEmpty()) {
+            orderStatus = OrderStatus.valueOf(status);
+        }
+
+        LocalDateTime startDateTime = null;
+        if (dateFrom != null) {
+            startDateTime = dateFrom.atStartOfDay();
+        }
+
+        LocalDateTime endDateTime = null;
+        if (dateTo != null) {
+            endDateTime = dateTo.plusDays(1).atStartOfDay().minusNanos(1);
+        }
+
+        return orderRepository.findSellerOrders(sellerId, orderStatus, startDateTime, endDateTime, pageable);
+    }
 }

@@ -106,6 +106,7 @@
                             </span>
                         </p>
                         <p class="mb-1" th:if="${book.publisher != null}"><strong class="text-secondary">Publisher:</strong> <span th:text="${book.publisher.publisherName}">Publisher Name</span></p>
+                        <p class="mb-1" th:if="${book.shop != null}"><strong class="text-secondary">Shop:</strong> <span th:text="${book.shop.shopName}">Shop Name</span></p>
                         <!-- Hiển thị thông tin về số lượng tồn kho -->
                         <p class="mb-1">
                             <strong class="text-secondary">Availability:</strong> 

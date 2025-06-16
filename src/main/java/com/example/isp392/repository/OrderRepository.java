@@ -79,4 +79,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             User user, OrderStatus status, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
 
     Optional<Order> findByOrderIdAndUser(Integer orderId, User user);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE b.shop.user.userId = :sellerId AND (:status IS NULL OR o.orderStatus = :status) AND (:dateFrom IS NULL OR o.orderDate >= :dateFrom) AND (:dateTo IS NULL OR o.orderDate <= :dateTo)")
+    Page<Order> findSellerOrders(
+            @Param("sellerId") Integer sellerId,
+            @Param("status") OrderStatus status,
+            @Param("dateFrom") LocalDateTime dateFrom,
+            @Param("dateTo") LocalDateTime dateTo,
+            Pageable pageable);
 } 
