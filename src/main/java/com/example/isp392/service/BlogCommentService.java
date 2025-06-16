@@ -5,7 +5,6 @@ import com.example.isp392.model.BlogComment;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.BlogCommentRepository;
 import com.example.isp392.repository.BlogRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +22,6 @@ public class BlogCommentService {
     private final BlogCommentRepository blogCommentRepository;
     private final BlogRepository blogRepository;
 
-    @Autowired
     public BlogCommentService(BlogCommentRepository blogCommentRepository, BlogRepository blogRepository) {
         this.blogCommentRepository = blogCommentRepository;
         this.blogRepository = blogRepository;

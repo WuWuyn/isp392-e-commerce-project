@@ -125,7 +125,7 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginPage("/admin/login")
                 .loginProcessingUrl("/admin/process_login")
-                .defaultSuccessUrl("/admin/products")
+                .defaultSuccessUrl("/admin/dashboard")
                 .failureUrl("/admin/login?error")
                 .permitAll()
             )
