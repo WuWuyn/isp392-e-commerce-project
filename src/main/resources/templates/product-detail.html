@@ -445,6 +445,44 @@
             });
         }
         
+        // Hiển thị thông báo kiểu toast
+        function showToast(type, message) {
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                // Tạo container cho toast nếu chưa tồn tại
+                const container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.position = 'fixed';
+                container.style.bottom = '20px';
+                container.style.right = '20px';
+                container.style.zIndex = '9999';
+                document.body.appendChild(container);
+                toastContainer = container;
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'bg-danger' : 'bg-success'} text-white`;
+            toast.style.minWidth = '250px';
+            toast.innerHTML = `
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: 5000
+            });
+            bsToast.show();
+            
+            // Xóa toast sau khi ẩn
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
+        
         // Xử lý nút "Buy Now"
         if (buyNowBtn) {
             buyNowBtn.addEventListener('click', function() {
@@ -452,8 +490,43 @@
                 const quantity = quantityInput ? quantityInput.value || 1 : 1;
                 
                 if (isAuthenticated) {
+<<<<<<< nhoi
                     // Nếu đã đăng nhập, chuyển đến trang thanh toán với sản phẩm đã chọn
                     window.location.href = `/checkout?book_id=${bookId}&quantity=${quantity}`;
+=======
+                    // Create a form to submit the buy now request
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    
+                    const csrfToken = getCsrfToken();
+                    if (csrfToken) {
+                        headers[getCsrfHeader()] = csrfToken;
+                    }
+                    
+                    fetch('/buyer/cart/buy-now', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            bookId: bookId,
+                            quantity: quantity,
+                            buyNow: true
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Redirect to checkout page
+                            window.location.href = data.redirectUrl;
+                        } else {
+                            showToast('error', data.message || 'Có lỗi xảy ra khi xử lý yêu cầu');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                    });
+>>>>>>> main
                 } else {
                     // Nếu chưa đăng nhập, chuyển đến trang đăng nhập với returnUrl
                     window.location.href = `/buyer/login?returnUrl=/product-detail?book_id=${bookId}`;
@@ -544,16 +617,16 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            alert(data.message);
+                            showToast('success', data.message || 'Thêm vào giỏ hàng thành công!');
                             // Update the cart count badge in the header
                             updateHeaderCartCount();
                         } else {
-                            alert('Error: ' + data.message);
+                            showToast('error', data.message || 'Không thể thêm vào giỏ hàng');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('An error occurred while adding to cart.');
+                        showToast('error', 'Có lỗi xảy ra khi thêm vào giỏ hàng');
                     });
                 } else {
                     // Nếu chưa đăng nhập, chuyển đến trang đăng nhập với returnUrl
