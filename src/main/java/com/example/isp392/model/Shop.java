@@ -93,9 +93,5 @@ public class Shop {
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Book> books = new ArrayList<>();
 
-    // Explicit setter for isActive to ensure it's recognized by the compiler
-    public void setIsActive(boolean isActive) {
-        this.isActive = isActive;
-    }
 }
 

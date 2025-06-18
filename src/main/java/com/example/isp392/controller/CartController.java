@@ -5,7 +5,6 @@ import com.example.isp392.model.User;
 import com.example.isp392.service.CartService;
 import com.example.isp392.service.PromotionService;
 import com.example.isp392.service.UserService;
-import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -325,66 +324,6 @@ public class CartController {
             cartService.removeItem(user, bookId);
             log.debug("Removed book {} due to non-positive quantity for user {}", bookId, user.getEmail());
             return ResponseEntity.ok("Item removed as quantity is 0");
-        }
-    }
-
-    /**
-     * Handle Buy Now functionality - creates a temporary checkout session and redirects to checkout
-     * @param payload JSON payload containing bookId, quantity and buyNow flag
-     * @return HTTP 200 with redirect URL if successful, 400 otherwise
-     */
-    @PostMapping("/buy-now")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> buyNow(@RequestBody Map<String, Object> payload, HttpSession session) {
-        Optional<User> userOptional = getAuthenticatedUser();
-        Map<String, Object> response = new HashMap<>();
-        
-        if (userOptional.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "User not authenticated");
-            return ResponseEntity.badRequest().body(response);
-        }
-        
-        Integer bookId;
-        Integer quantity;
-        
-        try {
-            bookId = Integer.valueOf(payload.get("bookId").toString());
-            quantity = Integer.valueOf(payload.get("quantity").toString());
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Invalid payload");
-            return ResponseEntity.badRequest().body(response);
-        }
-        
-        if (quantity <= 0) {
-            response.put("success", false);
-            response.put("message", "Quantity must be greater than zero");
-            return ResponseEntity.badRequest().body(response);
-        }
-        
-        User user = userOptional.get();
-        try {
-            // Create a temporary buy now session
-            Map<String, Object> buyNowSession = new HashMap<>();
-            buyNowSession.put("bookId", bookId);
-            buyNowSession.put("quantity", quantity);
-            buyNowSession.put("userId", user.getUserId());
-            
-            // Store in session
-            session.setAttribute("buyNowSession", buyNowSession);
-            
-            // Return success with redirect URL
-            response.put("success", true);
-            response.put("redirectUrl", "/buyer/checkout?buyNow=true");
-            
-            log.debug("Buy Now: Created checkout session for book {} for user {}", bookId, user.getEmail());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error in Buy Now: {}", e.getMessage());
-            response.put("success", false);
-            response.put("message", "Failed to process Buy Now request");
-            return ResponseEntity.internalServerError().body(response);
         }
     }
 

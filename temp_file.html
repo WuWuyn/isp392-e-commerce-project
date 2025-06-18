@@ -116,34 +116,24 @@
             border-radius: 0.25rem;
             padding: 10px;
         }
-        
-        /* Error summary box */
-        .validation-summary {
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            border-radius: 0.375rem;
-            border-left: 5px solid #dc3545;
-            background-color: #f8d7da;
+
+        .current-image-container {
+            margin-bottom: 1rem;
+            text-align: center;
         }
         
-        .validation-summary h4 {
-            color: #842029;
-            margin-bottom: 0.5rem;
-        }
-        
-        .validation-summary ul {
-            margin-bottom: 0;
-        }
-        
-        .validation-summary .btn-close {
-            font-size: 0.8rem;
-        }
-        
-        .image-placeholder {
+        .current-image-container img {
             max-height: 300px;
             width: auto;
             border-radius: 8px;
             box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+        }
+        
+        .current-image-label {
+            display: block;
+            margin-top: 0.5rem;
+            color: #7f8c8d;
+            font-size: 0.875rem;
         }
     </style>
 </head>
@@ -220,9 +210,15 @@
                                 <label for="coverImageFile" class="form-label">Cover Image <span
                                         class="text-danger">*</span></label>
 
+                                <!-- Image placeholder for new book -->
+                                <div class="current-image-container mb-3">
+                                    <img src="/img/book-placeholder.jpg" alt="Book cover placeholder" class="img-fluid">
+                                    <span class="current-image-label">Upload a book cover image</span>
+                                </div>
+
                                 <div class="image-upload-wrapper">
                                     <img id="imagePreview"
-                                         src="https://placehold.co/300x450/e2e8f0/adb5bd?text=Book+Cover"
+                                         src="https://placehold.co/300x450/e2e8f0/adb5bd?text=New+Cover"
                                          alt="Image preview" class="img-fluid">
                                     <input type="file" id="coverImageFile" name="coverImageFile"
                                            accept="image/jpeg,image/png,image/gif,image/webp"
@@ -259,14 +255,14 @@
                                 </div>
 
                                 <!-- Category selection without scrollable area -->
-                                <div class="category-selection" th:classappend="${#fields.hasErrors('categoryIds')} ? 'is-invalid' : ''">
+                                <div class="category-selection">
                                     <div th:each="category, status : ${categories}"
                                          class="form-check mb-2 category-item"
                                          th:classappend="${status.index >= 10} ? 'd-none category-page-2' : 'category-page-1'">
                                         <input class="form-check-input" type="checkbox"
                                                th:value="${category.categoryId}"
                                                th:id="'category-' + ${category.categoryId}"
-                                               th:field="*{categoryIds}">
+                                               th:field="*{categoryIds}" required>
                                         <label class="form-check-label" th:for="'category-' + ${category.categoryId}"
                                                th:text="${category.categoryName}"></label>
                                     </div>
@@ -305,8 +301,7 @@
                                         <label for="title" class="form-label">Book Title <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" id="title" th:field="*{title}" class="form-control"
-                                               placeholder="e.g., The Midnight Library" required
-                                               th:classappend="${#fields.hasErrors('title')} ? 'is-invalid' : ''">
+                                               placeholder="e.g., The Midnight Library" required>
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}"
                                              th:errors="*{title}">Please enter the book title.
                                         </div>
@@ -317,8 +312,7 @@
                                         <label for="authors" class="form-label">Author(s) <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" id="authors" th:field="*{authors}" class="form-control"
-                                               placeholder="e.g., Matt Haig" required
-                                               th:classappend="${#fields.hasErrors('authors')} ? 'is-invalid' : ''">
+                                               placeholder="e.g., Matt Haig" required>
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('authors')}"
                                              th:errors="*{authors}">Please enter the author name(s).
                                         </div>
@@ -326,8 +320,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label for="publisherId" class="form-label">Publisher <span class="text-danger">*</span></label>
-                                        <select id="publisherId" th:field="*{publisherId}" class="form-select" required
-                                                th:classappend="${#fields.hasErrors('publisherId')} ? 'is-invalid' : ''">
+                                        <select id="publisherId" th:field="*{publisherId}" class="form-select" required>
                                             <option value="">Select a publisher</option>
                                             <option th:each="publisher : ${publishers}"
                                                     th:value="${publisher.publisherId}"
@@ -345,7 +338,7 @@
                                         <div class="input-group">
                                             <input type="number" id="originalPrice" th:field="*{originalPrice}"
                                                    class="form-control" placeholder="100000" step="1000" min="1000"
-                                                   required th:classappend="${#fields.hasErrors('originalPrice')} ? 'is-invalid' : ''">
+                                                   required>
                                             <span class="input-group-text">VND</span>
                                         </div>
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('originalPrice')}"
@@ -361,7 +354,7 @@
                                         <div class="input-group">
                                             <input type="number" id="sellingPrice" th:field="*{sellingPrice}"
                                                    class="form-control" placeholder="80000" step="1000" min="1000"
-                                                   required th:classappend="${#fields.hasErrors('sellingPrice')} ? 'is-invalid' : ''">
+                                                   required>
                                             <span class="input-group-text">VND</span>
                                         </div>
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('sellingPrice')}"
@@ -380,8 +373,7 @@
                                                 class="text-danger">*</span></label>
                                         <textarea id="description" th:field="*{description}" class="form-control"
                                                   rows="4" placeholder="Enter a brief description of the book..."
-                                                  required maxlength="2000" oninput="checkCharCount(this)"
-                                                  th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"></textarea>
+                                                  required maxlength="2000" oninput="checkCharCount(this)"></textarea>
                                         <div class="form-text"><span id="charCount">0</span>/2000 characters</div>
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}"
                                              th:errors="*{description}">Please enter a description.
@@ -395,11 +387,7 @@
                                         <label for="publicationDate" class="form-label">Publication Date <span
                                                 class="text-danger">*</span></label>
                                         <input type="date" id="publicationDate" th:field="*{publicationDate}"
-                                               class="form-control" required
-                                               th:classappend="${#fields.hasErrors('publicationDate')} ? 'is-invalid' : ''">
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('publicationDate')}"
-                                             th:errors="*{publicationDate}">Please select a valid publication date.
-                                        </div>
+                                               class="form-control" required>
                                         <div class="invalid-feedback">Please select a valid publication date (not in the
                                             future).
                                         </div>
@@ -408,8 +396,7 @@
                                         <label for="isbn" class="form-label">ISBN <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" id="isbn" th:field="*{isbn}" class="form-control"
-                                               placeholder="e.g., 978-0-7352-1129-2" required
-                                               th:classappend="${#fields.hasErrors('isbn')} ? 'is-invalid' : ''">
+                                               placeholder="e.g., 978-0-7352-1129-2" required>
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('isbn')}"
                                              th:errors="*{isbn}">Please enter a valid ISBN (10 or 13 digits).
                                         </div>
@@ -421,11 +408,7 @@
                                         <label for="numberOfPages" class="form-label">Number of Pages <span
                                                 class="text-danger">*</span></label>
                                         <input type="number" id="numberOfPages" th:field="*{numberOfPages}"
-                                               class="form-control" placeholder="e.g., 304" min="1" required
-                                               th:classappend="${#fields.hasErrors('numberOfPages')} ? 'is-invalid' : ''">
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('numberOfPages')}"
-                                             th:errors="*{numberOfPages}">Please enter a valid number of pages.
-                                        </div>
+                                               class="form-control" placeholder="e.g., 304" min="1" required>
                                         <div class="invalid-feedback">Please enter a valid number of pages (greater than
                                             0).
                                         </div>
@@ -433,8 +416,7 @@
                                     <div class="col-md-6">
                                         <label for="dimensions" class="form-label">Dimensions <span class="text-danger">*</span></label>
                                         <input type="text" id="dimensions" th:field="*{dimensions}" class="form-control"
-                                               placeholder="e.g., 16x24x4.2" required
-                                               th:classappend="${#fields.hasErrors('dimensions')} ? 'is-invalid' : ''">
+                                               placeholder="e.g., 16x24x4.2 (cm)" required>
                                         <div class="invalid-feedback" th:if="${#fields.hasErrors('dimensions')}"
                                              th:errors="*{dimensions}">Please enter dimensions in the correct format.
                                         </div>
@@ -456,22 +438,14 @@
                                         <label for="sku" class="form-label">Stock Keeping Unit (SKU) <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" id="sku" th:field="*{sku}" class="form-control"
-                                               placeholder="e.g., BK-MID-LIB-01" required
-                                               th:classappend="${#fields.hasErrors('sku')} ? 'is-invalid' : ''">
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('sku')}"
-                                             th:errors="*{sku}">Please enter a SKU.
-                                        </div>
+                                               placeholder="e.g., BK-MID-LIB-01" required>
                                         <div class="invalid-feedback">Please enter a SKU.</div>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="stockQuantity" class="form-label">Stock Quantity <span
                                                 class="text-danger">*</span></label>
                                         <input type="number" id="stockQuantity" th:field="*{stockQuantity}"
-                                               class="form-control" placeholder="e.g., 2000" min="0" required
-                                               th:classappend="${#fields.hasErrors('stockQuantity')} ? 'is-invalid' : ''">
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('stockQuantity')}"
-                                             th:errors="*{stockQuantity}">Please enter a valid stock quantity.
-                                        </div>
+                                               class="form-control" placeholder="e.g., 2000" min="0" required>
                                         <div class="invalid-feedback">Please enter a valid stock quantity (0 or
                                             greater).
                                         </div>
@@ -497,16 +471,12 @@
 <script th:src="@{/js/book-validation.js}"></script>
 <!-- Core seller JS -->
 <script th:src="@{/js/seller.js}"></script>
-<!-- Specific JS for seller add product -->
-<script th:src="@{/js/seller-add-product.js}"></script>
-
-<!-- Common form functions -->
+<!-- Product form specific JS is now moved to the seller-add-product.js file -->
 <script>
-    // Filter categories based on search
+    // Common functions for category filtering and pagination
     function filterCategories() {
         const searchText = document.getElementById('categorySearch').value.toLowerCase().trim();
         const categoryItems = document.querySelectorAll('.category-item');
-        console.log("Filtering categories with search term:", searchText);
 
         if (searchText === '') {
             // If search is empty, show only first page
@@ -543,7 +513,6 @@
     function changeCategoryPage(direction) {
         const currentPage = parseInt(document.getElementById('currentCategoryPage').textContent);
         const newPage = currentPage + direction;
-        console.log("Changing category page from", currentPage, "to", newPage);
 
         if (newPage < 1) return;
 
@@ -592,7 +561,6 @@
 
         if (input.files && input.files[0]) {
             const file = input.files[0];
-            console.log("File selected:", file.name, "type:", file.type, "size:", file.size);
 
             // Check file type
             const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -600,7 +568,6 @@
                 preview.src = 'https://placehold.co/300x450/e2e8f0/dc3545?text=Invalid+Format';
                 errorMsg.style.display = 'block';
                 input.value = ''; // Clear the input
-                console.log("Invalid file type");
                 return;
             }
 
@@ -610,7 +577,6 @@
                 preview.src = e.target.result;
                 // Store in localStorage to preserve on form resubmission
                 localStorage.setItem('bookCoverImageData', e.target.result);
-                console.log("Image preview set");
             }
             reader.readAsDataURL(file);
         }
@@ -620,14 +586,11 @@
     function checkCharCount(textarea) {
         const charCount = textarea.value.length;
         document.getElementById('charCount').textContent = charCount;
-        console.log("Description character count:", charCount);
         textarea.setCustomValidity(charCount > 2000 ? 'Description must be 2000 characters or less' : '');
     }
     
     // Initialize form and validation on page load
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("Add product page initialized");
-        
         // Initialize character counter
         const description = document.getElementById('description');
         if (description) {
@@ -643,19 +606,10 @@
         
         if (imagePreview && storedImageData) {
             imagePreview.src = storedImageData;
-            console.log("Restored image preview from localStorage");
         }
         
-        // Set max date for publication date (today)
-        const publicationDateField = document.getElementById('publicationDate');
-        if (publicationDateField) {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            publicationDateField.setAttribute('max', `${year}-${month}-${day}`);
-            console.log("Publication date max set to:", `${year}-${month}-${day}`);
-        }
+        // Log debug information
+        console.log("Add product page initialized");
     });
 </script>
 </body>

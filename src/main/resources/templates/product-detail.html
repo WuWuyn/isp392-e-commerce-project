@@ -106,7 +106,6 @@
                             </span>
                         </p>
                         <p class="mb-1" th:if="${book.publisher != null}"><strong class="text-secondary">Publisher:</strong> <span th:text="${book.publisher.publisherName}">Publisher Name</span></p>
-                        <p class="mb-1" th:if="${book.shop != null}"><strong class="text-secondary">Shop:</strong> <span th:text="${book.shop.shopName}">Shop Name</span></p>
                         <!-- Hiển thị thông tin về số lượng tồn kho -->
                         <p class="mb-1">
                             <strong class="text-secondary">Availability:</strong> 
@@ -450,41 +449,11 @@
         if (buyNowBtn) {
             buyNowBtn.addEventListener('click', function() {
                 const isAuthenticated = this.getAttribute('data-auth') === 'true';
-                const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
+                const quantity = quantityInput ? quantityInput.value || 1 : 1;
                 
                 if (isAuthenticated) {
-                    // Create a form to submit the buy now request
-                    const headers = {
-                        'Content-Type': 'application/json'
-                    };
-                    
-                    const csrfToken = getCsrfToken();
-                    if (csrfToken) {
-                        headers[getCsrfHeader()] = csrfToken;
-                    }
-                    
-                    fetch('/buyer/cart/buy-now', {
-                        method: 'POST',
-                        headers: headers,
-                        body: JSON.stringify({
-                            bookId: bookId,
-                            quantity: quantity,
-                            buyNow: true
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Redirect to checkout page
-                            window.location.href = data.redirectUrl;
-                        } else {
-                            alert('Error: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while processing your request.');
-                    });
+                    // Nếu đã đăng nhập, chuyển đến trang thanh toán với sản phẩm đã chọn
+                    window.location.href = `/checkout?book_id=${bookId}&quantity=${quantity}`;
                 } else {
                     // Nếu chưa đăng nhập, chuyển đến trang đăng nhập với returnUrl
                     window.location.href = `/buyer/login?returnUrl=/product-detail?book_id=${bookId}`;
@@ -499,6 +468,14 @@
                 return csrfTokenMeta.getAttribute('content');
             }
             return null;
+        }
+        
+        function getCsrfHeader() {
+            const headerMeta = document.querySelector('meta[name="_csrf_header"]');
+            if (headerMeta) {
+                return headerMeta.getAttribute('content');
+            }
+            return 'X-CSRF-TOKEN';
         }
         
         // Function to update the cart count in the header

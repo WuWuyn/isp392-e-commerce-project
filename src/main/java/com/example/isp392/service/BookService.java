@@ -445,4 +445,37 @@ public class BookService {
         // Return a Page implementation
         return new PageImpl<>(books, pageable, total);
     }
+
+    /**
+     * Count active books for a shop
+     * 
+     * @param shopId ID of the shop
+     * @return Count of active books
+     */
+    public long countActiveBooksByShopId(Integer shopId) {
+        return bookRepository.countByShopShopIdAndIsActiveTrue(shopId);
+    }
+    
+    /**
+     * Find books with low stock by shop ID
+     * 
+     * @param shopId ID of the shop
+     * @param threshold Stock threshold
+     * @return List of books with stock below threshold
+     */
+    public List<Book> findLowStockBooksByShopId(Integer shopId, int threshold) {
+        return bookRepository.findByShopShopIdAndStockQuantityLessThanAndIsActiveTrue(shopId, threshold);
+    }
+    
+    /**
+     * Find bestselling books by shop ID
+     * 
+     * @param shopId ID of the shop
+     * @param limit Maximum number of books to return
+     * @return List of bestselling books
+     */
+    public List<Book> findBestsellingBooksByShopId(Integer shopId, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return bookRepository.findByShopShopIdAndIsActiveTrueOrderByAverageRatingDesc(shopId, pageable);
+    }
 }

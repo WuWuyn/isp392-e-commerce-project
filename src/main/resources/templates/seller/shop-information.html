@@ -180,15 +180,15 @@
                     <div th:class="${'alert ' + 
                         (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).APPROVED ? 'alert-success' : 
                         (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).PENDING ? 'alert-warning' : 
-                        (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).SUSPENDED ? 'alert-danger' : 
+                        (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).REJECTED ? 'alert-danger' : 
                         'alert-secondary')))}">
                         <h5 class="mb-1">
                             <i th:class="${'me-2 fas ' + 
                                 (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).APPROVED ? 'fa-check-circle' : 
                                 (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).PENDING ? 'fa-clock' : 
-                                (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).SUSPENDED ? 'fa-times-circle' : 
+                                (shop.approvalStatus == T(com.example.isp392.model.Shop.ApprovalStatus).REJECTED ? 'fa-times-circle' : 
                                 'fa-info-circle')))}"></i>
-                            Shop Approval Status: <strong th:text="${shop.approvalStatus}">PENDING</strong>
+                            Shop Status: <strong th:text="${shop.approvalStatus}">PENDING</strong>
                         </h5>
                         
                         <div th:if="${shop.reasonForStatus != null && !shop.reasonForStatus.isEmpty()}" class="mt-2 ps-4">
@@ -299,33 +299,12 @@
                                 <div class="info-label">Identification Document</div>
                                 <div class="info-value">
                                     <i class="fas fa-id-card me-2 text-primary"></i>
-                                    <span th:if="${shop.identificationFileUrl != null}">
-                                        <a th:href="@{${shop.identificationFileUrl}}" target="_blank" class="badge bg-success text-decoration-none">
-                                            <i class="fas fa-download me-1"></i> Download Document
-                                        </a>
-                                    </span>
+                                    <span th:if="${shop.identificationFileUrl != null}" class="badge bg-success">Document Uploaded</span>
                                     <span th:unless="${shop.identificationFileUrl != null}" class="badge bg-danger">Not Uploaded</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="section-divider"></div>
-
-                    <!-- Shop Status -->
-                    <h5 class="mb-3">Shop Operational Status</h5>
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="info-group">
-                                <div class="info-label">Active Status</div>
-                                <div class="info-value">
-                                    <span th:if="${shop.isActive}" class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Active</span>
-                                    <span th:unless="${shop.isActive}" class="badge bg-danger"><i class="fas fa-times-circle me-1"></i> Inactive</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </div>

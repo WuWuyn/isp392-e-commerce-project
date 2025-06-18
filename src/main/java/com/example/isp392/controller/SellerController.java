@@ -1,7 +1,6 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.dto.BookFormDTO;
-import com.example.isp392.dto.ShopFormDTO;
 import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.*;
 import com.example.isp392.service.*;
@@ -57,7 +56,8 @@ public class SellerController {
      * @param orderService Service for order-related operations
      */
     public SellerController(UserService userService, BookService bookService, ShopService shopService, 
-                           CategoryService categoryService, PublisherService publisherService, OrderService orderService) {
+                           CategoryService categoryService, PublisherService publisherService,
+                           OrderService orderService) {
         this.userService = userService;
         this.bookService = bookService;
         this.shopService = shopService;
@@ -103,9 +103,285 @@ public class SellerController {
         if (user == null) {
             return "redirect:/seller/login";
         }
-        model.addAttribute("user", user);
-        model.addAttribute("roles", userService.getUserRoles(user));
+        
+        try {
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                return "seller/dashboard";
+            }
+            
+            // Get dashboard statistics from real data
+            // 1. Recent orders count (last 7 days)
+            int newOrdersCount = orderService.getNewOrdersCount(shop.getShopId(), 7);
+            
+            // 2. Today's revenue
+            BigDecimal todayRevenue = orderService.getTodayRevenue(shop.getShopId());
+            
+            // 3. Active products count
+            long activeProductsCount = bookService.countActiveBooksByShopId(shop.getShopId());
+            
+            // 4. Low stock products
+            List<Book> lowStockProducts = bookService.findLowStockBooksByShopId(shop.getShopId(), 5);
+            
+            // 5. Recent orders for activity feed
+            List<Map<String, Object>> recentOrders = orderService.getRecentOrders(shop.getShopId(), 5);
+            
+            // 6. Weekly revenue data for chart
+            List<BigDecimal> weeklyRevenue = orderService.getWeeklyRevenue(shop.getShopId());
+            
+            // Add all attributes to model
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            model.addAttribute("shop", shop);
+            model.addAttribute("newOrdersCount", newOrdersCount);
+            model.addAttribute("todayRevenue", todayRevenue);
+            model.addAttribute("activeProductsCount", activeProductsCount);
+            model.addAttribute("lowStockProducts", lowStockProducts);
+            model.addAttribute("recentOrders", recentOrders);
+            model.addAttribute("weeklyRevenue", weeklyRevenue);
+            
+            // Convert weekly revenue to JSON array for chart.js
+            // Ensure we're sending numeric values, not strings
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < weeklyRevenue.size(); i++) {
+                sb.append(weeklyRevenue.get(i).toString());
+                if (i < weeklyRevenue.size() - 1) {
+                    sb.append(",");
+                }
+            }
+            sb.append("]");
+            String weeklyRevenueJson = sb.toString();
+            
+            model.addAttribute("weeklyRevenueJson", weeklyRevenueJson);
+            
+            log.debug("Dashboard loaded for shop ID: {}", shop.getShopId());
+            log.debug("Weekly revenue JSON: {}", weeklyRevenueJson);
+            
+        } catch (Exception e) {
+            log.error("Error loading dashboard data: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage", "Error loading dashboard data: " + e.getMessage());
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+        }
+        
         return "seller/dashboard";
+    }
+    
+    /**
+     * Display analytics and reports page
+     *
+     * @param model Model to add attributes
+     * @param period Period for analytics (daily, weekly, monthly)
+     * @param startDate Start date for custom period
+     * @param endDate End date for custom period
+     * @return analytics page view
+     */
+    @GetMapping("/analytics")
+    public String showAnalytics(
+            Model model,
+            @RequestParam(defaultValue = "monthly") String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        
+        User user = getCurrentUser();
+        if (user == null) {
+            return "redirect:/seller/login";
+        }
+        
+        try {
+            // Get seller's shop
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                model.addAttribute("errorMessage", "Shop not found.");
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                return "seller/dashboard";
+            }
+            
+            // Set default date range if not provided
+            LocalDate now = LocalDate.now();
+            if (startDate == null || endDate == null) {
+                switch (period) {
+                    case "daily":
+                        startDate = now.minusDays(7);
+                        endDate = now;
+                        break;
+                    case "weekly":
+                        startDate = now.minusWeeks(8);
+                        endDate = now;
+                        break;
+                    case "monthly":
+                    default:
+                        startDate = now.minusMonths(6);
+                        endDate = now;
+                        period = "monthly";
+                        break;
+                }
+            }
+            
+            // Generate labels for x-axis based on period
+            List<String> timeLabels = generateTimeLabels(startDate, endDate, period);
+            
+            // Get revenue data for the period
+            List<Map<String, Object>> revenueData = orderService.getRevenueByPeriod(shop.getShopId(), startDate, endDate, period);
+            
+            // Extract revenue, orders, and calculate conversion rate
+            List<BigDecimal> periodRevenue = new ArrayList<>();
+            List<Integer> periodOrders = new ArrayList<>();
+            List<Integer> periodViews = new ArrayList<>(); // This would need a separate tracking system
+            List<Double> periodConversionRate = new ArrayList<>();
+            
+            // Create a map for easy lookup
+            Map<String, Map<String, Object>> dataByPeriod = new HashMap<>();
+            for (Map<String, Object> data : revenueData) {
+                dataByPeriod.put((String) data.get("time_period"), data);
+            }
+            
+            // Fill in data for each time label
+            for (String label : timeLabels) {
+                Map<String, Object> data = dataByPeriod.getOrDefault(label, new HashMap<>());
+                
+                BigDecimal revenue = data.get("revenue") != null ? 
+                    (BigDecimal) data.get("revenue") : BigDecimal.ZERO;
+                periodRevenue.add(revenue);
+                
+                Integer orders = data.get("order_count") != null ? 
+                    ((Number) data.get("order_count")).intValue() : 0;
+                periodOrders.add(orders);
+                
+                // For views and conversion rate, we would need actual tracking data
+                // For now, we'll use sample data that's proportional to orders
+                int views = orders * 5 + new Random().nextInt(20); // Sample data
+                periodViews.add(views);
+                
+                double conversionRate = views > 0 ? (orders * 100.0 / views) : 0;
+                periodConversionRate.add(conversionRate);
+            }
+            
+            // Get bestselling books
+            List<Map<String, Object>> topProducts = orderService.getBestsellingBooks(shop.getShopId(), 5);
+            
+            // Get geographic distribution
+            List<Map<String, Object>> geoDistribution = orderService.getGeographicDistribution(shop.getShopId());
+            
+            // Add data to model
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            model.addAttribute("shop", shop);
+            model.addAttribute("period", period);
+            model.addAttribute("startDate", startDate);
+            model.addAttribute("endDate", endDate);
+            model.addAttribute("timeLabels", timeLabels);
+            model.addAttribute("timeLabelsJson", convertToJsonArray(timeLabels));
+            model.addAttribute("revenueData", periodRevenue);
+            model.addAttribute("revenueDataJson", convertToJsonArray(periodRevenue));
+            model.addAttribute("ordersData", periodOrders);
+            model.addAttribute("ordersDataJson", convertToJsonArray(periodOrders));
+            model.addAttribute("viewsData", periodViews);
+            model.addAttribute("viewsDataJson", convertToJsonArray(periodViews));
+            model.addAttribute("conversionRateData", periodConversionRate);
+            model.addAttribute("conversionRateDataJson", convertToJsonArray(periodConversionRate));
+            model.addAttribute("topProducts", topProducts);
+            model.addAttribute("geoDistribution", geoDistribution);
+            
+            // Summary statistics
+            BigDecimal totalRevenue = periodRevenue.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+            int totalOrders = periodOrders.stream().mapToInt(Integer::intValue).sum();
+            int totalViews = periodViews.stream().mapToInt(Integer::intValue).sum();
+            double avgConversionRate = totalViews > 0 ? (totalOrders * 100.0 / totalViews) : 0;
+            
+            model.addAttribute("totalRevenue", totalRevenue);
+            model.addAttribute("totalOrders", totalOrders);
+            model.addAttribute("totalViews", totalViews);
+            model.addAttribute("avgConversionRate", avgConversionRate);
+            
+            log.debug("Analytics loaded for shop ID: {} with period: {}", shop.getShopId(), period);
+            
+            return "seller/analytics";
+            
+        } catch (Exception e) {
+            log.error("Error loading analytics: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage", "Error loading analytics: " + e.getMessage());
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            return "seller/dashboard";
+        }
+    }
+    
+    /**
+     * Convert a list to a JSON array string
+     * 
+     * @param <T> Type of list elements
+     * @param list List to convert
+     * @return JSON array string
+     */
+    private <T> String convertToJsonArray(List<T> list) {
+        if (list == null) {
+            return "[]";
+        }
+        
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < list.size(); i++) {
+            T item = list.get(i);
+            if (item instanceof String) {
+                sb.append("\"").append(item).append("\"");
+            } else {
+                sb.append(item);
+            }
+            
+            if (i < list.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        sb.append("]");
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Generate time labels for x-axis based on period
+     * 
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
+     * @param period Period type (daily, weekly, monthly)
+     * @return List of time labels
+     */
+    private List<String> generateTimeLabels(LocalDate startDate, LocalDate endDate, String period) {
+        List<String> labels = new ArrayList<>();
+        DateTimeFormatter formatter;
+        
+        switch (period) {
+            case "daily":
+                formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+                    labels.add(date.format(formatter));
+                }
+                break;
+                
+            case "weekly":
+                formatter = DateTimeFormatter.ofPattern("yyyy-'W'w");
+                LocalDate weekStart = startDate;
+                while (!weekStart.isAfter(endDate)) {
+                    labels.add(weekStart.format(formatter));
+                    weekStart = weekStart.plusWeeks(1);
+                }
+                break;
+                
+            case "monthly":
+            default:
+                formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+                LocalDate monthStart = startDate.withDayOfMonth(1);
+                while (!monthStart.isAfter(endDate)) {
+                    labels.add(monthStart.format(formatter));
+                    monthStart = monthStart.plusMonths(1);
+                }
+                break;
+        }
+        
+        return labels;
     }
 
     /**
@@ -886,75 +1162,9 @@ public class SellerController {
     }
 
     @GetMapping("/orders")
-    public String showOrdersPage(
-            Model model,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-            Authentication authentication) {
-
-        User user = getCurrentUser(authentication);
-        if (user == null) {
-            return "redirect:/seller/login";
-        }
-
-        // Get seller's shop to ensure they are a seller
-        Shop shop = shopService.getShopByUserId(user.getUserId());
-        if (shop == null) {
-            model.addAttribute("errorMessage", "You need to set up your shop first to view orders.");
-            return "redirect:/seller/shop-information";
-        }
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
-        Page<Order> ordersPage = orderService.findSellerOrders(user.getUserId(), status, dateFrom, dateTo, pageable);
-
-        model.addAttribute("user", user);
-        model.addAttribute("roles", userService.getUserRoles(user));
-        model.addAttribute("ordersPage", ordersPage);
-        model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", ordersPage.getTotalPages());
-        model.addAttribute("paramStatus", status);
-        model.addAttribute("paramDateFrom", dateFrom);
-        model.addAttribute("paramDateTo", dateTo);
-
+    public String showOrdersPage(Model model) {
+        // Placeholder for seller orders
         return "seller/orders";
-    }
-
-    @GetMapping("/orders/{orderId}")
-    public String viewSellerOrderDetail(@PathVariable Integer orderId, Model model, Authentication authentication) {
-        User user = getCurrentUser(authentication);
-        if (user == null) {
-            return "redirect:/seller/login";
-        }
-
-        // Get seller's shop to ensure they are a seller
-        Shop shop = shopService.getShopByUserId(user.getUserId());
-        if (shop == null) {
-            model.addAttribute("errorMessage", "You need to set up your shop first to view order details.");
-            return "redirect:/seller/shop-information";
-        }
-
-        // Find order and check if any item in the order belongs to this seller's shop
-        Optional<Order> orderOpt = orderService.findOrderById(orderId);
-        if (orderOpt.isEmpty()) {
-            return "redirect:/seller/orders";
-        }
-
-        Order order = orderOpt.get();
-        boolean isSellerOrder = order.getOrderItems().stream()
-                                    .anyMatch(item -> item.getBook().getShop().getUser().getUserId().equals(user.getUserId()));
-        
-        if (!isSellerOrder) {
-            // If the order does not contain any items from this seller's shop, deny access
-            return "redirect:/seller/orders";
-        }
-
-        model.addAttribute("user", user);
-        model.addAttribute("roles", userService.getUserRoles(user));
-        model.addAttribute("order", order);
-        return "seller/order-detail";
     }
 
     @GetMapping("/cart")
@@ -974,92 +1184,6 @@ public class SellerController {
             log.error("Error displaying seller cart: {}", e.getMessage());
             return "redirect:/seller/login";
         }
-    }
-
-    @GetMapping("/shop-information/edit")
-    public String showEditShopForm(Model model) {
-        try {
-            User user = getCurrentUser();
-            if (user == null) {
-                return "redirect:/seller/login";
-            }
-
-            Shop shop = shopService.getShopByUserId(user.getUserId());
-            if (shop == null) {
-                model.addAttribute("errorMessage", "Shop information not found. Please register your shop first.");
-                return "redirect:/seller/shop-information";
-            }
-
-            ShopFormDTO shopForm = new ShopFormDTO();
-            shopForm.setShopId(shop.getShopId());
-            shopForm.setShopName(shop.getShopName());
-            shopForm.setDescription(shop.getDescription());
-            shopForm.setShopDetailAddress(shop.getShopDetailAddress());
-            shopForm.setShopWardName(shop.getShopWard());
-            shopForm.setShopDistrictName(shop.getShopDistrict());
-            shopForm.setShopProvinceName(shop.getShopProvince());
-            shopForm.setContactEmail(shop.getContactEmail());
-            shopForm.setContactPhone(shop.getContactPhone());
-            shopForm.setTaxCode(shop.getTaxCode());
-            shopForm.setExistingLogoUrl(shop.getLogoUrl());
-            shopForm.setExistingCoverImageUrl(shop.getCoverImageUrl());
-            shopForm.setExistingIdentificationFileUrl(shop.getIdentificationFileUrl());
-            shopForm.setIsActive(shop.isActive());
-
-            model.addAttribute("shopForm", shopForm);
-            model.addAttribute("user", user);
-            model.addAttribute("roles", userService.getUserRoles(user));
-
-            return "seller/seller-edit-shop";
-        } catch (Exception e) {
-            log.error("Error displaying edit shop form: {}", e.getMessage());
-            model.addAttribute("errorMessage", "Error loading shop information: " + e.getMessage());
-            return "redirect:/seller/shop-information";
-        }
-    }
-
-    @PostMapping("/shop-information/edit")
-    public String processEditShop(
-            @Valid @ModelAttribute("shopForm") ShopFormDTO shopForm,
-            BindingResult bindingResult,
-            RedirectAttributes redirectAttributes,
-            Model model) {
-
-        try {
-            User user = getCurrentUser();
-            if (user == null) {
-                return "redirect:/seller/login";
-            }
-
-            if (bindingResult.hasErrors()) {
-                log.debug("Validation errors: {}", bindingResult.getAllErrors());
-                model.addAttribute("user", user);
-                model.addAttribute("roles", userService.getUserRoles(user));
-                // Re-add existing file URLs if validation fails and no new files were uploaded
-                Shop existingShop = shopService.getShopByUserId(user.getUserId());
-                if (existingShop != null) {
-                    shopForm.setExistingLogoUrl(existingShop.getLogoUrl());
-                    shopForm.setExistingCoverImageUrl(existingShop.getCoverImageUrl());
-                    shopForm.setExistingIdentificationFileUrl(existingShop.getIdentificationFileUrl());
-                }
-                return "seller/seller-edit-shop";
-            }
-            
-            shopService.updateShop(shopForm);
-            redirectAttributes.addFlashAttribute("successMessage", "Shop information updated successfully!");
-            return "redirect:/seller/shop-information";
-        } catch (IllegalArgumentException e) {
-            log.error("Error updating shop: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        } catch (IOException e) {
-            log.error("File upload error: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error uploading files: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Unexpected error updating shop: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "An unexpected error occurred: " + e.getMessage());
-        }
-        // In case of error, redirect back to the edit form or shop info page
-        return "redirect:/seller/shop-information";
     }
 
     // Helper methods for authentication

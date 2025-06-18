@@ -16,6 +16,9 @@
             </div>
             <h5 class="mb-1" th:text="${user.fullName}">Admin Name</h5>
             <p class="text-muted mb-1" th:text="${user.email}">admin@example.com</p>
+            <div class="d-flex justify-content-center mt-2">
+                <span th:each="roleName : ${roles}" class="badge bg-primary me-1" th:text="${roleName.replace('ROLE_', '')}">ADMIN</span>
+            </div>
         </div>
         <div class="list-group list-group-flush">
             <!-- Dashboard -->
@@ -51,11 +54,6 @@
             <!-- Blog Management -->
             <a th:href="@{/admin/blogs}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'blogs' ? 'active' : ''}">
                 <i class="fas fa-blog"></i> Blog Management
-            </a>
-            
-            <!-- Promotion Management -->
-            <a th:href="@{/admin/promotions}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'promotions' ? 'active' : ''}">
-                <i class="fas fa-percent"></i> Promotion Management
             </a>
             
             <!-- Reports -->

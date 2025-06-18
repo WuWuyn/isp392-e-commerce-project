@@ -6,7 +6,6 @@ import com.example.isp392.repository.UserAddressRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserAddressService {
@@ -23,10 +22,6 @@ public class UserAddressService {
 
     public UserAddress findDefaultAddress(User user) {
         return userAddressRepository.findByUserAndIsDefaultTrue(user);
-    }
-
-    public Optional<UserAddress> findAddressById(Integer addressId) {
-        return userAddressRepository.findById(addressId);
     }
 
     public void saveAddress(UserAddress address) {

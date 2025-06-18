@@ -1,7 +1,6 @@
 package com.example.isp392.service;
 
 import com.example.isp392.dto.ShopDTO;
-import com.example.isp392.dto.ShopFormDTO;
 import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.ShopRepository;
@@ -10,14 +9,8 @@ import com.example.isp392.repository.UserRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Service for shop operations
@@ -28,7 +21,6 @@ public class ShopService {
     // Repository dependencies
     private final ShopRepository shopRepository; // For shop data access
     private final UserRepository userRepository; // For user data access
-    private final String UPLOAD_DIR = "src/main/resources/static/uploads/shop/";
     
     /**
      * Constructor for dependency injection
@@ -39,12 +31,6 @@ public class ShopService {
         // Constructor injection instead of using @Autowired
         this.shopRepository = shopRepository;
         this.userRepository = userRepository;
-        // Ensure the upload directory exists
-        try {
-            Files.createDirectories(Paths.get(UPLOAD_DIR));
-        } catch (IOException e) {
-            throw new RuntimeException("Could not create upload directory!", e);
-        }
     }
     
     /**
@@ -94,80 +80,5 @@ public class ShopService {
         
         // Save the shop
         return shopRepository.save(shop);
-    }
-
-    /**
-     * Update existing shop information from ShopFormDTO
-     * @param shopForm DTO with updated shop information
-     * @return updated shop entity
-     * @throws IOException if there's an error during file upload
-     */
-    @Transactional
-    public Shop updateShop(ShopFormDTO shopForm) throws IOException {
-        Shop shop = shopRepository.findById(shopForm.getShopId())
-                .orElseThrow(() -> new IllegalArgumentException("Shop not found with ID: " + shopForm.getShopId()));
-
-        // Update basic fields
-        shop.setShopName(shopForm.getShopName());
-        shop.setDescription(shopForm.getDescription());
-        shop.setShopDetailAddress(shopForm.getShopDetailAddress());
-        shop.setShopWard(shopForm.getShopWardName());
-        shop.setShopDistrict(shopForm.getShopDistrictName());
-        shop.setShopProvince(shopForm.getShopProvinceName());
-        shop.setContactEmail(shopForm.getContactEmail());
-        shop.setContactPhone(shopForm.getContactPhone());
-        shop.setTaxCode(shopForm.getTaxCode());
-
-        // Set isActive status based on form submission
-        if (shopForm.getIsActive() != null) {
-            shop.setIsActive(shopForm.getIsActive());
-        } else {
-            // Default to false if checkbox is not checked (and thus not present in request params)
-            shop.setIsActive(false);
-        }
-
-        // Handle logo file upload
-        if (shopForm.getLogoFile() != null && !shopForm.getLogoFile().isEmpty()) {
-            String logoUrl = saveFile(shopForm.getLogoFile(), "logo");
-            shop.setLogoUrl(logoUrl);
-        } else if (shopForm.getExistingLogoUrl() == null || shopForm.getExistingLogoUrl().isEmpty()) {
-            // If no new file and no existing URL, set to null
-            shop.setLogoUrl(null);
-        }
-
-        // Handle cover image file upload
-        if (shopForm.getCoverImageFile() != null && !shopForm.getCoverImageFile().isEmpty()) {
-            String coverImageUrl = saveFile(shopForm.getCoverImageFile(), "cover");
-            shop.setCoverImageUrl(coverImageUrl);
-        } else if (shopForm.getExistingCoverImageUrl() == null || shopForm.getExistingCoverImageUrl().isEmpty()) {
-            shop.setCoverImageUrl(null);
-        }
-
-        // Handle identification file upload
-        if (shopForm.getIdentificationFile() != null && !shopForm.getIdentificationFile().isEmpty()) {
-            String identificationUrl = saveFile(shopForm.getIdentificationFile(), "identification");
-            shop.setIdentificationFileUrl(identificationUrl);
-        } else if (shopForm.getExistingIdentificationFileUrl() == null || shopForm.getExistingIdentificationFileUrl().isEmpty()) {
-            shop.setIdentificationFileUrl(null);
-        }
-
-        return shopRepository.save(shop);
-    }
-
-    private String saveFile(MultipartFile file, String type) throws IOException {
-        if (file.isEmpty()) {
-            return null;
-        }
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
-        String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        Path filePath = uploadPath.resolve(uniqueFileName);
-        Files.copy(file.getInputStream(), filePath);
-        // Return the relative path for web access
-        return "/uploads/shop/" + uniqueFileName;
     }
 } 
