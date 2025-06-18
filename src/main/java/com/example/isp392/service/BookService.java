@@ -294,17 +294,59 @@ public class BookService {
     @Transactional
     public void deleteBook(Integer bookId) {
         log.debug("Deleting book with ID: {}", bookId);
-        
-        // Find book to ensure it exists
-        Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new IllegalArgumentException("Book not found with ID: " + bookId));
-        
-        // Delete book
-        bookRepository.delete(book);
-        
+        bookRepository.deleteById(bookId);
         log.info("Book deleted successfully with ID: {}", bookId);
     }
     
+    /**
+     * Cập nhật số lượng sách trong kho
+     * @param bookId ID của sách
+     * @param quantity Số lượng cần giảm (số âm để giảm, số dương để tăng)
+     * @throws IllegalArgumentException nếu số lượng không hợp lệ hoặc không đủ trong kho
+     */
+    @Transactional
+    public void updateStockQuantity(Integer bookId, int quantity) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sách với ID: " + bookId));
+
+        int newQuantity = book.getStockQuantity() + quantity;
+        if (newQuantity < 0) {
+            throw new IllegalArgumentException("Số lượng sách trong kho không đủ");
+        }
+
+        book.setStockQuantity(newQuantity);
+        bookRepository.save(book);
+        log.info("Đã cập nhật số lượng sách ID {} thành {}", bookId, newQuantity);
+    }
+
+    /**
+     * Giảm số lượng sách trong kho sau khi đặt hàng
+     * @param bookId ID của sách
+     * @param quantity Số lượng cần giảm
+     * @throws IllegalArgumentException nếu số lượng không hợp lệ hoặc không đủ trong kho
+     */
+    @Transactional
+    public void decreaseStockQuantity(Integer bookId, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Số lượng giảm phải lớn hơn 0");
+        }
+        updateStockQuantity(bookId, -quantity);
+    }
+
+    /**
+     * Tăng số lượng sách trong kho (ví dụ: khi hủy đơn hàng)
+     * @param bookId ID của sách
+     * @param quantity Số lượng cần tăng
+     * @throws IllegalArgumentException nếu số lượng không hợp lệ
+     */
+    @Transactional
+    public void increaseStockQuantity(Integer bookId, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Số lượng tăng phải lớn hơn 0");
+        }
+        updateStockQuantity(bookId, quantity);
+    }
+
     /**
      * Advanced search method to find books with multiple filters
      */

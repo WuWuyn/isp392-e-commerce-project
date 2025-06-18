@@ -129,6 +129,28 @@ public class OrderController {
                 redirectAttributes.addFlashAttribute("error", "Giỏ hàng trống");
                 return "redirect:/buyer/cart";
             }
+            
+            // Kiểm tra số lượng sách trong kho trước khi thanh toán
+            StringBuilder invalidItems = new StringBuilder();
+            boolean hasStockIssue = false;
+            
+            for (CartItem item : cart.getItems()) {
+                Book book = item.getBook();
+                if (book.getStockQuantity() == null || book.getStockQuantity() < item.getQuantity()) {
+                    hasStockIssue = true;
+                    invalidItems.append("- ").append(book.getTitle())
+                              .append(": Số lượng trong kho (")
+                              .append(book.getStockQuantity() != null ? book.getStockQuantity() : 0)
+                              .append(") không đủ để đáp ứng yêu cầu (")
+                              .append(item.getQuantity()).append(")\n");
+                }
+            }
+            
+            if (hasStockIssue) {
+                redirectAttributes.addFlashAttribute("error", 
+                    "Một số sản phẩm trong giỏ hàng không có đủ số lượng:\n" + invalidItems.toString());
+                return "redirect:/buyer/cart";
+            }
 
             // Create new order
             Order order = new Order();

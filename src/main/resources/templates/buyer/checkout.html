@@ -151,6 +151,9 @@
 <!-- Header -->
 <div th:replace="~{fragments/header :: header-content}"></div>
 
+<!-- Thông báo lỗi ẩn từ server -->
+<div id="server-error" class="d-none" th:text="${error}"></div>
+
 <main class="py-5 bg-light">
     <div class="container">
         <!-- Breadcrumb -->
@@ -960,6 +963,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize total
     updateTotal();
+});
+
+// Hiển thị thông báo toast
+function showToast(type, message) {
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        // Tạo container cho toast nếu chưa tồn tại
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+        toastContainer = container;
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type === 'error' ? 'bg-danger' : 'bg-success'} text-white`;
+    toast.style.minWidth = '250px';
+    toast.innerHTML = `
+        <div class="toast-body">
+            ${message}
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    const bsToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 5000
+    });
+    bsToast.show();
+    
+    // Xóa toast sau khi ẩn
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+// Kiểm tra thông báo lỗi từ Flash attributes
+document.addEventListener('DOMContentLoaded', function() {
+    // Kiểm tra nếu có thông báo lỗi từ server
+    const errorElement = document.getElementById('server-error');
+    if (errorElement && errorElement.textContent.trim() !== '') {
+        // Hiển thị lỗi dưới dạng toast
+        showToast('error', errorElement.textContent);
+    }
 });
 </script>
 

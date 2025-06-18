@@ -19,10 +19,12 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final PromotionService promotionService;
+    private final BookService bookService;
 
-    public OrderService(OrderRepository orderRepository, PromotionService promotionService) {
+    public OrderService(OrderRepository orderRepository, PromotionService promotionService, BookService bookService) {
         this.orderRepository = orderRepository;
         this.promotionService = promotionService;
+        this.bookService = bookService;
     }
 
     /**
@@ -43,7 +45,25 @@ public class OrderService {
     @Transactional
     public boolean updateOrderStatus(Integer orderId, OrderStatus newStatus) {
         return orderRepository.findById(orderId).map(order -> {
+            OrderStatus oldStatus = order.getOrderStatus();
             order.setOrderStatus(newStatus);
+            
+            // Xử lý số lượng sách dựa trên thay đổi trạng thái
+            if (oldStatus != newStatus) {
+                if (newStatus == OrderStatus.CANCELLED) {
+                    // Nếu đơn hàng bị hủy, hoàn lại số lượng sách vào kho
+                    for (OrderItem item : order.getOrderItems()) {
+                        bookService.increaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
+                    }
+                } else if (oldStatus == OrderStatus.CANCELLED && 
+                         (newStatus == OrderStatus.PENDING || newStatus == OrderStatus.PROCESSING)) {
+                    // Nếu đơn hàng từ trạng thái hủy chuyển sang pending/confirmed, giảm lại số lượng sách
+                    for (OrderItem item : order.getOrderItems()) {
+                        bookService.decreaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
+                    }
+                }
+            }
+            
             orderRepository.save(order);
             return true;
         }).orElse(false);
@@ -147,8 +167,29 @@ public class OrderService {
         promotionService.updatePromotionUsage(promotionCode, order.getUser().getUserId());
     }
 
+    /**
+     * Lưu đơn hàng và cập nhật số lượng sách trong kho
+     * @param order Đơn hàng cần lưu
+     * @return Đơn hàng đã được lưu
+     */
+    @Transactional
     public Order save(Order order) {
-        return orderRepository.save(order);
+        // Lưu đơn hàng
+        Order savedOrder = orderRepository.save(order);
+
+        // Cập nhật số lượng sách trong kho
+        if (order.getOrderStatus() == OrderStatus.PENDING || order.getOrderStatus() == OrderStatus.PROCESSING) {
+            for (OrderItem item : order.getOrderItems()) {
+                try {
+                    bookService.decreaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
+                } catch (IllegalArgumentException e) {
+                    // Nếu có lỗi khi cập nhật số lượng, rollback giao dịch
+                    throw new RuntimeException("Không thể cập nhật số lượng sách: " + e.getMessage());
+                }
+            }
+        }
+
+        return savedOrder;
     }
 
     /**
