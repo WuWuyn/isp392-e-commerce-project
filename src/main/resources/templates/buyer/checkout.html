@@ -199,7 +199,7 @@
                     </div>
 
                     <!-- Hidden input for existingAddressId -->
-                    <input type="hidden" id="existingAddressId" name="existingAddressId" th:value="${address?.addressId}">
+                    <input type="hidden" id="existingAddressId" name="existingAddressId" th:value="${defaultAddress != null ? defaultAddress.addressId : ''}">
 
                     <!-- Selected Address Details -->
                     <div id="selectedAddressDetails" class="card mb-4" style="display: none;">
@@ -580,11 +580,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Initialize with default selection
-        const defaultOption = addressSelect.options[addressSelect.selectedIndex];
-        if (defaultOption && defaultOption.value === 'new') {
+        // Select default address on page load if available
+        let defaultFound = false;
+        for (let i = 0; i < addressSelect.options.length; i++) {
+            const option = addressSelect.options[i];
+            if (option.text.includes('(Default)')) {
+                addressSelect.selectedIndex = i;
+                displayAddressDetails(option);
+                document.getElementById('existingAddressId').value = option.value;
+                defaultFound = true;
+                break;
+            }
+        }
+        
+        // Fall back to first address if no default is marked
+        if (!defaultFound && addressSelect.options.length > 2) { // Skip 'Choose an address' and 'Add New'
+            addressSelect.selectedIndex = 2; // Select the first actual address
+            displayAddressDetails(addressSelect.options[2]);
+            document.getElementById('existingAddressId').value = addressSelect.options[2].value;
+        }
+        
+        if (addressSelect.selectedIndex > 0) {
             addressSelect.dispatchEvent(new Event('change'));
-        } else if (defaultOption && defaultOption.value !== '') {
-            displayAddressDetails(defaultOption);
         }
     }
 

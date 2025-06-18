@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class OrderDTO {
     // Shipping address details
-    private Integer existingAddressId;
+    private String existingAddressId;
     private String recipientName;
     private String recipientPhone;
     private String company;
