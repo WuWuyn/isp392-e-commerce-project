@@ -1,3 +1,4 @@
+package com.example.isp392.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
