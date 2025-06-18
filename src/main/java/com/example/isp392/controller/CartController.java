@@ -236,6 +236,13 @@ public class CartController {
         
         User user = userOptional.get();
         try {
+            // Kiểm tra số lượng trước khi thêm vào giỏ hàng
+            if (!cartService.checkCartItemAvailability(user, bookId, quantity)) {
+                response.put("success", false);
+                response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
             cartService.addBookToCart(user, bookId, quantity);
             
             // Get updated cart count for UI update
@@ -303,28 +310,57 @@ public class CartController {
      */
     @PostMapping("/update-qty")
     @ResponseBody
-    public ResponseEntity<String> updateQuantity(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> updateQuantity(@RequestBody Map<String, Object> payload) {
         Optional<User> userOptional = getAuthenticatedUser();
+        Map<String, Object> response = new HashMap<>();
+        
         if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not authenticated");
+            response.put("success", false);
+            response.put("message", "User not authenticated");
+            return ResponseEntity.badRequest().body(response);
         }
+        
         Integer bookId;
         Integer quantity;
+        
         try {
             bookId = Integer.valueOf(payload.get("bookId").toString());
             quantity = Integer.valueOf(payload.get("quantity").toString());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Invalid payload");
+            response.put("success", false);
+            response.put("message", "Invalid payload");
+            return ResponseEntity.badRequest().body(response);
         }
+        
         User user = userOptional.get();
-        if (quantity != null && quantity > 0) {
-            cartService.updateQuantity(user, bookId, quantity);
-            log.debug("Updated quantity of book {} to {} for user {}", bookId, quantity, user.getEmail());
-            return ResponseEntity.ok("Quantity updated successfully");
-        } else {
-            cartService.removeItem(user, bookId);
-            log.debug("Removed book {} due to non-positive quantity for user {}", bookId, user.getEmail());
-            return ResponseEntity.ok("Item removed as quantity is 0");
+        
+        try {
+            if (quantity != null && quantity > 0) {
+                // Kiểm tra số lượng sách trong kho
+                if (!cartService.checkBookAvailability(bookId, quantity)) {
+                    response.put("success", false);
+                    response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
+                    return ResponseEntity.badRequest().body(response);
+                }
+                
+                cartService.updateQuantity(user, bookId, quantity);
+                log.debug("Updated quantity of book {} to {} for user {}", bookId, quantity, user.getEmail());
+                
+                response.put("success", true);
+                response.put("message", "Quantity updated successfully");
+                return ResponseEntity.ok(response);
+            } else {
+                cartService.removeItem(user, bookId);
+                log.debug("Removed book {} due to non-positive quantity for user {}", bookId, user.getEmail());
+                
+                response.put("success", true);
+                response.put("message", "Item removed as quantity is 0");
+                return ResponseEntity.ok(response);
+            }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
@@ -365,6 +401,13 @@ public class CartController {
         
         User user = userOptional.get();
         try {
+            // Kiểm tra số lượng trong kho
+            if (!cartService.checkBookAvailability(bookId, quantity)) {
+                response.put("success", false);
+                response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
             // Create a temporary buy now session
             Map<String, Object> buyNowSession = new HashMap<>();
             buyNowSession.put("bookId", bookId);
@@ -383,7 +426,7 @@ public class CartController {
         } catch (Exception e) {
             log.error("Error in Buy Now: {}", e.getMessage());
             response.put("success", false);
-            response.put("message", "Failed to process Buy Now request");
+            response.put("message", "Failed to process Buy Now request: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }

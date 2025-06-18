@@ -169,6 +169,9 @@
 <!-- Header -->
 <div th:replace="~{fragments/header :: header-content}"></div>
 
+<!-- Thông báo lỗi ẩn từ server -->
+<div id="server-error" class="d-none" th:text="${error}"></div>
+
 <main class="py-5 bg-light">
     <div class="container">
         <nav aria-label="breadcrumb mb-4">
@@ -212,7 +215,13 @@
                                     </thead>
                                     <tbody>
                                         <tr th:each="item : ${cart.items}" th:data-book-id="${item.book.book_id}" class="cart-item">
-                                            <td><input type="checkbox" name="selected" th:value="${item.book.book_id}" class="item-checkbox form-check-input"></td>
+                                            <td>
+                                                <input type="checkbox" name="selected" th:value="${item.book.book_id}" 
+                                                       class="item-checkbox form-check-input"
+                                                       th:disabled="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity}"
+                                                       th:title="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity ? 'Sản phẩm không đủ số lượng trong kho' : ''}"
+                                                       th:data-stock="${item.book.stockQuantity}">
+                                            </td>
                                             <td>
                                                 <div class="d-flex align-items-center gap-3">
                                                     <a th:href="@{/product-detail(book_id=${item.book.book_id})}">
@@ -224,6 +233,20 @@
                                                         <p class="shop-name mb-0" th:if="${item.book.publisher != null}">
                                                             <i class="fas fa-store-alt me-1"></i> 
                                                             <span th:text="${item.book.publisher.publisherName}">Publisher Name</span>
+                                                        </p>
+                                                        <p class="mb-0 small" th:if="${item.book.stockQuantity != null}">
+                                                            <span th:class="${item.book.stockQuantity < item.quantity ? 'text-danger' : 'text-success'}">
+                                                                <i class="fas" th:class="${item.book.stockQuantity < item.quantity ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+                                                                <span th:if="${item.book.stockQuantity < item.quantity}">
+                                                                    Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho
+                                                                </span>
+                                                                <span th:unless="${item.book.stockQuantity < item.quantity}">
+                                                                    Còn [[${item.book.stockQuantity}]] sản phẩm trong kho
+                                                                </span>
+                                                            </span>
+                                                        </p>
+                                                        <p class="mb-0 small text-danger" th:unless="${item.book.stockQuantity != null}">
+                                                            <i class="fas fa-exclamation-circle"></i> Sản phẩm đã hết hàng
                                                         </p>
                                                     </div>
                                                 </div>
@@ -551,15 +574,18 @@
 
         if (selectAll) {
             selectAll.addEventListener('change', () => {
+                // Chỉ chọn những sản phẩm có đủ số lượng trong kho
                 getItemCheckboxes().forEach(cb => {
-                    cb.checked = selectAll.checked;
-                    
-                    // Update row highlighting
-                    const row = cb.closest('tr');
-                    if (cb.checked) {
-                        row.classList.add('selected');
-                    } else {
-                        row.classList.remove('selected');
+                    if (!cb.disabled) {
+                        cb.checked = selectAll.checked;
+                        
+                        // Update row highlighting
+                        const row = cb.closest('tr');
+                        if (cb.checked) {
+                            row.classList.add('selected');
+                        } else {
+                            row.classList.remove('selected');
+                        }
                     }
                 });
                 updateCartSummary();
@@ -572,10 +598,11 @@
                 // Checkbox item changed
                 const cb = e.target;
                 
-                // Update "select all" checkbox state
+                // Update "select all" checkbox state - chỉ tính những sản phẩm có thể chọn
                 if (selectAll) {
-                    const allChecked = Array.from(getItemCheckboxes()).every(c => c.checked);
-                    const someChecked = Array.from(getItemCheckboxes()).some(c => c.checked);
+                    const availableCheckboxes = Array.from(getItemCheckboxes()).filter(c => !c.disabled);
+                    const allChecked = availableCheckboxes.every(c => c.checked);
+                    const someChecked = availableCheckboxes.some(c => c.checked);
                     
                     selectAll.checked = allChecked;
                     selectAll.indeterminate = someChecked && !allChecked;
@@ -654,18 +681,29 @@
                         method: 'POST',
                         headers: withCsrf({'Content-Type': 'application/json'}),
                         body: JSON.stringify({bookId, quantity: qty})
-                    }).then(response => {
-                        if (response.ok) {
-                            input.value = qty;
-                            updateItemTotal(row);
-                            updateCartSummary();
-                            updateAllQuantityBadges();
-                        } else {
-                            alert('Could not update quantity.');
-                        }
-                    }).catch(error => {
+                    })
+                    .then(response => {
+                        return response.json().then(data => {
+                            if (response.ok) {
+                                input.value = qty;
+                                updateItemTotal(row);
+                                updateCartSummary();
+                                updateAllQuantityBadges();
+                                if (data.message) {
+                                    // Hiển thị thông báo thành công nếu có
+                                    showToast('success', data.message);
+                                }
+                            } else {
+                                // Hiển thị thông báo lỗi từ server
+                                showToast('error', data.message || 'Không thể cập nhật số lượng.');
+                                // Đặt lại giá trị cũ
+                                input.value = parseInt(input.defaultValue);
+                            }
+                        });
+                    })
+                    .catch(error => {
                         console.error('Error:', error);
-                        alert('An error occurred while updating quantity.');
+                        showToast('error', 'Có lỗi xảy ra khi cập nhật số lượng.');
                     });
                 }
             });
@@ -708,7 +746,9 @@
 
         // Update checkout button state
         function updateCheckoutButtonState() {
-            const hasSelectedItems = Array.from(getItemCheckboxes()).some(cb => cb.checked);
+            const hasSelectedItems = Array.from(getItemCheckboxes())
+                .filter(cb => !cb.disabled) // Chỉ tính những sản phẩm có thể chọn
+                .some(cb => cb.checked);
             console.log("Has selected items:", hasSelectedItems);
             
             if (checkoutBtn) {
@@ -719,7 +759,7 @@
                     checkoutBtn.removeAttribute('title');
                 } else {
                     checkoutBtn.classList.add('disabled');
-                    checkoutBtn.setAttribute('title', 'Please select at least one item to checkout');
+                    checkoutBtn.setAttribute('title', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán');
                 }
                 
                 console.log("Checkout button state updated. Disabled:", checkoutBtn.disabled);
@@ -732,7 +772,7 @@
             console.log("proceedToCheckout function called");
             
             const selectedIds = Array.from(getItemCheckboxes())
-                .filter(cb => cb.checked)
+                .filter(cb => !cb.disabled && cb.checked) // Chỉ lấy những sản phẩm có thể chọn và đã được chọn
                 .map(cb => cb.value);
 
             console.log("Selected items for checkout:", selectedIds);
@@ -740,7 +780,7 @@
             if (selectedIds.length === 0) {
                 console.log("No items selected, showing alert");
                 console.groupEnd();
-                alert('Please select at least one item to checkout');
+                showToast('error', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán');
                 return;
             }
 
@@ -758,7 +798,7 @@
             } catch (error) {
                 console.error("Error during checkout:", error);
                 console.groupEnd();
-                alert('An error occurred during checkout. Please try again.');
+                showToast('error', 'Có lỗi xảy ra khi xử lý thanh toán. Vui lòng thử lại.');
             }
         };
 
@@ -785,6 +825,51 @@
             originalUpdateCartSummary();
             debugCartState();
         };
+
+        // Kiểm tra thông báo lỗi từ server
+        const errorElement = document.getElementById('server-error');
+        if (errorElement && errorElement.textContent.trim() !== '') {
+            // Hiển thị lỗi dưới dạng toast
+            showToast('error', errorElement.textContent);
+        }
+
+        // Hiển thị thông báo kiểu toast
+        function showToast(type, message) {
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                // Tạo container cho toast nếu chưa tồn tại
+                const container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.position = 'fixed';
+                container.style.bottom = '20px';
+                container.style.right = '20px';
+                container.style.zIndex = '9999';
+                document.body.appendChild(container);
+                toastContainer = container;
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'bg-danger' : 'bg-success'} text-white`;
+            toast.style.minWidth = '250px';
+            toast.innerHTML = `
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: 5000
+            });
+            bsToast.show();
+            
+            // Xóa toast sau khi ẩn
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
     });
 </script>
 
