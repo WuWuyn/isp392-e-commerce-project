@@ -151,7 +151,7 @@
                                 <ul class="pagination justify-content-center">
                                     <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
                                         <a class="page-link rounded-start-3" th:href="@{/buyer/orders(page=${currentPage - 1}, status=${param.status}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}">
-                                            <i class="fas fa-chevron-left small"></i> Previous
+                                            <i class="fas fa-chevron-left small"></i>
                                         </a>
                                     </li>
                                     <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
@@ -161,7 +161,7 @@
                                     </li>
                                     <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
                                         <a class="page-link rounded-end-3" th:href="@{/buyer/orders(page=${currentPage + 1}, status=${param.status}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}">
-                                            <i class="fas fa-chevron-right small"></i> Next
+                                            <i class="fas fa-chevron-right small"></i>
                                         </a>
                                     </li>
                                 </ul>

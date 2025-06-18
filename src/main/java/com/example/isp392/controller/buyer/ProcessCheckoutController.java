@@ -83,9 +83,10 @@ public class ProcessCheckoutController {
             order.setNotes(orderDTO.getNotes());
             
             // Process shipping address
-            if (orderDTO.getExistingAddressId() != null && !orderDTO.getExistingAddressId().equals("new")) {
+            // Check if an existing address is selected or if we should use default address
+            if (orderDTO.getExistingAddressId() != null && !orderDTO.getExistingAddressId().isEmpty() && !orderDTO.getExistingAddressId().equals("new")) {
                 // Use existing address
-                UserAddress address = userAddressService.findAddressById(orderDTO.getExistingAddressId())
+                UserAddress address = userAddressService.findAddressById(Integer.valueOf(orderDTO.getExistingAddressId()))
                     .orElseThrow(() -> new IllegalArgumentException("Address not found"));
                 
                 order.setRecipientName(address.getRecipientName());
@@ -96,7 +97,29 @@ public class ProcessCheckoutController {
                 order.setShippingAddressDetail(address.getAddressDetail());
                 order.setShippingCompany(address.getCompany());
                 order.setShippingAddressType(address.getAddress_type());
-                
+            } else if (orderDTO.getExistingAddressId() == null || orderDTO.getExistingAddressId().isEmpty()) {
+                // No address specified, try to use default address
+                UserAddress defaultAddress = userAddressService.findDefaultAddress(user);
+                if (defaultAddress != null) {
+                    order.setRecipientName(defaultAddress.getRecipientName());
+                    order.setRecipientPhone(defaultAddress.getRecipientPhone());
+                    order.setShippingProvince(defaultAddress.getProvince());
+                    order.setShippingDistrict(defaultAddress.getDistrict());
+                    order.setShippingWard(defaultAddress.getWard());
+                    order.setShippingAddressDetail(defaultAddress.getAddressDetail());
+                    order.setShippingCompany(defaultAddress.getCompany());
+                    order.setShippingAddressType(defaultAddress.getAddress_type());
+                } else {
+                    // No default address, use new address from form
+                    order.setRecipientName(orderDTO.getRecipientName());
+                    order.setRecipientPhone(orderDTO.getRecipientPhone());
+                    order.setShippingProvince(orderDTO.getProvince());
+                    order.setShippingDistrict(orderDTO.getDistrict());
+                    order.setShippingWard(orderDTO.getWard());
+                    order.setShippingAddressDetail(orderDTO.getAddressDetail());
+                    order.setShippingCompany(orderDTO.getCompany());
+                    order.setShippingAddressType(orderDTO.getAddressType());
+                }
             } else {
                 // Use new address
                 order.setRecipientName(orderDTO.getRecipientName());
