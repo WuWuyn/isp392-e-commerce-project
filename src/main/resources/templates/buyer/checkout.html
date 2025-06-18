@@ -595,14 +595,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             }
         }
-        
+
         // Fall back to first address if no default is marked
         if (!defaultFound && addressSelect.options.length > 2) { // Skip 'Choose an address' and 'Add New'
             addressSelect.selectedIndex = 2; // Select the first actual address
             displayAddressDetails(addressSelect.options[2]);
             document.getElementById('existingAddressId').value = addressSelect.options[2].value;
         }
-        
+
         if (addressSelect.selectedIndex > 0) {
             addressSelect.dispatchEvent(new Event('change'));
         }

@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -191,32 +194,122 @@ public class OrderService {
 
         return savedOrder;
     }
-
+    
     /**
-     * Find all orders for a specific seller with pagination and filtering.
-     * @param sellerId ID of the seller.
-     * @param status Optional order status to filter by.
-     * @param dateFrom Optional start date to filter by.
-     * @param dateTo Optional end date to filter by.
-     * @param pageable Pagination and sorting information.
-     * @return Page of orders belonging to the seller.
+     * Get today's revenue for a shop
+     * 
+     * @param shopId ID of the shop
+     * @return Today's revenue
      */
-    public Page<Order> findSellerOrders(Integer sellerId, String status, LocalDate dateFrom, LocalDate dateTo, Pageable pageable) {
-        OrderStatus orderStatus = null;
-        if (status != null && !status.isEmpty()) {
-            orderStatus = OrderStatus.valueOf(status);
+    public BigDecimal getTodayRevenue(Integer shopId) {
+        LocalDate today = LocalDate.now();
+        BigDecimal revenue = orderRepository.getTodayRevenue(shopId, today);
+        return revenue != null ? revenue : BigDecimal.ZERO;
+    }
+    
+    /**
+     * Get new orders count for a shop within the last N days
+     * 
+     * @param shopId ID of the shop
+     * @param daysAgo Number of days to look back
+     * @return Count of new orders
+     */
+    public int getNewOrdersCount(Integer shopId, int daysAgo) {
+        return orderRepository.getNewOrdersCount(shopId, daysAgo);
+    }
+    
+    /**
+     * Get weekly revenue data for a shop
+     * 
+     * @param shopId ID of the shop
+     * @return List of BigDecimal values representing daily revenue for the last 7 days
+     */
+    public List<BigDecimal> getWeeklyRevenue(Integer shopId) {
+        List<Map<String, Object>> results = orderRepository.getWeeklyRevenue(shopId);
+        
+        // Create a map to store revenue by date
+        Map<String, BigDecimal> revenueByDate = new HashMap<>();
+        
+        // Fill the map with results from the query
+        for (Map<String, Object> result : results) {
+            String date = (String) result.get("order_date");
+            BigDecimal revenue = (BigDecimal) result.get("daily_revenue");
+            revenueByDate.put(date, revenue);
         }
-
-        LocalDateTime startDateTime = null;
-        if (dateFrom != null) {
-            startDateTime = dateFrom.atStartOfDay();
+        
+        // Create a list of the last 7 days
+        List<String> last7Days = new ArrayList<>();
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            last7Days.add(date.toString());
         }
-
-        LocalDateTime endDateTime = null;
-        if (dateTo != null) {
-            endDateTime = dateTo.plusDays(1).atStartOfDay().minusNanos(1);
+        
+        // Create the final revenue list with 0 for days without data
+        List<BigDecimal> weeklyRevenue = new ArrayList<>();
+        for (String date : last7Days) {
+            BigDecimal revenue = revenueByDate.getOrDefault(date, BigDecimal.ZERO);
+            weeklyRevenue.add(revenue);
         }
-
-        return orderRepository.findSellerOrders(sellerId, orderStatus, startDateTime, endDateTime, pageable);
+        
+        return weeklyRevenue;
+    }
+    
+    /**
+     * Get bestselling books by quantity sold
+     * 
+     * @param shopId ID of the shop
+     * @param limit Maximum number of books to return
+     * @return List of maps with book data
+     */
+    public List<Map<String, Object>> getBestsellingBooks(Integer shopId, int limit) {
+        return orderRepository.getBestsellingBooksByQuantity(shopId, limit);
+    }
+    
+    /**
+     * Get revenue data for a period (daily, weekly, monthly)
+     * 
+     * @param shopId ID of the shop
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
+     * @param period Period type (daily, weekly, monthly)
+     * @return List of maps with revenue data
+     */
+    public List<Map<String, Object>> getRevenueByPeriod(Integer shopId, LocalDate startDate, LocalDate endDate, String period) {
+        String groupBy;
+        switch (period) {
+            case "daily":
+                groupBy = "day";
+                break;
+            case "weekly":
+                groupBy = "week";
+                break;
+            case "monthly":
+            default:
+                groupBy = "month";
+                break;
+        }
+        
+        return orderRepository.getRevenueByPeriod(shopId, startDate, endDate, groupBy);
+    }
+    
+    /**
+     * Get recent orders for a shop
+     * 
+     * @param shopId ID of the shop
+     * @param limit Maximum number of orders to return
+     * @return List of maps with order data
+     */
+    public List<Map<String, Object>> getRecentOrders(Integer shopId, int limit) {
+        return orderRepository.getRecentOrders(shopId, limit);
+    }
+    
+    /**
+     * Get geographic distribution of orders
+     * 
+     * @param shopId ID of the shop
+     * @return List of maps with region and order count
+     */
+    public List<Map<String, Object>> getGeographicDistribution(Integer shopId) {
+        return orderRepository.getGeographicDistribution(shopId);
     }
 }

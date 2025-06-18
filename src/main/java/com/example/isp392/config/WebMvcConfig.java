@@ -35,6 +35,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .resourceChain(true)
                 .addResolver(new VersionResourceResolver().addContentVersionStrategy("/**"))
                 .addResolver(new org.springframework.web.servlet.resource.PathResourceResolver());
+                
+        // Add handler for password-reset CSS files - fixed pattern
+        registry.addResourceHandler("/password-reset/style.css")
+                .addResourceLocations("classpath:/static/css/")
+                .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
+                .setCachePeriod(31556926);
     }
 
     @Bean
