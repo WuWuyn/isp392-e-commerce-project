@@ -5,6 +5,7 @@ import com.example.isp392.model.User;
 import com.example.isp392.service.CartService;
 import com.example.isp392.service.PromotionService;
 import com.example.isp392.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -363,8 +364,6 @@ public class CartController {
         }
     }
 
-<<<<<<< nhoi
-=======
     /**
      * Handle Buy Now functionality - creates a temporary checkout session and redirects to checkout
      * @param payload JSON payload containing bookId, quantity and buyNow flag
@@ -432,7 +431,6 @@ public class CartController {
         }
     }
 
->>>>>>> main
     // ---------- Helper methods ----------
 
     /**

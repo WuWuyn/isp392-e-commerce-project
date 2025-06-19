@@ -490,10 +490,6 @@
                 const quantity = quantityInput ? quantityInput.value || 1 : 1;
                 
                 if (isAuthenticated) {
-<<<<<<< nhoi
-                    // Nếu đã đăng nhập, chuyển đến trang thanh toán với sản phẩm đã chọn
-                    window.location.href = `/checkout?book_id=${bookId}&quantity=${quantity}`;
-=======
                     // Create a form to submit the buy now request
                     const headers = {
                         'Content-Type': 'application/json'
@@ -526,7 +522,6 @@
                         console.error('Error:', error);
                         showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
                     });
->>>>>>> main
                 } else {
                     // Nếu chưa đăng nhập, chuyển đến trang đăng nhập với returnUrl
                     window.location.href = `/buyer/login?returnUrl=/product-detail?book_id=${bookId}`;

@@ -187,13 +187,27 @@ public class OrderController {
             // Clear cart
             cartService.clearCart(cart);
 
-            // Redirect to success page
-            return "redirect:/buyer/orders/" + order.getOrderId() + "/success";
+            // Redirect to success page with a simpler URL pattern
+            return "redirect:/buyer/order-success?orderId=" + order.getOrderId();
 
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
             return "redirect:/buyer/cart";
         }
+    }
+
+    @GetMapping("/order-success")
+    public String orderSuccessPage(@RequestParam Integer orderId, Model model, Authentication authentication) {
+        User user = userService.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
+        if (orderOpt.isEmpty()) {
+            return "redirect:/buyer/orders";
+        }
+
+        model.addAttribute("order", orderOpt.get());
+        return "buyer/order-success";
     }
 
     @GetMapping("/orders/{orderId}/success")
