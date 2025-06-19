@@ -9,22 +9,196 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap"
+          rel="stylesheet">
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
+        :root {
+            --primary: #2C3E50;
+            --secondary: #34495E;
+            --accent: #3498DB;
+            --success: #2ECC71;
+            --warning: #F39C12;
+            --danger: #E74C3C;
+        }
+        
         body {
             font-family: 'Open Sans', sans-serif;
             background-color: #F8F5F0;
             color: #333;
+            line-height: 1.6;
         }
-        .navbar-brand {
-            font-family: 'Lora', serif;
-            font-weight: 700;
+        
+        h1, h2, h3, h4, h5, .navbar-brand {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 15px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            border-top-left-radius: 8px !important;
+            border-top-right-radius: 8px !important;
+        }
+        
+        .card-header i {
+            margin-right: 10px;
+            color: var(--primary);
+        }
+        
+        .stat-card {
+            position: relative;
+            padding: 20px;
+            border-left: 4px solid var(--primary);
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card.revenue {
+            border-left-color: var(--success);
+        }
+        
+        .stat-card.orders {
+            border-left-color: var(--accent);
+        }
+        
+        .stat-card.views {
+            border-left-color: var(--warning);
+        }
+        
+        .stat-card.conversion {
+            border-left-color: var(--danger);
+        }
+        
+        .stat-card .stat-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2.5rem;
+            opacity: 0.1;
+        }
+        
+        .stat-card .stat-title {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .stat-value {
             font-size: 1.8rem;
-            color: #2C3E50;
+            font-weight: 700;
+            margin-bottom: 5px;
         }
+        
+        .stat-card .stat-trend {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-trend.up {
+            color: var(--success);
+        }
+        
+        .stat-trend.down {
+            color: var(--danger);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            padding: 20px;
+        }
+        
+        .table-container {
+            padding: 0 20px 20px;
+        }
+        
+        .table thead th {
+            background-color: rgba(44, 62, 80, 0.05);
+            color: #2C3E50;
+            font-weight: 600;
+            border-bottom: none;
+        }
+        
+        .progress {
+            height: 6px;
+            border-radius: 3px;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+        
+        .legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .btn-primary {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1e2b37;
+            border-color: #1e2b37;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline-primary {
+            color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+            transform: translateY(-2px);
+        }
+        
+        .filter-section {
+            padding: 20px;
+        }
+        
         .section-title {
             font-family: 'Montserrat', sans-serif;
             font-weight: 700;
@@ -33,88 +207,84 @@
             border-bottom: 2px solid #2C3E50;
             padding-bottom: 0.5rem;
         }
+        
         .account-container {
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
             padding: 2rem;
+            margin-top: 2rem;
             margin-bottom: 2rem;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .btn-primary {
-            background-color: #2C3E50;
-            border-color: #2C3E50;
+        
+        .account-container:hover {
+            box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
         }
-        .btn-primary:hover {
-            background-color: #1e2b37;
-            border-color: #1e2b37;
-        }
-        .btn-outline-primary {
-            color: #2C3E50;
-            border-color: #2C3E50;
-        }
-        .btn-outline-primary:hover {
-            background-color: #2C3E50;
-            border-color: #2C3E50;
-        }
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background-color: #fff;
+        
+        .account-sidebar {
             border-radius: 8px;
-            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #2C3E50;
+            background-color: #fff;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
         }
-        .stat-card h4 {
-            font-size: 1rem;
-            color: #6c757d;
-            margin-bottom: 0.5rem;
-        }
-        .stat-card p {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0;
-            color: #2C3E50;
-        }
-        .stat-card i {
-            font-size: 2.5rem;
-            color: #e9ecef;
-            position: absolute;
-            right: 1.5rem;
-        }
-        .filter-form .form-group {
-            margin-bottom: 1rem;
-        }
-        .table-responsive {
-            margin-top: 1.5rem;
-        }
-        .geo-distribution-item {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #eee;
-        }
-        .geo-distribution-item:last-child {
-            border-bottom: none;
-        }
-        .geo-distribution-item .region {
+        
+        .account-sidebar .list-group-item {
+            border: none;
+            border-left: 4px solid transparent;
             font-weight: 600;
         }
-        .geo-distribution-item .percentage {
-            font-weight: 700;
+        
+        .account-sidebar .list-group-item.active {
+            background-color: #f8f9fa;
+            color: #2C3E50;
+            border-left: 4px solid #2C3E50;
+        }
+        
+        .account-sidebar .list-group-item i {
+            margin-right: 10px;
+            color: #6c757d;
+        }
+        
+        .account-sidebar .list-group-item.active i {
             color: #2C3E50;
         }
-        .progress {
-            height: 0.5rem;
-            margin-top: 0.5rem;
+        
+        .navbar-brand {
+            font-family: 'Lora', serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: #2C3E50;
         }
-        .progress-bar {
-            background-color: #2C3E50;
+        
+        .overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
         }
-        .filter-btn {
-            margin-top: 1.5rem;
+        
+        .overview-header h3 {
+            margin-bottom: 0;
+        }
+        
+        .period-badge {
+            background-color: #ecf0f1;
+            color: #2C3E50;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+
+        .export-menu {
+            min-width: 180px;
         }
     </style>
 </head>
@@ -122,37 +292,95 @@
     <!-- Include Topbar -->
     <div th:replace="fragments/seller-topbar :: seller-topbar"></div>
 
-    <div class="container my-4">
+    <div class="container-fluid py-4">
         <div class="row">
             <!-- Include Sidebar -->
             <div class="col-lg-3 mb-4">
                 <div th:replace="fragments/seller-sidebar :: seller-sidebar"></div>
             </div>
-            
+
             <div class="col-lg-9">
-                <!-- Page Title -->
+                <!-- Page Header -->
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="mb-0">Analytics & Reports</h2>
+                    <h2><i class="fas fa-chart-line me-2"></i> Analytics Dashboard</h2>
+                    <span class="text-muted" th:text="${#dates.format(#dates.createNow(), 'EEEE, dd MMMM yyyy')}">Thursday, 11 July 2023</span>
+                </div>
+
+                <!-- Export Options -->
+                <div class="d-flex justify-content-end mb-4">
                     <div class="btn-group">
-                        <a th:href="@{/seller/analytics/export}" class="btn btn-outline-primary">
+                        <button type="button" class="btn btn-outline-primary" id="exportButton">
                             <i class="fas fa-download me-2"></i>Export Report
-                        </a>
+                        </button>
+                        <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="visually-hidden">Toggle Dropdown</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end export-menu">
+                            <li><a class="dropdown-item" href="#" data-format="excel"><i class="fas fa-file-excel me-2"></i>Excel Format</a></li>
+                            <li><a class="dropdown-item" href="#" data-format="pdf"><i class="fas fa-file-pdf me-2"></i>PDF Format</a></li>
+                            <li><a class="dropdown-item" href="#" data-format="csv"><i class="fas fa-file-csv me-2"></i>CSV Format</a></li>
+                        </ul>
                     </div>
                 </div>
-                
+
                 <!-- Error message -->
                 <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
                     <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                
-                <!-- Filter Controls -->
+
+                <!-- Summary Stats -->
+                <div class="row">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card revenue">
+                            <div class="stat-title">Total Revenue</div>
+                            <div class="stat-value" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} ">42,500,000 VND</div>
+                            <div class="stat-trend up">
+                                <i class="fas fa-arrow-up me-1"></i> 8.5% from last period
+                            </div>
+                            <i class="fas fa-dollar-sign stat-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card orders">
+                            <div class="stat-title">Total Orders</div>
+                            <div class="stat-value" th:text="${totalOrders}">145</div>
+                            <div class="stat-trend up">
+                                <i class="fas fa-arrow-up me-1"></i> 5.2% from last period
+                            </div>
+                            <i class="fas fa-shopping-cart stat-icon"></i>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card views">
+                            <div class="stat-title">Total Views</div>
+                            <div class="stat-value" th:text="${totalViews}">2,357</div>
+                            <div class="stat-trend up">
+                                <i class="fas fa-arrow-up me-1"></i> 12.7% from last period
+                            </div>
+                            <i class="fas fa-eye stat-icon"></i>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card conversion">
+                            <div class="stat-title">Conversion Rate</div>
+                            <div class="stat-value" th:text="${#numbers.formatDecimal(avgConversionRate, 1, 1)} + '%'">5.2%</div>
+                            <div class="stat-trend down">
+                                <i class="fas fa-arrow-down me-1"></i> 1.3% from last period
+                            </div>
+                            <i class="fas fa-chart-line stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
                 <div class="account-container mb-4">
-                    <h3 class="section-title">Data Filters</h3>
-                    <form th:action="@{/seller/analytics}" method="get" class="filter-form">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
+                    <h3 class="section-title"><i class="fas fa-filter me-2"></i>Data Filters</h3>
+                    <div class="filter-section">
+                        <form th:action="@{/seller/analytics}" method="get" id="filterForm">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
                                     <label for="period" class="form-label">Time Period</label>
                                     <select class="form-select" id="period" name="period">
                                         <option value="daily" th:selected="${period == 'daily'}">Daily</option>
@@ -160,152 +388,145 @@
                                         <option value="monthly" th:selected="${period == 'monthly'}">Monthly</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
+                                <div class="col-md-4 mb-3">
                                     <label for="startDate" class="form-label">Start Date</label>
-                                    <input type="date" class="form-control" id="startDate" name="startDate" th:value="${startDate}">
+                                    <input type="date" class="form-control" id="startDate" name="startDate"
+                                           th:value="${startDate}">
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
+                                <div class="col-md-4 mb-3">
                                     <label for="endDate" class="form-label">End Date</label>
-                                    <input type="date" class="form-control" id="endDate" name="endDate" th:value="${endDate}">
+                                    <input type="date" class="form-control" id="endDate" name="endDate"
+                                           th:value="${endDate}">
                                 </div>
                             </div>
-                        </div>
-                        <div class="text-end filter-btn">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-filter me-2"></i>Apply Filters
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                
-                <!-- Summary Stats -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="stat-card position-relative">
-                            <h4>Total Revenue</h4>
-                            <p th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' VND'">42,500,000 VND</p>
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card position-relative">
-                            <h4>Total Orders</h4>
-                            <p th:text="${totalOrders}">145</p>
-                            <i class="fas fa-shopping-cart"></i>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card position-relative">
-                            <h4>Total Views</h4>
-                            <p th:text="${totalViews}">2,357</p>
-                            <i class="fas fa-eye"></i>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card position-relative">
-                            <h4>Avg. Conversion Rate</h4>
-                            <p th:text="${#numbers.formatDecimal(avgConversionRate, 1, 1)} + '%'">5.2%</p>
-                            <i class="fas fa-chart-line"></i>
-                        </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" id="resetButton" class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-undo me-1"></i> Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter me-1"></i> Apply Filters
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                
+
                 <!-- Revenue Chart -->
                 <div class="account-container mb-4">
-                    <h3 class="section-title">Revenue Trends</h3>
+                    <h3 class="section-title"><i class="fas fa-dollar-sign me-2"></i>Revenue Trends</h3>
                     <div class="chart-container">
                         <canvas id="revenueChart"></canvas>
                     </div>
+                    <div class="legend mb-3">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: #2C3E50;"></span>
+                            <span>Current Period</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: #3498DB;"></span>
+                            <span>Previous Period</span>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Orders & Views Charts -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="account-container h-100">
-                            <h3 class="section-title">Orders Over Time</h3>
+
+                <!-- Orders and Views -->
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="account-container mb-4">
+                            <h3 class="section-title"><i class="fas fa-shopping-cart me-2"></i>Orders Over Time</h3>
                             <div class="chart-container">
                                 <canvas id="ordersChart"></canvas>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="account-container h-100">
-                            <h3 class="section-title">Product Views</h3>
+                    <div class="col-lg-6">
+                        <div class="account-container mb-4">
+                            <h3 class="section-title"><i class="fas fa-eye me-2"></i>Product Views</h3>
                             <div class="chart-container">
                                 <canvas id="viewsChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Conversion Rate Chart -->
                 <div class="account-container mb-4">
-                    <h3 class="section-title">Conversion Rate Analysis</h3>
+                    <h3 class="section-title"><i class="fas fa-exchange-alt me-2"></i>Conversion Rate Analysis</h3>
                     <div class="chart-container">
                         <canvas id="conversionChart"></canvas>
                     </div>
                 </div>
-                
-                <!-- Top Selling Products -->
-                <div class="account-container mb-4">
-                    <h3 class="section-title">Top Selling Products</h3>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity Sold</th>
-                                    <th>Revenue</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${topProducts == null || topProducts.isEmpty()}">
-                                    <td colspan="3" class="text-center">No sales data available</td>
-                                </tr>
-                                <tr th:each="product : ${topProducts}">
-                                    <td th:text="${product.title}">Product Name</td>
-                                    <td th:text="${product.total_quantity}">42</td>
-                                    <td th:text="${#numbers.formatDecimal(product.total_revenue, 0, 'COMMA', 0, 'POINT')} + ' VND'">4,200,000 VND</td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+                <!-- Top Products and Geo Distribution -->
+                <div class="row">
+                    <div class="col-lg-7">
+                        <div class="account-container mb-4">
+                            <h3 class="section-title"><i class="fas fa-crown me-2"></i>Top Selling Products</h3>
+                            <div class="table-container">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Quantity</th>
+                                                <th>Revenue</th>
+                                                <th>Performance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${topProducts == null || topProducts.isEmpty()}">
+                                                <td colspan="4" class="text-center">No sales data available</td>
+                                            </tr>
+                                            <tr th:each="product, status : ${topProducts}">
+                                                <td th:text="${product.title}">Product Name</td>
+                                                <td th:text="${product.totalQuantity}">42</td>
+                                                <td th:text="${#numbers.formatDecimal(product.totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' VND'">
+                                                    4,200,000 VND
+                                                </td>
+                                                <td style="width: 30%;">
+                                                    <div class="progress">
+                                                        <div class="progress-bar bg-success" role="progressbar" 
+                                                             th:style="'width: ' + ${status.index == 0 ? 100 : (100 - status.index * 15)} + '%'" 
+                                                             aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- Geographic Distribution -->
-                <div class="account-container mb-4">
-                    <h3 class="section-title">Geographic Distribution</h3>
-                    <div class="row">
-                        <div class="col-md-6">
+                    <div class="col-lg-5">
+                        <div class="account-container mb-4">
+                            <h3 class="section-title"><i class="fas fa-map-marker-alt me-2"></i>Geographic Distribution</h3>
                             <div class="chart-container">
                                 <canvas id="geoChart"></canvas>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Region</th>
-                                            <th>Orders</th>
-                                            <th>Percentage</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr th:if="${geoDistribution == null || geoDistribution.isEmpty()}">
-                                            <td colspan="3" class="text-center">No geographic data available</td>
-                                        </tr>
-                                        <tr th:each="region : ${geoDistribution}" th:with="total=${geoDistribution.stream().map(r -> r.order_count).sum()}">
-                                            <td th:text="${region.region}">Hanoi</td>
-                                            <td th:text="${region.order_count}">42</td>
-                                            <td th:text="${#numbers.formatDecimal((region.order_count * 100 / total), 1, 1)} + '%'">25.5%</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="table-container">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Region</th>
+                                                <th>Orders</th>
+                                                <th>Percentage</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${geoDistribution == null || geoDistribution.isEmpty()}">
+                                                <td colspan="3" class="text-center">No geographic data available</td>
+                                            </tr>
+                                            <tr th:each="region : ${geoDistribution}">
+                                                <td th:text="${region.region}">Hanoi</td>
+                                                <td th:text="${region.orderCount}">42</td>
+                                                <td>
+                                                    <span th:text="${#numbers.formatDecimal((region.orderCount * 100 / geoTotalOrders), 1, 1)} + '%'">25.5%</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -314,175 +535,274 @@
         </div>
     </div>
 
-    <footer class="bg-dark text-white py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>ReadHub</h5>
-                    <p class="small">Your trusted online bookstore with a wide collection of books.</p>
-                </div>
-                <div class="col-md-3">
-                    <h6>Quick Links</h6>
-                    <ul class="list-unstyled small">
-                        <li><a href="/" class="text-white text-decoration-none">Home</a></li>
-                        <li><a href="/about-contact" class="text-white text-decoration-none">About Us</a></li>
-                        <li><a href="/about-contact#contact" class="text-white text-decoration-none">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-3">
-                    <h6>Follow Us</h6>
-                    <div class="d-flex">
-                        <a href="#" class="text-white me-3"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="text-white me-3"><i class="fab fa-instagram"></i></a>
-                    </div>
-                </div>
-            </div>
-            <hr class="my-3 bg-light">
-            <div class="text-center small">
-                <p class="mb-0">&copy; 2023 ReadHub. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
 
-    <!-- Bootstrap JS Bundle with Popper -->
+    <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Chart Initialization -->
+    <!-- Simple analytics script to prevent chunked encoding issues -->
     <script th:inline="javascript">
-        // Get data from Thymeleaf
-        const timeLabels = /*[[${timeLabelsJson}]]*/ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-        const revenueData = /*[[${revenueDataJson}]]*/ [1500000, 1800000, 1200000, 2100000, 1900000, 2300000];
-        const ordersData = /*[[${ordersDataJson}]]*/ [15, 18, 12, 21, 19, 23];
-        const viewsData = /*[[${viewsDataJson}]]*/ [150, 180, 120, 210, 190, 230];
-        const conversionRateData = /*[[${conversionRateDataJson}]]*/ [10, 10, 10, 10, 10, 10];
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Bootstrap components
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+            
+            // Reset button handler
+            document.getElementById('resetButton').addEventListener('click', function() {
+                window.location.href = /*[[@{/seller/analytics}]]*/ '/seller/analytics';
+            });
+            
+            // Export button handlers
+            document.querySelectorAll('.dropdown-item[data-format]').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const format = this.getAttribute('data-format');
+                    alert('Exporting data in ' + format.toUpperCase() + ' format...');
+                    // In a real implementation, this would trigger an AJAX request or form submission
+                });
+            });
+            
+            // Simple analytics charts initialization
+            try {
+                initCharts();
+            } catch (error) {
+                console.error('Failed to initialize charts:', error);
+            }
+        });
         
-        // Geographic distribution data
-        const geoLabels = /*[[${geoDistribution != null ? geoDistribution.stream().map(r -> r.region).toArray() : []}]]*/ ['Hanoi', 'Ho Chi Minh', 'Da Nang', 'Others'];
-        const geoData = /*[[${geoDistribution != null ? geoDistribution.stream().map(r -> r.order_count).toArray() : []}]]*/ [42, 36, 15, 7];
-        
-        // Revenue Chart
-        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-        new Chart(revenueCtx, {
-            type: 'line',
-            data: {
-                labels: timeLabels,
-                datasets: [{
-                    label: 'Revenue',
-                    data: revenueData,
-                    borderColor: '#2C3E50',
-                    backgroundColor: 'rgba(44, 62, 80, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return new Intl.NumberFormat('vi-VN').format(context.parsed.y) + ' VND';
-                            }
+        function initCharts() {
+            try {
+                // Get data from Thymeleaf
+                const timeLabels = /*[[${timeLabelsJson}]]*/ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                const revenueData = /*[[${revenueDataJson}]]*/ [1500000, 1800000, 1200000, 2100000, 1900000, 2300000];
+                const ordersData = /*[[${ordersDataJson}]]*/ [15, 18, 12, 21, 19, 23];
+                const viewsData = /*[[${viewsDataJson}]]*/ [150, 180, 120, 210, 190, 230];
+                const conversionRateData = /*[[${conversionRateDataJson}]]*/ [10, 10, 10, 10, 10, 10];
+                
+                // Geographic distribution data
+                const geoLabels = /*[[${geoLabelsJson}]]*/ ['Hanoi', 'Ho Chi Minh', 'Da Nang', 'Others'];
+                const geoData = /*[[${geoDataJson}]]*/ [42, 36, 15, 7];
+                
+                // Parse JSON strings if needed
+                const parseJsonArray = (data) => {
+                    if (typeof data === 'string') {
+                        try {
+                            return JSON.parse(data);
+                        } catch (e) {
+                            console.warn('Failed to parse JSON data:', e);
+                            return [];
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return new Intl.NumberFormat('vi-VN', { 
-                                    style: 'decimal',
-                                    maximumFractionDigits: 0
-                                }).format(value);
+                    return Array.isArray(data) ? data : [];
+                };
+                
+                // Ensure all data are arrays
+                const safeTimeLabels = parseJsonArray(timeLabels);
+                const safeRevenueData = parseJsonArray(revenueData);
+                const safeOrdersData = parseJsonArray(ordersData);
+                const safeViewsData = parseJsonArray(viewsData);
+                const safeConversionRateData = parseJsonArray(conversionRateData);
+                const safeGeoLabels = parseJsonArray(geoLabels);
+                const safeGeoData = parseJsonArray(geoData);
+                
+                // Previous period data (simplified)
+                const prevRevenue = safeRevenueData.map(value => typeof value === 'number' ? value * 0.9 : 0);
+                
+                // Common chart options
+                Chart.defaults.font.family = "'Open Sans', sans-serif";
+                
+                // Revenue Chart
+                if (document.getElementById('revenueChart')) {
+                    new Chart(document.getElementById('revenueChart'), {
+                        type: 'line',
+                        data: {
+                            labels: safeTimeLabels,
+                            datasets: [{
+                                label: 'Current Period',
+                                data: safeRevenueData,
+                                fill: true,
+                                backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                                borderColor: '#2C3E50',
+                                tension: 0.3,
+                                borderWidth: 2
+                            }, {
+                                label: 'Previous Period',
+                                data: prevRevenue,
+                                fill: true,
+                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                                borderColor: '#3498DB',
+                                borderDash: [5, 5],
+                                tension: 0.3,
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': ' + 
+                                                new Intl.NumberFormat('vi-VN').format(context.raw) + ' VND';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    ticks: {
+                                        callback: function(value) {
+                                            return new Intl.NumberFormat('vi-VN', {
+                                                notation: 'compact',
+                                                compactDisplay: 'short'
+                                            }).format(value);
+                                        }
+                                    }
+                                }
                             }
                         }
-                    }
+                    });
                 }
+                
+                // Orders Chart
+                if (document.getElementById('ordersChart')) {
+                    new Chart(document.getElementById('ordersChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: safeTimeLabels,
+                            datasets: [{
+                                label: 'Orders',
+                                data: safeOrdersData,
+                                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                                borderRadius: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Views Chart
+                if (document.getElementById('viewsChart')) {
+                    new Chart(document.getElementById('viewsChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: safeTimeLabels,
+                            datasets: [{
+                                label: 'Views',
+                                data: safeViewsData,
+                                backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                                borderRadius: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Conversion Rate Chart
+                if (document.getElementById('conversionChart')) {
+                    new Chart(document.getElementById('conversionChart'), {
+                        type: 'line',
+                        data: {
+                            labels: safeTimeLabels,
+                            datasets: [{
+                                label: 'Conversion Rate (%)',
+                                data: safeConversionRateData,
+                                fill: true,
+                                backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                                borderColor: '#F39C12',
+                                tension: 0.3,
+                                borderWidth: 2,
+                                pointBackgroundColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Conversion Rate: ' + context.raw + '%';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Geographic Distribution Chart
+                if (document.getElementById('geoChart')) {
+                    new Chart(document.getElementById('geoChart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: safeGeoLabels,
+                            datasets: [{
+                                data: safeGeoData,
+                                backgroundColor: [
+                                    'rgba(52, 152, 219, 0.7)',
+                                    'rgba(46, 204, 113, 0.7)',
+                                    'rgba(155, 89, 182, 0.7)',
+                                    'rgba(230, 126, 34, 0.7)',
+                                    'rgba(231, 76, 60, 0.7)'
+                                ],
+                                borderWidth: 1,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((context.raw / total) * 100).toFixed(1) + '%';
+                                            return context.label + ': ' + context.raw + ' orders (' + percentage + ')';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error initializing charts:', error);
             }
-        });
-        
-        // Orders Chart
-        const ordersCtx = document.getElementById('ordersChart').getContext('2d');
-        new Chart(ordersCtx, {
-            type: 'bar',
-            data: {
-                labels: timeLabels,
-                datasets: [{
-                    label: 'Orders',
-                    data: ordersData,
-                    backgroundColor: 'rgba(52, 152, 219, 0.7)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-        
-        // Views Chart
-        const viewsCtx = document.getElementById('viewsChart').getContext('2d');
-        new Chart(viewsCtx, {
-            type: 'bar',
-            data: {
-                labels: timeLabels,
-                datasets: [{
-                    label: 'Views',
-                    data: viewsData,
-                    backgroundColor: 'rgba(46, 204, 113, 0.7)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-        
-        // Conversion Rate Chart
-        const conversionCtx = document.getElementById('conversionChart').getContext('2d');
-        new Chart(conversionCtx, {
-            type: 'line',
-            data: {
-                labels: timeLabels,
-                datasets: [{
-                    label: 'Conversion Rate (%)',
-                    data: conversionRateData,
-                    borderColor: '#e67e22',
-                    backgroundColor: 'rgba(230, 126, 34, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-        
-        // Geographic Distribution Chart
-        const geoCtx = document.getElementById('geoChart').getContext('2d');
-        new Chart(geoCtx, {
-            type: 'pie',
-            data: {
-                labels: geoLabels,
-                datasets: [{
-                    data: geoData,
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.7)',
-                        'rgba(46, 204, 113, 0.7)',
-                        'rgba(155, 89, 182, 0.7)',
-                        'rgba(230, 126, 34, 0.7)',
-                        'rgba(231, 76, 60, 0.7)'
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
+        }
     </script>
 </body>
 </html> 

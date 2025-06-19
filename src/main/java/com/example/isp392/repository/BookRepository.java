@@ -121,16 +121,16 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
      * @param shopId ID of the shop
      * @return List of daily revenue for the last 7 days
      */
-    @Query(value = "SELECT CONVERT(date, o.order_date) AS order_date, " +
-           "COALESCE(SUM(oi.price * oi.quantity), 0) AS daily_revenue " +
-           "FROM orders o " +
-           "JOIN order_items oi ON o.order_id = oi.order_id " +
-           "JOIN books b ON oi.book_id = b.book_id " +
-           "WHERE b.shop_id = :shopId " +
-           "AND o.order_date >= DATEADD(day, -6, CONVERT(date, GETDATE())) " +
-           "AND o.status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "GROUP BY CONVERT(date, o.order_date) " +
-           "ORDER BY CONVERT(date, o.order_date)", nativeQuery = true)
+    @Query(value = "SELECT CONVERT(date, o.order_date) AS order_date,\n" +
+            "           COALESCE(o.sub_total, 0) AS daily_revenue \n" +
+            "           FROM orders o \n" +
+            "           JOIN order_items oi ON o.order_id = oi.order_id\n" +
+            "           JOIN books b ON oi.book_id = b.book_id \n" +
+            "           WHERE b.shop_id = :shopId\n" +
+            "           AND o.order_date >= DATEADD(day, -6, CONVERT(date, GETDATE())) \n" +
+            "           AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') \n" +
+            "           GROUP BY CONVERT(date, o.order_date),o.sub_total\n" +
+            "           ORDER BY CONVERT(date, o.order_date)", nativeQuery = true)
     List<Map<String, Object>> getWeeklyRevenue(@Param("shopId") Integer shopId);
     
     /**
@@ -140,16 +140,15 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
      * @param limit Maximum number of books to return
      * @return List of bestselling books with sales data
      */
-    @Query(value = "SELECT b.book_id, b.title, SUM(oi.quantity) as total_quantity, " +
-           "SUM(oi.price * oi.quantity) as total_revenue " +
+    @Query(value = "SELECT TOP 5  b.book_id, b.title, SUM(oi.quantity) as total_quantity, " +
+           "o.sub_total as total_revenue " +
            "FROM books b " +
            "JOIN order_items oi ON b.book_id = oi.book_id " +
            "JOIN orders o ON oi.order_id = o.order_id " +
            "WHERE b.shop_id = :shopId " +
-           "AND o.status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "GROUP BY b.book_id, b.title " +
-           "ORDER BY total_quantity DESC " +
-           "LIMIT :limit", nativeQuery = true)
+           "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "GROUP BY b.book_id, b.title,o.sub_total " +
+           "ORDER BY total_quantity DESC ", nativeQuery = true)
     List<Map<String, Object>> getBestsellingBooksByQuantity(@Param("shopId") Integer shopId, @Param("limit") int limit);
     
     /**
@@ -167,20 +166,21 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
            "  WHEN :groupBy = 'week' THEN CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) " +
            "  WHEN :groupBy = 'month' THEN CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) " +
            "END AS time_period, " +
-           "COALESCE(SUM(oi.price * oi.quantity), 0) AS revenue, " +
+           "COALESCE(o.sub_total, 0) AS revenue, " +
            "COUNT(DISTINCT o.order_id) AS order_count " +
            "FROM orders o " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
            "AND o.order_date BETWEEN :startDate AND :endDate " +
-           "AND o.status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
            "GROUP BY " +
            "CASE " +
            "  WHEN :groupBy = 'day' THEN CONVERT(varchar, CONVERT(date, o.order_date), 120) " +
            "  WHEN :groupBy = 'week' THEN CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) " +
            "  WHEN :groupBy = 'month' THEN CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) " +
-           "END " +
+           "END,  " +
+            "o.sub_total" +
            "ORDER BY time_period", nativeQuery = true)
     List<Map<String, Object>> getRevenueByPeriod(
             @Param("shopId") Integer shopId, 
