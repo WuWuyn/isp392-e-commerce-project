@@ -165,7 +165,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "  WHEN :groupBy = 'week' THEN CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) " +
            "  WHEN :groupBy = 'month' THEN CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) " +
            "END AS time_period, " +
-           "COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS revenue, " +
+           "COALESCE(o.sub_total, 0) AS revenue, " +
            "COUNT(DISTINCT o.order_id) AS order_count " +
            "FROM orders o " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
@@ -178,7 +178,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "  WHEN :groupBy = 'day' THEN CONVERT(varchar, CONVERT(date, o.order_date), 120) " +
            "  WHEN :groupBy = 'week' THEN CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) " +
            "  WHEN :groupBy = 'month' THEN CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) " +
-           "END " +
+           "END, " +
+            "o.sub_total"+
            "ORDER BY time_period", nativeQuery = true)
     List<Map<String, Object>> getRevenueByPeriod(
             @Param("shopId") Integer shopId, 
