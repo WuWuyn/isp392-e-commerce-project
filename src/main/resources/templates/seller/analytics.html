@@ -334,7 +334,7 @@
                     <div class="col-xl-3 col-md-6">
                         <div class="stat-card revenue">
                             <div class="stat-title">Total Revenue</div>
-                            <div class="stat-value" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} ">42,500,000 VND</div>
+                            <div class="stat-value" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' VND'">42,500,000 VND</div>
                             <div class="stat-trend up">
                                 <i class="fas fa-arrow-up me-1"></i> 8.5% from last period
                             </div>
@@ -539,12 +539,16 @@
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Simple analytics script to prevent chunked encoding issues -->
+    <!-- Replace entire script section -->
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Bootstrap components
-            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+            try {
+                const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+                tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+            } catch (e) {
+                console.warn('Error initializing tooltips:', e);
+            }
             
             // Reset button handler
             document.getElementById('resetButton').addEventListener('click', function() {
@@ -561,246 +565,328 @@
                 });
             });
             
-            // Simple analytics charts initialization
-            try {
-                initCharts();
-            } catch (error) {
-                console.error('Failed to initialize charts:', error);
-            }
+            // Safely initialize analytics charts with a small delay
+            setTimeout(() => {
+                try {
+                    initCharts();
+                } catch (error) {
+                    console.error('Failed to initialize charts:', error);
+                    showChartError();
+                }
+            }, 100);
         });
         
+        function showChartError() {
+            const chartContainers = document.querySelectorAll('.chart-container');
+            chartContainers.forEach(container => {
+                container.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-circle"></i> Unable to load chart data. Please try refreshing the page.</div>';
+            });
+        }
+        
         function initCharts() {
+            // Safely parse data from Thymeleaf
+            const parseJsonSafely = (jsonStr) => {
+                if (!jsonStr || typeof jsonStr !== 'string') {
+                    return [];
+                }
+                try {
+                    const parsed = JSON.parse(jsonStr);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    console.warn('Failed to parse JSON:', e);
+                    return [];
+                }
+            };
+            
+            // Get data from Thymeleaf
+            let timeLabels, revenueData, ordersData, viewsData, conversionRateData, geoLabels, geoData;
+            
             try {
-                // Get data from Thymeleaf
-                const timeLabels = /*[[${timeLabelsJson}]]*/ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-                const revenueData = /*[[${revenueDataJson}]]*/ [1500000, 1800000, 1200000, 2100000, 1900000, 2300000];
-                const ordersData = /*[[${ordersDataJson}]]*/ [15, 18, 12, 21, 19, 23];
-                const viewsData = /*[[${viewsDataJson}]]*/ [150, 180, 120, 210, 190, 230];
-                const conversionRateData = /*[[${conversionRateDataJson}]]*/ [10, 10, 10, 10, 10, 10];
+                const timeLabelsJson = /*[[${timeLabelsJson}]]*/ '[]';
+                const revenueDataJson = /*[[${revenueDataJson}]]*/ '[]';
+                const ordersDataJson = /*[[${ordersDataJson}]]*/ '[]';
+                const viewsDataJson = /*[[${viewsDataJson}]]*/ '[]';
+                const conversionRateDataJson = /*[[${conversionRateDataJson}]]*/ '[]';
+                const geoLabelsJson = /*[[${geoLabelsJson}]]*/ '[]';
+                const geoDataJson = /*[[${geoDataJson}]]*/ '[]';
                 
-                // Geographic distribution data
-                const geoLabels = /*[[${geoLabelsJson}]]*/ ['Hanoi', 'Ho Chi Minh', 'Da Nang', 'Others'];
-                const geoData = /*[[${geoDataJson}]]*/ [42, 36, 15, 7];
+                // Parse JSON data with error handling
+                timeLabels = parseJsonSafely(timeLabelsJson);
+                revenueData = parseJsonSafely(revenueDataJson);
+                ordersData = parseJsonSafely(ordersDataJson);
+                viewsData = parseJsonSafely(viewsDataJson);
+                conversionRateData = parseJsonSafely(conversionRateDataJson);
+                geoLabels = parseJsonSafely(geoLabelsJson);
+                geoData = parseJsonSafely(geoDataJson);
+            } catch (error) {
+                console.error('Error parsing JSON data:', error);
+                timeLabels = [];
+                revenueData = [];
+                ordersData = [];
+                viewsData = [];
+                conversionRateData = [];
+                geoLabels = [];
+                geoData = [];
+            }
+            
+            // Set up Chart.js defaults
+            Chart.defaults.font.family = "'Open Sans', sans-serif";
+            
+            // Create each chart only if its canvas element exists
+            if (document.getElementById('revenueChart')) {
+                createRevenueChart(timeLabels, revenueData);
+            }
+            
+            if (document.getElementById('ordersChart')) {
+                createOrdersChart(timeLabels, ordersData);
+            }
+            
+            if (document.getElementById('viewsChart')) {
+                createViewsChart(timeLabels, viewsData);
+            }
+            
+            if (document.getElementById('conversionChart')) {
+                createConversionChart(timeLabels, conversionRateData);
+            }
+            
+            if (document.getElementById('geoChart')) {
+                createGeoChart(geoLabels, geoData);
+            }
+        }
+        
+        function createRevenueChart(labels, currentData) {
+            try {
+                // Calculate previous period data (simplified)
+                const previousData = currentData.map(value => {
+                    if (typeof value === 'number') {
+                        return Math.round(value * 0.9);
+                    }
+                    return 0;
+                });
                 
-                // Parse JSON strings if needed
-                const parseJsonArray = (data) => {
-                    if (typeof data === 'string') {
-                        try {
-                            return JSON.parse(data);
-                        } catch (e) {
-                            console.warn('Failed to parse JSON data:', e);
-                            return [];
+                new Chart(document.getElementById('revenueChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Current Period',
+                            data: currentData,
+                            fill: true,
+                            backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                            borderColor: '#2C3E50',
+                            tension: 0.3,
+                            borderWidth: 2
+                        }, {
+                            label: 'Previous Period',
+                            data: previousData,
+                            fill: true,
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderColor: '#3498DB',
+                            borderDash: [5, 5],
+                            tension: 0.3,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + 
+                                            new Intl.NumberFormat('vi-VN').format(context.raw) + ' VND';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(value) {
+                                        return new Intl.NumberFormat('vi-VN', {
+                                            notation: 'compact',
+                                            compactDisplay: 'short'
+                                        }).format(value);
+                                    }
+                                }
+                            }
                         }
                     }
-                    return Array.isArray(data) ? data : [];
-                };
-                
-                // Ensure all data are arrays
-                const safeTimeLabels = parseJsonArray(timeLabels);
-                const safeRevenueData = parseJsonArray(revenueData);
-                const safeOrdersData = parseJsonArray(ordersData);
-                const safeViewsData = parseJsonArray(viewsData);
-                const safeConversionRateData = parseJsonArray(conversionRateData);
-                const safeGeoLabels = parseJsonArray(geoLabels);
-                const safeGeoData = parseJsonArray(geoData);
-                
-                // Previous period data (simplified)
-                const prevRevenue = safeRevenueData.map(value => typeof value === 'number' ? value * 0.9 : 0);
-                
-                // Common chart options
-                Chart.defaults.font.family = "'Open Sans', sans-serif";
-                
-                // Revenue Chart
-                if (document.getElementById('revenueChart')) {
-                    new Chart(document.getElementById('revenueChart'), {
-                        type: 'line',
-                        data: {
-                            labels: safeTimeLabels,
-                            datasets: [{
-                                label: 'Current Period',
-                                data: safeRevenueData,
-                                fill: true,
-                                backgroundColor: 'rgba(44, 62, 80, 0.1)',
-                                borderColor: '#2C3E50',
-                                tension: 0.3,
-                                borderWidth: 2
-                            }, {
-                                label: 'Previous Period',
-                                data: prevRevenue,
-                                fill: true,
-                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                                borderColor: '#3498DB',
-                                borderDash: [5, 5],
-                                tension: 0.3,
-                                borderWidth: 2
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            interaction: {
-                                mode: 'index',
-                                intersect: false
-                            },
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return context.dataset.label + ': ' + 
-                                                new Intl.NumberFormat('vi-VN').format(context.raw) + ' VND';
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    ticks: {
-                                        callback: function(value) {
-                                            return new Intl.NumberFormat('vi-VN', {
-                                                notation: 'compact',
-                                                compactDisplay: 'short'
-                                            }).format(value);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-                
-                // Orders Chart
-                if (document.getElementById('ordersChart')) {
-                    new Chart(document.getElementById('ordersChart'), {
-                        type: 'bar',
-                        data: {
-                            labels: safeTimeLabels,
-                            datasets: [{
-                                label: 'Orders',
-                                data: safeOrdersData,
-                                backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                                borderRadius: 3
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    beginAtZero: true
-                                }
-                            }
-                        }
-                    });
-                }
-                
-                // Views Chart
-                if (document.getElementById('viewsChart')) {
-                    new Chart(document.getElementById('viewsChart'), {
-                        type: 'bar',
-                        data: {
-                            labels: safeTimeLabels,
-                            datasets: [{
-                                label: 'Views',
-                                data: safeViewsData,
-                                backgroundColor: 'rgba(46, 204, 113, 0.7)',
-                                borderRadius: 3
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    beginAtZero: true
-                                }
-                            }
-                        }
-                    });
-                }
-                
-                // Conversion Rate Chart
-                if (document.getElementById('conversionChart')) {
-                    new Chart(document.getElementById('conversionChart'), {
-                        type: 'line',
-                        data: {
-                            labels: safeTimeLabels,
-                            datasets: [{
-                                label: 'Conversion Rate (%)',
-                                data: safeConversionRateData,
-                                fill: true,
-                                backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                                borderColor: '#F39C12',
-                                tension: 0.3,
-                                borderWidth: 2,
-                                pointBackgroundColor: '#fff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return 'Conversion Rate: ' + context.raw + '%';
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    ticks: {
-                                        callback: function(value) {
-                                            return value + '%';
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-                
-                // Geographic Distribution Chart
-                if (document.getElementById('geoChart')) {
-                    new Chart(document.getElementById('geoChart'), {
-                        type: 'doughnut',
-                        data: {
-                            labels: safeGeoLabels,
-                            datasets: [{
-                                data: safeGeoData,
-                                backgroundColor: [
-                                    'rgba(52, 152, 219, 0.7)',
-                                    'rgba(46, 204, 113, 0.7)',
-                                    'rgba(155, 89, 182, 0.7)',
-                                    'rgba(230, 126, 34, 0.7)',
-                                    'rgba(231, 76, 60, 0.7)'
-                                ],
-                                borderWidth: 1,
-                                borderColor: '#fff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                            const percentage = ((context.raw / total) * 100).toFixed(1) + '%';
-                                            return context.label + ': ' + context.raw + ' orders (' + percentage + ')';
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
+                });
             } catch (error) {
-                console.error('Error initializing charts:', error);
+                console.error('Error creating revenue chart:', error);
+                document.getElementById('revenueChart').parentElement.innerHTML = 
+                    '<div class="alert alert-warning"><i class="fas fa-exclamation-circle"></i> Unable to load revenue chart.</div>';
+            }
+        }
+        
+        function createOrdersChart(labels, data) {
+            try {
+                new Chart(document.getElementById('ordersChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Orders',
+                            data: data,
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            borderRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating orders chart:', error);
+                document.getElementById('ordersChart').parentElement.innerHTML = 
+                    '<div class="alert alert-warning"><i class="fas fa-exclamation-circle"></i> Unable to load orders chart.</div>';
+            }
+        }
+        
+        function createViewsChart(labels, data) {
+            try {
+                new Chart(document.getElementById('viewsChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Views',
+                            data: data,
+                            backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                            borderRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating views chart:', error);
+                document.getElementById('viewsChart').parentElement.innerHTML = 
+                    '<div class="alert alert-warning"><i class="fas fa-exclamation-circle"></i> Unable to load views chart.</div>';
+            }
+        }
+        
+        function createConversionChart(labels, data) {
+            try {
+                new Chart(document.getElementById('conversionChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Conversion Rate (%)',
+                            data: data,
+                            fill: true,
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            borderColor: '#F39C12',
+                            tension: 0.3,
+                            borderWidth: 2,
+                            pointBackgroundColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Conversion Rate: ' + context.raw + '%';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating conversion chart:', error);
+                document.getElementById('conversionChart').parentElement.innerHTML = 
+                    '<div class="alert alert-warning"><i class="fas fa-exclamation-circle"></i> Unable to load conversion rate chart.</div>';
+            }
+        }
+        
+        function createGeoChart(labels, data) {
+            try {
+                // If no data, show a message
+                if (!labels.length || !data.length) {
+                    document.getElementById('geoChart').parentElement.innerHTML = 
+                        '<div class="alert alert-info"><i class="fas fa-info-circle"></i> No geographic data available.</div>';
+                    return;
+                }
+                
+                new Chart(document.getElementById('geoChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                'rgba(52, 152, 219, 0.7)',
+                                'rgba(46, 204, 113, 0.7)',
+                                'rgba(155, 89, 182, 0.7)',
+                                'rgba(230, 126, 34, 0.7)',
+                                'rgba(231, 76, 60, 0.7)'
+                            ],
+                            borderWidth: 1,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) + '%' : '0%';
+                                        return context.label + ': ' + context.raw + ' orders (' + percentage + ')';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating geo chart:', error);
+                document.getElementById('geoChart').parentElement.innerHTML = 
+                    '<div class="alert alert-warning"><i class="fas fa-exclamation-circle"></i> Unable to load geographic distribution chart.</div>';
             }
         }
     </script>

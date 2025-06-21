@@ -3,6 +3,7 @@ package com.example.isp392.controller;
 import com.example.isp392.dto.BookFormDTO;
 import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.*;
+import com.example.isp392.repository.OrderRepository;
 import com.example.isp392.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -46,6 +47,7 @@ public class SellerController {
     private final CategoryService categoryService;
     private final PublisherService publisherService;
     private final OrderService orderService;
+    private final OrderRepository orderRepository;
 
     /**
      * Constructor for dependency injection
@@ -55,16 +57,18 @@ public class SellerController {
      * @param categoryService Service for category-related operations
      * @param publisherService Service for publisher-related operations
      * @param orderService Service for order-related operations
+     * @param orderRepository Repository for order-related operations
      */
     public SellerController(UserService userService, BookService bookService, ShopService shopService, 
                            CategoryService categoryService, PublisherService publisherService,
-                           OrderService orderService) {
+                           OrderService orderService, OrderRepository orderRepository) {
         this.userService = userService;
         this.bookService = bookService;
         this.shopService = shopService;
         this.categoryService = categoryService;
         this.publisherService = publisherService;
         this.orderService = orderService;
+        this.orderRepository = orderRepository;
     }
 
     @GetMapping("/login")
@@ -287,28 +291,36 @@ public class SellerController {
                 
                 // Revenue - with null handling
                 BigDecimal revenue;
-                if (data.get("revenue") instanceof BigDecimal) {
-                    revenue = (BigDecimal) data.get("revenue");
-                } else if (data.get("revenue") instanceof Number) {
-                    revenue = BigDecimal.valueOf(((Number) data.get("revenue")).doubleValue());
-                } else {
-                    // Generate reasonable sample data based on shop ID
-                    revenue = BigDecimal.valueOf((random.nextInt(900) + 100) * 10000);
+                try {
+                    if (data.get("revenue") instanceof BigDecimal) {
+                        revenue = (BigDecimal) data.get("revenue");
+                    } else if (data.get("revenue") instanceof Number) {
+                        revenue = BigDecimal.valueOf(((Number) data.get("revenue")).doubleValue());
+                    } else {
+                        // Generate reasonable sample data based on shop ID
+                        revenue = BigDecimal.valueOf((random.nextInt(900) + 100) * 10000);
+                    }
+                } catch (Exception e) {
+                    revenue = BigDecimal.ZERO;
+                    log.warn("Error parsing revenue data: {}", e.getMessage());
                 }
                 
                 periodRevenue.add(revenue);
-                totalRevenue = totalRevenue.add(revenue);
                 
                 // Orders - with null handling
                 Integer orders = 0;
-                if (data.get("order_count") instanceof Number) {
-                    orders = ((Number) data.get("order_count")).intValue();
-                } else {
-                    // Generate reasonable sample data based on revenue
-                    orders = Math.max(1, revenue.divide(BigDecimal.valueOf(100000), 0, BigDecimal.ROUND_DOWN).intValue());
+                try {
+                    if (data.get("order_count") instanceof Number) {
+                        orders = ((Number) data.get("order_count")).intValue();
+                    } else {
+                        // Generate reasonable sample data based on revenue
+                        orders = Math.max(1, revenue.divide(BigDecimal.valueOf(100000), 0, BigDecimal.ROUND_DOWN).intValue());
+                    }
+                } catch (Exception e) {
+                    orders = 0;
+                    log.warn("Error parsing order count data: {}", e.getMessage());
                 }
                 periodOrders.add(orders);
-                totalOrders += orders;
                 
                 // Views - generate consistent sample data
                 int views = orders * (random.nextInt(5) + 5);
@@ -319,6 +331,22 @@ public class SellerController {
                 double conversionRate = views > 0 ? (orders * 100.0 / views) : 0;
                 conversionRate = Math.round(conversionRate * 10) / 10.0; // Round to 1 decimal place
                 periodConversionRate.add(conversionRate);
+            }
+            
+            // Get total revenue and orders directly from the database
+            try {
+                totalRevenue = orderRepository.getTotalRevenue(shop.getShopId(), startDate, endDate);
+                if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+                
+                totalOrders = orderRepository.getTotalOrders(shop.getShopId(), startDate, endDate);
+//                if (totalOrders) totalOrders = 0;
+
+                log.debug("Got total revenue {} and total orders {} from database", totalRevenue, totalOrders);
+            } catch (Exception e) {
+                log.error("Error getting totals from database: {}", e.getMessage());
+                // Calculate totals from period data as fallback
+                totalRevenue = periodRevenue.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                totalOrders = periodOrders.stream().mapToInt(Integer::intValue).sum();
             }
             
             // Calculate average conversion rate with safeguard against division by zero
@@ -398,10 +426,9 @@ public class SellerController {
                 geoCounts.add(count);
             }
             
+            // Safe conversion of data to JSON strings for chart.js
             String geoLabelsJson = safeConvertToJsonArray(geoLabels);
             String geoDataJson = safeConvertToJsonArray(geoCounts);
-            
-            // Safe conversion of data to JSON strings for chart.js
             String timeLabelsJson = safeConvertToJsonArray(timeLabels);
             String revenueDataJson = safeConvertToJsonArray(periodRevenue);
             String ordersDataJson = safeConvertToJsonArray(periodOrders);
@@ -415,18 +442,17 @@ public class SellerController {
             model.addAttribute("period", period);
             model.addAttribute("startDate", startDate);
             model.addAttribute("endDate", endDate);
-            model.addAttribute("timeLabels", timeLabels);
+            
+            // Add chart data as JSON strings
             model.addAttribute("timeLabelsJson", timeLabelsJson);
-            model.addAttribute("revenueData", periodRevenue);
             model.addAttribute("revenueDataJson", revenueDataJson);
-            model.addAttribute("ordersData", periodOrders);
             model.addAttribute("ordersDataJson", ordersDataJson);
-            model.addAttribute("viewsData", periodViews);
             model.addAttribute("viewsDataJson", viewsDataJson);
-            model.addAttribute("conversionRateData", periodConversionRate);
             model.addAttribute("conversionRateDataJson", conversionRateDataJson);
             model.addAttribute("geoLabelsJson", geoLabelsJson);
             model.addAttribute("geoDataJson", geoDataJson);
+            
+            // Add processed data for tables
             model.addAttribute("topProducts", topProducts);
             model.addAttribute("geoDistribution", geoDistribution);
             
@@ -485,27 +511,31 @@ public class SellerController {
             return "[]";
         }
         
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < list.size(); i++) {
-            T item = list.get(i);
-            if (item == null) {
-                sb.append("null");
-            } else if (item instanceof String) {
-                sb.append("\"").append(((String)item).replace("\"", "\\\"")).append("\"");
-            } else if (item instanceof BigDecimal) {
-                // Format BigDecimal without scientific notation and with maximum 2 decimal places
-                sb.append(((BigDecimal)item).setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString());
-            } else {
-                sb.append(item);
+        try {
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < list.size(); i++) {
+                T item = list.get(i);
+                if (item == null) {
+                    sb.append("null");
+                } else if (item instanceof String) {
+                    sb.append("\"").append(((String)item).replace("\"", "\\\"")).append("\"");
+                } else if (item instanceof BigDecimal) {
+                    // Format BigDecimal without scientific notation and with maximum 2 decimal places
+                    sb.append(((BigDecimal)item).setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString());
+                } else {
+                    sb.append(item);
+                }
+                
+                if (i < list.size() - 1) {
+                    sb.append(",");
+                }
             }
-            
-            if (i < list.size() - 1) {
-                sb.append(", ");
-            }
+            sb.append("]");
+            return sb.toString();
+        } catch (Exception e) {
+            log.error("Error converting list to JSON array: {}", e.getMessage());
+            return "[]";
         }
-        sb.append("]");
-        
-        return sb.toString();
     }
     
     /**
@@ -772,7 +802,7 @@ public class SellerController {
     public String showProductsPage(
             Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "9") int size,
             @RequestParam(required = false) String searchQuery,
             @RequestParam(defaultValue = "dateAdded") String sortField,
             @RequestParam(defaultValue = "desc") String sortDir) {

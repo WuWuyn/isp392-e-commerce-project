@@ -312,4 +312,30 @@ public class OrderService {
     public List<Map<String, Object>> getGeographicDistribution(Integer shopId) {
         return orderRepository.getGeographicDistribution(shopId);
     }
+    
+    /**
+     * Get total revenue for a shop within a date range
+     * 
+     * @param shopId ID of the shop
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
+     * @return Total revenue for the shop within the date range
+     */
+    public BigDecimal getTotalRevenue(Integer shopId, LocalDate startDate, LocalDate endDate) {
+        BigDecimal revenue = orderRepository.getTotalRevenue(shopId, startDate, endDate);
+        return revenue != null ? revenue : BigDecimal.ZERO;
+    }
+    
+    /**
+     * Get total orders count for a shop within a date range
+     * 
+     * @param shopId ID of the shop
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
+     * @return Total number of orders for the shop within the date range
+     */
+    public Integer getTotalOrders(Integer shopId, LocalDate startDate, LocalDate endDate) {
+        Integer count = orderRepository.getTotalOrders(shopId, startDate, endDate);
+        return count != null ? count : 0;
+    }
 }
