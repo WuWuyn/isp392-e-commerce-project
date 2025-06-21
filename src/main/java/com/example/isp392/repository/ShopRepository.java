@@ -2,18 +2,23 @@ package com.example.isp392.repository;
 
 import com.example.isp392.model.Shop;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-/**
- * Repository interface for Shop entity
- */
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface ShopRepository extends JpaRepository<Shop, Integer> {
-    
-    /**
-     * Find a shop by user ID
-     * @param userId the user ID
-     * @return the shop or null if not found
-     */
-    Shop findByUserUserId(Integer userId);
-} 
+
+    Optional<Shop> findByUserUserId(Integer userId);
+
+    @Query("SELECT s FROM Shop s WHERE s.approval_status = :status")
+    List<Shop> findByApprovalStatus(@Param("status") Shop.ApprovalStatus status);
+
+    @Query("SELECT count(s) FROM Shop s WHERE s.approval_status = :status")
+    long countByApprovalStatus(@Param("status") Shop.ApprovalStatus status);
+
+
+}
