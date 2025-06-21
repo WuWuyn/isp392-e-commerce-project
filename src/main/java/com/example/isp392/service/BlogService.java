@@ -1,6 +1,7 @@
 package com.example.isp392.service;
 
 import com.example.isp392.model.Blog;
+import com.example.isp392.model.Book;
 import com.example.isp392.repository.BlogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -91,4 +92,5 @@ public class BlogService {
         List<Blog> previousBlogs = blogRepository.findPreviousBlog(currentBlogId, PageRequest.of(0, 1));
         return previousBlogs.isEmpty() ? null : previousBlogs.get(0);
     }
+
 }

@@ -1,7 +1,13 @@
 package com.example.isp392.controller;
 
+import com.example.isp392.model.Book;
+import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
+import com.example.isp392.repository.CategoryRepository;
+import com.example.isp392.repository.PublisherRepository;
 import com.example.isp392.service.AdminService;
+import com.example.isp392.service.BookService;
+import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,9 +18,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,7 +45,10 @@ public class AdminController {
     
     private final UserService userService;
     private final AdminService adminService;
-    
+    private final BookService bookService;
+    private final CategoryRepository categoryRepository;
+    private final PublisherRepository publisherRepository;
+    private final ShopService shopService;
     /**
      * Constructor with explicit dependency injection
      * Using constructor injection instead of @Autowired for better clarity and testability
@@ -38,9 +56,14 @@ public class AdminController {
      * @param userService service for user-related operations
      * @param adminService service for admin-specific operations
      */
-    public AdminController(UserService userService, AdminService adminService) {
+    public AdminController(UserService userService, AdminService adminService, BookService bookService,
+                           CategoryRepository categoryRepository, PublisherRepository publisherRepository, ShopService shopService) {
         this.userService = userService;
         this.adminService = adminService;
+        this.bookService = bookService;
+        this.categoryRepository = categoryRepository;
+        this.publisherRepository = publisherRepository;
+        this.shopService = shopService;
     }
     
     /**
@@ -71,32 +94,6 @@ public class AdminController {
      * @param model Model to add attributes
      * @return the product management view
      */
-    @GetMapping("/products")
-    public String showProductManagementPage(Model model) {
-        // Use AdminService to get the current admin user
-        Optional<User> adminUserOpt = adminService.getCurrentAdminUser();
-        
-        if (adminUserOpt.isPresent()) {
-            User adminUser = adminUserOpt.get();
-            // Add user information to model for display in admin topbar
-            model.addAttribute("user", adminUser);
-            model.addAttribute("roles", userService.getUserRoles(adminUser));
-            
-            // Extract first name for convenience (though the topbar will do this via Thymeleaf)
-            String firstName = adminService.extractFirstName(adminUser.getFullName());
-            model.addAttribute("firstName", firstName);
-        }
-        
-        // Add active menu information for sidebar highlighting
-        model.addAttribute("activeMenu", "product");
-        model.addAttribute("activeSubMenu", "product-list");
-        
-        // Add any product-related data here
-        // model.addAttribute("products", productService.getAllProducts());
-        
-        return "admin/products";
-    }
-    
     /**
      * Display dashboard page
      * This page is only accessible to authenticated users with ADMIN role
@@ -263,8 +260,7 @@ public class AdminController {
         }
 
         try {
-            // isActive sẽ là null nếu checkbox bị disable, nên cần kiểm tra
-            boolean newIsActiveStatus = (isActive != null) ? isActive : userToUpdate.isActive();
+            boolean newIsActiveStatus = (isActive != null);
 
             userService.updateUserActivationStatus(userId, newIsActiveStatus);
             userService.updateUserRoles(userId, roles);
@@ -274,5 +270,161 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("errorMessage", "Error updating user: " + e.getMessage());
         }
         return "redirect:/admin/users";
+    }
+    //  VÙNG QUẢN LÝ SẢN PHẨM (PRODUCTS)
+
+    @GetMapping("/products")
+    public String showProductList(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "sortField", defaultValue = "title") String sortField,
+            @RequestParam(name = "sortDir", defaultValue = "ASC") String sortDir,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "categoryId", required = false) Integer categoryId, // <<< THÊM THAM SỐ NÀY
+            Model model) {
+
+        adminService.addAdminInfoToModel(model);
+
+        // Chuyển categoryId thành List<Integer> để tương thích với service
+        List<Integer> categoryIds = null;
+        if (categoryId != null) {
+            categoryIds = List.of(categoryId);
+        }
+
+        // Gọi phương thức findBooks hợp nhất, truyền categoryIds vào
+        Page<Book> bookPage = bookService.findBooks(keyword, categoryIds, null, null, null, null, page, size, sortField, sortDir);
+
+        model.addAttribute("bookPage", bookPage);
+        model.addAttribute("activeMenu", "product");
+        model.addAttribute("activeSubMenu", "product-list");
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("reverseSortDir", sortDir.equals("ASC") ? "DESC" : "ASC");
+
+        // <<< THÊM CÁC THUỘC TÍNH MỚI CHO VIEW >>>
+        model.addAttribute("allCategories", categoryRepository.findAll(Sort.by("categoryName"))); // Lấy tất cả category để đổ ra dropdown
+        model.addAttribute("selectedCategoryId", categoryId); // Giữ lại category đã chọn để hiển thị
+
+        return "admin/product/product-management";
+    }
+    @GetMapping("/products/add")
+    public String showAddProductForm(Model model) {
+        adminService.addAdminInfoToModel(model);
+        model.addAttribute("book", new Book());
+        model.addAttribute("categories", categoryRepository.findAll());
+        model.addAttribute("publishers", publisherRepository.findAll());
+        model.addAttribute("activeMenu", "product");
+        model.addAttribute("activeSubMenu", "product-add");
+        return "admin/product/add-product";
+    }
+
+    @PostMapping("/products/add")
+    public String saveProduct(@ModelAttribute("book") Book book, BindingResult result, RedirectAttributes redirectAttributes) {
+        if (result.hasErrors()) {
+            return "admin/product/add-product";
+        }
+
+        // Sử dụng shopService để lấy shop, thay vì shopRepository
+        Shop defaultShop = shopService.getShopById(1); // <-- SỬA TẠI ĐÂY
+
+        book.setShop(defaultShop);
+        book.setDateAdded(LocalDate.now());
+        // Giả sử bạn cũng đã inject bookService
+        bookService.save(book);
+
+        redirectAttributes.addFlashAttribute("successMessage", "Book added successfully!");
+        return "redirect:/admin/products";
+    }
+
+    @GetMapping("/products/edit/{id}")
+    public String showEditProductForm(@PathVariable("id") Integer bookId, Model model) {
+        adminService.addAdminInfoToModel(model);
+        Optional<Book> bookOptional = bookService.getBookById(bookId);
+        if (bookOptional.isPresent()) {
+            model.addAttribute("book", bookOptional.get());
+            model.addAttribute("categories", categoryRepository.findAll());
+            model.addAttribute("publishers", publisherRepository.findAll());
+            model.addAttribute("activeMenu", "product");
+            return "admin/product/edit-product";
+        }
+        return "redirect:/admin/products";
+    }
+
+    @PostMapping("/products/edit/{id}")
+    public String updateProduct(@PathVariable("id") Integer bookId,
+                                @ModelAttribute("book") Book bookFromForm,
+                                @RequestParam("coverImageFile") MultipartFile coverImageFile, // Nhận tệp tải lên
+                                BindingResult result,
+                                RedirectAttributes redirectAttributes) {
+
+        if (result.hasErrors()) {
+            return "admin/product/edit-product";
+        }
+
+        Optional<Book> existingBookOpt = bookService.getBookById(bookId);
+
+        if (existingBookOpt.isPresent()) {
+            Book existingBook = existingBookOpt.get();
+
+            existingBook.setTitle(bookFromForm.getTitle());
+            existingBook.setStockQuantity(bookFromForm.getStockQuantity());
+            existingBook.setAuthors(bookFromForm.getAuthors());
+            existingBook.setDescription(bookFromForm.getDescription());
+            existingBook.setSellingPrice(bookFromForm.getSellingPrice());
+            existingBook.setOriginalPrice(bookFromForm.getOriginalPrice());
+            existingBook.setPublisher(bookFromForm.getPublisher());
+            existingBook.setCategories(bookFromForm.getCategories());
+
+            // Xử lý upload ảnh mới nếu có
+            if (coverImageFile != null && !coverImageFile.isEmpty()) {
+                try {
+                    String uploadDir = "src/main/resources/static/images/uploads/";
+                    Path uploadPath = Paths.get(uploadDir);
+
+                    if (!Files.exists(uploadPath)) {
+                        Files.createDirectories(uploadPath);
+                    }
+
+                    String uniqueFilename = System.currentTimeMillis() + "_" + coverImageFile.getOriginalFilename();
+                    Path filePath = uploadPath.resolve(uniqueFilename);
+
+                    try (InputStream inputStream = coverImageFile.getInputStream()) {
+                        Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+                    }
+
+                    // Cập nhật đường dẫn ảnh mới cho sách
+                    existingBook.setCoverImgUrl("/images/uploads/" + uniqueFilename);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    redirectAttributes.addFlashAttribute("errorMessage", "Error uploading image: " + e.getMessage());
+                    return "redirect:/admin/products/edit/" + bookId;
+                }
+            }
+            // Nếu không có tệp mới, đường dẫn ảnh cũ sẽ được giữ nguyên
+
+            bookService.save(existingBook);
+            redirectAttributes.addFlashAttribute("successMessage", "Book updated successfully!");
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Book not found!");
+        }
+
+        return "redirect:/admin/products";
+    }
+    @GetMapping("/products/detail/{id}")
+    public String showProductDetail(@PathVariable("id") Integer bookId, Model model) {
+        adminService.addAdminInfoToModel(model);
+        Optional<Book> bookOptional = bookService.getBookById(bookId);
+
+        if (bookOptional.isPresent()) {
+            model.addAttribute("book", bookOptional.get());
+            model.addAttribute("activeMenu", "product");
+
+            // ĐẢM BẢO DÒNG NÀY TRẢ VỀ CHÍNH XÁC NHƯ SAU
+            return "admin/product/product-detail";
+        }
+
+        return "redirect:/admin/products";
     }
 }

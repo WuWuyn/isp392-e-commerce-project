@@ -81,4 +81,9 @@ public class ShopService {
         // Save the shop
         return shopRepository.save(shop);
     }
+
+    public Shop getShopById(Integer shopId) {
+        return shopRepository.findById(shopId)
+                .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
+    }
 } 
