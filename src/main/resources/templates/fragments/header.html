@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <body>
 
 <header th:fragment="header-content">
@@ -60,45 +60,39 @@
                             </form>
                         </div>
                     </div>
-                    
+
                     <!-- User Account - Show Login link when not authenticated, or username with dropdown when authenticated -->
                     <div class="nav-item dropdown" sec:authorize="isAuthenticated()">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-user"></i> <span class="d-none d-lg-inline" th:text="${user != null ? user.fullName : #authentication.name}">User</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <!-- Show manage account link for buyers -->
                             <li sec:authorize="hasRole('BUYER')"><a class="dropdown-item" th:href="@{/buyer/account-info}"><i class="fas fa-user-circle me-2"></i>Manage Account</a></li>
-                            
-                            <!-- Show admin dashboard link for admins -->
+
+                            <li sec:authorize="hasRole('BUYER') and !hasRole('SELLER')">
+                                <a class="dropdown-item" th:href="@{/buyer/register-shop}">
+                                    <i class="fas fa-store-alt me-2"></i>Seller Registration
+                                </a>
+                            </li>
                             <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/products}"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</a></li>
-                            
-                            <!-- Show seller dashboard link for sellers -->
+
                             <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item" th:href="@{/seller/dashboard}"><i class="fas fa-store me-2"></i>Seller Dashboard</a></li>
-                            
+
                             <li><hr class="dropdown-divider"></li>
-                            
-                            <!-- Default logout option for any authenticated user -->
-                            <li sec:authorize="hasRole('BUYER')"><a class="dropdown-item" th:href="@{/buyer/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            <li sec:authorize="hasRole('SELLER')"><a class="dropdown-item" th:href="@{/seller/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            <li sec:authorize="isAuthenticated() and !hasAnyRole('BUYER', 'ADMIN', 'SELLER')"><a class="dropdown-item" th:href="@{/logout}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+
+                            <li sec:authorize="isAuthenticated()">
+                                <a class="dropdown-item" th:href="@{/logout}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Log Out
+                                </a>
+                            </li>
                         </ul>
                     </div>
-                    
+
                     <!-- Login link - Only show when not authenticated -->
                     <a th:href="@{/buyer/login}" class="nav-link" sec:authorize="!isAuthenticated()"><i class="fas fa-user"></i> <span class="d-none d-lg-inline">Login</span></a>
-                    
+
                     <!-- Shopping Cart - Link to cart page or login if not authenticated -->
-                    <a th:href="@{/buyer/cart}" class="nav-link position-relative" sec:authorize="isAuthenticated()">
-                        <i class="fas fa-shopping-cart"></i> <span class="d-none d-lg-inline">Cart</span>
-                        <!-- Cart count badge - Only show when authenticated and cart has items -->
-                        <span id="headerCartCountBadge" th:if="${cart != null && cart.items != null && !cart.items.isEmpty()}" 
-                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-count" 
-                              style="font-size: 0.65rem; transform: translate(-50%, -30%);" 
-                              th:text="${#aggregates.sum(cart.items.![quantity])}">0</span>
-                    </a>
-                    <a th:href="@{/buyer/login}" class="nav-link position-relative" sec:authorize="!isAuthenticated()">
+                    <a th:href="${#authorization.expression('isAuthenticated()') ? '/buyer/cart' : '/buyer/login'}" class="nav-link">
                         <i class="fas fa-shopping-cart"></i> <span class="d-none d-lg-inline">Cart</span>
                     </a>
                 </div>
@@ -112,7 +106,7 @@
             <button class="btn btn-sm btn-primary" type="submit">Search</button>
         </form>
     </div>
-    
+
     <!-- CSS for search dropdown -->
     <style>
         .search-dropdown {
@@ -120,24 +114,24 @@
             animation: fadeIn 0.3s ease-in-out;
             min-width: 300px;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+
         /* Focus styles for search input */
         .search-dropdown .form-control:focus {
             box-shadow: none;
             border-color: #80bdff;
         }
-        
+
         /* Style for search button */
         .search-dropdown .btn-primary {
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
         }
-        
+
         /* Make the search dropdown wider on larger screens */
         @media (min-width: 768px) {
             .search-dropdown {
@@ -145,14 +139,14 @@
             }
         }
     </style>
-    
+
     <!-- JavaScript for search behavior -->
     <script defer>
         document.addEventListener('DOMContentLoaded', function() {
             // Auto focus input when search dropdown is shown
             const searchDropdown = document.querySelector('.search-dropdown');
             const searchInput = searchDropdown?.querySelector('input[name="search"]');
-            
+
             // Listen for dropdown events to focus the search input
             document.querySelector('#searchIconToggle')?.addEventListener('click', function() {
                 // Use setTimeout to ensure dropdown is fully shown before focusing
@@ -160,18 +154,18 @@
                     searchInput?.focus();
                 }, 200);
             });
-            
+
             // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 const dropdown = document.querySelector('.search-dropdown.show');
                 const searchIcon = document.querySelector('#searchIconToggle');
-                
+
                 if (dropdown && !dropdown.contains(e.target) && e.target !== searchIcon && !searchIcon?.contains(e.target)) {
                     // Use Bootstrap's dropdown API to hide the dropdown
                     bootstrap.Dropdown.getInstance(searchIcon)?.hide();
                 }
             });
-            
+
             // Prevent dropdown from closing when clicking inside
             searchDropdown?.addEventListener('click', function(e) {
                 e.stopPropagation();

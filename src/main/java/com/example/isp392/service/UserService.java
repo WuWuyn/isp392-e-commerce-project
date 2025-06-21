@@ -458,4 +458,27 @@ public class UserService implements UserDetailsService {
         log.info("Activation status for user ID {} has been updated to {}.", userId, isActive);
     }
 
+    @Transactional
+    public void upgradeUserToSeller(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        Role sellerRole = roleRepository.findByRoleName("SELLER")
+                .orElseThrow(() -> new RuntimeException("Error: SELLER role not found."));
+
+        boolean hasSellerRole = user.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().equals(sellerRole));
+
+        if (!hasSellerRole) {
+            UserRole newUserRole = new UserRole(user, sellerRole);
+            user.getUserRoles().add(newUserRole);
+            userRepository.save(user);
+            log.info("Upgraded user with ID {} to SELLER.", userId);
+        } else {
+            // Ghi log nếu người dùng đã là SELLER để tránh xử lý thừa
+            log.warn("User with ID {} is already a SELLER.", userId);
+        }
+
+    }
+
 }

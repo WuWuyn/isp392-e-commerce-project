@@ -5,6 +5,7 @@ import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
+import com.example.isp392.repository.ShopRepository;
 import com.example.isp392.service.AdminService;
 import com.example.isp392.service.BookService;
 import com.example.isp392.service.ShopService;
@@ -49,6 +50,8 @@ public class AdminController {
     private final CategoryRepository categoryRepository;
     private final PublisherRepository publisherRepository;
     private final ShopService shopService;
+    private final ShopRepository shopRepository;
+
     /**
      * Constructor with explicit dependency injection
      * Using constructor injection instead of @Autowired for better clarity and testability
@@ -57,12 +60,14 @@ public class AdminController {
      * @param adminService service for admin-specific operations
      */
     public AdminController(UserService userService, AdminService adminService, BookService bookService,
-                           CategoryRepository categoryRepository, PublisherRepository publisherRepository, ShopService shopService) {
+                           CategoryRepository categoryRepository, PublisherRepository publisherRepository,
+                           ShopRepository shopRepository, ShopService shopService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
         this.categoryRepository = categoryRepository;
         this.publisherRepository = publisherRepository;
+        this.shopRepository = shopRepository;
         this.shopService = shopService;
     }
     
@@ -105,18 +110,19 @@ public class AdminController {
     public String showDashboardPage(Model model) {
         // Use AdminService to get the current admin user
         Optional<User> adminUserOpt = adminService.getCurrentAdminUser();
-        
+        long pendingSellerCount = shopService.countPendingShops();
         if (adminUserOpt.isPresent()) {
             User adminUser = adminUserOpt.get();
+            model.addAttribute("newSellerRegistrations", pendingSellerCount);
             model.addAttribute("user", adminUser);
             model.addAttribute("roles", userService.getUserRoles(adminUser));
             String firstName = adminService.extractFirstName(adminUser.getFullName());
             model.addAttribute("firstName", firstName);
         }
-        
+
         // Add active menu information for sidebar highlighting
         model.addAttribute("activeMenu", "dashboard");
-        
+
         return "admin/dashboard";
     }
     
@@ -426,5 +432,75 @@ public class AdminController {
         }
 
         return "redirect:/admin/products";
+    }
+
+    // đăng kí seller
+    @GetMapping("/seller-approvals")
+    public String showSellerApprovalQueue(Model model) {
+        adminService.addAdminInfoToModel(model);
+        List<Shop> pendingShops = shopService.getPendingShops();
+        model.addAttribute("pendingShops", pendingShops);
+        model.addAttribute("activeMenu", "seller");
+        model.addAttribute("activeSubMenu", "seller-approval");
+        List<Shop> rejectedShops = shopService.getRejectedShops();
+        model.addAttribute("rejectedShops", rejectedShops);
+        return "admin/seller-approval";
+    }
+
+    @GetMapping("/shops/detail/{id}")
+    public String showShopDetailPage(@PathVariable("id") Integer shopId, Model model) {
+        adminService.addAdminInfoToModel(model);
+        Shop shop = shopRepository.findById(shopId).orElse(null);
+        if(shop == null) return "redirect:/admin/seller-approvals";
+
+        model.addAttribute("shop", shop);
+        model.addAttribute("activeMenu", "seller");
+        return "admin/shop-detail";
+    }
+
+    // === CÁC PHƯƠNG THỨC CẦN SỬA ĐỔI ===
+
+    @PostMapping("/seller-approvals/approve/{id}")
+    public String approveSeller(@PathVariable("id") Integer shopId,
+                                @RequestParam("returnUrl") String returnUrl, // <<< THÊM THAM SỐ NÀY
+                                RedirectAttributes redirectAttributes,
+                                Authentication authentication) {
+        try {
+            // Lấy thông tin admin đang đăng nhập
+            User currentAdmin = adminService.getCurrentAdminUser()
+                    .orElseThrow(() -> new IllegalStateException("Admin user not found in session. Please login again."));
+
+            // Gọi service với đủ tham số
+            shopService.approveShop(shopId, currentAdmin);
+            redirectAttributes.addFlashAttribute("successMessage", "Shop has been approved successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
+        }
+        return "redirect:" + returnUrl;
+    }
+
+    @PostMapping("/seller-approvals/reject/{id}")
+    public String rejectSeller(@PathVariable("id") Integer shopId,
+                               @RequestParam("reason") String reason,
+                               @RequestParam("returnUrl") String returnUrl, // <<< THÊM THAM SỐ NÀY
+                               RedirectAttributes redirectAttributes,
+                               Authentication authentication) {
+        try {
+            if (reason == null || reason.trim().isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Reason for rejection cannot be empty.");
+                return "redirect:/admin/seller-approvals";
+            }
+
+            // Lấy thông tin admin đang đăng nhập
+            User currentAdmin = adminService.getCurrentAdminUser()
+                    .orElseThrow(() -> new IllegalStateException("Admin user not found in session. Please login again."));
+
+            // Gọi service với đủ tham số
+            shopService.rejectShop(shopId, reason, currentAdmin);
+            redirectAttributes.addFlashAttribute("successMessage", "The shop application has been rejected.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
+        }
+        return "redirect:" + returnUrl;
     }
 }
