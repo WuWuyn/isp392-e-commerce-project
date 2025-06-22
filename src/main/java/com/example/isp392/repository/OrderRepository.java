@@ -5,6 +5,7 @@ import com.example.isp392.model.OrderStatus;
 import com.example.isp392.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -222,4 +223,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "GROUP BY o.shipping_province " +
            "ORDER BY COUNT(DISTINCT o.order_id) DESC", nativeQuery = true)
     List<Map<String, Object>> getGeographicDistribution(@Param("shopId") Integer shopId);
+
+
+    Page<Order> findAll(Specification<Order> spec, Pageable pageable);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE o.orderId = :orderId AND b.shop.user.userId = :sellerId")
+    Optional<Order> findOrderByIdForSeller(@Param("orderId") Integer orderId, @Param("sellerId") Integer sellerId);
 } 
