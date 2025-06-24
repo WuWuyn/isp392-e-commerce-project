@@ -3,9 +3,12 @@ package com.example.isp392.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -13,7 +16,7 @@ import java.util.*;
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "role"})
 })
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,11 +53,11 @@ public class User {
     @Column(name = "is_active")
     private boolean isActive = true;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private Set<UserRole> userRoles = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private Set<UserAddress> addresses = new HashSet<>(); // Danh sách các địa chỉ của user
+    private Set<UserAddress> addresses = new HashSet<>();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Cart cart;
@@ -73,4 +76,36 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BlogComment> blogComments;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return userRoles.stream()
+                .map(userRole -> new SimpleGrantedAuthority("ROLE_" + userRole.getRole().getRoleName()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.isActive;
+    }
 }

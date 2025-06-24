@@ -1,7 +1,7 @@
 package com.example.isp392.service;
 
 import com.example.isp392.model.Blog;
-import com.example.isp392.model.Book;
+import com.example.isp392.model.User;
 import com.example.isp392.repository.BlogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,16 +9,60 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class BlogService {
-
+    private static final Logger log = LoggerFactory.getLogger(BlogService.class);
     private final BlogRepository blogRepository;
 
     public BlogService(BlogRepository blogRepository) {
         this.blogRepository = blogRepository;
+    }
+
+    /**
+     * Creates and saves a new blog post.
+     * @param title The title of the blog.
+     * @param content The content of the blog.
+     * @param author The user creating the blog.
+     * @return The saved Blog entity.
+     */
+    @Transactional
+    public Blog createBlog(String title, String content, User author) {
+        Blog newBlog = new Blog();
+        newBlog.setTitle(title);
+        newBlog.setContent(content);
+        newBlog.setUser(author);
+
+        // Set default values for new posts
+        newBlog.setCreatedDate(LocalDateTime.now());
+        newBlog.setViewsCount(0);
+        newBlog.setLocked(false);
+
+        return blogRepository.save(newBlog);
+    }
+
+    @Transactional
+    public void deleteBlogPost(int blogId, User currentUser) {
+        // 1. Tìm bài viết theo ID
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog post not found with id: " + blogId));
+
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+
+        boolean isAuthor = blog.getUser().getUserId().equals(currentUser.getUserId());
+
+        if (!isAuthor && !isAdmin) {
+            throw new SecurityException("User does not have permission to delete this post.");
+        }
+
+        blogRepository.delete(blog);
+        log.info("Blog post with id {} deleted by user {}", blogId, currentUser.getEmail());
     }
 
     // Get all blogs with pagination
@@ -31,7 +75,7 @@ public class BlogService {
     @Transactional(readOnly = true)
     public Page<Blog> getBlogsSorted(String sortOption, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        
+
         Page<Blog> blogs;
         switch (sortOption) {
             case "latest":
@@ -47,15 +91,15 @@ public class BlogService {
                 blogs = blogRepository.findAll(pageable);
                 break;
         }
-        
+
         // Chủ động tải thông tin user để tránh lỗi LazyInitializationException
         blogs.getContent().forEach(blog -> {
             if (blog.getUser() != null) {
                 // Chủ động truy cập để đảm bảo Hibernate tải dữ liệu
-                blog.getUser().getFullName(); 
+                blog.getUser().getFullName();
             }
         });
-        
+
         return blogs;
     }
 

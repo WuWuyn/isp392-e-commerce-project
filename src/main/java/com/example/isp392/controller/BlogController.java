@@ -35,10 +35,10 @@ public class BlogController {
             @RequestParam(defaultValue = "latest") String sort,
             @RequestParam(defaultValue = "0") int page,
             Model model) {
-        
+
         // Default page size
         int size = 8;
-        
+
         // Get blogs based on search and sort criteria
         Page<Blog> blogsPage;
         if (search != null && !search.isEmpty()) {
@@ -47,52 +47,89 @@ public class BlogController {
         } else {
             blogsPage = blogService.getBlogsSorted(sort, page, size);
         }
-        
+
         model.addAttribute("blogs", blogsPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", blogsPage.getTotalPages());
         model.addAttribute("sort", sort);
-        
+
         // If there are blogs, get the latest blog for the highlight section
         if (!blogsPage.isEmpty()) {
             model.addAttribute("latestBlog", blogsPage.getContent().get(0));
         }
-        
+
         return "blog";
+    }
+
+    /**
+     * Show the form for creating a new blog post.
+     */
+    @GetMapping("/create")
+    public String showCreateForm(Model model, @AuthenticationPrincipal User currentUser) {
+        if (currentUser == null) {
+            // Redirect to login if user is not authenticated
+            return "redirect:/login";
+        }
+        model.addAttribute("blog", new Blog());
+        return "blog-create";
+    }
+
+    /**
+     * Process the submission of the new blog post form.
+     */
+    @PostMapping("/create")
+    public String processCreateBlog(
+            @ModelAttribute("blog") Blog blog,
+            @AuthenticationPrincipal User currentUser,
+            RedirectAttributes redirectAttributes) {
+
+        if (currentUser == null) {
+            redirectAttributes.addFlashAttribute("error", "You must be logged in to create a post.");
+            return "redirect:/login";
+        }
+
+        try {
+            Blog savedBlog = blogService.createBlog(blog.getTitle(), blog.getContent(), currentUser);
+            redirectAttributes.addFlashAttribute("success", "Blog post created successfully!");
+            return "redirect:/blog/" + savedBlog.getBlogId();
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error creating blog post.");
+            return "redirect:/blog/create";
+        }
     }
 
     // Blog single page
     @GetMapping("/{blogId}")
     public String viewBlog(@PathVariable int blogId, Model model) {
         Optional<Blog> blogOpt = blogService.getBlogById(blogId);
-        
+
         if (blogOpt.isPresent()) {
             Blog blog = blogOpt.get();
-            
+
             // Increment the view count
             blogService.incrementViewCount(blogId);
-            
+
             // Add blog to model
             model.addAttribute("blog", blog);
-            
+
             // Get previous and next blogs for navigation
             Blog previousBlog = blogService.getPreviousBlog(blogId);
             Blog nextBlog = blogService.getNextBlog(blogId);
-            
+
             if (previousBlog != null) {
                 model.addAttribute("previousBlog", previousBlog);
             }
-            
+
             if (nextBlog != null) {
                 model.addAttribute("nextBlog", nextBlog);
             }
-            
+
             return "blog-single";
         } else {
             return "redirect:/blog";
         }
     }
-    
+
     /**
      * Handle adding a comment to a blog post
      */
@@ -102,14 +139,14 @@ public class BlogController {
             @RequestParam String comment,
             @AuthenticationPrincipal User currentUser,
             RedirectAttributes redirectAttributes) {
-        
+
         // Check if blog exists
         Optional<Blog> blogOpt = blogService.getBlogById(blogId);
         if (blogOpt.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Blog post not found");
             return "redirect:/blog";
         }
-        
+
         // Add the comment
         if (currentUser != null) {
             BlogComment savedComment = blogCommentService.addComment(blogId, comment, currentUser);
@@ -122,10 +159,10 @@ public class BlogController {
             // Handle guest comments or redirect to login
             redirectAttributes.addFlashAttribute("error", "You must be logged in to comment");
         }
-        
+
         return "redirect:/blog/" + blogId + "#comments";
     }
-    
+
     /**
      * Handle deleting a comment
      */
@@ -135,7 +172,7 @@ public class BlogController {
             @PathVariable int commentId,
             @AuthenticationPrincipal User currentUser,
             RedirectAttributes redirectAttributes) {
-        
+
         if (currentUser != null) {
             boolean deleted = blogCommentService.deleteComment(commentId, currentUser.getUserId());
             if (deleted) {
@@ -146,7 +183,28 @@ public class BlogController {
         } else {
             redirectAttributes.addFlashAttribute("error", "You must be logged in to delete comments");
         }
-        
+
         return "redirect:/blog/" + blogId + "#comments";
+    }
+
+    @PostMapping("/{blogId}/delete")
+    public String deletePost(@PathVariable int blogId,
+                             @AuthenticationPrincipal User currentUser,
+                             RedirectAttributes redirectAttributes) {
+
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            blogService.deleteBlogPost(blogId, currentUser);
+            redirectAttributes.addFlashAttribute("successMessage", "Blog post deleted successfully.");
+        } catch (SecurityException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "You do not have permission to delete this post.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/blog";
     }
 }

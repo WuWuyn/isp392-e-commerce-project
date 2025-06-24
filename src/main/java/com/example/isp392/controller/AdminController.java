@@ -331,12 +331,10 @@ public class AdminController {
             return "admin/product/add-product";
         }
 
-        // Sử dụng shopService để lấy shop, thay vì shopRepository
-        Shop defaultShop = shopService.getShopById(1); // <-- SỬA TẠI ĐÂY
+        Shop defaultShop = shopService.getShopById(1);
 
         book.setShop(defaultShop);
         book.setDateAdded(LocalDate.now());
-        // Giả sử bạn cũng đã inject bookService
         bookService.save(book);
 
         redirectAttributes.addFlashAttribute("successMessage", "Book added successfully!");
