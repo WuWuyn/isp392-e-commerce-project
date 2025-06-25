@@ -68,9 +68,27 @@ public class UserService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
+        // Find user by email
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+
+        // Get user roles
+        List<UserRole> userRoles = userRoleRepository.findByUser(user);
+
+        // Map roles to authorities
+        Collection<SimpleGrantedAuthority> authorities = userRoles.stream()
+                .filter(UserRole::isRoleActiveForUser)
+                .map(userRole -> new SimpleGrantedAuthority("ROLE_" + userRole.getRole().getRoleName()))
+                .collect(Collectors.toList());
+
+        // Return Spring Security UserDetails
+        return new org.springframework.security.core.userdetails.User(
+                user.getEmail(),
+                user.getPassword(),
+                authorities
+        );
     }
+
 
     /**
      * Register a new buyer user
