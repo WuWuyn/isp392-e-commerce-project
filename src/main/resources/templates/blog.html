@@ -51,13 +51,20 @@
                 <div class="col-md-6 mb-3 mb-md-0">
                     <form class="d-flex blog-search-form" th:action="@{/blog}" method="get">
                         <input class="form-control me-2" type="search" name="search" th:value="${search}" placeholder="Search blog posts..." aria-label="Search blog posts">
-                        <input type="hidden" name="sort" th:value="${sort}"> 
+                        <input type="hidden" name="sort" th:value="${sort}">
                         <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
                     </form>
                 </div>
+
+                <div class="col-md-2 mb-3 mb-md-0 text-md-end">
+                    <div th:if="${#authorization.expression('isAuthenticated()')}">
+                        <a th:href="@{/blog/create}" class="btn btn-primary w-100"> <i class="fas fa-plus me-1"></i> Create Post
+                        </a>
+                    </div>
+                </div>
                 <div class="col-md-4 text-md-end">
                     <form id="sortForm" th:action="@{/blog}" method="get">
-                        <input type="hidden" name="search" th:value="${search}"> 
+                        <input type="hidden" name="search" th:value="${search}">
                         <select class="form-select form-select-sm" name="sort" aria-label="Filter posts" onchange="document.getElementById('sortForm').submit()">
                             <option value="latest" th:selected="${sort == 'latest'}">Sort by Latest</option>
                             <option value="oldest" th:selected="${sort == 'oldest'}">Sort by Oldest</option>

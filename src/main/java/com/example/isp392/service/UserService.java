@@ -74,7 +74,7 @@ public class UserService implements UserDetailsService {
 
         // Get user roles
         List<UserRole> userRoles = userRoleRepository.findByUser(user);
-        
+
         // Map roles to authorities
         Collection<SimpleGrantedAuthority> authorities = userRoles.stream()
                 .filter(UserRole::isRoleActiveForUser)
@@ -88,6 +88,7 @@ public class UserService implements UserDetailsService {
                 authorities
         );
     }
+
 
     /**
      * Register a new buyer user
@@ -480,5 +481,4 @@ public class UserService implements UserDetailsService {
         }
 
     }
-
 }
