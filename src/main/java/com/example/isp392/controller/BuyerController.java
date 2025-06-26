@@ -1,8 +1,10 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.dto.UserRegistrationDTO;
+import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
 import com.example.isp392.service.CartService;
+import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -18,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -36,7 +39,7 @@ public class BuyerController {
 
     private final UserService userService;
     private final CartService cartService;
-
+    private final ShopService shopService;
     /**
      * Constructor with explicit dependency injection
      * This is preferred over field injection with @Autowired as it makes dependencies clear,
@@ -45,9 +48,10 @@ public class BuyerController {
      * @param userService Service for user-related operations
      * @param cartService Service for cart-related operations
      */
-    public BuyerController(UserService userService, CartService cartService) {
+    public BuyerController(UserService userService, CartService cartService, ShopService shopService) {
         this.userService = userService;
         this.cartService = cartService;
+        this.shopService = shopService;
     }
 
     /**
@@ -488,5 +492,99 @@ public class BuyerController {
         }
         
         return userOptional.orElse(null);
+    }
+    //seller register
+    @GetMapping("/register-shop")
+    public String showShopRegistrationForm(Model model, RedirectAttributes redirectAttributes) {
+        User currentUser = getCurrentUser(); // Giả định bạn có phương thức này để lấy user hiện tại
+        if (currentUser == null) {
+            return "redirect:/buyer/login";
+        }
+
+        // Phương thức này trong service nên là Optional<Shop> findShopByUserId(Integer userId)
+        Optional<Shop> existingShopOpt = shopService.findShopByUserId(currentUser.getUserId());
+
+        if (existingShopOpt.isPresent()) {
+            Shop shop = existingShopOpt.get();
+
+            // SỬA LỖI TẠI ĐÂY:
+            // 1. Dùng Shop.ApprovalStatus thay vì ApprovalStatus
+            // 2. Dùng getApproval_status() thay vì getApprovalStatus()
+            if (shop.getApproval_status() == Shop.ApprovalStatus.PENDING) {
+                redirectAttributes.addFlashAttribute("infoMessage", "Yêu cầu đăng ký cửa hàng của bạn đang được xử lý. Vui lòng đợi.");
+                return "redirect:/buyer/account-info";
+            } else if (shop.getApproval_status() == Shop.ApprovalStatus.APPROVED) {
+                redirectAttributes.addFlashAttribute("infoMessage", "Bạn đã là người bán hàng!");
+                return "redirect:/buyer/account-info";
+            } else if (shop.getApproval_status() == Shop.ApprovalStatus.REJECTED) {
+                // Logic để người dùng đăng ký lại đã đúng
+                model.addAttribute("shop", shop);
+                model.addAttribute("rejectionReason", shop.getReasonForStatus());
+                return "buyer/seller-registration";
+            }
+        }
+
+        // Nếu chưa có shop nào, tạo shop mới như bình thường
+        model.addAttribute("shop", new Shop());
+        return "buyer/seller-registration";
+    }
+
+    @PostMapping("/register-shop")
+    public String processShopRegistration(
+            @ModelAttribute("shop") Shop shop,
+            @RequestParam("logoFile") MultipartFile logoFile,
+            @RequestParam("coverImageFile") MultipartFile coverImageFile,
+            @RequestParam("identificationFile") MultipartFile identificationFile,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return "redirect:/buyer/login";
+        }
+
+        // Các logic kiểm tra lỗi và tìm shop cũ của bạn đã ổn
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("shop", shop);
+            return "buyer/seller-registration";
+        }
+
+        try {
+            // Chúng ta cần tìm xem user đã có shop record chưa
+            Optional<Shop> existingShopOpt = shopService.findShopByUserId(currentUser.getUserId());
+
+            Shop shopToSave;
+            if (existingShopOpt.isPresent()) {
+                // Nếu đã có, cập nhật bản ghi cũ
+                shopToSave = existingShopOpt.get();
+
+                // Cập nhật thông tin từ form (các setter này đúng vì thuộc tính trong Shop.java là camelCase)
+                shopToSave.setShopName(shop.getShopName());
+                shopToSave.setContactEmail(shop.getContactEmail());
+                shopToSave.setContactPhone(shop.getContactPhone());
+                shopToSave.setShopDetailAddress(shop.getShopDetailAddress());
+                shopToSave.setShopWard(shop.getShopWard());
+                shopToSave.setShopDistrict(shop.getShopDistrict());
+                shopToSave.setShopProvince(shop.getShopProvince());
+                shopToSave.setDescription(shop.getDescription());
+                shopToSave.setTaxCode(shop.getTaxCode());
+
+            } else {
+                // Nếu chưa, đây là shop mới
+                shopToSave = shop;
+            }
+
+
+            shopService.registerNewShop(shopToSave, currentUser, logoFile, coverImageFile, identificationFile);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Yêu cầu đăng ký của bạn đã được gửi lại thành công! Vui lòng chờ phê duyệt.");
+            return "redirect:/buyer/account-info";
+        } catch (IOException e) {
+            // log.error("Lỗi khi đăng ký shop: {}", e.getMessage());
+            model.addAttribute("errorMessage", "Đã xảy ra lỗi khi tải file lên. Vui lòng thử lại.");
+            model.addAttribute("shop", shop);
+            return "buyer/seller-registration";
+        }
     }
 }

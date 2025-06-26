@@ -5,6 +5,7 @@ import com.example.isp392.model.OrderStatus;
 import com.example.isp392.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -221,10 +222,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "GROUP BY o.shipping_province " +
            "ORDER BY COUNT(DISTINCT o.order_id) DESC", nativeQuery = true)
     List<Map<String, Object>> getGeographicDistribution(@Param("shopId") Integer shopId);
-    
+
     /**
      * Get total revenue for a shop within a date range
-     * 
+     *
      * @param shopId ID of the shop
      * @param startDate Start date of the period
      * @param endDate End date of the period
@@ -238,10 +239,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "AND o.order_date BETWEEN :startDate AND :endDate " +
            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED')", nativeQuery = true)
     BigDecimal getTotalRevenue(@Param("shopId") Integer shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-    
+
     /**
      * Get total orders count for a shop within a date range
-     * 
+     *
      * @param shopId ID of the shop
      * @param startDate Start date of the period
      * @param endDate End date of the period
@@ -255,4 +256,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "AND o.order_date BETWEEN :startDate AND :endDate " +
            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED')", nativeQuery = true)
     Integer getTotalOrders(@Param("shopId") Integer shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-} 
+
+
+    Page<Order> findAll(Specification<Order> spec, Pageable pageable);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE o.orderId = :orderId AND b.shop.user.userId = :sellerId")
+    Optional<Order> findOrderByIdForSeller(@Param("orderId") Integer orderId, @Param("sellerId") Integer sellerId);
+}

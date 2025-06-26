@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    
+
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     private final UserService userService;
@@ -35,26 +35,26 @@ public class SecurityConfig {
 
     /**
      * Constructor with explicit dependency injection
-     * 
+     *
      * @param userService User service for authentication
      * @param passwordEncoder Password encoder from PasswordConfig
      */
     public SecurityConfig(UserService userService, PasswordEncoder passwordEncoder,
-                       RoleRepository roleRepository, UserRoleRepository userRoleRepository,
-                       OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) {
+                          RoleRepository roleRepository, UserRoleRepository userRoleRepository,
+                          OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
-        
+
         log.info("SecurityConfig initialized with OAuth2LoginSuccessHandler");
     }
 
     /**
      * Authentication provider bean
      * Creating and configuring DaoAuthenticationProvider with our custom UserDetailsService
-     * 
+     *
      * @return DaoAuthenticationProvider properly configured with our user service and password encoder
      */
     @Bean
@@ -75,7 +75,7 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
-    
+
     /**
      * Bean for custom OAuth2 user service
      * @return CustomOAuth2UserService
@@ -95,15 +95,15 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicResourcesFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/css/**", "/js/**", "/images/**", "/webjars/**", "/error/**",
-                    "/", "/about-contact", "/all-category", "/blog/**", "/blog-single",
-                    "/terms-policy", "/product-detail", "/favicon.ico", 
-                    "/password-reset/**")
-            .authorizeHttpRequests(authorize -> authorize
-                .anyRequest().permitAll()
-            )
-            .csrf(csrf -> csrf.disable());
-        
+                .securityMatcher("/css/**", "/js/**", "/images/**", "/webjars/**", "/error/**",
+                        "/", "/about-contact", "/all-category", "/blog/**", "/blog-single",
+                        "/terms-policy", "/product-detail", "/favicon.ico",
+                        "/password-reset/**")
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().permitAll()
+                )
+                .csrf(csrf -> csrf.disable());
+
         return http.build();
     }
 
@@ -117,25 +117,25 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/admin/**")
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/admin/login").permitAll()
-                .anyRequest().hasRole("ADMIN")
-            )
-            .formLogin(form -> form
-                .loginPage("/admin/login")
-                .loginProcessingUrl("/admin/process_login")
-                .defaultSuccessUrl("/admin/dashboard")
-                .failureUrl("/admin/login?error")
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/admin/logout")
-                .logoutSuccessUrl("/admin/login?logout")
-                .permitAll()
-            )
-            .csrf(csrf -> csrf.disable());
-            
+                .securityMatcher("/admin/**")
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/admin/login").permitAll()
+                        .anyRequest().hasRole("ADMIN")
+                )
+                .formLogin(form -> form
+                        .loginPage("/admin/login")
+                        .loginProcessingUrl("/admin/process_login")
+                        .defaultSuccessUrl("/admin/dashboard")
+                        .failureUrl("/admin/login?error")
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/admin/logout")
+                        .logoutSuccessUrl("/admin/login?logout")
+                        .permitAll()
+                )
+                .csrf(csrf -> csrf.disable());
+
         return http.build();
     }
 
@@ -149,47 +149,47 @@ public class SecurityConfig {
     @Order(3)
     public SecurityFilterChain buyerFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/buyer/**", "/login/oauth2/**", "/oauth2/**")
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(
-                    "/buyer/signup",
-                    "/buyer/login",
-                    "/buyer/register",
-                    "/login/oauth2/**",
-                    "/oauth2/**"
-                ).permitAll()
-                .anyRequest().hasRole("BUYER")
-            )
-            .formLogin(form -> form
-                .loginPage("/buyer/login")
-                .loginProcessingUrl("/buyer/process_login")
-                .defaultSuccessUrl("/buyer/account-info", true) // Redirect to account-info page with true to always redirect
-                .failureUrl("/buyer/login?error")
-                .permitAll()
-            )
-            .rememberMe(remember -> remember
-                .key("readhubSecretKey") // Secret key for token signature
-                .tokenValiditySeconds(2592000) // 30 days in seconds
-                .rememberMeParameter("remember-me") // Match the checkbox name in the form
-                .userDetailsService(userService) // Use our custom UserDetailsService
-            )
-            .oauth2Login(oauth2 -> oauth2
-                .loginPage("/buyer/login")
-                .successHandler(oAuth2LoginSuccessHandler) // Use custom success handler
-                .failureUrl("/buyer/login?error=oauth2")
-                .userInfoEndpoint(userInfo -> userInfo
-                    .userService(customOAuth2UserService())
+                .securityMatcher("/buyer/**", "/login/oauth2/**", "/oauth2/**")
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/buyer/signup",
+                                "/buyer/login",
+                                "/buyer/register",
+                                "/login/oauth2/**",
+                                "/oauth2/**"
+                        ).permitAll()
+                        .anyRequest().hasRole("BUYER")
                 )
-            )
-            .logout(logout -> logout
-                .logoutUrl("/buyer/logout")
-                .logoutSuccessUrl("/buyer/login?logout")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID", "remember-me")
-                .permitAll()
-            )
-            .csrf(csrf -> csrf.disable());
-            
+                .formLogin(form -> form
+                        .loginPage("/buyer/login")
+                        .loginProcessingUrl("/buyer/process_login")
+                        .defaultSuccessUrl("/buyer/account-info", true) // Redirect to account-info page with true to always redirect
+                        .failureUrl("/buyer/login?error")
+                        .permitAll()
+                )
+                .rememberMe(remember -> remember
+                        .key("readhubSecretKey") // Secret key for token signature
+                        .tokenValiditySeconds(2592000) // 30 days in seconds
+                        .rememberMeParameter("remember-me") // Match the checkbox name in the form
+                        .userDetailsService(userService) // Use our custom UserDetailsService
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/buyer/login")
+                        .successHandler(oAuth2LoginSuccessHandler) // Use custom success handler
+                        .failureUrl("/buyer/login?error=oauth2")
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService())
+                        )
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/buyer/logout")
+                        .logoutSuccessUrl("/buyer/login?logout")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID", "remember-me")
+                        .permitAll()
+                )
+                .csrf(csrf -> csrf.disable());
+
         return http.build();
     }
 
@@ -203,48 +203,48 @@ public class SecurityConfig {
     @Order(4)
     public SecurityFilterChain sellerFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/seller/**")
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(
-                    "/seller/signup",
-                    "/seller/login",
-                    "/seller/register"
-                ).permitAll()
-                .anyRequest().hasRole("SELLER")
-            )
-            .formLogin(form -> form
-                .loginPage("/seller/login")
-                .loginProcessingUrl("/seller/process_login")
-                .defaultSuccessUrl("/seller/dashboard", true)  // Changed from /seller/account to /seller/dashboard
-                .failureUrl("/seller/login?error")
-                .permitAll()
-            )
-            .rememberMe(remember -> remember
-                .key("readhubSellerSecretKey")
-                .tokenValiditySeconds(2592000)
-                .rememberMeParameter("remember-me")
-                .userDetailsService(userService)
-            )
-            .oauth2Login(oauth2 -> oauth2
-                .loginPage("/seller/login")
-                .successHandler(oAuth2LoginSuccessHandler)
-                .failureUrl("/seller/login?error=oauth2")
-                .userInfoEndpoint(userInfo -> userInfo
-                    .userService(customOAuth2UserService())
+                .securityMatcher("/seller/**")
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/seller/signup",
+                                "/seller/login",
+                                "/seller/register"
+                        ).permitAll()
+                        .anyRequest().hasRole("SELLER")
                 )
-            )
-            .logout(logout -> logout
-                .logoutUrl("/seller/logout")
-                .logoutSuccessUrl("/seller/login?logout")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID", "remember-me")
-                .permitAll()
-            )
-            .csrf(csrf -> csrf.disable());
-            
+                .formLogin(form -> form
+                        .loginPage("/seller/login")
+                        .loginProcessingUrl("/seller/process_login")
+                        .defaultSuccessUrl("/seller/dashboard", true)  // Changed from /seller/account to /seller/dashboard
+                        .failureUrl("/seller/login?error")
+                        .permitAll()
+                )
+                .rememberMe(remember -> remember
+                        .key("readhubSellerSecretKey")
+                        .tokenValiditySeconds(2592000)
+                        .rememberMeParameter("remember-me")
+                        .userDetailsService(userService)
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/seller/login")
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureUrl("/seller/login?error=oauth2")
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService())
+                        )
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/seller/logout")
+                        .logoutSuccessUrl("/seller/login?logout")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID", "remember-me")
+                        .permitAll()
+                )
+                .csrf(csrf -> csrf.disable());
+
         return http.build();
     }
-    
+
     /**
      * Default security filter chain to catch all other requests
      * @param http HttpSecurity
@@ -255,15 +255,15 @@ public class SecurityConfig {
     @Order(5)
     public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(authorize -> authorize
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/buyer/login")
-                .permitAll()
-            )
-            .csrf(csrf -> csrf.disable());
-            
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().authenticated()
+                )
+                .formLogin(form -> form
+                        .loginPage("/buyer/login")
+                        .permitAll()
+                )
+                .csrf(csrf -> csrf.disable());
+
         return http.build();
     }
 }

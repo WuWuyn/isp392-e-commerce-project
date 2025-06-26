@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
@@ -1358,12 +1359,6 @@ public class SellerController {
         return false;
     }
 
-    @GetMapping("/orders")
-    public String showOrdersPage(Model model) {
-        // Placeholder for seller orders
-        return "seller/orders";
-    }
-
     @GetMapping("/cart")
     public String showCart(Model model) {
         try {
@@ -1404,4 +1399,126 @@ public class SellerController {
         Optional<User> userOpt = userService.findByEmail(email);
         return userOpt.orElse(null);
     }
+
+    //all order
+    @GetMapping("/orders")
+    public String listOrders(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "status", required = false) OrderStatus status,
+            @RequestParam(name = "startDate", required = false) String startDate,
+            @RequestParam(name = "endDate", required = false) String endDate,
+            Model model,
+            Authentication authentication
+    ) {
+        // 1. Lấy thông tin người bán đang đăng nhập
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User seller = userService.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Seller not found"));
+        Integer sellerId = seller.getUserId();
+
+        // 2. Tạo Pageable
+        Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
+
+        // 3. Lấy danh sách Order gốc từ Service (vẫn có thể chứa sản phẩm của người khác)
+        Page<Order> originalOrderPage = orderService.searchOrdersForSeller(sellerId, keyword, status, startDate, endDate, pageable);
+
+        // ===== START: PHẦN SỬA LỖI QUAN TRỌNG =====
+        // 4. Lọc lại danh sách orderItems bên trong mỗi Order
+        originalOrderPage.getContent().forEach(order -> {
+            // Lọc danh sách orderItems, chỉ giữ lại những item thuộc về người bán này
+            List<OrderItem> sellerItems = order.getOrderItems().stream()
+                    .filter(item -> {
+                        // Kiểm tra xem item này có thuộc về người bán đang đăng nhập không
+                        // Cẩn thận NullPointerException nếu có dữ liệu không nhất quán
+                        return item.getBook() != null &&
+                                item.getBook().getShop() != null &&
+                                item.getBook().getShop().getUser() != null &&
+                                item.getBook().getShop().getUser().getUserId().equals(sellerId);
+                    })
+                    .toList();
+
+            // Cập nhật lại danh sách items của đơn hàng bằng danh sách đã được lọc
+            order.setOrderItems(sellerItems);
+        });
+
+        // 5. Gửi dữ liệu đã được xử lý an toàn tới view
+        model.addAttribute("orderPage", originalOrderPage);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+
+        return "seller/orders";
+    }
+
+    @GetMapping("/orders/{id}")
+    public String showOrderDetailPage(@PathVariable("id") Integer id, Model model, Authentication authentication) {
+        User currentUser = getCurrentUser(authentication);
+        if (currentUser == null) {
+            return "redirect:/seller/login";
+        }
+        Optional<Order> orderOpt = orderService.findOrderByIdForSeller(id, currentUser.getUserId());
+        if (orderOpt.isPresent()) {
+            model.addAttribute("order", orderOpt.get());
+            model.addAttribute("user", currentUser);
+            return "seller/order-detail";
+        } else {
+            return "redirect:/seller/orders";
+        }
+    }
+
+    @PostMapping("/orders/update-status/{orderId}")
+    public String updateOrderStatus(@PathVariable("orderId") Integer orderId,
+                                    @RequestParam("newStatus") OrderStatus newStatus,
+                                    Authentication authentication,
+                                    RedirectAttributes redirectAttributes) {
+
+        // Lấy thông tin người bán để kiểm tra quyền sở hữu
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User seller = userService.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Seller not found"));
+
+        // Kiểm tra xem đơn hàng có thuộc về người bán này không trước khi cập nhật
+        Optional<Order> orderOptional = orderService.findOrderByIdForSeller(orderId, seller.getUserId());
+
+        if (orderOptional.isPresent()) {
+            // Nếu có, thực hiện cập nhật
+            boolean isSuccess = orderService.updateOrderStatus(orderId, newStatus);
+            if (isSuccess) {
+                redirectAttributes.addFlashAttribute("successMessage", "Order #" + orderId + " status updated to " + newStatus.name());
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "Failed to update order status.");
+            }
+        } else {
+            // Nếu không, báo lỗi không có quyền
+            redirectAttributes.addFlashAttribute("errorMessage", "Order not found or you do not have permission to modify it.");
+        }
+
+        return "redirect:/seller/orders";
+    }
+    @GetMapping("/orders/print-label/{id}")
+    public String showPrintLabelPage(@PathVariable("id") Integer orderId, Model model, Authentication authentication, RedirectAttributes redirectAttributes) {
+        // 1. Lấy thông tin người bán đang đăng nhập
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User seller = userService.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Seller not found"));
+
+        // 2. Tìm đơn hàng, đảm bảo đơn hàng này thuộc về người bán đang đăng nhập
+        Optional<Order> orderOptional = orderService.findOrderByIdForSeller(orderId, seller.getUserId());
+
+        // 3. Xử lý kết quả
+        if (orderOptional.isPresent()) {
+            // Nếu tìm thấy đơn hàng, gửi thông tin đơn hàng tới trang view
+            model.addAttribute("order", orderOptional.get());
+            // Trả về một template được thiết kế riêng cho việc in
+            return "seller/print-label";
+        } else {
+            // Nếu không tìm thấy (do sai ID hoặc không thuộc quyền sở hữu), redirect về trang danh sách và báo lỗi
+            redirectAttributes.addFlashAttribute("errorMessage", "Order not found or you do not have permission to view it.");
+            return "redirect:/seller/orders";
+        }
+    }
+
 }
