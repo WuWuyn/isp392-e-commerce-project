@@ -39,10 +39,6 @@ public class Shop {
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)") // Specific for SQL Server if needed
     private String description;
 
-    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @OrderBy("processedAt DESC")
-    private List<ShopApprovalHistory> approvalHistory = new ArrayList<>();
-
     @Column(name = "logo_url", columnDefinition = "NVARCHAR(MAX)")
     private String logoUrl;
 
@@ -98,3 +94,4 @@ public class Shop {
     private List<Book> books = new ArrayList<>();
 
 }
+

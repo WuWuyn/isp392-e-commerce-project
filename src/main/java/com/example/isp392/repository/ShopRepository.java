@@ -6,19 +6,24 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
-
+/**
+ * Repository interface for Shop entity
+ */
 @Repository
 public interface ShopRepository extends JpaRepository<Shop, Integer> {
+    
+    /**
+     * Find a shop by user ID
+     * @param userId the user ID
+     * @return the shop or null if not found
+     */
+    Shop findByUserUserId(Integer userId);
 
-    Optional<Shop> findByUserUserId(Integer userId);
-
-    @Query("SELECT s FROM Shop s WHERE s.approval_status = :status")
-    List<Shop> findByApprovalStatus(@Param("status") Shop.ApprovalStatus status);
-
-    @Query("SELECT count(s) FROM Shop s WHERE s.approval_status = :status")
-    long countByApprovalStatus(@Param("status") Shop.ApprovalStatus status);
-
-
-}
+    /**
+     * Get the registration date of a shop by shopId
+     * @param shopId the shop ID
+     * @return the registration date or null if not found
+     */
+    @Query(value = "SELECT registration_date FROM shops s WHERE s.shop_id = :shopId",nativeQuery = true)
+    java.time.LocalDateTime getRegistrationDateByShopId(@Param("shopId") Integer shopId);
+} 

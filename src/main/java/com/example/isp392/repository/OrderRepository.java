@@ -5,7 +5,6 @@ import com.example.isp392.model.OrderStatus;
 import com.example.isp392.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -152,40 +151,79 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Map<String, Object>> getBestsellingBooksByQuantity(@Param("shopId") Integer shopId, @Param("limit") int limit);
     
     /**
-     * Get revenue data for a period (daily, weekly, monthly)
+     * Get revenue data for daily periods
      * 
      * @param shopId ID of the shop
      * @param startDate Start date of the period
      * @param endDate End date of the period
-     * @param groupBy Group by clause (day, week, month)
-     * @return List of revenue data grouped by the specified period
+     * @return List of revenue data grouped by day
      */
     @Query(value = "SELECT " +
-           "CASE " +
-           "  WHEN :groupBy = 'day' THEN CONVERT(varchar, CONVERT(date, o.order_date), 120) " +
-           "  WHEN :groupBy = 'week' THEN CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) " +
-           "  WHEN :groupBy = 'month' THEN CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) " +
-           "END AS time_period, " +
-           "SUM(oi.unit_price * oi.quantity) AS revenue, " +
-           "COUNT(DISTINCT o.order_id) AS order_count " +
-           "FROM orders o " +
-           "JOIN order_items oi ON o.order_id = oi.order_id " +
-           "JOIN books b ON oi.book_id = b.book_id " +
-           "WHERE b.shop_id = :shopId " +
-           "AND o.order_date BETWEEN :startDate AND :endDate " +
-           "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "GROUP BY " +
-           "CASE " +
-           "  WHEN :groupBy = 'day' THEN CONVERT(varchar, CONVERT(date, o.order_date), 120) " +
-           "  WHEN :groupBy = 'week' THEN CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) " +
-           "  WHEN :groupBy = 'month' THEN CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) " +
-           "END " +
-           "ORDER BY time_period", nativeQuery = true)
-    List<Map<String, Object>> getRevenueByPeriod(
+            "CONVERT(varchar, CONVERT(date, o.order_date), 120) AS time_period, " +
+            "SUM(oi.unit_price * oi.quantity) AS revenue, " +
+            "COUNT(DISTINCT o.order_id) AS order_count " +
+            "FROM orders o " +
+            "JOIN order_items oi ON o.order_id = oi.order_id " +
+            "JOIN books b ON oi.book_id = b.book_id " +
+            "WHERE b.shop_id = :shopId " +
+            "AND o.order_date BETWEEN :startDate AND :endDate " +
+            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+            "GROUP BY CONVERT(varchar, CONVERT(date, o.order_date), 120) " +
+            "ORDER BY time_period", nativeQuery = true)
+    List<Map<String, Object>> getRevenueByDay(
             @Param("shopId") Integer shopId, 
             @Param("startDate") LocalDate startDate, 
-            @Param("endDate") LocalDate endDate,
-            @Param("groupBy") String groupBy);
+            @Param("endDate") LocalDate endDate);
+
+    /**
+     * Get revenue data for weekly periods
+     * 
+     * @param shopId ID of the shop
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
+     * @return List of revenue data grouped by week
+     */
+    @Query(value = "SELECT " +
+            "CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) AS time_period, " +
+            "SUM(oi.unit_price * oi.quantity) AS revenue, " +
+            "COUNT(DISTINCT o.order_id) AS order_count " +
+            "FROM orders o " +
+            "JOIN order_items oi ON o.order_id = oi.order_id " +
+            "JOIN books b ON oi.book_id = b.book_id " +
+            "WHERE b.shop_id = :shopId " +
+            "AND o.order_date BETWEEN :startDate AND :endDate " +
+            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+            "GROUP BY CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) " +
+            "ORDER BY time_period", nativeQuery = true)
+    List<Map<String, Object>> getRevenueByWeek(
+            @Param("shopId") Integer shopId, 
+            @Param("startDate") LocalDate startDate, 
+            @Param("endDate") LocalDate endDate);
+
+    /**
+     * Get revenue data for monthly periods
+     * 
+     * @param shopId ID of the shop
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
+     * @return List of revenue data grouped by month
+     */
+    @Query(value = "SELECT " +
+            "CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) AS time_period, " +
+            "SUM(oi.unit_price * oi.quantity) AS revenue, " +
+            "COUNT(DISTINCT o.order_id) AS order_count " +
+            "FROM orders o " +
+            "JOIN order_items oi ON o.order_id = oi.order_id " +
+            "JOIN books b ON oi.book_id = b.book_id " +
+            "WHERE b.shop_id = :shopId " +
+            "AND o.order_date BETWEEN :startDate AND :endDate " +
+            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+            "GROUP BY CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) " +
+            "ORDER BY time_period", nativeQuery = true)
+    List<Map<String, Object>> getRevenueByMonth(
+            @Param("shopId") Integer shopId, 
+            @Param("startDate") LocalDate startDate, 
+            @Param("endDate") LocalDate endDate);
     
     /**
      * Get recent orders for a shop
@@ -224,42 +262,28 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Map<String, Object>> getGeographicDistribution(@Param("shopId") Integer shopId);
 
     /**
-     * Get total revenue for a shop within a date range
+     * Get total revenue of orders
      *
      * @param shopId ID of the shop
-     * @param startDate Start date of the period
-     * @param endDate End date of the period
-     * @return Total revenue for the shop within the date range
+     * @param startDate the start of date
+     * @param endDate the end of date
+     * @return Bigdeciam of total revenue by shop ID
      */
-    @Query(value = "SELECT COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS total_revenue " +
-           "FROM orders o " +
-           "JOIN order_items oi ON o.order_id = oi.order_id " +
-           "JOIN books b ON oi.book_id = b.book_id " +
-           "WHERE b.shop_id = :shopId " +
-           "AND o.order_date BETWEEN :startDate AND :endDate " +
-           "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED')", nativeQuery = true)
+    @Query(value = "SELECT COALESCE(SUM(oi.unit_price * oi.quantity), 0) " +
+            "FROM orders o " +
+            "JOIN order_items oi ON o.order_id = oi.order_id " +
+            "JOIN books b ON oi.book_id = b.book_id " +
+            "WHERE b.shop_id = :shopId AND o.order_date BETWEEN :startDate AND :endDate " +
+            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED')",
+            nativeQuery = true)
     BigDecimal getTotalRevenue(@Param("shopId") Integer shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    /**
-     * Get total orders count for a shop within a date range
-     *
-     * @param shopId ID of the shop
-     * @param startDate Start date of the period
-     * @param endDate End date of the period
-     * @return Total number of orders for the shop within the date range
-     */
-    @Query(value = "SELECT COUNT(DISTINCT o.order_id) AS total_orders " +
-           "FROM orders o " +
-           "JOIN order_items oi ON o.order_id = oi.order_id " +
-           "JOIN books b ON oi.book_id = b.book_id " +
-           "WHERE b.shop_id = :shopId " +
-           "AND o.order_date BETWEEN :startDate AND :endDate " +
-           "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED')", nativeQuery = true)
-    Integer getTotalOrders(@Param("shopId") Integer shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-
-
-    Page<Order> findAll(Specification<Order> spec, Pageable pageable);
-
-    @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE o.orderId = :orderId AND b.shop.user.userId = :sellerId")
-    Optional<Order> findOrderByIdForSeller(@Param("orderId") Integer orderId, @Param("sellerId") Integer sellerId);
-}
+    @Query(value = "SELECT COUNT(DISTINCT o.order_id) " +
+            "FROM orders o " +
+            "JOIN order_items oi ON o.order_id = oi.order_id " +
+            "JOIN books b ON oi.book_id = b.book_id " +
+            "WHERE b.shop_id = :shopId AND o.order_date BETWEEN :startDate AND :endDate " +
+            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED')",
+            nativeQuery = true)
+    Long getTotalOrders(@Param("shopId") Integer shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+} 

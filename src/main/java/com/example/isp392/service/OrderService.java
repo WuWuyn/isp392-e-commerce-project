@@ -2,17 +2,14 @@ package com.example.isp392.service;
 
 import com.example.isp392.model.*;
 import com.example.isp392.repository.OrderRepository;
-import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -278,21 +275,15 @@ public class OrderService {
      * @return List of maps with revenue data
      */
     public List<Map<String, Object>> getRevenueByPeriod(Integer shopId, LocalDate startDate, LocalDate endDate, String period) {
-        String groupBy;
         switch (period) {
             case "daily":
-                groupBy = "day";
-                break;
+                return orderRepository.getRevenueByDay(shopId, startDate, endDate);
             case "weekly":
-                groupBy = "week";
-                break;
+                return orderRepository.getRevenueByWeek(shopId, startDate, endDate);
             case "monthly":
             default:
-                groupBy = "month";
-                break;
+                return orderRepository.getRevenueByMonth(shopId, startDate, endDate);
         }
-        
-        return orderRepository.getRevenueByPeriod(shopId, startDate, endDate, groupBy);
     }
     
     /**
@@ -316,87 +307,13 @@ public class OrderService {
         return orderRepository.getGeographicDistribution(shopId);
     }
 
-    /**
-     * Get total revenue for a shop within a date range
-     *
-     * @param shopId ID of the shop
-     * @param startDate Start date of the period
-     * @param endDate End date of the period
-     * @return Total revenue for the shop within the date range
-     */
     public BigDecimal getTotalRevenue(Integer shopId, LocalDate startDate, LocalDate endDate) {
-        BigDecimal revenue = orderRepository.getTotalRevenue(shopId, startDate, endDate);
-        return revenue != null ? revenue : BigDecimal.ZERO;
+        BigDecimal total = orderRepository.getTotalRevenue(shopId, startDate, endDate);
+        return total != null ? total : BigDecimal.ZERO;
     }
 
-    /**
-     * Get total orders count for a shop within a date range
-     *
-     * @param shopId ID of the shop
-     * @param startDate Start date of the period
-     * @param endDate End date of the period
-     * @return Total number of orders for the shop within the date range
-     */
-    public Integer getTotalOrders(Integer shopId, LocalDate startDate, LocalDate endDate) {
-        Integer count = orderRepository.getTotalOrders(shopId, startDate, endDate);
-        return count != null ? count : 0;
-    }
-    public Page<Order> searchOrdersForSeller(Integer sellerId, String keyword, OrderStatus status, String startDate, String endDate, Pageable pageable) {
-        Specification<Order> spec = (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // 1. Predicate bắt buộc: Lọc theo ID người bán
-            // Join qua các bảng để lấy được thông tin seller từ order
-            predicates.add(criteriaBuilder.equal(root.join("orderItems").join("book").join("shop").get("user").get("userId"), sellerId));
-
-            // ===== START: BỔ SUNG LOGIC LỌC CÒN THIẾU =====
-
-            // 2. Lọc theo từ khóa (keyword)
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                String likePattern = "%" + keyword.toLowerCase() + "%";
-                Predicate keywordPredicate = criteriaBuilder.or(
-                        // Tìm theo tên người nhận
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("recipientName")), likePattern),
-                        // Tìm theo mã đơn hàng (orderId)
-                        criteriaBuilder.like(root.get("orderId").as(String.class), likePattern)
-                );
-                predicates.add(keywordPredicate);
-            }
-
-            // 3. Lọc theo trạng thái (status) - ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT
-            if (status != null) {
-                predicates.add(criteriaBuilder.equal(root.get("orderStatus"), status));
-            }
-
-            // 4. Lọc theo ngày bắt đầu (From Date)
-            if (startDate != null && !startDate.isEmpty()) {
-                try {
-                    LocalDate start = LocalDate.parse(startDate);
-                    predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("orderDate"), start.atStartOfDay()));
-                } catch (Exception e) {
-                    // Bỏ qua nếu định dạng ngày không hợp lệ
-                }
-            }
-
-            // 5. Lọc theo ngày kết thúc (To Date)
-            if (endDate != null && !endDate.isEmpty()) {
-                try {
-                    LocalDate end = LocalDate.parse(endDate);
-                    predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("orderDate"), end.atTime(LocalTime.MAX)));
-                } catch (Exception e) {
-                    // Bỏ qua nếu định dạng ngày không hợp lệ
-                }
-            }
-
-            // ===== END: BỔ SUNG LOGIC LỌC CÒN THIẾU =====
-
-            query.distinct(true); // Đảm bảo không có đơn hàng trùng lặp
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-
-        return orderRepository.findAll(spec, pageable);
-    }
-    public Optional<Order> findOrderByIdForSeller(Integer orderId, Integer sellerId) {
-        return orderRepository.findOrderByIdForSeller(orderId, sellerId);
+    public Long getTotalOrders(Integer shopId, LocalDate startDate, LocalDate endDate) {
+        Long total = orderRepository.getTotalOrders(shopId, startDate, endDate);
+        return total != null ? total : 0L;
     }
 }

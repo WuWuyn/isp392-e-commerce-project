@@ -520,8 +520,4 @@ public class BookService {
         Pageable pageable = PageRequest.of(0, limit);
         return bookRepository.findByShopShopIdAndIsActiveTrueOrderByAverageRatingDesc(shopId, pageable);
     }
-
-    public Book save(Book book) {
-        return bookRepository.save(book);
-    }
 }

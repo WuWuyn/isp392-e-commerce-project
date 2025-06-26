@@ -289,28 +289,28 @@
     </style>
 </head>
 <body>
-    <!-- Include Topbar -->
-    <div th:replace="fragments/seller-topbar :: seller-topbar"></div>
+<!-- Include Topbar -->
+<div th:replace="fragments/seller-topbar :: seller-topbar"></div>
 
     <div class="container-fluid py-4">
-        <div class="row">
-            <!-- Include Sidebar -->
-            <div class="col-lg-3 mb-4">
-                <div th:replace="fragments/seller-sidebar :: seller-sidebar"></div>
-            </div>
-            TEST THÔI CHILL BRROOOOO
-            <div class="col-lg-9">
+    <div class="row">
+        <!-- Include Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div th:replace="fragments/seller-sidebar :: seller-sidebar"></div>
+        </div>
+
+        <div class="col-lg-9">
                 <!-- Page Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2><i class="fas fa-chart-line me-2"></i> Analytics Dashboard</h2>
                     <span class="text-muted" th:text="${#dates.format(#dates.createNow(), 'EEEE, dd MMMM yyyy')}">Thursday, 11 July 2023</span>
                 </div>
 
                 <!-- Export Options -->
                 <div class="d-flex justify-content-end mb-4">
-                    <div class="btn-group">
+                <div class="btn-group">
                         <button type="button" class="btn btn-outline-primary" id="exportButton">
-                            <i class="fas fa-download me-2"></i>Export Report
+                        <i class="fas fa-download me-2"></i>Export Report
                         </button>
                         <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="visually-hidden">Toggle Dropdown</span>
@@ -320,21 +320,21 @@
                             <li><a class="dropdown-item" href="#" data-format="pdf"><i class="fas fa-file-pdf me-2"></i>PDF Format</a></li>
                             <li><a class="dropdown-item" href="#" data-format="csv"><i class="fas fa-file-csv me-2"></i>CSV Format</a></li>
                         </ul>
-                    </div>
                 </div>
+            </div>
 
-                <!-- Error message -->
-                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+            <!-- Error message -->
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
 
-                <!-- Summary Stats -->
+            <!-- Summary Stats -->
                 <div class="row">
                     <div class="col-xl-3 col-md-6">
                         <div class="stat-card revenue">
                             <div class="stat-title">Total Revenue</div>
-                            <div class="stat-value" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' VND'">42,500,000 VND</div>
+                            <div class="stat-value" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} ">42,500,000 VND</div>
                             <div class="stat-trend up">
                                 <i class="fas fa-arrow-up me-1"></i> 8.5% from last period
                             </div>
@@ -350,7 +350,7 @@
                                 <i class="fas fa-arrow-up me-1"></i> 5.2% from last period
                             </div>
                             <i class="fas fa-shopping-cart stat-icon"></i>
-                        </div>
+                </div>
                     </div>
                     <div class="col-xl-3 col-md-6">
                         <div class="stat-card views">
@@ -360,7 +360,7 @@
                                 <i class="fas fa-arrow-up me-1"></i> 12.7% from last period
                             </div>
                             <i class="fas fa-eye stat-icon"></i>
-                        </div>
+                </div>
                     </div>
                     <div class="col-xl-3 col-md-6">
                         <div class="stat-card conversion">
@@ -368,60 +368,67 @@
                             <div class="stat-value" th:text="${#numbers.formatDecimal(avgConversionRate, 1, 1)} + '%'">5.2%</div>
                             <div class="stat-trend down">
                                 <i class="fas fa-arrow-down me-1"></i> 1.3% from last period
-                            </div>
+                </div>
                             <i class="fas fa-chart-line stat-icon"></i>
-                        </div>
                     </div>
                 </div>
+            </div>
 
                 <!-- Filters -->
-                <div class="account-container mb-4">
+            <div class="account-container mb-4">
                     <h3 class="section-title"><i class="fas fa-filter me-2"></i>Data Filters</h3>
                     <div class="filter-section">
                         <form th:action="@{/seller/analytics}" method="get" id="filterForm">
-                            <div class="row">
+                    <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label for="period" class="form-label">Time Period</label>
-                                    <select class="form-select" id="period" name="period">
-                                        <option value="daily" th:selected="${period == 'daily'}">Daily</option>
-                                        <option value="weekly" th:selected="${period == 'weekly'}">Weekly</option>
-                                        <option value="monthly" th:selected="${period == 'monthly'}">Monthly</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="startDate" class="form-label">Start Date</label>
-                                    <input type="date" class="form-control" id="startDate" name="startDate"
-                                           th:value="${startDate}">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="endDate" class="form-label">End Date</label>
-                                    <input type="date" class="form-control" id="endDate" name="endDate"
-                                           th:value="${endDate}">
-                                </div>
+                                <label for="period" class="form-label">Time Period</label>
+                                <select class="form-select" id="period" name="period">
+                                    <option value="daily" th:selected="${period == 'daily'}">Daily</option>
+                                    <option value="weekly" th:selected="${period == 'weekly'}">Weekly</option>
+                                    <option value="monthly" th:selected="${period == 'monthly'}">Monthly</option>
+                                </select>
                             </div>
+                                <div class="col-md-4 mb-3">
+                                <label for="compareMode" class="form-label">Comparison Mode</label>
+                                <select class="form-select" id="compareMode" name="compareMode">
+                                    <option value="previous" th:selected="${compareMode == null || compareMode == 'previous'}">Previous Period</option>
+                                    <option value="year" th:selected="${compareMode == 'year'}">Same Period Last Year</option>
+                                </select>
+                            </div>
+                                <div class="col-md-4 mb-3">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="startDate" name="startDate"
+                                       th:value="${startDate}">
+                            </div>
+                                <div class="col-md-4 mb-3">
+                                <label for="endDate" class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="endDate" name="endDate"
+                                       th:value="${endDate}">
+                            </div>
+                        </div>
                             <div class="d-flex justify-content-end">
                                 <button type="button" id="resetButton" class="btn btn-outline-secondary me-2">
                                     <i class="fas fa-undo me-1"></i> Reset
                                 </button>
-                                <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-filter me-1"></i> Apply Filters
-                                </button>
-                            </div>
-                        </form>
+                        </button>
                     </div>
+                </form>
+            </div>
                 </div>
 
-                <!-- Revenue Chart -->
-                <div class="account-container mb-4">
+            <!-- Revenue Chart -->
+            <div class="account-container mb-4">
                     <h3 class="section-title"><i class="fas fa-dollar-sign me-2"></i>Revenue Trends</h3>
-                    <div class="chart-container">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
                     <div class="legend mb-3">
                         <div class="legend-item">
                             <span class="legend-color" style="background-color: #2C3E50;"></span>
                             <span>Current Period</span>
-                        </div>
+            </div>
                         <div class="legend-item">
                             <span class="legend-color" style="background-color: #3498DB;"></span>
                             <span>Previous Period</span>
@@ -442,59 +449,59 @@
                     <div class="col-lg-6">
                         <div class="account-container mb-4">
                             <h3 class="section-title"><i class="fas fa-eye me-2"></i>Product Views</h3>
-                            <div class="chart-container">
-                                <canvas id="viewsChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="viewsChart"></canvas>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Conversion Rate Chart -->
-                <div class="account-container mb-4">
+            <!-- Conversion Rate Chart -->
+            <div class="account-container mb-4">
                     <h3 class="section-title"><i class="fas fa-exchange-alt me-2"></i>Conversion Rate Analysis</h3>
-                    <div class="chart-container">
-                        <canvas id="conversionChart"></canvas>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="conversionChart"></canvas>
                 </div>
+            </div>
 
                 <!-- Top Products and Geo Distribution -->
                 <div class="row">
                     <div class="col-lg-7">
-                        <div class="account-container mb-4">
+            <div class="account-container mb-4">
                             <h3 class="section-title"><i class="fas fa-crown me-2"></i>Top Selling Products</h3>
                             <div class="table-container">
-                                <div class="table-responsive">
+                <div class="table-responsive">
                                     <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Product</th>
-                                                <th>Quantity</th>
-                                                <th>Revenue</th>
-                                                <th>Performance</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:if="${topProducts == null || topProducts.isEmpty()}">
+                        <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Revenue</th>
+                            <th>Performance</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:if="${topProducts == null || topProducts.isEmpty()}">
                                                 <td colspan="4" class="text-center">No sales data available</td>
-                                            </tr>
+                        </tr>
                                             <tr th:each="product, status : ${topProducts}">
-                                                <td th:text="${product.title}">Product Name</td>
+                            <td th:text="${product.title}">Product Name</td>
                                                 <td th:text="${product.totalQuantity}">42</td>
                                                 <td th:text="${#numbers.formatDecimal(product.totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' VND'">
-                                                    4,200,000 VND
-                                                </td>
+                                4,200,000 VND
+                            </td>
                                                 <td style="width: 30%;">
                                                     <div class="progress">
                                                         <div class="progress-bar bg-success" role="progressbar" 
                                                              th:style="'width: ' + ${status.index == 0 ? 100 : (100 - status.index * 15)} + '%'" 
                                                              aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
                         </div>
                     </div>
                     <div class="col-lg-5">
@@ -504,43 +511,43 @@
                                 <canvas id="geoChart"></canvas>
                             </div>
                             <div class="table-container">
-                                <div class="table-responsive">
-                                    <table class="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Region</th>
-                                                <th>Orders</th>
-                                                <th>Percentage</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:if="${geoDistribution == null || geoDistribution.isEmpty()}">
-                                                <td colspan="3" class="text-center">No geographic data available</td>
-                                            </tr>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                <tr>
+                                    <th>Region</th>
+                                    <th>Orders</th>
+                                    <th>Percentage</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:if="${geoDistribution == null || geoDistribution.isEmpty()}">
+                                    <td colspan="3" class="text-center">No geographic data available</td>
+                                </tr>
                                             <tr th:each="region : ${geoDistribution}">
-                                                <td th:text="${region.region}">Hanoi</td>
+                                    <td th:text="${region.region}">Hanoi</td>
                                                 <td th:text="${region.orderCount}">42</td>
                                                 <td>
                                                     <span th:text="${#numbers.formatDecimal((region.orderCount * 100 / geoTotalOrders), 1, 1)} + '%'">25.5%</span>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+        </div>
+    </div>
 
 
     <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <!-- Replace entire script section -->
-    <script th:inline="javascript">
+<script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Bootstrap components
             try {
@@ -598,12 +605,13 @@
                 }
             };
             
-            // Get data from Thymeleaf
-            let timeLabels, revenueData, ordersData, viewsData, conversionRateData, geoLabels, geoData;
+    // Get data from Thymeleaf
+            let timeLabels, revenueData, previousRevenueData, ordersData, viewsData, conversionRateData, geoLabels, geoData;
             
             try {
                 const timeLabelsJson = /*[[${timeLabelsJson}]]*/ '[]';
                 const revenueDataJson = /*[[${revenueDataJson}]]*/ '[]';
+                const previousRevenueDataJson = /*[[${previousRevenueDataJson}]]*/ '[]';
                 const ordersDataJson = /*[[${ordersDataJson}]]*/ '[]';
                 const viewsDataJson = /*[[${viewsDataJson}]]*/ '[]';
                 const conversionRateDataJson = /*[[${conversionRateDataJson}]]*/ '[]';
@@ -613,6 +621,7 @@
                 // Parse JSON data with error handling
                 timeLabels = parseJsonSafely(timeLabelsJson);
                 revenueData = parseJsonSafely(revenueDataJson);
+                previousRevenueData = parseJsonSafely(previousRevenueDataJson);
                 ordersData = parseJsonSafely(ordersDataJson);
                 viewsData = parseJsonSafely(viewsDataJson);
                 conversionRateData = parseJsonSafely(conversionRateDataJson);
@@ -622,6 +631,7 @@
                 console.error('Error parsing JSON data:', error);
                 timeLabels = [];
                 revenueData = [];
+                previousRevenueData = [];
                 ordersData = [];
                 viewsData = [];
                 conversionRateData = [];
@@ -634,7 +644,7 @@
             
             // Create each chart only if its canvas element exists
             if (document.getElementById('revenueChart')) {
-                createRevenueChart(timeLabels, revenueData);
+                createRevenueChart(timeLabels, revenueData, previousRevenueData);
             }
             
             if (document.getElementById('ordersChart')) {
@@ -654,38 +664,36 @@
             }
         }
         
-        function createRevenueChart(labels, currentData) {
+        function createRevenueChart(labels, currentData, previousData) {
             try {
-                // Calculate previous period data (simplified)
-                const previousData = currentData.map(value => {
-                    if (typeof value === 'number') {
-                        return Math.round(value * 0.9);
-                    }
-                    return 0;
-                });
-                
+                const compareMode = /*[[${compareMode}]]*/ 'previous';
+                let previousLabel = 'Previous Period';
+                if (compareMode === 'year') previousLabel = 'Same Period Last Year';
                 new Chart(document.getElementById('revenueChart'), {
                     type: 'line',
                     data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Current Period',
-                            data: currentData,
-                            fill: true,
-                            backgroundColor: 'rgba(44, 62, 80, 0.1)',
-                            borderColor: '#2C3E50',
-                            tension: 0.3,
-                            borderWidth: 2
-                        }, {
-                            label: 'Previous Period',
-                            data: previousData,
-                            fill: true,
-                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                            borderColor: '#3498DB',
-                            borderDash: [5, 5],
-                            tension: 0.3,
-                            borderWidth: 2
-                        }]
+                        datasets: [
+                            {
+                                label: 'Current Period',
+                                data: currentData,
+                                fill: true,
+                                backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                                borderColor: '#2C3E50',
+                                tension: 0.3,
+                                borderWidth: 2
+                            },
+                            {
+                                label: previousLabel,
+                                data: previousData,
+                                fill: true,
+                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                                borderColor: '#3498DB',
+                                borderDash: [5, 5],
+                                tension: 0.3,
+                                borderWidth: 2
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
@@ -695,14 +703,15 @@
                             intersect: false
                         },
                         plugins: {
-                            legend: {
-                                display: false
-                            },
+                            legend: { display: true },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return context.dataset.label + ': ' + 
-                                            new Intl.NumberFormat('vi-VN').format(context.raw) + ' VND';
+                                        let label = context.dataset.label || '';
+                                        let value = context.raw;
+                                        let idx = context.dataIndex;
+                                        let period = labels[idx] || '';
+                                        return `${label}: ${new Intl.NumberFormat('vi-VN').format(value)} VND (${period})`;
                                     }
                                 }
                             }
@@ -731,18 +740,18 @@
         function createOrdersChart(labels, data) {
             try {
                 new Chart(document.getElementById('ordersChart'), {
-                    type: 'bar',
-                    data: {
+        type: 'bar',
+        data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Orders',
+            datasets: [{
+                label: 'Orders',
                             data: data,
                             backgroundColor: 'rgba(52, 152, 219, 0.7)',
                             borderRadius: 3
-                        }]
-                    },
-                    options: {
-                        responsive: true,
+            }]
+        },
+        options: {
+            responsive: true,
                         maintainAspectRatio: false,
                         scales: {
                             y: {
@@ -764,18 +773,18 @@
         function createViewsChart(labels, data) {
             try {
                 new Chart(document.getElementById('viewsChart'), {
-                    type: 'bar',
-                    data: {
+        type: 'bar',
+        data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Views',
+            datasets: [{
+                label: 'Views',
                             data: data,
                             backgroundColor: 'rgba(46, 204, 113, 0.7)',
                             borderRadius: 3
-                        }]
-                    },
-                    options: {
-                        responsive: true,
+            }]
+        },
+        options: {
+            responsive: true,
                         maintainAspectRatio: false,
                         scales: {
                             y: {
@@ -797,11 +806,11 @@
         function createConversionChart(labels, data) {
             try {
                 new Chart(document.getElementById('conversionChart'), {
-                    type: 'line',
-                    data: {
+        type: 'line',
+        data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Conversion Rate (%)',
+            datasets: [{
+                label: 'Conversion Rate (%)',
                             data: data,
                             fill: true,
                             backgroundColor: 'rgba(243, 156, 18, 0.1)',
@@ -809,10 +818,10 @@
                             tension: 0.3,
                             borderWidth: 2,
                             pointBackgroundColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
+            }]
+        },
+        options: {
+            responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
                             tooltip: {
@@ -852,23 +861,23 @@
                 
                 new Chart(document.getElementById('geoChart'), {
                     type: 'doughnut',
-                    data: {
+        data: {
                         labels: labels,
-                        datasets: [{
+            datasets: [{
                             data: data,
-                            backgroundColor: [
-                                'rgba(52, 152, 219, 0.7)',
-                                'rgba(46, 204, 113, 0.7)',
-                                'rgba(155, 89, 182, 0.7)',
-                                'rgba(230, 126, 34, 0.7)',
-                                'rgba(231, 76, 60, 0.7)'
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.7)',
+                    'rgba(46, 204, 113, 0.7)',
+                    'rgba(155, 89, 182, 0.7)',
+                    'rgba(230, 126, 34, 0.7)',
+                    'rgba(231, 76, 60, 0.7)'
                             ],
                             borderWidth: 1,
                             borderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
+            }]
+        },
+        options: {
+            responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
                             tooltip: {
@@ -889,6 +898,6 @@
                     '<div class="alert alert-warning"><i class="fas fa-exclamation-circle"></i> Unable to load geographic distribution chart.</div>';
             }
         }
-    </script>
+</script>
 </body>
 </html> 

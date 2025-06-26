@@ -4,55 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${blog.title} + ' - Bookix Blog'">Blog Title - Bookix Blog</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 
+<!-- Header -->
 <div th:replace="~{fragments/header :: header-content}"></div>
 
 <main class="blog-single-page pt-2 pb-5">
+    <!-- Post Hero Image -->
     <section class="blog-single-hero mb-4">
         <img th:src="@{/images/blog-single-hero.jpg}" th:alt="${blog.title}" class="img-fluid blog-single-hero-image w-100">
     </section>
 
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-lg-8"> <header class="blog-single-header text-center mb-4">
-                <h1 class="blog-single-title display-5" th:text="${blog.title}">Blog Title</h1>
-                <p class="blog-single-meta text-muted">
-                    <span class="post-date" th:text="${#temporals.format(blog.createdDate, 'dd MMM, yyyy')}">Date</span>
-                    <span class="mx-1">•</span>
-                    by <a href="#" class="text-muted" th:text="${blog.user.fullName}">Author Name</a>
-                    <span class="mx-1">•</span>
-                    <span th:text="${blog.viewsCount} + ' views'">Views Count</span>
-                </p>
-            </header>
+            <div class="col-lg-8"> <!-- Main content column -->
+                <!-- Post Header -->
+                <header class="blog-single-header text-center mb-4">
+                    <h1 class="blog-single-title display-5" th:text="${blog.title}">Blog Title</h1>
+                    <p class="blog-single-meta text-muted">
+                        <span class="post-date" th:text="${#temporals.format(blog.createdDate, 'dd MMM, yyyy')}">Date</span>
+                        <span class="mx-1">•</span>
+                        by <a href="#" class="text-muted" th:text="${blog.user.fullName}">Author Name</a>
+                        <span class="mx-1">•</span>
+                        <span th:text="${blog.viewsCount} + ' views'">Views Count</span>
+                    </p>
+                </header>
 
-                <div class="post-actions text-center mb-4"
-                     th:if="${#authorization.expression('isAuthenticated()') and (#authentication.principal.username == blog.user.email or #authorization.expression('hasRole(''ADMIN'')'))}">
-
-                    <a th:href="@{/blog/edit/{id}(id=${blog.blogId})}" class="btn btn-sm btn-outline-secondary me-2">
-                        <i class="fas fa-edit me-1"></i> Edit Post
-                    </a>
-
-                    <form th:action="@{/blog/delete/{id}(id=${blog.blogId})}" method="post"
-                          onsubmit="return confirm('Are you sure you want to delete this post? This action cannot be undone.');"
-                          style="display: inline;">
-
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-trash-alt me-1"></i> Delete Post
-                        </button>
-                    </form>
-                </div>
+                <!-- Post Content -->
                 <article class="blog-single-content">
                     <div th:utext="${blog.content}">
+                        <!-- Blog content will be rendered here -->
                         <p>Default blog content placeholder. This will be replaced with the actual blog content.</p>
                     </div>
                 </article>
 
+                <!-- Author Bio -->
                 <section class="author-bio-section my-5 p-4 rounded">
                     <div class="d-flex align-items-center">
                         <img th:src="${blog.user.profilePicUrl != null ? blog.user.profilePicUrl : '/images/default-avatar.jpg'}"
@@ -63,24 +58,29 @@
                     </div>
                 </section>
 
+                <!-- Prev/Next Post Navigation -->
                 <nav class="post-navigation d-flex justify-content-between my-5 py-3 border-top border-bottom">
                     <a th:if="${previousBlog != null}" th:href="@{/blog/{id}(id=${previousBlog.blogId})}" class="prev-post-link text-decoration-none">
                         <div class="text-muted small"><i class="fas fa-chevron-left me-1"></i> Previous:</div>
                         <span class="post-nav-title" th:text="${previousBlog.title}">Previous Blog Title</span>
                     </a>
                     <div th:unless="${previousBlog != null}" class="prev-post-link text-decoration-none text-muted">
+                        <!-- Empty space when no previous blog -->
                     </div>
-
+                    
                     <a th:if="${nextBlog != null}" th:href="@{/blog/{id}(id=${nextBlog.blogId})}" class="next-post-link text-decoration-none text-end">
                         <div class="text-muted small">Next: <i class="fas fa-chevron-right ms-1"></i></div>
                         <span class="post-nav-title" th:text="${nextBlog.title}">Next Blog Title</span>
                     </a>
                     <div th:unless="${nextBlog != null}" class="next-post-link text-decoration-none text-end text-muted">
+                        <!-- Empty space when no next blog -->
                     </div>
                 </nav>
 
+                <!-- Comments Section -->
                 <section class="comments-section mb-5" id="comments">
                     <h3 class="comments-title mb-4">Leave a Reply <span class="text-muted small">(or view existing comments below)</span></h3>
+                    <!-- Comment Form -->
                     <form class="comment-form mb-5" th:action="@{/blog/{id}/comment(id=${blog.blogId})}" method="post">
                         <p class="comment-notes small text-muted mb-3">Your email address will not be published. Required fields are marked <span class="required">*</span></p>
                         <div class="mb-3">
@@ -110,8 +110,10 @@
                         <button type="submit" class="btn btn-dark submit-comment-btn">Post Comment</button>
                     </form>
 
+                    <!-- Existing Comments -->
                     <h4 class="existing-comments-title mb-4" th:text="'Comments (' + ${blog.comments.size()} + ')'">Comments (0)</h4>
                     <div class="comment-list" th:if="${!blog.comments.isEmpty()}">
+                        <!-- Single Comment Item -->
                         <div class="comment-item d-flex mb-4 pb-3 border-bottom" th:each="comment : ${blog.comments}">
                             <img th:src="${comment.user.profilePicUrl != null ? comment.user.profilePicUrl : '/images/default-avatar.jpg'}"
                                  th:alt="${comment.user.fullName}" class="commenter-avatar rounded-circle me-3">
@@ -127,7 +129,8 @@
                             </div>
                         </div>
                     </div>
-
+                    
+                    <!-- Empty state for no comments -->
                     <div class="no-comments text-center py-4" th:if="${blog.comments.isEmpty()}">
                         <i class="far fa-comment-dots fa-3x text-muted mb-3"></i>
                         <p class="mb-0">No comments yet. Be the first to share your thoughts!</p>
@@ -136,21 +139,27 @@
                         <ul class="pagination">
                             <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-left"></i></a></li>
                             <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
+                            <!-- Add more page items if needed -->
                             <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a></li>
                         </ul>
                     </nav>
                 </section>
             </div>
         </div>
-    </div> </main>
+    </div> <!-- /.container -->
+</main>
 
+<!-- Newsletter Subscription Section -->
 <div th:replace="~{fragments/newsletter :: newsletter-section}"></div>
 
+<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer-content}"></div>
 
+<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
         crossorigin="anonymous"></script>
+<!-- Custom JS -->
 <script th:src="@{/js/script.js}"></script>
 </body>
 </html>
