@@ -4,6 +4,7 @@ import com.example.isp392.dto.BookFormDTO;
 import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.*;
 import com.example.isp392.service.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -134,6 +136,25 @@ public class SellerController {
             // 6. Weekly revenue data for chart
             List<BigDecimal> weeklyRevenue = orderService.getWeeklyRevenue(shop.getShopId());
             
+            // NEW: Get total revenue and total orders for the shop (all time)
+            LocalDate registrationDate;
+            LocalDateTime regDateTime = shopService.getRegistrationDateByShopId(shop.getShopId());
+            if (regDateTime != null) {
+                registrationDate = regDateTime.toLocalDate();
+            } else {
+                registrationDate = LocalDate.of(2000, 1, 1);
+            }
+            LocalDate now = LocalDate.now();
+            BigDecimal totalRevenue = orderService.getTotalRevenue(shop.getShopId(), registrationDate, now);
+            Long totalOrders = orderService.getTotalOrders(shop.getShopId(), registrationDate, now);
+            if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+            if (totalOrders == null) totalOrders = 0L;
+            BigDecimal averageOrderValue = BigDecimal.ZERO;
+            if (totalOrders > 0) {
+                averageOrderValue = totalRevenue.divide(BigDecimal.valueOf(totalOrders), 0, BigDecimal.ROUND_HALF_UP);
+            }
+            model.addAttribute("averageOrderValue", averageOrderValue);
+            
             // Add all attributes to model
             model.addAttribute("user", user);
             model.addAttribute("roles", userService.getUserRoles(user));
@@ -179,6 +200,7 @@ public class SellerController {
      * @param period Period for analytics (daily, weekly, monthly)
      * @param startDate Start date for custom period
      * @param endDate End date for custom period
+     * @param compareMode Compare mode (previous, year)
      * @return analytics page view
      */
     @GetMapping("/analytics")
@@ -186,7 +208,8 @@ public class SellerController {
             Model model,
             @RequestParam(defaultValue = "monthly") String period,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "previous") String compareMode) {
         
         User user = getCurrentUser();
         if (user == null) {
@@ -202,134 +225,154 @@ public class SellerController {
                 model.addAttribute("roles", userService.getUserRoles(user));
                 return "seller/dashboard";
             }
-            
-            // Sanitize period input to prevent injection
+
+            // Sanitize period, set default dates, validate range
             if (!Arrays.asList("daily", "weekly", "monthly").contains(period)) {
                 period = "monthly"; // Default to monthly if invalid period
             }
-            
-            // Set default date range if not provided
+
             LocalDate now = LocalDate.now();
+            LocalDateTime registrationDateTime = shopService.getRegistrationDateByShopId(shop.getShopId());
+            LocalDate registrationDate = registrationDateTime != null ? registrationDateTime.toLocalDate() : now.minusMonths(6);
             if (startDate == null || endDate == null) {
                 switch (period) {
                     case "daily":
-                        startDate = now.minusDays(7);
+                        startDate = registrationDate;
                         endDate = now;
                         break;
                     case "weekly":
-                        startDate = now.minusWeeks(8);
+                        startDate = registrationDate;
                         endDate = now;
                         break;
                     case "monthly":
                     default:
-                        startDate = now.minusMonths(6);
+                        startDate = registrationDate;
                         endDate = now;
                         period = "monthly";
                         break;
                 }
+            } else {
+                if (startDate.isBefore(registrationDate)) {
+                    startDate = registrationDate;
+                }
             }
-            
-            // Validate date range (ensure startDate is before or equal to endDate)
+
             if (startDate.isAfter(endDate)) {
                 LocalDate temp = startDate;
                 startDate = endDate;
                 endDate = temp;
             }
-            
-            // Limit the date range to prevent performance issues
+
             long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
-            if (daysBetween > 366) { // Limit to 1 year max
+            if (daysBetween > 366) {
                 startDate = endDate.minusYears(1);
                 log.info("Date range exceeded maximum allowed, limiting to 1 year");
             }
+
+            // Get total revenue and orders directly for the entire period
+            BigDecimal totalRevenue = orderService.getTotalRevenue(shop.getShopId(), registrationDate, endDate);
+            long totalOrders = orderService.getTotalOrders(shop.getShopId(), registrationDate, endDate);
             
             // Generate labels for x-axis based on period
             List<String> timeLabels = generateTimeLabels(startDate, endDate, period);
             
-            // Get revenue data for the period - with proper error handling
-            List<Map<String, Object>> revenueData;
+            // Fetch the combined data for revenue and orders per period
+            List<Map<String, Object>> periodicDataRaw;
             try {
-                revenueData = orderService.getRevenueByPeriod(shop.getShopId(), startDate, endDate, period);
-                if (revenueData == null) {
-                    revenueData = new ArrayList<>();
+                periodicDataRaw = orderService.getRevenueByPeriod(shop.getShopId(), startDate, endDate, period);
+                if (periodicDataRaw == null) {
+                    periodicDataRaw = new ArrayList<>();
                     log.warn("Revenue data returned null for shop ID: {}", shop.getShopId());
                 }
             } catch (Exception e) {
-                revenueData = new ArrayList<>();
+                periodicDataRaw = new ArrayList<>();
                 log.error("Error retrieving revenue data: {}", e.getMessage());
             }
-            
-            // Extract revenue, orders, and calculate conversion rate
-            List<BigDecimal> periodRevenue = new ArrayList<>();
-            List<Integer> periodOrders = new ArrayList<>();
-            List<Integer> periodViews = new ArrayList<>();
-            List<Double> periodConversionRate = new ArrayList<>();
-            
-            // Create a map for easy lookup
+            log.debug("raw revenue {}",periodicDataRaw);
+
+            // Lấy revenue cho kỳ trước
+            LocalDate previousStartDate, previousEndDate;
+            if ("year".equals(compareMode)) {
+                previousStartDate = startDate.minusYears(1);
+                previousEndDate = endDate.minusYears(1);
+            } else { // previous
+                long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+                previousEndDate = startDate.minusDays(1);
+                previousStartDate = previousEndDate.minusDays(days-1);
+            }
+            List<String> previousTimeLabels = generateTimeLabels(previousStartDate, previousEndDate, period);
+            List<Map<String, Object>> previousDataRaw;
+            try {
+                previousDataRaw = orderService.getRevenueByPeriod(shop.getShopId(), previousStartDate, previousEndDate, period);
+                if (previousDataRaw == null) previousDataRaw = new ArrayList<>();
+            } catch (Exception e) {
+                previousDataRaw = new ArrayList<>();
+                log.error("Error retrieving previous period revenue: {}", e.getMessage());
+            }
+            // Map time label to revenue for previous
+            Map<String, Map<String, Object>> previousDataByPeriod = new HashMap<>();
+            for (Map<String, Object> data : previousDataRaw) {
+                if (data == null) continue;
+                String timePeriod = (String) data.get("time_period");
+                if (timePeriod != null) previousDataByPeriod.put(timePeriod, data);
+            }
+            List<BigDecimal> previousPeriodRevenue = new ArrayList<>();
+            for (String label : previousTimeLabels) {
+                Map<String, Object> data = previousDataByPeriod.getOrDefault(label, new HashMap<>());
+                BigDecimal revenue = getBigDecimalFromMap(data, "revenue");
+                previousPeriodRevenue.add(revenue);
+            }
+            String previousRevenueDataJson = safeConvertToJsonArray(previousPeriodRevenue);
+            model.addAttribute("previousRevenueDataJson", previousRevenueDataJson);
+            model.addAttribute("compareMode", compareMode);
+
+            // FIX: Re-structure the data processing loop to handle all chart data at once
             Map<String, Map<String, Object>> dataByPeriod = new HashMap<>();
-            for (Map<String, Object> data : revenueData) {
+            for (Map<String, Object> data : periodicDataRaw) {
                 if (data == null) continue;
                 String timePeriod = (String) data.get("time_period");
                 if (timePeriod != null) {
                     dataByPeriod.put(timePeriod, data);
                 }
             }
-            
-            // Create a consistent random generator based on shop ID and date
-            // This ensures the data looks consistent between page loads
-            Random random = new Random(shop.getShopId() == null ? 0 : shop.getShopId() + startDate.toEpochDay());
-            
-            // Fill in data for each time label
-            BigDecimal totalRevenue = BigDecimal.ZERO;
-            int totalOrders = 0, totalViews = 0;
-            
+
+            // ADD: Initialize all data lists here
+            List<BigDecimal> periodRevenue = new ArrayList<>();
+            List<Integer> periodOrders = new ArrayList<>();
+            List<Integer> periodViews = new ArrayList<>(); // Still 0, as we don't query this yet
+            List<Double> periodConversionRate = new ArrayList<>();
+            int totalViews = 0; // This will remain 0 for now
+
+            // FIX: A single, clean loop to populate all lists
             for (String label : timeLabels) {
                 Map<String, Object> data = dataByPeriod.getOrDefault(label, new HashMap<>());
                 
-                // Revenue - with null handling
-                BigDecimal revenue;
-                if (data.get("revenue") instanceof BigDecimal) {
-                    revenue = (BigDecimal) data.get("revenue");
-                } else if (data.get("revenue") instanceof Number) {
-                    revenue = BigDecimal.valueOf(((Number) data.get("revenue")).doubleValue());
-                } else {
-                    // Generate reasonable sample data based on shop ID
-                    revenue = BigDecimal.valueOf((random.nextInt(900) + 100) * 10000);
-                }
-                
+                // Process Revenue
+                BigDecimal revenue = getBigDecimalFromMap(data, "revenue");
                 periodRevenue.add(revenue);
-                totalRevenue = totalRevenue.add(revenue);
                 
-                // Orders - with null handling
-                Integer orders = 0;
-                if (data.get("order_count") instanceof Number) {
-                    orders = ((Number) data.get("order_count")).intValue();
-                } else {
-                    // Generate reasonable sample data based on revenue
-                    orders = Math.max(1, revenue.divide(BigDecimal.valueOf(100000), 0, BigDecimal.ROUND_DOWN).intValue());
-                }
+                // Process Orders
+                int orders = getIntFromMap(data, "order_count");
                 periodOrders.add(orders);
-                totalOrders += orders;
                 
-                // Views - generate consistent sample data
-                int views = orders * (random.nextInt(5) + 5);
+                // Process Views (currently no data, so it remains 0)
+                int views = 0; // To be implemented if you add view tracking
                 periodViews.add(views);
                 totalViews += views;
-                
-                // Conversion rate - calculate with safeguard against division by zero
-                double conversionRate = views > 0 ? (orders * 100.0 / views) : 0;
-                conversionRate = Math.round(conversionRate * 10) / 10.0; // Round to 1 decimal place
-                periodConversionRate.add(conversionRate);
+
+                // Process Conversion Rate
+                double conversionRate = (views > 0) ? ((double) orders / views) * 100 : 0.0;
+                periodConversionRate.add(Math.round(conversionRate * 10) / 10.0);
             }
-            
+
             // Calculate average conversion rate with safeguard against division by zero
             double avgConversionRate = totalViews > 0 ? (totalOrders * 100.0 / totalViews) : 0;
-            avgConversionRate = Math.round(avgConversionRate * 10) / 10.0; // Round to 1 decimal place
-            
-            // Get bestselling books and geographic distribution with error handling
+            avgConversionRate = Math.round(avgConversionRate * 10) / 10.0;
+
+            // ... (The rest of your code for top products and geo distribution is fine)
             List<Map<String, Object>> topProductsRaw;
             List<Map<String, Object>> geoDistributionRaw;
-            
+
             try {
                 topProductsRaw = orderService.getBestsellingBooks(shop.getShopId(), 5);
                 if (topProductsRaw == null) topProductsRaw = new ArrayList<>();
@@ -337,7 +380,7 @@ public class SellerController {
                 topProductsRaw = new ArrayList<>();
                 log.error("Error retrieving bestselling products: {}", e.getMessage());
             }
-            
+
             try {
                 geoDistributionRaw = orderService.getGeographicDistribution(shop.getShopId());
                 if (geoDistributionRaw == null) geoDistributionRaw = new ArrayList<>();
@@ -345,39 +388,17 @@ public class SellerController {
                 geoDistributionRaw = new ArrayList<>();
                 log.error("Error retrieving geographic distribution: {}", e.getMessage());
             }
-            
-            // Normalize topProducts to camelCase keys for Thymeleaf
+
             List<Map<String, Object>> topProducts = new ArrayList<>();
             for (Map<String, Object> mp : topProductsRaw) {
                 if (mp == null) continue;
                 Map<String, Object> np = new HashMap<>();
                 np.put("title", mp.getOrDefault("title", "N/A"));
-                // Handle numeric conversions safely
-                try {
-                    Object qtyObj = mp.get("total_quantity");
-                    int qty = qtyObj instanceof Number ? ((Number) qtyObj).intValue() : 0;
-                    np.put("totalQuantity", qty);
-                } catch (Exception ex) {
-                    np.put("totalQuantity", 0);
-                }
-                try {
-                    Object revObj = mp.get("total_revenue");
-                    BigDecimal rev;
-                    if (revObj instanceof BigDecimal) {
-                        rev = (BigDecimal) revObj;
-                    } else if (revObj instanceof Number) {
-                        rev = BigDecimal.valueOf(((Number) revObj).doubleValue());
-                    } else {
-                        rev = BigDecimal.ZERO;
-                    }
-                    np.put("totalRevenue", rev);
-                } catch (Exception ex) {
-                    np.put("totalRevenue", BigDecimal.ZERO);
-                }
+                np.put("totalQuantity", getIntFromMap(mp, "total_quantity"));
+                np.put("totalRevenue", getBigDecimalFromMap(mp, "total_revenue"));
                 topProducts.add(np);
             }
-            
-            // Normalize geoDistribution to camelCase keys and prepare chart arrays
+
             List<Map<String, Object>> geoDistribution = new ArrayList<>();
             List<String> geoLabels = new ArrayList<>();
             List<Integer> geoCounts = new ArrayList<>();
@@ -386,23 +407,16 @@ public class SellerController {
                 Map<String, Object> np = new HashMap<>();
                 String region = String.valueOf(mp.getOrDefault("region", "Unknown"));
                 np.put("region", region);
-                int count;
-                try {
-                    Object cntObj = mp.get("order_count");
-                    count = cntObj instanceof Number ? ((Number) cntObj).intValue() : 0;
-                } catch (Exception ex) {
-                    count = 0;
-                }
+                int count = getIntFromMap(mp, "order_count");
                 np.put("orderCount", count);
                 geoDistribution.add(np);
                 geoLabels.add(region);
                 geoCounts.add(count);
             }
             
+            // Safe conversion of data to JSON strings for chart.js
             String geoLabelsJson = safeConvertToJsonArray(geoLabels);
             String geoDataJson = safeConvertToJsonArray(geoCounts);
-            
-            // Safe conversion of data to JSON strings for chart.js
             String timeLabelsJson = safeConvertToJsonArray(timeLabels);
             String revenueDataJson = safeConvertToJsonArray(periodRevenue);
             String ordersDataJson = safeConvertToJsonArray(periodOrders);
@@ -416,18 +430,17 @@ public class SellerController {
             model.addAttribute("period", period);
             model.addAttribute("startDate", startDate);
             model.addAttribute("endDate", endDate);
-            model.addAttribute("timeLabels", timeLabels);
+
+            // Add chart data as JSON strings
             model.addAttribute("timeLabelsJson", timeLabelsJson);
-            model.addAttribute("revenueData", periodRevenue);
             model.addAttribute("revenueDataJson", revenueDataJson);
-            model.addAttribute("ordersData", periodOrders);
             model.addAttribute("ordersDataJson", ordersDataJson);
-            model.addAttribute("viewsData", periodViews);
             model.addAttribute("viewsDataJson", viewsDataJson);
-            model.addAttribute("conversionRateData", periodConversionRate);
             model.addAttribute("conversionRateDataJson", conversionRateDataJson);
             model.addAttribute("geoLabelsJson", geoLabelsJson);
             model.addAttribute("geoDataJson", geoDataJson);
+
+            // Add processed data for tables
             model.addAttribute("topProducts", topProducts);
             model.addAttribute("geoDistribution", geoDistribution);
             
@@ -439,22 +452,20 @@ public class SellerController {
             
             int totalGeoOrders = geoCounts.stream().mapToInt(Integer::intValue).sum();
             if (totalGeoOrders == 0) {
-                totalGeoOrders = 1; // Prevent division by zero in template
+                totalGeoOrders = 1;
             }
             
             model.addAttribute("geoTotalOrders", totalGeoOrders);
-            
             log.debug("Analytics loaded for shop ID: {} with period: {}", shop.getShopId(), period);
-            
+            log.debug("Revenue Data Json Type: {} with data: {}",shop.getShopId(),revenueDataJson);
             return "seller/analytics";
             
         } catch (Exception e) {
+            // ... (Your existing catch block is good)
             log.error("Error loading analytics: {}", e.getMessage(), e);
             model.addAttribute("errorMessage", "Error loading analytics: " + e.getMessage());
             model.addAttribute("user", user);
             model.addAttribute("roles", userService.getUserRoles(user));
-            
-            // Add empty data to prevent JavaScript errors
             model.addAttribute("timeLabelsJson", "[]");
             model.addAttribute("revenueDataJson", "[]");
             model.addAttribute("ordersDataJson", "[]");
@@ -469,44 +480,52 @@ public class SellerController {
             model.addAttribute("period", "monthly");
             model.addAttribute("startDate", LocalDate.now().minusMonths(6));
             model.addAttribute("endDate", LocalDate.now());
-            
+
             return "seller/analytics";
         }
     }
-    
+
+    // ADD: Helper methods to safely extract numbers from the map
+    private BigDecimal getBigDecimalFromMap(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        } else if (value instanceof Number) {
+            return BigDecimal.valueOf(((Number) value).doubleValue());
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private int getIntFromMap(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value instanceof Number) {
+            // Handle potential Long from SQL COUNT
+            return ((Number) value).intValue();
+        }
+        return 0;
+    }
+
     /**
-     * Convert a list to a JSON array string safely
+     * Convert a list to a JSON array string safely using the standard Jackson library.
+     * This is the recommended approach.
      * 
      * @param <T> Type of list elements
      * @param list List to convert
      * @return JSON array string
      */
     private <T> String safeConvertToJsonArray(List<T> list) {
-        if (list == null || list.isEmpty()) {
+        if (list == null) {
             return "[]";
         }
-        
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < list.size(); i++) {
-            T item = list.get(i);
-            if (item == null) {
-                sb.append("null");
-            } else if (item instanceof String) {
-                sb.append("\"").append(((String)item).replace("\"", "\\\"")).append("\"");
-            } else if (item instanceof BigDecimal) {
-                // Format BigDecimal without scientific notation and with maximum 2 decimal places
-                sb.append(((BigDecimal)item).setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString());
-            } else {
-                sb.append(item);
-            }
-            
-            if (i < list.size() - 1) {
-                sb.append(", ");
-            }
+        try {
+            // ObjectMapper is thread-safe, you can make it a private final field
+            // in your class for even better performance.
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.writeValueAsString(list);
+        } catch (Exception e) {
+            log.error("Error converting list to JSON array using Jackson: {}", e.getMessage());
+            return "[]"; // Fallback on error
         }
-        sb.append("]");
-        
-        return sb.toString();
     }
     
     /**
@@ -773,7 +792,7 @@ public class SellerController {
     public String showProductsPage(
             Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "9") int size,
             @RequestParam(required = false) String searchQuery,
             @RequestParam(defaultValue = "dateAdded") String sortField,
             @RequestParam(defaultValue = "desc") String sortDir) {

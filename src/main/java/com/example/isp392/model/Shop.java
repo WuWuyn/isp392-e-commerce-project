@@ -98,3 +98,4 @@ public class Shop {
     private List<Book> books = new ArrayList<>();
 
 }
+

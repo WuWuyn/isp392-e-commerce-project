@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Validate file type
                 const file = element.files[0];
-                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
                 const isValidType = validTypes.includes(file.type);
                 
                 if (!isValidType) {
