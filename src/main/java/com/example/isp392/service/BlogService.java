@@ -8,14 +8,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.security.access.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class BlogService {
-
+    private static final Logger log = LoggerFactory.getLogger(BlogService.class);
     private final BlogRepository blogRepository;
 
     public BlogService(BlogRepository blogRepository) {
@@ -43,6 +45,8 @@ public class BlogService {
 
         return blogRepository.save(newBlog);
     }
+
+
 
     // Get all blogs with pagination
     public Page<Blog> getAllBlogs(int page, int size) {
@@ -116,4 +120,41 @@ public class BlogService {
         return previousBlogs.isEmpty() ? null : previousBlogs.get(0);
     }
 
+    @Transactional
+    public Blog updateBlog(Integer blogId, String title, String content, User currentUser) {
+        Blog blogToUpdate = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog post not found with id: " + blogId));
+
+        boolean isAdmin = currentUser.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName().equals("ADMIN"));
+
+        if (!blogToUpdate.getUser().getUserId().equals(currentUser.getUserId()) && !isAdmin) {
+            throw new AccessDeniedException("You do not have permission to edit this post.");
+        }
+
+        blogToUpdate.setTitle(title);
+        blogToUpdate.setContent(content);
+
+        return blogRepository.save(blogToUpdate);
+    }
+
+    /**
+     * Deletes a blog post.
+     * @param blogId The ID of the blog to delete.
+     * @param currentUser The user attempting the deletion.
+     * @throws AccessDeniedException if the user is not the author or an admin.
+     */
+    @Transactional
+    public void deleteBlog(Integer blogId, User currentUser) {
+        Blog blogToDelete = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog post not found with id: " + blogId));
+        boolean isAdmin = currentUser.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName().equals("ADMIN"));
+
+        if (!blogToDelete.getUser().getUserId().equals(currentUser.getUserId()) && !isAdmin) {
+            throw new AccessDeniedException("You do not have permission to delete this post.");
+        }
+
+        blogRepository.delete(blogToDelete);
+    }
 }

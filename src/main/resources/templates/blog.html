@@ -85,7 +85,7 @@
                         <div class="card-body">
                             <p class="blog-post-meta small text-muted">
                                 <span th:text="${#temporals.format(blog.createdDate, 'dd MMM, yyyy')}">Date</span>
-                                <span class="mx-1">•</span> by
+                                <span class="mx-1">•</span> by 
                                 <a href="#" class="text-muted" th:text="${blog.user.fullName}">Author Name</a>
                             </p>
                             <h5 class="card-title blog-title">
@@ -94,7 +94,7 @@
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- Empty state when no blogs are found -->
                 <div class="col-12 text-center py-5" th:if="${#lists.isEmpty(blogs)}">
                     <div class="empty-state">
@@ -112,24 +112,24 @@
             <ul class="pagination">
                 <!-- Previous page -->
                 <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled' : ''">
-                    <a class="page-link"
-                       th:href="@{/blog(page=${currentPage - 1}, sort=${sort}, search=${search})}"
+                    <a class="page-link" 
+                       th:href="@{/blog(page=${currentPage - 1}, sort=${sort}, search=${search})}" 
                        tabindex="-1" th:aria-disabled="${currentPage == 0}">
                         <i class="fas fa-chevron-left"></i>
                     </a>
                 </li>
-
+                
                 <!-- Page numbers -->
                 <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
                     th:classappend="${currentPage == i} ? 'active' : ''" th:if="${i < 5}">
-                    <a class="page-link"
+                    <a class="page-link" 
                        th:href="@{/blog(page=${i}, sort=${sort}, search=${search})}"
                        th:text="${i + 1}" th:aria-current="${currentPage == i} ? 'page' : null">1</a>
                 </li>
-
+                
                 <!-- Next page -->
                 <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled' : ''">
-                    <a class="page-link"
+                    <a class="page-link" 
                        th:href="@{/blog(page=${currentPage + 1}, sort=${sort}, search=${search})}">
                         <i class="fas fa-chevron-right"></i>
                     </a>

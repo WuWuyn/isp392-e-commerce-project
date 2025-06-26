@@ -12,7 +12,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
+import org.springframework.security.access.AccessDeniedException;
+import com.example.isp392.service.UserService;
+import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Optional;
 
 @Controller
@@ -21,11 +23,15 @@ public class BlogController {
 
     private final BlogService blogService;
     private final BlogCommentService blogCommentService;
+    private final UserService userService;
 
     @Autowired
-    public BlogController(BlogService blogService, BlogCommentService blogCommentService) {
+    public BlogController(BlogService blogService,
+                          BlogCommentService blogCommentService,
+                          UserService userService) {
         this.blogService = blogService;
         this.blogCommentService = blogCommentService;
+        this.userService = userService;
     }
 
     // Main blog page with filtering options
@@ -65,35 +71,41 @@ public class BlogController {
      * Show the form for creating a new blog post.
      */
     @GetMapping("/create")
-    public String showCreateForm(Model model, @AuthenticationPrincipal User currentUser) {
-        if (currentUser == null) {
-            // Redirect to login if user is not authenticated
-            return "redirect:/login";
-        }
+    public String showCreateForm(Model model) {
         model.addAttribute("blog", new Blog());
         return "blog-create";
     }
 
     /**
-     * Process the submission of the new blog post form.
+     * Xử lý việc tạo blog mới.
+     * @AuthenticationPrincipal sẽ luôn có giá trị ở đây.
      */
     @PostMapping("/create")
     public String processCreateBlog(
             @ModelAttribute("blog") Blog blog,
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal UserDetails userDetails,
             RedirectAttributes redirectAttributes) {
-
-        if (currentUser == null) {
+        if (userDetails == null) {
             redirectAttributes.addFlashAttribute("error", "You must be logged in to create a post.");
-            return "redirect:/login";
+            return "redirect:/buyer/login";
         }
 
         try {
-            Blog savedBlog = blogService.createBlog(blog.getTitle(), blog.getContent(), currentUser);
+
+            String email = userDetails.getUsername();
+
+            User fullCurrentUser = userService.findByEmailDirectly(email);
+
+            if (fullCurrentUser == null) {
+                throw new Exception("Authenticated user not found in the database.");
+            }
+
+            Blog savedBlog = blogService.createBlog(blog.getTitle(), blog.getContent(), fullCurrentUser);
+
             redirectAttributes.addFlashAttribute("success", "Blog post created successfully!");
             return "redirect:/blog/" + savedBlog.getBlogId();
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error creating blog post.");
+            redirectAttributes.addFlashAttribute("error", "Error creating blog post: " + e.getMessage());
             return "redirect:/blog/create";
         }
     }
@@ -185,5 +197,112 @@ public class BlogController {
         }
 
         return "redirect:/blog/" + blogId + "#comments";
+    }
+
+    @GetMapping("/edit/{blogId}")
+    public String showEditForm(@PathVariable int blogId,
+                               Model model,
+                               @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (userDetails == null) {
+            return "redirect:/buyer/login";
+        }
+
+        // Dùng email để lấy thông tin User đầy đủ
+        String email = userDetails.getUsername();
+        User currentUser = userService.findByEmailDirectly(email);
+
+        Optional<Blog> blogOpt = blogService.getBlogById(blogId);
+        if (blogOpt.isEmpty()) {
+            return "redirect:/blog";
+        }
+        Blog blog = blogOpt.get();
+
+        try {
+            boolean isAdmin = currentUser.getUserRoles().stream()
+                    .anyMatch(userRole -> userRole.getRole().getRoleName().equals("ADMIN"));
+
+            if (!blog.getUser().getUserId().equals(currentUser.getUserId()) && !isAdmin) {
+                return "error/403";
+            }
+        } catch (Exception e) {
+            return "error/403";
+        }
+
+        model.addAttribute("blog", blog);
+        return "blog-edit";
+    }
+
+    /**
+     * Xử lý việc cập nhật một bài blog.
+     */
+    @PostMapping("/edit/{blogId}")
+    public String processEditBlog(@PathVariable int blogId,
+                                  @ModelAttribute("blog") Blog blog,
+                                  @AuthenticationPrincipal UserDetails userDetails, // <-- SỬA Ở ĐÂY
+                                  RedirectAttributes redirectAttributes) {
+
+        // Kiểm tra xem người dùng đã đăng nhập hay chưa
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "Your session may have expired. Please log in again.");
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            String email = userDetails.getUsername();
+            User currentUser = userService.findByEmailDirectly(email);
+
+            if (currentUser == null) {
+                throw new Exception("Could not find the authenticated user in the database.");
+            }
+
+            blogService.updateBlog(blogId, blog.getTitle(), blog.getContent(), currentUser);
+
+            redirectAttributes.addFlashAttribute("success", "Blog post updated successfully!");
+            return "redirect:/blog/" + blogId;
+        } catch (AccessDeniedException e) {
+            redirectAttributes.addFlashAttribute("error", "You do not have permission to perform this action.");
+            return "redirect:/blog/" + blogId;
+        } catch (Exception e) {
+            // Cải tiến: Thêm e.getMessage() để hiển thị lỗi chi tiết hơn
+            redirectAttributes.addFlashAttribute("error", "Error updating blog post: " + e.getMessage());
+            return "redirect:/blog/edit/" + blogId;
+        }
+    }
+
+    /**
+     * Xử lý việc xóa một bài blog.
+     */
+    @PostMapping("/delete/{blogId}")
+    public String processDeleteBlog(@PathVariable int blogId,
+                                    @AuthenticationPrincipal UserDetails userDetails,
+                                    RedirectAttributes redirectAttributes) {
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "You must be logged in to perform this action.");
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            // Lấy email từ UserDetails
+            String email = userDetails.getUsername();
+            User currentUser = userService.findByEmailDirectly(email);
+
+            // Kiểm tra lại để chắc chắn
+            if (currentUser == null) {
+                throw new Exception("Authenticated user not found in the database.");
+            }
+
+            // Gọi service với đối tượng User đầy đủ thông tin
+            blogService.deleteBlog(blogId, currentUser);
+
+            redirectAttributes.addFlashAttribute("success", "Blog post deleted successfully!");
+            return "redirect:/blog";
+        } catch (AccessDeniedException e) {
+            redirectAttributes.addFlashAttribute("error", "You do not have permission to perform this action.");
+            return "redirect:/blog";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error deleting blog post: " + e.getMessage());
+            return "redirect:/blog";
+        }
     }
 }
