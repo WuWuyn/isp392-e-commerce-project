@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Integer> {
@@ -187,4 +188,56 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
             @Param("startDate") LocalDate startDate, 
             @Param("endDate") LocalDate endDate,
             @Param("groupBy") String groupBy);
+
+    /**
+     * Check if a book with the given ISBN exists
+     * 
+     * @param isbn ISBN to check
+     * @return true if a book with this ISBN exists, false otherwise
+     */
+    boolean existsByIsbn(String isbn);
+    
+    /**
+     * Find a book by ISBN
+     * 
+     * @param isbn ISBN to search for
+     * @return Optional containing the book if found, empty otherwise
+     */
+    Optional<Book> findByIsbn(String isbn);
+    
+    /**
+     * Check if a book with the given ISBN exists in a specific shop
+     * 
+     * @param isbn ISBN to check
+     * @param shopId Shop ID to check within
+     * @return true if a book with this ISBN exists in the shop, false otherwise
+     */
+    boolean existsByIsbnAndShopShopId(String isbn, Integer shopId);
+    
+    /**
+     * Find a book by ISBN within a specific shop
+     * 
+     * @param isbn ISBN to search for
+     * @param shopId Shop ID to search within
+     * @return Optional containing the book if found, empty otherwise
+     */
+    Optional<Book> findByIsbnAndShopShopId(String isbn, Integer shopId);
+
+    /**
+     * Get total views for all books in a shop
+     * @param shopId the shop ID
+     * @return total views (sum of viewsCount)
+     */
+    @Query(value = "SELECT COALESCE(SUM(b.views_count), 0) " +
+            "FROM books b join shops s ON b.shop_id = s.shop_id " +
+            "WHERE s.shop_id = :shopId", nativeQuery = true)
+    Integer getTotalViewsByShopId(@Param("shopId") Integer shopId);
+
+    /**
+     * Get views for each product in a shop
+     * @param shopId the shop ID
+     * @return list of Object[]: [bookId, title, viewsCount]
+     */
+    @Query("SELECT b.book_id, b.title, b.viewsCount FROM Book b WHERE b.shop.shopId = :shopId")
+    List<Object[]> getViewsByProductInShop(@Param("shopId") Integer shopId);
 }

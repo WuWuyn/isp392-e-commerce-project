@@ -167,4 +167,7 @@ public class ShopService {
     public LocalDateTime getRegistrationDateByShopId(Integer shopId) {
         return shopRepository.getRegistrationDateByShopId(shopId);
     }
+    public long countActiveSellers() {
+        return shopRepository.countByApprovalStatus(com.example.isp392.model.Shop.ApprovalStatus.APPROVED);
+    }
 } 

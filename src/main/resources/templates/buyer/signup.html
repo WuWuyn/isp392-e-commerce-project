@@ -168,7 +168,10 @@
         <a href="/">ReadHub</a> <!-- Link to homepage -->
     </div>
 
-    <h2 class="text-center h4 mb-4" style="color: #333; font-weight: 600;">Create your Account</h2>
+    <h2 class="text-center h4 mb-4" style="color: #333; font-weight: 600;">
+        <span th:if="${param.sellerFlow}">Create Seller Account</span>
+        <span th:unless="${param.sellerFlow}">Create your Account</span>
+    </h2>
     
     <!-- Success message display -->
     <div th:if="${successMessage}" class="alert alert-success text-center mb-3" role="alert">
@@ -181,7 +184,7 @@
     </div>
 
     <!-- Registration form -->
-    <form th:action="@{/buyer/register}" th:object="${userRegistrationDTO}" method="post" id="registrationForm">
+    <form th:action="${param.sellerFlow} ? @{/seller/signup} : @{/buyer/register}" th:object="${userRegistrationDTO}" method="post" id="registrationForm">
         <div class="mb-3">
             <label for="fullName" class="form-label-signup">Full Name</label>
             <input type="text" class="form-control form-control-signup" th:field="*{fullName}" id="fullName" placeholder="Enter your full name" required>
@@ -245,12 +248,17 @@
             By signing up, you agree to our <a href="#">Terms of Service</a>.
         </div>
 
-        <button type="submit" class="btn btn-signup-primary w-100 mb-3">Sign Up</button>
+        <button type="submit" class="btn btn-signup-primary w-100 mb-3">
+            <span th:if="${param.sellerFlow}">Create Seller Account</span>
+            <span th:unless="${param.sellerFlow}">Sign Up</span>
+        </button>
 
         <div class="or-separator">or</div>
 
         <button type="button" class="btn btn-google-login w-100 mb-3">
-            <i class="fab fa-google me-2"></i> Sign Up with Google
+            <i class="fab fa-google me-2"></i> 
+            <span th:if="${param.sellerFlow}">Sign Up with Google (Seller)</span>
+            <span th:unless="${param.sellerFlow}">Sign Up with Google</span>
         </button>
     </form>
 
@@ -260,7 +268,8 @@
 </main>
 
 <div class="seller-center-link">
-    <a href="#">Seller Center</a>
+    <a th:if="${param.sellerFlow}" href="/buyer/login">Shopping Center</a>
+    <a th:unless="${param.sellerFlow}" href="/seller/login">Seller Center</a>
 </div>
 
 <!-- Bootstrap JS Bundle (Popper.js included) -->
