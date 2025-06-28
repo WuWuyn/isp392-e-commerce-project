@@ -75,12 +75,13 @@ public class SellerController {
         return "seller/seller-login";
     }
 
-    @GetMapping("/signup")
-    public String showSignupPage(Model model) {
-        model.addAttribute("userRegistrationDTO", new UserRegistrationDTO());
-        return "seller/seller-signup";
-    }
-
+    //TODO: WHEN signup redirect to buyer register then to seller-registration.html
+//    @GetMapping("/signup")
+//    public String showSignupPage(Model model) {
+//        model.addAttribute("userRegistrationDTO", new UserRegistrationDTO());
+//        return "seller/seller-signup";
+//    }
+//
 //    @PostMapping("/signup")
 //    public String registerSeller(
 //            @Valid @ModelAttribute("userRegistrationDTO") UserRegistrationDTO userRegistrationDTO,
@@ -154,6 +155,21 @@ public class SellerController {
                 averageOrderValue = totalRevenue.divide(BigDecimal.valueOf(totalOrders), 0, BigDecimal.ROUND_HALF_UP);
             }
             model.addAttribute("averageOrderValue", averageOrderValue);
+            
+            // Views: total and per-product
+            int totalViews = bookService.getTotalViewsByShopId(shop.getShopId());
+            List<Map<String, Object>> productViews = bookService.getViewsByProductInShop(shop.getShopId());
+            model.addAttribute("totalViews", totalViews);
+            model.addAttribute("productViews", productViews);
+            // For chart.js: push product titles and views as JSON arrays
+            List<String> productTitles = new ArrayList<>();
+            List<Integer> productViewsCounts = new ArrayList<>();
+            for (Map<String, Object> pv : productViews) {
+                productTitles.add((String) pv.get("title"));
+                productViewsCounts.add(pv.get("viewsCount") != null ? ((Number) pv.get("viewsCount")).intValue() : 0);
+            }
+            model.addAttribute("productViewsLabelsJson", safeConvertToJsonArray(productTitles));
+            model.addAttribute("productViewsDataJson", safeConvertToJsonArray(productViewsCounts));
             
             // Add all attributes to model
             model.addAttribute("user", user);
@@ -336,12 +352,21 @@ public class SellerController {
                 }
             }
 
+            // Get views data separately from BookService
+            int totalViews = bookService.getTotalViewsByShopId(shop.getShopId());
+            List<Map<String, Object>> productViews = bookService.getViewsByProductInShop(shop.getShopId());
+
+            List<String> productTitlesForChart = new ArrayList<>();
+            List<Integer> productViewsCountsForChart = new ArrayList<>();
+            for (Map<String, Object> pv : productViews) {
+                productTitlesForChart.add((String) pv.get("title"));
+                productViewsCountsForChart.add(pv.get("viewsCount") != null ? ((Number) pv.get("viewsCount")).intValue() : 0);
+            }
+
             // ADD: Initialize all data lists here
             List<BigDecimal> periodRevenue = new ArrayList<>();
             List<Integer> periodOrders = new ArrayList<>();
-            List<Integer> periodViews = new ArrayList<>(); // Still 0, as we don't query this yet
             List<Double> periodConversionRate = new ArrayList<>();
-            int totalViews = 0; // This will remain 0 for now
 
             // FIX: A single, clean loop to populate all lists
             for (String label : timeLabels) {
@@ -355,18 +380,16 @@ public class SellerController {
                 int orders = getIntFromMap(data, "order_count");
                 periodOrders.add(orders);
                 
-                // Process Views (currently no data, so it remains 0)
-                int views = 0; // To be implemented if you add view tracking
-                periodViews.add(views);
-                totalViews += views;
-
-                // Process Conversion Rate
-                double conversionRate = (views > 0) ? ((double) orders / views) * 100 : 0.0;
+                // Process Conversion Rate (using totalViews for overall avg for now, per-period views not fetched)
+                // This will be based on the overall totalViews for the period, not per-interval views
+                // If you want per-interval views, you'll need to adjust the BookService query.
+                double conversionRate = (totalOrders > 0) ? ((double) orders / totalOrders) * 100 : 0.0;
                 periodConversionRate.add(Math.round(conversionRate * 10) / 10.0);
             }
 
             // Calculate average conversion rate with safeguard against division by zero
-            double avgConversionRate = totalViews > 0 ? (totalOrders * 100.0 / totalViews) : 0;
+            // This calculation should use totalOrders and totalViews over the whole period
+            double avgConversionRate = (totalOrders > 0 && totalViews > 0) ? (totalOrders * 100.0 / totalViews) : 0;
             avgConversionRate = Math.round(avgConversionRate * 10) / 10.0;
 
             // ... (The rest of your code for top products and geo distribution is fine)
@@ -420,9 +443,12 @@ public class SellerController {
             String timeLabelsJson = safeConvertToJsonArray(timeLabels);
             String revenueDataJson = safeConvertToJsonArray(periodRevenue);
             String ordersDataJson = safeConvertToJsonArray(periodOrders);
-            String viewsDataJson = safeConvertToJsonArray(periodViews);
             String conversionRateDataJson = safeConvertToJsonArray(periodConversionRate);
             
+            // Add view-specific data
+            model.addAttribute("productViewsLabelsJson", safeConvertToJsonArray(productTitlesForChart));
+            model.addAttribute("productViewsDataJson", safeConvertToJsonArray(productViewsCountsForChart));
+
             // Add data to model
             model.addAttribute("user", user);
             model.addAttribute("roles", userService.getUserRoles(user));
@@ -435,7 +461,7 @@ public class SellerController {
             model.addAttribute("timeLabelsJson", timeLabelsJson);
             model.addAttribute("revenueDataJson", revenueDataJson);
             model.addAttribute("ordersDataJson", ordersDataJson);
-            model.addAttribute("viewsDataJson", viewsDataJson);
+            model.addAttribute("viewsDataJson", safeConvertToJsonArray(productViewsCountsForChart)); // Ensure this maps to actual views data
             model.addAttribute("conversionRateDataJson", conversionRateDataJson);
             model.addAttribute("geoLabelsJson", geoLabelsJson);
             model.addAttribute("geoDataJson", geoDataJson);
@@ -447,7 +473,7 @@ public class SellerController {
             // Summary statistics
             model.addAttribute("totalRevenue", totalRevenue);
             model.addAttribute("totalOrders", totalOrders);
-            model.addAttribute("totalViews", totalViews);
+            model.addAttribute("totalViews", totalViews); // Use the correct totalViews from BookService
             model.addAttribute("avgConversionRate", avgConversionRate);
             
             int totalGeoOrders = geoCounts.stream().mapToInt(Integer::intValue).sum();
@@ -469,7 +495,7 @@ public class SellerController {
             model.addAttribute("timeLabelsJson", "[]");
             model.addAttribute("revenueDataJson", "[]");
             model.addAttribute("ordersDataJson", "[]");
-            model.addAttribute("viewsDataJson", "[]");
+            model.addAttribute("viewsDataJson", "[]"); // Ensure this is empty array on error
             model.addAttribute("conversionRateDataJson", "[]");
             model.addAttribute("topProducts", new ArrayList<>());
             model.addAttribute("geoDistribution", new ArrayList<>());
@@ -966,6 +992,16 @@ public class SellerController {
             // Ensure the shop ID in the form matches the current user's shop
             bookForm.setShopId(shop.getShopId());
             
+            // Check if ISBN already exists in the database
+            if (bookService.isbnExists(bookForm.getIsbn())) {
+                model.addAttribute("errorMessage", "A book with ISBN '" + bookForm.getIsbn() + "' already exists in the system.");
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                model.addAttribute("categories", categoryService.findAllActive());
+                model.addAttribute("publishers", publisherService.findAll());
+                return "seller/seller-add-product";
+            }
+            
             // Check if cover image was uploaded
             if (bookForm.getCoverImageFile() == null || bookForm.getCoverImageFile().isEmpty()) {
                 model.addAttribute("errorMessage", "Cover image is required.");
@@ -1148,6 +1184,17 @@ public class SellerController {
                 return "redirect:/seller/products";
             }
             
+            // Check if ISBN already exists in another book (not the current one being edited)
+            if (!book.getIsbn().equals(bookForm.getIsbn()) && bookService.isbnExists(bookForm.getIsbn())) {
+                model.addAttribute("errorMessage", "A book with ISBN '" + bookForm.getIsbn() + "' already exists in the system.");
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                model.addAttribute("categories", categoryService.findAllActive());
+                model.addAttribute("publishers", publisherService.findAll());
+                model.addAttribute("book", book);
+                return "seller/seller-edit-product";
+            }
+            
             // Handle cover image upload if a new one is provided
             String coverImageUrl = book.getCoverImgUrl(); // Keep existing image by default
             if (bookForm.getCoverImageFile() != null && !bookForm.getCoverImageFile().isEmpty()) {
@@ -1263,9 +1310,10 @@ public class SellerController {
                 redirectAttributes.addFlashAttribute("errorMessage", "You don't have permission to delete this product.");
                 return "redirect:/seller/products";
             }
-            
-            // Delete the book
-            bookService.deleteBook(id);
+
+            // Soft delete: set active to false
+            book.setActive(false);
+            bookService.save(book);
             
             // Add success message
             redirectAttributes.addFlashAttribute("successMessage", "Product deleted successfully!");
@@ -1508,6 +1556,30 @@ public class SellerController {
             redirectAttributes.addFlashAttribute("errorMessage", "Order not found or you do not have permission to view it.");
             return "redirect:/seller/orders";
         }
+    }
+
+    /**
+     * REST API endpoint to check ISBN availability
+     * 
+     * @param isbn ISBN to check
+     * @return JSON response indicating if ISBN is available
+     */
+    @GetMapping("/api/check-isbn")
+    @ResponseBody
+    public Map<String, Object> checkIsbnAvailability(@RequestParam String isbn) {
+        Map<String, Object> response = new HashMap<>();
+        
+        if (isbn == null || isbn.trim().isEmpty()) {
+            response.put("available", false);
+            response.put("message", "ISBN cannot be empty");
+            return response;
+        }
+        
+        boolean isAvailable = !bookService.isbnExists(isbn.trim());
+        response.put("available", isAvailable);
+        response.put("message", isAvailable ? "ISBN is available" : "ISBN already exists");
+        
+        return response;
     }
 
 }

@@ -606,37 +606,47 @@
             };
             
     // Get data from Thymeleaf
-            let timeLabels, revenueData, previousRevenueData, ordersData, viewsData, conversionRateData, geoLabels, geoData;
+            let timeLabels, revenueData, previousRevenueData, ordersData, conversionRateData, geoLabels, geoData;
+            
+            // NEW: Variables for Product Views Chart
+            let productViewsLabels, productViewsData;
             
             try {
                 const timeLabelsJson = /*[[${timeLabelsJson}]]*/ '[]';
                 const revenueDataJson = /*[[${revenueDataJson}]]*/ '[]';
                 const previousRevenueDataJson = /*[[${previousRevenueDataJson}]]*/ '[]';
                 const ordersDataJson = /*[[${ordersDataJson}]]*/ '[]';
-                const viewsDataJson = /*[[${viewsDataJson}]]*/ '[]';
                 const conversionRateDataJson = /*[[${conversionRateDataJson}]]*/ '[]';
                 const geoLabelsJson = /*[[${geoLabelsJson}]]*/ '[]';
                 const geoDataJson = /*[[${geoDataJson}]]*/ '[]';
+                
+                // NEW: Product Views Chart JSON data
+                const productViewsLabelsJson = /*[[${productViewsLabelsJson}]]*/ '[]';
+                const productViewsDataJson = /*[[${productViewsDataJson}]]*/ '[]';
                 
                 // Parse JSON data with error handling
                 timeLabels = parseJsonSafely(timeLabelsJson);
                 revenueData = parseJsonSafely(revenueDataJson);
                 previousRevenueData = parseJsonSafely(previousRevenueDataJson);
                 ordersData = parseJsonSafely(ordersDataJson);
-                viewsData = parseJsonSafely(viewsDataJson);
                 conversionRateData = parseJsonSafely(conversionRateDataJson);
                 geoLabels = parseJsonSafely(geoLabelsJson);
                 geoData = parseJsonSafely(geoDataJson);
+                
+                // Parse Product Views Chart data
+                productViewsLabels = parseJsonSafely(productViewsLabelsJson);
+                productViewsData = parseJsonSafely(productViewsDataJson);
             } catch (error) {
                 console.error('Error parsing JSON data:', error);
                 timeLabels = [];
                 revenueData = [];
                 previousRevenueData = [];
                 ordersData = [];
-                viewsData = [];
                 conversionRateData = [];
                 geoLabels = [];
                 geoData = [];
+                productViewsLabels = [];
+                productViewsData = [];
             }
             
             // Set up Chart.js defaults
@@ -652,7 +662,7 @@
             }
             
             if (document.getElementById('viewsChart')) {
-                createViewsChart(timeLabels, viewsData);
+                createViewsChart(productViewsLabels, productViewsData); // Use product specific labels and data
             }
             
             if (document.getElementById('conversionChart')) {

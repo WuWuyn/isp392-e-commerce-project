@@ -7,11 +7,13 @@ import com.example.isp392.service.CartService;
 import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -71,10 +73,11 @@ public class BuyerController {
     /**
      * Display signup page
      * @param model Model to add attributes
+     * @param sellerFlow Request parameter indicating if this is for seller registration
      * @return signup page view
      */
     @GetMapping("/signup")
-    public String showSignupPage(Model model) {
+    public String showSignupPage(Model model, @RequestParam(required = false) Boolean sellerFlow) {
         // Check if user is already authenticated
         if (isUserAuthenticated()) {
             return "redirect:/buyer/account-info";
@@ -83,6 +86,11 @@ public class BuyerController {
         // Add registration DTO to model if not already present
         if (!model.containsAttribute("userRegistrationDTO")) {
             model.addAttribute("userRegistrationDTO", new UserRegistrationDTO());
+        }
+
+        // Add seller flow parameter to model
+        if (sellerFlow != null && sellerFlow) {
+            model.addAttribute("sellerFlow", true);
         }
 
         return "buyer/signup";
@@ -439,65 +447,13 @@ public class BuyerController {
         }
     }
 
-    // Helper methods for authentication
-    
-    /**
-     * Check if user is authenticated
-     * @return true if user is authenticated, false otherwise
-     */
-    private boolean isUserAuthenticated() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal());
-    }
-    
-    /**
-     * Get current user from SecurityContextHolder
-     * @return User object or null if not authenticated
-     */
-    private User getCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return getCurrentUser(auth);
-    }
-    
-    /**
-     * Get user from Authentication object with OAuth2 support
-     * @param auth Authentication object
-     * @return User object or null if not authenticated
-     */
-    private User getCurrentUser(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            return null;
-        }
-        
-        String email = null;
-        
-        // Handle different authentication types
-        if (auth instanceof OAuth2AuthenticationToken) {
-            OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
-            email = oauth2User.getAttribute("email");
-        } else {
-            email = auth.getName();
-        }
-        
-        if (email == null) {
-            log.warn("Email is null for authenticated user");
-            return null;
-        }
-        
-        // Find user by email
-        Optional<User> userOptional = userService.findByEmail(email);
-        
-        if (userOptional.isEmpty()) {
-            log.warn("User not found in database: {}", email);
-        }
-        
-        return userOptional.orElse(null);
-    }
     //seller register
     @GetMapping("/register-shop")
     public String showShopRegistrationForm(Model model, RedirectAttributes redirectAttributes) {
         User currentUser = getCurrentUser(); // Giả định bạn có phương thức này để lấy user hiện tại
         if (currentUser == null) {
+
+
             return "redirect:/buyer/login";
         }
 
@@ -587,4 +543,96 @@ public class BuyerController {
             return "buyer/seller-registration";
         }
     }
+
+    // Helper methods for authentication
+    
+    /**
+     * Check if user is authenticated
+     * @return true if user is authenticated, false otherwise
+     */
+    private boolean isUserAuthenticated() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal());
+    }
+    
+    /**
+     * Get current user from SecurityContextHolder
+     * @return User object or null if not authenticated
+     */
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return getCurrentUser(auth);
+    }
+    
+    /**
+     * Get user from Authentication object with OAuth2 support
+     * @param auth Authentication object
+     * @return User object or null if not authenticated
+     */
+    private User getCurrentUser(Authentication auth) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return null;
+        }
+        
+        String email = null;
+        
+        // Handle different authentication types
+        if (auth instanceof OAuth2AuthenticationToken) {
+            OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
+            email = oauth2User.getAttribute("email");
+        } else {
+            email = auth.getName();
+        }
+        
+        if (email == null) {
+            log.warn("Email is null for authenticated user");
+            return null;
+        }
+        
+        // Find user by email
+        Optional<User> userOptional = userService.findByEmail(email);
+        
+        if (userOptional.isEmpty()) {
+            log.warn("User not found in database: {}", email);
+        }
+        
+        return userOptional.orElse(null);
+    }
+
+    @GetMapping("/account-deletion")
+    public String showDeleteAccountPage(Model model) {
+        User user = getCurrentUser();
+        if (user == null) {
+            return "redirect:/buyer/login";
+        }
+        model.addAttribute("user", user);
+        return "buyer/delete-account"; // Trả về trang delete-account.html
+    }
+
+    /**
+     * Process the account deactivation request.
+     * Deactivates the user account and logs the user out.
+     */
+    @PostMapping("/perform-delete-account")
+    public String performAccountDeactivation(Authentication authentication, HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            String email = authentication.getName();
+            userService.deactivateUser(email);
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Your account has been successfully deactivated. We're sorry to see you go.");
+            return "redirect:/buyer/login?deactivated=true";
+
+        } catch (Exception e) {
+            log.error("Error during account deactivation for user {}: {}", authentication.getName(), e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while deactivating your account. Please try again.");
+            return "redirect:/buyer/account-info";
+        }
+    }
+
+
 }
