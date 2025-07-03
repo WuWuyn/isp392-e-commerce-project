@@ -205,75 +205,6 @@
             color: #2C3E50;
         }
 
-        /* Sort controls styling */
-        .sort-controls .btn-outline-secondary {
-            border-color: #ced4da;
-            color: #6c757d;
-        }
-
-        .sort-controls .btn-outline-secondary:hover {
-            background-color: #e9ecef;
-            border-color: #adb5bd;
-            color: #495057;
-        }
-
-        .sort-controls .dropdown-toggle-split {
-            border-left: 0;
-        }
-
-        .sort-controls .dropdown-menu {
-            border-radius: 0.375rem;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        }
-
-        .sort-controls .dropdown-item {
-            padding: 0.5rem 1rem;
-            color: #495057;
-        }
-
-        .sort-controls .dropdown-item:hover {
-            background-color: #f8f9fa;
-            color: #2C3E50;
-        }
-
-        .sort-controls .dropdown-item i {
-            width: 16px;
-            text-align: center;
-        }
-
-        /* Sort direction badge */
-        .sort-controls .badge {
-            font-size: 0.7rem;
-            padding: 0.25rem 0.4rem;
-            background-color: #6c757d;
-            border: none;
-        }
-
-        .sort-controls .badge:hover {
-            background-color: #5a6268;
-        }
-
-        /* Sort direction indicator */
-        .sort-controls .btn-outline-secondary i {
-            transition: transform 0.2s ease;
-        }
-
-        .sort-controls .btn-outline-secondary:hover i {
-            transform: scale(1.1);
-        }
-
-        /* Active sort indicator */
-        .sort-controls .btn-outline-secondary.active {
-            background-color: #2C3E50;
-            border-color: #2C3E50;
-            color: white;
-        }
-
-        .sort-controls .btn-outline-secondary.active:hover {
-            background-color: #1e2b37;
-            border-color: #1a252f;
-        }
-
         /* Pagination */
         .pagination .page-link {
             color: #2C3E50;
@@ -360,46 +291,28 @@
 
                 <hr class="my-3">
 
-                <form th:action="@{/seller/products}" method="get" class="row g-3" id="productSearchForm" onsubmit="handleSearch(event)">
+                <form th:action="@{/seller/products}" method="get" class="row g-3">
                     <div class="col-md-6">
                         <div class="input-group">
                             <input type="text" class="form-control" name="searchQuery" placeholder="Search products..." 
-                                   th:value="${searchQuery}" aria-label="Search products" id="searchInput">
+                                   th:value="${searchQuery}" aria-label="Search products">
                             <button class="btn btn-outline-secondary" type="submit">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="input-group sort-controls">
+                        <div class="input-group">
                             <label class="input-group-text" for="sortField">Sort by</label>
-                            <select class="form-select" id="sortField" name="sortField" onchange="setSortField(this.value)">
+                            <select class="form-select" id="sortField" name="sortField" onchange="this.form.submit()">
                                 <option value="dateAdded" th:selected="${sortField == 'dateAdded'}">Date Added</option>
                                 <option value="title" th:selected="${sortField == 'title'}">Title</option>
                                 <option value="sellingPrice" th:selected="${sortField == 'sellingPrice'}">Price</option>
                                 <option value="stockQuantity" th:selected="${sortField == 'stockQuantity'}">Stock</option>
                             </select>
-<!--                            <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" -->
-<!--                                    data-bs-toggle="dropdown" aria-expanded="false">-->
-<!--                                <span class="visually-hidden">Toggle Dropdown</span>-->
-<!--                            </button>-->
-<!--                            <ul class="dropdown-menu dropdown-menu-end">-->
-<!--                                <li>-->
-<!--                                    <a class="dropdown-item" href="#" onclick="setSortDirection('asc'); return false;">-->
-<!--                                        <i class="fas fa-sort-amount-up me-2"></i>Ascending-->
-<!--                                    </a>-->
-<!--                                </li>-->
-<!--                                <li>-->
-<!--                                    <a class="dropdown-item" href="#" onclick="setSortDirection('desc'); return false;">-->
-<!--                                        <i class="fas fa-sort-amount-down me-2"></i>Descending-->
-<!--                                    </a>-->
-<!--                                </li>-->
-<!--                            </ul>-->
                             <input type="hidden" name="sortDir" th:value="${sortDir}" id="sortDirInput">
-                            <button type="button" class="btn btn-outline-secondary" onclick="toggleSortDirection()" title="Toggle sort direction">
-                                <i class="fas" th:class="${sortDir == 'asc'} ? 'fa-sort-amount-up' : 'fa-sort-amount-down'"></i>
-                                <span class="badge bg-secondary ms-1" th:text="${sortDir == 'asc'} ? 'A-Z' : 'Z-A'">Z-A</span>
-                            </button>
+                           
+
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -686,81 +599,14 @@
     
     // Toggle sort direction
     function toggleSortDirection() {
-        const currentDirection = document.getElementById('sortDirInput').value;
+        const currentDirection = document.querySelector('.sort-direction').getAttribute('data-sort-dir');
         const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
         
-        // Build URL with current parameters
-        const url = buildProductsUrl(newDirection);
+        // Update hidden input value
+        document.getElementById('sortDirInput').value = newDirection;
         
-        // Navigate to the new URL
-        window.location.href = url;
-    }
-    
-    // Set sort direction
-    function setSortDirection(direction) {
-        // Build URL with current parameters
-        const url = buildProductsUrl(direction);
-        
-        // Navigate to the new URL
-        window.location.href = url;
-    }
-    
-    // Build products URL with current parameters
-    function buildProductsUrl(sortDir) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const searchQuery = urlParams.get('searchQuery') || '';
-        const sortField = urlParams.get('sortField') || 'dateAdded';
-        const page = urlParams.get('page') || '0';
-        const size = urlParams.get('size') || '9';
-        
-        let url = '/seller/products?';
-        url += `page=${page}&size=${size}&sortField=${sortField}&sortDir=${sortDir}`;
-        
-        if (searchQuery) {
-            url += `&searchQuery=${encodeURIComponent(searchQuery)}`;
-        }
-        
-        return url;
-    }
-    
-    // Set sort field
-    function setSortField(sortField) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const searchQuery = urlParams.get('searchQuery') || '';
-        const sortDir = urlParams.get('sortDir') || 'desc';
-        const page = urlParams.get('page') || '0';
-        const size = urlParams.get('size') || '9';
-        
-        let url = '/seller/products?';
-        url += `page=${page}&size=${size}&sortField=${sortField}&sortDir=${sortDir}`;
-        
-        if (searchQuery) {
-            url += `&searchQuery=${encodeURIComponent(searchQuery)}`;
-        }
-        
-        // Navigate to the new URL
-        window.location.href = url;
-    }
-    
-    // Handle search form submission
-    function handleSearch(event) {
-        event.preventDefault();
-        
-        const searchQuery = document.getElementById('searchInput').value.trim();
-        const urlParams = new URLSearchParams(window.location.search);
-        const sortField = urlParams.get('sortField') || 'dateAdded';
-        const sortDir = urlParams.get('sortDir') || 'desc';
-        const size = urlParams.get('size') || '9';
-        
-        let url = '/seller/products?';
-        url += `page=0&size=${size}&sortField=${sortField}&sortDir=${sortDir}`;
-        
-        if (searchQuery) {
-            url += `&searchQuery=${encodeURIComponent(searchQuery)}`;
-        }
-        
-        // Navigate to the new URL
-        window.location.href = url;
+        // Submit the form
+        document.querySelector('form').submit();
     }
     
     // Show notifications on page load if messages exist

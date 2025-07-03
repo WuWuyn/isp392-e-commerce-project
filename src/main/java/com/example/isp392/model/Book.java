@@ -47,9 +47,6 @@ public class Book {
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
-    @Column(name = "views_count", nullable = false, columnDefinition = "INT DEFAULT 0")
-    private Integer viewsCount = 0;
-
     @Lob // For authors, if it can be very long.
     @Column(name = "authors", columnDefinition = "NVARCHAR(MAX)") // Storing authors as a single string.
     // Consider a separate Author entity and a ManyToMany relationship

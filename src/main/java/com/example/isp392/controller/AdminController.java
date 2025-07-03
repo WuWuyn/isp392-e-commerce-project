@@ -120,34 +120,6 @@ public class AdminController {
             model.addAttribute("firstName", firstName);
         }
 
-        // === Dashboard statistics ===
-        // Total users
-        long totalUsers = userService.countAllUsers();
-        model.addAttribute("totalUsers", totalUsers);
-
-        // Total products
-        long totalProducts = bookService.countAllBooks();
-        model.addAttribute("totalProducts", totalProducts);
-
-        // Active sellers (count of shops with APPROVED status and active)
-        long activeSellers = shopService.countActiveSellers();
-        model.addAttribute("activeSellers", activeSellers);
-
-        // Total revenue (sum of all order revenue)
-        // TODO: Replace with actual total revenue from all orders (across all shops)
-        // You may need to add a method in OrderRepository for this
-        java.math.BigDecimal totalRevenue = java.math.BigDecimal.ZERO; // Mocked for now
-        model.addAttribute("totalRevenue", totalRevenue);
-
-        // System alerts (mocked)
-        int systemAlerts = 0; // TODO: Replace with actual system alert count
-        model.addAttribute("systemAlerts", systemAlerts);
-
-        // Recent activities (mocked)
-        java.util.List<java.util.Map<String, Object>> recentActivities = new java.util.ArrayList<>();
-        // TODO: Replace with actual recent activities (e.g., recent orders, new users, etc.)
-        model.addAttribute("recentActivities", recentActivities);
-
         // Add active menu information for sidebar highlighting
         model.addAttribute("activeMenu", "dashboard");
 

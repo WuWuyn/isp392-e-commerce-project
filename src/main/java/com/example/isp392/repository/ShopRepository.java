@@ -12,8 +12,6 @@ import java.util.Optional;
 @Repository
 public interface ShopRepository extends JpaRepository<Shop, Integer> {
 
-
-
     Optional<Shop> findByUserUserId(Integer userId);
 
     @Query("SELECT s FROM Shop s WHERE s.approval_status = :status")
@@ -22,11 +20,5 @@ public interface ShopRepository extends JpaRepository<Shop, Integer> {
     @Query("SELECT count(s) FROM Shop s WHERE s.approval_status = :status")
     long countByApprovalStatus(@Param("status") Shop.ApprovalStatus status);
 
-    /**
-     * Get the registration date of a shop by shopId
-     * @param shopId the shop ID
-     * @return the registration date or null if not found
-     */
-    @Query(value = "SELECT registration_date FROM shops s WHERE s.shop_id = :shopId",nativeQuery = true)
-    java.time.LocalDateTime getRegistrationDateByShopId(@Param("shopId") Integer shopId);
-} 
+
+}

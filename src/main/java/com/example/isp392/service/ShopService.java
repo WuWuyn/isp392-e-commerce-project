@@ -52,7 +52,7 @@ public class ShopService {
     public Shop getShopByUserId(Integer userId) {
         return shopRepository.findByUserUserId(userId).orElse(null);
     }
-    
+
     /**
      * Save or update shop information
      * @param shopDTO the shop data to save
@@ -65,17 +65,17 @@ public class ShopService {
                 shopRepository.findById(shopDTO.getShopId())
                         .orElseThrow(() -> new RuntimeException("Shop not found")) :
                 new Shop();
-        
+
         // Find the user
         User user = userRepository.findById(shopDTO.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         // Copy properties from DTO to entity
         BeanUtils.copyProperties(shopDTO, shop, "user", "books", "approval_status", "registrationDate");
-        
+
         // Set specific fields that need manual mapping
         shop.setUser(user);
-        
+
         // If it's a new shop
         if (shop.getShopId() == null) {
             // Set pending status for new shops
@@ -87,7 +87,7 @@ public class ShopService {
             // Only update status if explicitly set and shop exists
             shop.setApproval_status(shopDTO.getApprovalStatus());
         }
-        
+
         // Save the shop
         return shopRepository.save(shop);
     }
@@ -163,11 +163,5 @@ public class ShopService {
     }
     public List<Shop> getRejectedShops() {
         return shopRepository.findByApprovalStatus(Shop.ApprovalStatus.REJECTED);
-    }
-    public LocalDateTime getRegistrationDateByShopId(Integer shopId) {
-        return shopRepository.getRegistrationDateByShopId(shopId);
-    }
-    public long countActiveSellers() {
-        return shopRepository.countByApprovalStatus(com.example.isp392.model.Shop.ApprovalStatus.APPROVED);
     }
 } 
