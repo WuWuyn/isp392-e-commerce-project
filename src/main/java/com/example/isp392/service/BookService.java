@@ -24,10 +24,8 @@ import java.math.BigInteger;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -525,77 +523,5 @@ public class BookService {
 
     public Book save(Book book) {
         return bookRepository.save(book);
-    }
-
-    public long countAllBooks() {
-        return bookRepository.count();
-    }
-    
-    /**
-     * Check if a book with the given ISBN exists
-     * 
-     * @param isbn ISBN to check
-     * @return true if a book with this ISBN exists, false otherwise
-     */
-    public boolean isbnExists(String isbn) {
-        if (isbn == null || isbn.trim().isEmpty()) {
-            return false;
-        }
-        return bookRepository.existsByIsbn(isbn.trim());
-    }
-    
-    /**
-     * Check if a book with the given ISBN exists in a specific shop
-     * 
-     * @param isbn ISBN to check
-     * @param shopId Shop ID to check within
-     * @return true if a book with this ISBN exists in the shop, false otherwise
-     */
-    public boolean isbnExistsInShop(String isbn, Integer shopId) {
-        if (isbn == null || isbn.trim().isEmpty() || shopId == null) {
-            return false;
-        }
-        return bookRepository.existsByIsbnAndShopShopId(isbn.trim(), shopId);
-    }
-    
-    /**
-     * Find a book by ISBN
-     * 
-     * @param isbn ISBN to search for
-     * @return Optional containing the book if found, empty otherwise
-     */
-    public Optional<Book> findByIsbn(String isbn) {
-        if (isbn == null || isbn.trim().isEmpty()) {
-            return Optional.empty();
-        }
-        return bookRepository.findByIsbn(isbn.trim());
-    }
-
-    /**
-     * Get total views for all books in a shop
-     * @param shopId the shop ID
-     * @return total views (sum of viewsCount)
-     */
-    public int getTotalViewsByShopId(Integer shopId) {
-        Integer total = bookRepository.getTotalViewsByShopId(shopId);
-        return total != null ? total : 0;
-    }
-
-    /**
-     * Get views for each product in a shop
-     * @param shopId the shop ID
-     * @return list of maps: {bookId, title, viewsCount}
-     */
-    public List<Map<String, Object>> getViewsByProductInShop(Integer shopId) {
-        List<Object[]> raw = bookRepository.getViewsByProductInShop(shopId);
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Object[] row : raw) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("bookId", row[0]);
-            map.put("title", row[1]);
-            map.put("viewsCount", row[2]);
-            result.add(map);
-        }
-        return result;
     }
 }

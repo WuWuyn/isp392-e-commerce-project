@@ -74,7 +74,7 @@ public class UserService implements UserDetailsService {
 
         // Get user roles
         List<UserRole> userRoles = userRoleRepository.findByUser(user);
-        
+
         // Map roles to authorities
         Collection<SimpleGrantedAuthority> authorities = userRoles.stream()
                 .filter(UserRole::isRoleActiveForUser)
@@ -88,6 +88,7 @@ public class UserService implements UserDetailsService {
                 authorities
         );
     }
+
 
     /**
      * Register a new buyer user
@@ -480,29 +481,4 @@ public class UserService implements UserDetailsService {
         }
 
     }
-
-    public long countAllUsers() {
-        return userRepository.count();
-    }
-
-    @Transactional
-    public void deactivateUser(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-
-        user.setActive(false);
-        userRepository.save(user);
-        log.info("User account for {} has been deactivated.", email);
-    }
-
-    @Transactional
-    public void deleteUserById(Integer userId) {
-        // Kiểm tra xem user có tồn tại không trước khi xóa
-        if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found with ID: " + userId);
-        }
-        userRepository.deleteById(userId);
-        log.info("Successfully deleted user with ID: {}", userId);
-    }
-
 }
