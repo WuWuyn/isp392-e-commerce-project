@@ -315,8 +315,8 @@
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card position-relative">
-                        <h4>Unread Messages</h4>
-                        <p>3</p>
+                        <h4>Avg Order Value</h4>
+                        <p th:text="${#numbers.formatDecimal(averageOrderValue, 0, 'COMMA', 0, 'POINT')}">3</p>
                         <i class="fas fa-envelope"></i>
                     </div>
                 </div>
@@ -344,13 +344,13 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="notification-card info p-3 mb-3 bg-light">
-                            <h5><i class="fas fa-comment text-info"></i> Unread Messages</h5>
-                            <p class="mb-0">3 customer messages need replies</p>
-                            <a th:href="@{/seller/messages}" class="btn btn-sm btn-outline-primary mt-2">Reply Now</a>
-                        </div>
-                    </div>
+<!--                    <div class="col-md-6">-->
+<!--                        <div class="notification-card info p-3 mb-3 bg-light">-->
+<!--                            <h5><i class="fas fa-comment text-info"></i> Average Order Value </h5>-->
+<!--                            <p class="mb-0">3 customer messages need replies</p>-->
+<!--                            <a th:href="@{/seller/messages}" class="btn btn-sm btn-outline-primary mt-2">Reply Now</a>-->
+<!--                        </div>-->
+<!--                    </div>-->
 
 
                 </div>

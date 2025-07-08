@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Validate file type
                 const file = element.files[0];
-                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
                 const isValidType = validTypes.includes(file.type);
                 
                 if (!isValidType) {
@@ -397,15 +397,73 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('DOMContentLoaded', function() {
         const successMessage = document.querySelector('.alert-success');
         const errorMessage = document.querySelector('.alert-danger:not(#validationErrorSummary)');
-
+        
         if (successMessage) {
-            showNotification(successMessage.querySelector('span').textContent, 'success');
-            successMessage.remove(); // Remove original message
+            showNotification(successMessage.textContent.trim(), 'success');
         }
-
         if (errorMessage) {
-            showNotification(errorMessage.querySelector('span').textContent, 'danger');
-            errorMessage.remove(); // Remove original message
+            showNotification(errorMessage.textContent.trim(), 'danger');
         }
     });
+
+    // ISBN availability checking
+    const isbnField = document.getElementById('isbn');
+    if (isbnField) {
+        let isbnCheckTimeout;
+        
+        isbnField.addEventListener('input', function() {
+            const isbn = this.value.trim();
+            
+            // Clear previous timeout
+            if (isbnCheckTimeout) {
+                clearTimeout(isbnCheckTimeout);
+            }
+            
+            // Clear previous validation states
+            this.classList.remove('is-valid', 'is-invalid');
+            
+            // Only check if ISBN is valid format and not empty
+            if (isbn && /^(\d{10}|\d{13})$/.test(isbn.replace(/[-\s]/g, ''))) {
+                // Add loading state
+                this.classList.add('is-loading');
+                
+                // Debounce the API call
+                isbnCheckTimeout = setTimeout(() => {
+                    checkIsbnAvailability(isbn);
+                }, 500);
+            }
+        });
+        
+        function checkIsbnAvailability(isbn) {
+            fetch(`/seller/api/check-isbn?isbn=${encodeURIComponent(isbn)}`)
+                .then(response => response.json())
+                .then(data => {
+                    isbnField.classList.remove('is-loading');
+                    
+                    if (data.available) {
+                        isbnField.classList.add('is-valid');
+                        isbnField.classList.remove('is-invalid');
+                        
+                        // Update feedback message
+                        let feedbackElement = isbnField.nextElementSibling;
+                        if (feedbackElement && feedbackElement.classList.contains('valid-feedback')) {
+                            feedbackElement.textContent = 'ISBN is available';
+                        }
+                    } else {
+                        isbnField.classList.add('is-invalid');
+                        isbnField.classList.remove('is-valid');
+                        
+                        // Update feedback message
+                        let feedbackElement = isbnField.nextElementSibling;
+                        if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                            feedbackElement.textContent = data.message || 'ISBN already exists';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking ISBN availability:', error);
+                    isbnField.classList.remove('is-loading');
+                });
+        }
+    }
 }); 

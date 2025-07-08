@@ -7,6 +7,7 @@ import com.example.isp392.model.UserRole;
 import com.example.isp392.repository.RoleRepository;
 import com.example.isp392.repository.UserRepository;
 import com.example.isp392.repository.UserRoleRepository;
+import com.example.isp392.repository.OrderRepository;
 
 // No imports needed for annotations since we use constructor injection
 import java.security.SecureRandom;
@@ -38,6 +39,7 @@ public class UserService implements UserDetailsService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OrderRepository orderRepository;
 
     /**
      * Constructor with explicit dependency injection
@@ -52,11 +54,13 @@ public class UserService implements UserDetailsService {
     public UserService(UserRepository userRepository, 
                       RoleRepository roleRepository,
                       UserRoleRepository userRoleRepository,
-                      PasswordEncoder passwordEncoder) {
+                      PasswordEncoder passwordEncoder,
+                      OrderRepository orderRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.orderRepository = orderRepository;
     }
 
     /**
@@ -74,7 +78,7 @@ public class UserService implements UserDetailsService {
 
         // Get user roles
         List<UserRole> userRoles = userRoleRepository.findByUser(user);
-
+        
         // Map roles to authorities
         Collection<SimpleGrantedAuthority> authorities = userRoles.stream()
                 .filter(UserRole::isRoleActiveForUser)
@@ -88,7 +92,6 @@ public class UserService implements UserDetailsService {
                 authorities
         );
     }
-
 
     /**
      * Register a new buyer user
@@ -481,4 +484,56 @@ public class UserService implements UserDetailsService {
         }
 
     }
+
+    public long countAllUsers() {
+        return userRepository.count();
+    }
+
+    @Transactional
+    public void deactivateUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        user.setActive(false);
+        userRepository.save(user);
+        log.info("User account for {} has been deactivated.", email);
+    }
+
+    @Transactional
+    public void deleteUserById(Integer userId) {
+        // Kiểm tra xem user có tồn tại không trước khi xóa
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found with ID: " + userId);
+        }
+        userRepository.deleteById(userId);
+        log.info("Successfully deleted user with ID: {}", userId);
+    }
+
+    /**
+     * Check if a user has any active orders.
+     * For now, 'active' means PENDING, PROCESSING, or SHIPPED.
+     * @param userId the ID of the user to check
+     * @return true if the user has active orders, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean hasActiveOrders(Integer userId) {
+        long activeOrderCount = orderRepository.countActiveOrdersByUserId(userId);
+        return activeOrderCount > 0;
+    }
+
+    /**
+     * Performs a soft delete on a user account.
+     * Sets the user's is_active status to false.
+     * @param userId the ID of the user to deactivate
+     * @throws RuntimeException if the user is not found
+     */
+    @Transactional
+    public void softDeleteUser(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        user.setActive(false);
+        userRepository.save(user);
+        log.info("User with ID {} has been soft-deleted (deactivated).", userId);
+    }
+
 }

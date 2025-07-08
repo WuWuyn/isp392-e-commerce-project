@@ -43,7 +43,7 @@ public class User {
 
     @Column(name = "profile_pic_url", columnDefinition = "NVARCHAR(MAX)")
     private String profilePicUrl;
-
+    
     @Column(name = "is_oauth2_user", nullable = false, columnDefinition = "BIT DEFAULT 0")
     private boolean isOAuth2User = false;
 

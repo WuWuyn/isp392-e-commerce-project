@@ -4,6 +4,8 @@ import com.example.isp392.dto.ShopDTO;
 import com.example.isp392.model.Shop;
 import com.example.isp392.model.ShopApprovalHistory;
 import com.example.isp392.model.User;
+import com.example.isp392.model.TokenType;
+import com.example.isp392.repository.OrderRepository;
 import com.example.isp392.repository.ShopApprovalHistoryRepository;
 import com.example.isp392.repository.ShopRepository;
 import com.example.isp392.repository.UserRepository;
@@ -30,18 +32,27 @@ public class ShopService {
     private final UserService userService;
     private final FileStorageService fileStorageService;// For user data access
     private final ShopApprovalHistoryRepository historyRepository;
+    private final OrderRepository orderRepository;
+    private final EmailService emailService;
+    private final OtpService otpService;
+    private final BookService bookService;
+
     /**
      * Constructor for dependency injection
      * @param shopRepository repository for shop data
      * @param userRepository repository for user data
      */
-    public ShopService(ShopRepository shopRepository, UserRepository userRepository, UserService userService, FileStorageService fileStorageService, ShopApprovalHistoryRepository historyRepository) {
+    public ShopService(ShopRepository shopRepository, UserRepository userRepository, UserService userService, FileStorageService fileStorageService, ShopApprovalHistoryRepository historyRepository, OrderRepository orderRepository, EmailService emailService, OtpService otpService, BookService bookService) {
         // Constructor injection instead of using @Autowired
         this.shopRepository = shopRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.fileStorageService = fileStorageService;
         this.historyRepository = historyRepository;
+        this.orderRepository = orderRepository;
+        this.emailService = emailService;
+        this.otpService = otpService;
+        this.bookService = bookService;
     }
 
     /**
@@ -52,7 +63,7 @@ public class ShopService {
     public Shop getShopByUserId(Integer userId) {
         return shopRepository.findByUserUserId(userId).orElse(null);
     }
-
+    
     /**
      * Save or update shop information
      * @param shopDTO the shop data to save
@@ -65,17 +76,17 @@ public class ShopService {
                 shopRepository.findById(shopDTO.getShopId())
                         .orElseThrow(() -> new RuntimeException("Shop not found")) :
                 new Shop();
-
+        
         // Find the user
         User user = userRepository.findById(shopDTO.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+        
         // Copy properties from DTO to entity
         BeanUtils.copyProperties(shopDTO, shop, "user", "books", "approval_status", "registrationDate");
-
+        
         // Set specific fields that need manual mapping
         shop.setUser(user);
-
+        
         // If it's a new shop
         if (shop.getShopId() == null) {
             // Set pending status for new shops
@@ -87,7 +98,7 @@ public class ShopService {
             // Only update status if explicitly set and shop exists
             shop.setApproval_status(shopDTO.getApprovalStatus());
         }
-
+        
         // Save the shop
         return shopRepository.save(shop);
     }
@@ -163,5 +174,88 @@ public class ShopService {
     }
     public List<Shop> getRejectedShops() {
         return shopRepository.findByApprovalStatus(Shop.ApprovalStatus.REJECTED);
+    }
+    public LocalDateTime getRegistrationDateByShopId(Integer shopId) {
+        return shopRepository.getRegistrationDateByShopId(shopId);
+    }
+    public long countActiveSellers() {
+        return shopRepository.countByApprovalStatus(com.example.isp392.model.Shop.ApprovalStatus.APPROVED);
+    }
+
+    /**
+     * Check if a shop has any active orders.
+     * 'Active' means PENDING, PROCESSING, or SHIPPED.
+     * @param shopId the ID of the shop to check
+     * @return true if the shop has active orders, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean hasActiveOrdersForShop(Integer shopId) {
+        long activeOrderCount = orderRepository.countActiveOrdersByShopId(shopId);
+        return activeOrderCount > 0;
+    }
+
+    /**
+     * Performs a soft delete on a shop.
+     * Sets the shop's isActive status to false and deactivates all its books.
+     * @param shopId the ID of the shop to deactivate
+     * @throws RuntimeException if the shop is not found
+     */
+    @Transactional
+    public void softDeleteShop(Integer shopId) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
+        shop.setActive(false);
+        shopRepository.save(shop);
+        bookService.deactivateBooksByShopId(shopId);
+        // Optionally, set approval status to a 'DELETED' or 'INACTIVE' enum if needed
+        // shop.setApproval_status(Shop.ApprovalStatus.INACTIVE);
+        // shopRepository.save(shop);
+        // log.info("Shop with ID {} has been soft-deleted (deactivated) and its products deactivated.", shopId);
+    }
+
+    /**
+     * Initiates the shop deletion process by sending a confirmation email.
+     * @param shop The shop to be deleted.
+     * @param seller The user (seller) associated with the shop.
+     * @param baseUrl The base URL for generating the confirmation link.
+     * @return true if the email was sent, false otherwise.
+     */
+    @Transactional
+    public boolean requestShopDeletion(Shop shop, User seller, String baseUrl) {
+        String confirmationToken = otpService.generateToken(seller, TokenType.SHOP_DELETION);
+        String confirmationLink = baseUrl + "/seller/shop-delete-confirm?token=" + confirmationToken;
+        return emailService.sendShopDeletionConfirmationEmail(seller.getEmail(), confirmationLink);
+    }
+
+    /**
+     * Confirms the shop deletion based on a valid token.
+     * If the token is valid, the shop and its associated user are soft-deleted,
+     * and an email is sent to the seller.
+     * @param tokenString The token received in the confirmation link.
+     * @return The User object of the seller if deletion is successful, null otherwise.
+     */
+    @Transactional
+    public User confirmShopDeletion(String tokenString) {
+        Optional<User> userOptional = otpService.validateToken(tokenString, TokenType.SHOP_DELETION);
+        if (userOptional.isEmpty()) {
+            return null;
+        }
+
+        User seller = userOptional.get();
+        Shop shop = shopRepository.findByUserUserId(seller.getUserId()).orElse(null);
+
+        if (shop == null) {
+            // This should ideally not happen if the token is valid and associated with a seller
+            return null;
+        }
+
+        // Perform soft deletion of the shop and its books
+        softDeleteShop(shop.getShopId());
+
+        // Soft delete the user (seller) associated with the shop
+        // Assuming userService.deactivateUser exists and handles soft deletion of user
+        userService.deactivateUser(seller.getEmail());
+
+        return seller;
     }
 } 

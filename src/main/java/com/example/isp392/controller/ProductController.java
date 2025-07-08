@@ -23,8 +23,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class ProductController {
@@ -134,7 +138,8 @@ public class ProductController {
             @RequestParam(value = "sort", defaultValue = "createdDate") String sortField,
             @RequestParam(value = "direction", defaultValue = "DESC") String sortDirection,
             @RequestParam(value = "minRating", required = false) Integer minRating,
-            Model model) {
+            Model model,
+            HttpSession session) {
         
         // Lấy thông tin chi tiết sách từ cơ sở dữ liệu
         Optional<Book> bookOptional = bookService.getBookById(bookId);
@@ -147,6 +152,18 @@ public class ProductController {
         
         if (bookOptional.isPresent()) {
             Book book = bookOptional.get();
+
+            // Session-based view count logic
+            Set<Integer> viewedBooks = (Set<Integer>) session.getAttribute("viewed_books");
+            if (viewedBooks == null) {
+                viewedBooks = new HashSet<>();
+            }
+            if (!viewedBooks.contains(bookId)) {
+                bookService.incrementViewsCount(bookId);
+                viewedBooks.add(bookId);
+                session.setAttribute("viewed_books", viewedBooks);
+            }
+
             model.addAttribute("book", book);
             
             // Lấy các sách liên quan (cùng danh mục)

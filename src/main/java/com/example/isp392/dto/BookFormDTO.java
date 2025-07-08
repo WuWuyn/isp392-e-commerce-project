@@ -1,5 +1,6 @@
 package com.example.isp392.dto;
 
+import com.example.isp392.validation.UniqueIsbn;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,6 +23,7 @@ public class BookFormDTO {
     private LocalDate publicationDate;
     
     @NotBlank(message = "ISBN is required")
+    @UniqueIsbn(message = "A book with this ISBN already exists in the system")
     private String isbn;
     
     @NotNull(message = "Number of pages is required")
