@@ -39,4 +39,5 @@ public interface BlogRepository extends JpaRepository<Blog, Integer> {
     // Get blog with previous ID for navigation
     @Query("SELECT b FROM Blog b WHERE b.blogId < :blogId ORDER BY b.blogId DESC")
     List<Blog> findPreviousBlog(@Param("blogId") int blogId, Pageable pageable);
+    Page<Blog> findByTitleContainingIgnoreCase(String title, Pageable pageable);
 }

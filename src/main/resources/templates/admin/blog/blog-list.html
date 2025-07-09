@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Blog Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/admin-style.css}"> </head>
+<body>
+
+<div class="d-flex" id="wrapper">
+  <div th:replace="~{fragments/admin-sidebar :: admin-sidebar}"></div>
+
+  <div id="page-content-wrapper">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+      <div class="container-fluid">
+        <button class="btn btn-primary" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+        <div class="ms-auto">
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid p-4">
+      <h1 class="mb-4">Blog Post Management</h1>
+
+      <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <form th:action="@{/admin/blogs}" method="get" class="row g-3 align-items-center">
+            <div class="col-md-8">
+              <input type="text" class="form-control" name="keyword" th:value="${keyword}" placeholder="Search by post title...">
+            </div>
+            <div class="col-md-4">
+              <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Search</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-blog me-1"></i>
+          All Blog Posts
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Views</th>
+                <th>Created Date</th>
+                <th>Status</th>
+                <th class="text-center">Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:if="${blogPage.isEmpty()}">
+                <td colspan="7" class="text-center">No blog posts found.</td>
+              </tr>
+              <tr th:each="blog : ${blogPage.content}">
+                <td th:text="${blog.blogId}"></td>
+                <td th:text="${#strings.abbreviate(blog.title, 50)}"></td>
+                <td th:text="${blog.user != null ? blog.user.fullName : 'N/A'}"></td>
+                <td th:text="${blog.viewsCount}"></td>
+                <td th:text="${#temporals.format(blog.createdDate, 'dd-MMM-yyyy HH:mm')}"></td>
+                <td>
+                  <span th:if="${blog.isPinned()}" class="badge bg-info me-1">Pinned</span>
+                  <span th:if="${blog.isLocked()}" class="badge bg-warning text-dark">Locked</span>
+                </td>
+                <td class="text-center">
+                  <div class="dropdown">
+                    <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" th:id="'dropdownMenuButton' + ${blog.blogId}" data-bs-toggle="dropdown" aria-expanded="false">
+                      Actions
+                    </button>
+                    <ul class="dropdown-menu" th:aria-labelledby="'dropdownMenuButton' + ${blog.blogId}">
+                      <li><a class="dropdown-item" th:href="@{/admin/blogs/detail/{id}(id=${blog.blogId})}"><i class="fas fa-eye me-2"></i>View</a></li>
+                      <li><a class="dropdown-item" th:href="@{/admin/blogs/edit/{id}(id=${blog.blogId})}"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <form th:action="@{/admin/blogs/toggle-pin/{id}(id=${blog.blogId})}" method="post" class="d-inline">
+                          <button type="submit" class="dropdown-item">
+                            <i th:class="${blog.isPinned() ? 'fas fa-thumbtack me-2 text-danger' : 'fas fa-thumbtack me-2'}"></i>
+                            <span th:text="${blog.isPinned() ? 'Unpin Post' : 'Pin Post'}"></span>
+                          </button>
+                        </form>
+                      </li>
+                      <li>
+                        <form th:action="@{/admin/blogs/toggle-lock/{id}(id=${blog.blogId})}" method="post" class="d-inline">
+                          <button type="submit" class="dropdown-item">
+                            <i th:class="${blog.isLocked() ? 'fas fa-lock-open me-2' : 'fas fa-lock me-2'}"></i>
+                            <span th:text="${blog.isLocked() ? 'Unlock Post' : 'Lock Post'}"></span>
+                          </button>
+                        </form>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <form th:action="@{/admin/blogs/delete/{id}(id=${blog.blogId})}" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this post? This action cannot be undone.')">
+                          <button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash-alt me-2"></i>Delete</button>
+                        </form>
+                      </li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <nav th:if="${blogPage.totalPages > 1}" aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" th:classappend="${blogPage.first ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/admin/blogs(page=0, keyword=${keyword})}">First</a>
+              </li>
+              <li class="page-item" th:classappend="${!blogPage.hasPrevious() ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/admin/blogs(page=${blogPage.number - 1}, keyword=${keyword})}">Previous</a>
+              </li>
+              <li class="page-item" th:each="i : ${#numbers.sequence(0, blogPage.totalPages - 1)}" th:classappend="${i == blogPage.number ? 'active' : ''}">
+                <a class="page-link" th:href="@{/admin/blogs(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
+              </li>
+              <li class="page-item" th:classappend="${!blogPage.hasNext() ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/admin/blogs(page=${blogPage.number + 1}, keyword=${keyword})}">Next</a>
+              </li>
+              <li class="page-item" th:classappend="${blogPage.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/admin/blogs(page=${blogPage.totalPages - 1}, keyword=${keyword})}">Last</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Simple sidebar toggle script
+  window.addEventListener('DOMContentLoaded', event => {
+      const sidebarToggle = document.body.querySelector('#sidebarToggle');
+      if (sidebarToggle) {
+          sidebarToggle.addEventListener('click', event => {
+              event.preventDefault();
+              document.body.classList.toggle('sb-sidenav-toggled');
+              // You might need to adjust this depending on how you implement the toggle class in your CSS
+          });
+      }
+  });
+</script>
+
+</body>
+</html>
