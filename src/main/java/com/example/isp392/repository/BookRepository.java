@@ -22,9 +22,6 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
     // Tìm sách theo tiêu đề (phân trang)
     Page<Book> findByTitleContainingIgnoreCase(String title, Pageable pageable);
     
-    // Tìm sách theo tiêu đề đã được chuẩn hóa (không dấu, chữ thường)
-    Page<Book> findByNormalizedTitleContaining(String normalizedTitle, Pageable pageable);
-    
     // Tìm sách theo danh mục (phân trang)
     @Query("SELECT b FROM Book b JOIN b.categories c WHERE c = ?1")
     Page<Book> findByCategory(Category category, Pageable pageable);
@@ -49,16 +46,6 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
      * @return page of books belonging to the shop
      */
     Page<Book> findByShopShopId(Integer shopId, Pageable pageable);
-    
-    /**
-     * Search for books by normalized title within a specific shop
-     * 
-     * @param shopId ID of the shop
-     * @param normalizedTitle Normalized title to search for (case insensitive, accent insensitive)
-     * @param pageable pagination information
-     * @return page of matching books belonging to the shop
-     */
-    Page<Book> findByShopShopIdAndNormalizedTitleContaining(Integer shopId, String normalizedTitle, Pageable pageable);
     
     /**
      * Find books with low stock by shop ID

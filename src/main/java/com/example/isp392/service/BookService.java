@@ -18,10 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import me.xdrop.fuzzywuzzy.FuzzySearch;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +41,20 @@ public class BookService {
     private final CategoryRepository categoryRepository;
     private final PublisherRepository publisherRepository;
     private final ShopRepository shopRepository;
+    
+    // Lớp nội bộ để giữ sách và điểm số
+    private static class BookWithScore {
+        private final Book book;
+        private final int score;
+
+        public BookWithScore(Book book, int score) {
+            this.book = book;
+            this.score = score;
+        }
+
+        public Book getBook() { return book; }
+        public int getScore() { return score; }
+    }
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -63,16 +76,6 @@ public class BookService {
         this.categoryRepository = categoryRepository;
         this.publisherRepository = publisherRepository;
         this.shopRepository = shopRepository;
-    }
-
-    // Utility method to remove diacritical marks (accents) from a string
-    private String removeDiacriticalMarks(String input) {
-        if (input == null) {
-            return null;
-        }
-        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
-        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-        return pattern.matcher(normalized).replaceAll("").toLowerCase();
     }
 
     // Lấy tất cả sách
@@ -103,7 +106,7 @@ public class BookService {
         return bookRepository.findDiscountedBooks(pageable);
     }
 
-    // Tìm kiếm sách theo tiêu đề (phân trang) - hỗ trợ tìm kiếm không dấu
+    // Tìm kiếm sách theo tiêu đề (phân trang) - sử dụng fuzzy search nâng cao
     public Page<Book> searchBooksByTitle(String title, int page, int size, String sortField, String sortDirection) {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -113,11 +116,46 @@ public class BookService {
             return bookRepository.findAll(pageable);
         }
 
-        // Chuẩn hóa chuỗi tìm kiếm - bỏ dấu và chuyển thành chữ thường
-        String normalizedTitle = removeDiacriticalMarks(title);
+        // Get all books
+        List<Book> allBooks = bookRepository.findAll();
+        
+        // Chuyển query về chữ thường để so sánh nhất quán
+        final String lowerCaseQuery = title.toLowerCase();
+        
+        // Filter books using advanced fuzzy search
+        List<Book> matchedBooks = allBooks.stream()
+            .map(book -> {
+                String bookTitle = book.getTitle().toLowerCase();
+                
+                // 1. Tính điểm cho lỗi chính tả (so khớp các từ)
+                int tokenScore = FuzzySearch.tokenSetRatio(lowerCaseQuery, bookTitle);
+                
+                // 2. Tính điểm cho chuỗi con/tiền tố (để "Har" khớp với "Harry")
+                int partialScore = FuzzySearch.partialRatio(lowerCaseQuery, bookTitle);
+                
+                // 3. Lấy điểm cao nhất từ hai thuật toán trên làm điểm cuối cùng
+                int finalScore = Math.max(tokenScore, partialScore);
+                
+                return new BookWithScore(book, finalScore);
+            })
+            .filter(bookWithScore -> bookWithScore.getScore() >= 60) // Ngưỡng điểm hợp lý là 65
+            .sorted((b1, b2) -> Integer.compare(b2.getScore(), b1.getScore()))
+            .map(BookWithScore::getBook)
+            .collect(Collectors.toList());
 
-        // Sử dụng trường normalizedTitle để tìm kiếm hiệu quả
-        return bookRepository.findByNormalizedTitleContaining(normalizedTitle, pageable);
+        // Convert list to page
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), matchedBooks.size());
+        
+        if (start >= matchedBooks.size()) {
+            return new PageImpl<>(new ArrayList<>(), pageable, matchedBooks.size());
+        }
+        
+        return new PageImpl<>(
+            matchedBooks.subList(start, end),
+            pageable,
+            matchedBooks.size()
+        );
     }
 
     // Tìm kiếm sách theo danh mục (phân trang)
@@ -139,7 +177,7 @@ public class BookService {
     }
 
     /**
-     * Search for books by title within a specific shop
+     * Search for books by title within a specific shop using advanced fuzzy search
      *
      * @param shopId ID of the shop
      * @param title Search term for book title
@@ -152,11 +190,46 @@ public class BookService {
             return findByShopId(shopId, pageable);
         }
 
-        // Normalize search query for case-insensitive and accent-insensitive search
-        String normalizedTitle = removeDiacriticalMarks(title);
+        // Get all books from the shop
+        List<Book> shopBooks = bookRepository.findByShopShopId(shopId, Pageable.unpaged()).getContent();
+        
+        // Chuyển query về chữ thường để so sánh nhất quán
+        final String lowerCaseQuery = title.toLowerCase();
+        
+        // Filter books using advanced fuzzy search
+        List<Book> matchedBooks = shopBooks.stream()
+            .map(book -> {
+                String bookTitle = book.getTitle().toLowerCase();
+                
+                // 1. Tính điểm cho lỗi chính tả (so khớp các từ)
+                int tokenScore = FuzzySearch.tokenSetRatio(lowerCaseQuery, bookTitle);
+                
+                // 2. Tính điểm cho chuỗi con/tiền tố (để "Har" khớp với "Harry")
+                int partialScore = FuzzySearch.partialRatio(lowerCaseQuery, bookTitle);
+                
+                // 3. Lấy điểm cao nhất từ hai thuật toán trên làm điểm cuối cùng
+                int finalScore = Math.max(tokenScore, partialScore);
+                
+                return new BookWithScore(book, finalScore);
+            })
+            .filter(bookWithScore -> bookWithScore.getScore() >= 65) // Ngưỡng điểm hợp lý là 65
+            .sorted((b1, b2) -> Integer.compare(b2.getScore(), b1.getScore()))
+            .map(BookWithScore::getBook)
+            .collect(Collectors.toList());
 
-        // Search by normalized title within shop's books
-        return bookRepository.findByShopShopIdAndNormalizedTitleContaining(shopId, normalizedTitle, pageable);
+        // Convert list to page
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), matchedBooks.size());
+        
+        if (start >= matchedBooks.size()) {
+            return new PageImpl<>(new ArrayList<>(), pageable, matchedBooks.size());
+        }
+        
+        return new PageImpl<>(
+            matchedBooks.subList(start, end),
+            pageable,
+            matchedBooks.size()
+        );
     }
 
     /**
@@ -186,10 +259,6 @@ public class BookService {
         book.setSellingPrice(bookForm.getSellingPrice());
         book.setStockQuantity(bookForm.getStockQuantity());
         book.setCoverImgUrl(coverImageUrl);
-
-        // Set normalized title for search optimization
-        String normalizedTitle = removeDiacriticalMarks(bookForm.getTitle());
-        book.setNormalizedTitle(normalizedTitle);
 
         // Set creation date
         book.setDateAdded(LocalDate.now());
@@ -260,10 +329,6 @@ public class BookService {
         if (coverImageUrl != null) {
             book.setCoverImgUrl(coverImageUrl);
         }
-
-        // Update normalized title for search optimization
-        String normalizedTitle = removeDiacriticalMarks(bookForm.getTitle());
-        book.setNormalizedTitle(normalizedTitle);
 
         // Update publisher if provided
         if (bookForm.getPublisherId() != null) {
@@ -364,17 +429,14 @@ public class BookService {
             String sortField,
             String sortDirection) {
 
-        // If we only have a search query with no other filters, use the optimized title search
+        // If we only have a search query with no other filters, use the fuzzy search
         if (searchQuery != null && !searchQuery.trim().isEmpty() &&
                 (categoryIds == null || categoryIds.isEmpty()) &&
                 (publisherIds == null || publisherIds.isEmpty()) &&
                 minPrice == null && maxPrice == null && minRating == null) {
 
-            // Sử dụng phương thức tìm kiếm tối ưu nếu chỉ có điều kiện tìm kiếm theo tiêu đề
-            String normalizedQuery = removeDiacriticalMarks(searchQuery);
-            Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
-            Pageable pageable = PageRequest.of(page, size, sort);
-            return bookRepository.findByNormalizedTitleContaining(normalizedQuery, pageable);
+            // Use fuzzy search if only searching by title
+            return searchBooksByTitle(searchQuery, page, size, sortField, sortDirection);
         }
 
         // Create a criteria builder
@@ -387,8 +449,7 @@ public class BookService {
 
         // Add title search predicate if search query is provided
         if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-            String normalizedQuery = removeDiacriticalMarks(searchQuery);
-            predicates.add(cb.like(book.get("normalizedTitle"), "%" + normalizedQuery + "%"));
+            predicates.add(cb.like(cb.lower(book.get("title")), "%" + searchQuery.toLowerCase() + "%"));
         }
 
         // Add category filters if category IDs are provided
@@ -440,8 +501,7 @@ public class BookService {
             List<Predicate> countPredicates = new ArrayList<>();
 
             if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-                String normalizedQuery = removeDiacriticalMarks(searchQuery);
-                countPredicates.add(cb.like(countRoot.get("normalizedTitle"), "%" + normalizedQuery + "%"));
+                countPredicates.add(cb.like(cb.lower(countRoot.get("title")), "%" + searchQuery.toLowerCase() + "%"));
             }
 
             if (categoryIds != null && !categoryIds.isEmpty()) {

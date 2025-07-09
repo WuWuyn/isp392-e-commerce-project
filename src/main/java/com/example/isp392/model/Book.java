@@ -6,12 +6,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Pattern;
-
 
 @Getter
 @Setter
@@ -30,9 +27,6 @@ public class Book {
 
     @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String title;
-
-    @Column(name = "normalized_title", length = 500)
-    private String normalizedTitle;
 
     @Column(name = "publication_date")
     private LocalDate publicationDate;
@@ -99,16 +93,4 @@ public class Book {
             inverseJoinColumns = @JoinColumn(name = "category_id") // Foreign key for Category in join table
     )
     private Set<Category> categories = new HashSet<>();
-
-    @PrePersist
-    @PreUpdate
-    public void updateNormalizedTitle() {
-        if (this.title != null && !this.title.isEmpty()) {
-            String normalized = Normalizer.normalize(this.title, Normalizer.Form.NFD);
-            Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-            this.normalizedTitle = pattern.matcher(normalized).replaceAll("").toLowerCase();
-        } else {
-            this.normalizedTitle = null;
-        }
-    }
 }
