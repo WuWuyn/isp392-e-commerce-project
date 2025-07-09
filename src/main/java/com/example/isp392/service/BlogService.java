@@ -1,8 +1,11 @@
 package com.example.isp392.service;
 
 import com.example.isp392.model.Blog;
+import com.example.isp392.model.BlogCategory;
 import com.example.isp392.model.User;
+import com.example.isp392.repository.BlogCategoryRepository;
 import com.example.isp392.repository.BlogRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -156,5 +159,62 @@ public class BlogService {
         }
 
         blogRepository.delete(blogToDelete);
+    }
+
+    @Autowired
+    private BlogCategoryRepository blogCategoryRepository; // Inject the new repository
+
+    // Method to get all blogs for admin view with pagination and search
+    @Transactional(readOnly = true)
+    public Page<Blog> getAllBlogsForAdmin(String keyword, Pageable pageable) {
+        if (keyword != null && !keyword.isEmpty()) {
+            return blogRepository.findByTitleContainingIgnoreCase(keyword, pageable);
+        }
+        return blogRepository.findAll(pageable);
+    }
+
+    // Method to Pin/Unpin a blog post
+    @Transactional
+    public Blog togglePinStatus(int blogId) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog not found with id: " + blogId));
+        blog.setPinned(!blog.isPinned());
+        return blogRepository.save(blog);
+    }
+
+    // Method to Lock/Unlock a blog post
+    @Transactional
+    public Blog toggleLockStatus(int blogId) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog not found with id: " + blogId));
+        blog.setLocked(!blog.isLocked());
+        return blogRepository.save(blog);
+    }
+
+
+    // Method to move a blog to a different category
+    @Transactional
+    public Blog moveBlogCategory(int blogId, Integer newCategoryId) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog not found with id: " + blogId));
+        BlogCategory newCategory = blogCategoryRepository.findById(newCategoryId)
+                .orElseThrow(() -> new RuntimeException("Category not found with id: " + newCategoryId));
+        blog.setCategory(newCategory);
+        return blogRepository.save(blog);
+    }
+
+// Admin can delete any post (re-using existing delete logic but ensuring it's called from an admin context)
+// The existing deleteBlog(Integer blogId, User currentUser) already supports admins, which is great.
+
+    // Admin can edit any post
+    @Transactional
+    public Blog updateBlogByAdmin(Integer blogId, String title, String content) {
+        Blog blogToUpdate = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog post not found with id: " + blogId));
+
+        blogToUpdate.setTitle(title);
+        blogToUpdate.setContent(content);
+
+        return blogRepository.save(blogToUpdate);
     }
 }

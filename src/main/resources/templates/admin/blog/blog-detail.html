@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Blog Detail</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/admin-style.css}">
+</head>
+<body>
+
+<div class="d-flex" id="wrapper">
+  <div th:replace="~{fragments/admin-sidebar :: admin-sidebar}"></div>
+
+  <div id="page-content-wrapper">
+    <div class="container-fluid p-4">
+      <a th:href="@{/admin/blogs}" class="btn btn-secondary mb-4">
+        <i class="fas fa-arrow-left me-2"></i>Back to Blog List
+      </a>
+
+      <div class="card" th:if="${blog}">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h2 class="mb-0" th:text="${blog.title}">Blog Title</h2>
+          <div>
+            <span th:if="${blog.isPinned()}" class="badge bg-info me-1">Pinned</span>
+            <span th:if="${blog.isLocked()}" class="badge bg-warning text-dark">Locked</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="text-muted mb-3">
+            <span>By: <strong><th:block th:text="${blog.user.fullName}">Author Name</th:block></strong></span> |
+            <span>Created: <strong><th:block th:text="${#temporals.format(blog.createdDate, 'dd MMM yyyy, HH:mm')}">Date</th:block></strong></span> |
+            <span>Views: <strong><th:block th:text="${blog.viewsCount}">0</th:block></strong></span>
+          </div>
+          <hr>
+          <div th:utext="${blog.content}" class="mt-4">
+          </div>
+        </div>
+        <div class="card-footer text-end">
+          <a th:href="@{/admin/blogs/edit/{id}(id=${blog.blogId})}" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>Edit Post
+          </a>
+        </div>
+      </div>
+
+      <div th:if="${blog == null}" class="alert alert-danger">
+        Blog post not found.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

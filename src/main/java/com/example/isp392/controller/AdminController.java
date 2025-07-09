@@ -1,15 +1,14 @@
 package com.example.isp392.controller;
 
+import com.example.isp392.model.Blog;
 import com.example.isp392.model.Book;
 import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
+import com.example.isp392.repository.BlogCategoryRepository;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
 import com.example.isp392.repository.ShopRepository;
-import com.example.isp392.service.AdminService;
-import com.example.isp392.service.BookService;
-import com.example.isp392.service.ShopService;
-import com.example.isp392.service.UserService;
+import com.example.isp392.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -51,6 +50,8 @@ public class AdminController {
     private final PublisherRepository publisherRepository;
     private final ShopService shopService;
     private final ShopRepository shopRepository;
+    private final BlogService blogService;
+    private final BlogCategoryRepository blogCategoryRepository;
 
     /**
      * Constructor with explicit dependency injection
@@ -61,7 +62,7 @@ public class AdminController {
      */
     public AdminController(UserService userService, AdminService adminService, BookService bookService,
                            CategoryRepository categoryRepository, PublisherRepository publisherRepository,
-                           ShopRepository shopRepository, ShopService shopService) {
+                           ShopRepository shopRepository, ShopService shopService, BlogService blogService, BlogCategoryRepository blogCategoryRepository) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
@@ -69,6 +70,8 @@ public class AdminController {
         this.publisherRepository = publisherRepository;
         this.shopRepository = shopRepository;
         this.shopService = shopService;
+        this.blogService = blogService;
+        this.blogCategoryRepository = blogCategoryRepository;
     }
     
     /**
@@ -500,5 +503,110 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
         }
         return "redirect:" + returnUrl;
+    }
+
+    @GetMapping("/blogs")
+    public String showBlogManagementPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            Model model) {
+        adminService.addAdminInfoToModel(model);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<Blog> blogPage = blogService.getAllBlogsForAdmin(keyword, pageable);
+
+        model.addAttribute("blogPage", blogPage);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("activeMenu", "blog");
+        return "admin/blog/blog-list"; // We will create this new view
+    }
+
+    // View Blog Details
+    @GetMapping("/blogs/detail/{id}")
+    public String showBlogDetailPage(@PathVariable("id") Integer blogId, Model model) {
+        adminService.addAdminInfoToModel(model);
+        model.addAttribute("blog", blogService.getBlogById(blogId).orElseThrow(() -> new RuntimeException("Blog not found")));
+        model.addAttribute("activeMenu", "blog");
+        return "admin/blog/blog-detail"; // New view
+    }
+
+    // Show Edit Form
+    @GetMapping("/blogs/edit/{id}")
+    public String showEditBlogForm(@PathVariable("id") Integer blogId, Model model) {
+        adminService.addAdminInfoToModel(model);
+        model.addAttribute("blog", blogService.getBlogById(blogId).orElseThrow(() -> new RuntimeException("Blog not found")));
+        model.addAttribute("activeMenu", "blog");
+        return "admin/blog/blog-edit"; // New view
+    }
+
+    // Process Edit
+    @PostMapping("/blogs/edit/{id}")
+    public String processEditBlogByAdmin(@PathVariable("id") Integer blogId,
+                                         @RequestParam String title,
+                                         @RequestParam String content,
+                                         RedirectAttributes redirectAttributes) {
+        try {
+            blogService.updateBlogByAdmin(blogId, title, content);
+            redirectAttributes.addFlashAttribute("successMessage", "Blog post updated successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating post: " + e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    // Delete Blog
+    @PostMapping("/blogs/delete/{id}")
+    public String deleteBlogByAdmin(@PathVariable("id") Integer blogId,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            // We need the current admin user to call the delete method
+            User adminUser = adminService.getCurrentAdminUser().orElseThrow(() -> new IllegalStateException("Admin user not found"));
+            blogService.deleteBlog(blogId, adminUser);
+            redirectAttributes.addFlashAttribute("successMessage", "Blog post deleted successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting post: " + e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    // Pin/Unpin Blog
+    @PostMapping("/blogs/toggle-pin/{id}")
+    public String togglePinStatus(@PathVariable("id") Integer blogId, RedirectAttributes redirectAttributes) {
+        try {
+            Blog blog = blogService.togglePinStatus(blogId);
+            String message = blog.isPinned() ? "Blog post pinned." : "Blog post unpinned.";
+            redirectAttributes.addFlashAttribute("successMessage", message);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error changing pin status: " + e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    // Lock/Unlock Blog
+    @PostMapping("/blogs/toggle-lock/{id}")
+    public String toggleLockStatus(@PathVariable("id") Integer blogId, RedirectAttributes redirectAttributes) {
+        try {
+            Blog blog = blogService.toggleLockStatus(blogId);
+            String message = blog.isLocked() ? "Blog post locked." : "Blog post unlocked.";
+            redirectAttributes.addFlashAttribute("successMessage", message);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error changing lock status: " + e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+
+    // Move Blog to new category
+    @PostMapping("/blogs/move/{id}")
+    public String moveBlogPost(@PathVariable("id") Integer blogId,
+                               @RequestParam Integer newCategoryId,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            blogService.moveBlogCategory(blogId, newCategoryId);
+            redirectAttributes.addFlashAttribute("successMessage", "Blog post moved to new category.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error moving post: " + e.getMessage());
+        }
+        return "redirect:/admin/blogs";
     }
 }
