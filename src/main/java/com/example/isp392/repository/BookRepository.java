@@ -191,33 +191,25 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
             @Param("groupBy") String groupBy);
 
     /**
-     * Check if a book with the given ISBN exists
-     * 
-     * @param isbn ISBN to check
-     * @return true if a book with this ISBN exists, false otherwise
-     */
-    boolean existsByIsbn(String isbn);
-    
-    /**
-     * Find a book by ISBN
-     * 
-     * @param isbn ISBN to search for
-     * @return Optional containing the book if found, empty otherwise
-     */
-    Optional<Book> findByIsbn(String isbn);
-    
-    /**
      * Check if a book with the given ISBN exists in a specific shop
-     * 
-     * @param isbn ISBN to check
-     * @param shopId Shop ID to check within
-     * @return true if a book with this ISBN exists in the shop, false otherwise
+     *
+     * @param isbn The ISBN to check.
+     * @param shopId The ID of the shop to check within.
+     * @return true if a book with this ISBN exists in the shop, false otherwise.
      */
     boolean existsByIsbnAndShopShopId(String isbn, Integer shopId);
     
     /**
+     * Find a book by ISBN
+     *
+     * @param isbn ISBN to search for
+     * @return Optional containing the book if found, empty otherwise
+     */
+    Optional<Book> findByIsbn(String isbn);
+
+    /**
      * Find a book by ISBN within a specific shop
-     * 
+     *
      * @param isbn ISBN to search for
      * @param shopId Shop ID to search within
      * @return Optional containing the book if found, empty otherwise

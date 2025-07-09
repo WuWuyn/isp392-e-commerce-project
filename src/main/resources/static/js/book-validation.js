@@ -56,13 +56,59 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         isbn: {
             element: document.getElementById('isbn'),
-            errorMsg: 'Valid ISBN (10 or 13 digits) is required',
+            // Cập nhật thông báo lỗi để rõ ràng hơn
+            errorMsg: 'Invalid ISBN. Please provide a valid 10 or 13-digit ISBN.',
             validator: (value) => {
-                // Simple ISBN validation (more complex validation could be added)
-                const cleanedValue = value.replace(/[-\s]/g, '');
-                return /^(\d{10}|\d{13})$/.test(cleanedValue);
+                // 1. Xóa các ký tự gạch nối và khoảng trắng
+                const cleanedIsbn = value.replace(/[-\s]/g, '');
+
+                // 2. Kiểm tra ISBN-10
+                if (cleanedIsbn.length === 10) {
+                    // Biểu thức chính quy để đảm bảo 9 ký tự đầu là số, ký tự cuối có thể là số hoặc 'X'
+                    if (!/^\d{9}[\dX]$/i.test(cleanedIsbn)) {
+                        return false;
+                    }
+
+                    let sum = 0;
+                    for (let i = 0; i < 9; i++) {
+                        sum += parseInt(cleanedIsbn[i]) * (i + 1);
+                    }
+
+                    let checksum = sum % 11;
+                    let lastChar = cleanedIsbn[9].toUpperCase();
+
+                    if (checksum === 10) {
+                        return lastChar === 'X';
+                    } else {
+                        return checksum === parseInt(lastChar);
+                    }
+                }
+                // 3. Kiểm tra ISBN-13
+                else if (cleanedIsbn.length === 13) {
+                    // Biểu thức chính quy để đảm bảo tất cả 13 ký tự là số
+                    if (!/^\d{13}$/.test(cleanedIsbn)) {
+                        return false;
+                    }
+
+                    let sum = 0;
+                    for (let i = 0; i < 12; i++) {
+                        const digit = parseInt(cleanedIsbn[i]);
+                        // Vị trí lẻ nhân 1, vị trí chẵn nhân 3 (tính từ 1)
+                        const weight = (i % 2 === 0) ? 1 : 3;
+                        sum += digit * weight;
+                    }
+
+                    // (10 - (tổng % 10)) % 10 để xử lý trường hợp tổng chia hết cho 10
+                    const checksum = (10 - (sum % 10)) % 10;
+                    const lastDigit = parseInt(cleanedIsbn[12]);
+
+                    return checksum === lastDigit;
+                }
+
+                // 4. Nếu không phải 10 hay 13 ký tự thì không hợp lệ
+                return false;
             }
-        },
+        }
         numberOfPages: {
             element: document.getElementById('numberOfPages'),
             errorMsg: 'Number of pages must be greater than 0',
