@@ -510,15 +510,31 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "createdDate") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDir,
             Model model) {
+
         adminService.addAdminInfoToModel(model);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Page<Blog> blogPage = blogService.getAllBlogsForAdmin(keyword, pageable);
+
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ?
+                Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Blog> blogPage = blogService.getAllBlogsForAdmin(keyword, status, pageable);
 
         model.addAttribute("blogPage", blogPage);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("statusFilter", status);
         model.addAttribute("activeMenu", "blog");
-        return "admin/blog/blog-list"; // We will create this new view
+
+        // TRUYỀN THÔNG TIN SẮP XẾP XUỐNG VIEW
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc"); // Đảo ngược chiều sắp xếp
+
+        return "admin/blog/blog-list";
     }
 
     // View Blog Details
