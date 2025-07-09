@@ -16,7 +16,7 @@ public class OtpToken {
     private Long id;
     
     @Column(nullable = false)
-    private String otp;
+    private String token;
     
     @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
     @JoinColumn(nullable = false, name = "user_id")
@@ -30,6 +30,10 @@ public class OtpToken {
     
     @Column(nullable = false, columnDefinition = "BIT DEFAULT 0")
     private boolean used = false;
+
+    @Column(name = "token_type", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    private TokenType tokenType;
     
     // Default 5-minute expiration (in seconds)
     public static final int EXPIRATION = 5 * 60;
@@ -42,9 +46,10 @@ public class OtpToken {
     public OtpToken() {
     }
     
-    public OtpToken(String otp, User user) {
-        this.otp = otp;
+    public OtpToken(String token, User user, TokenType tokenType) {
+        this.token = token;
         this.user = user;
+        this.tokenType = tokenType;
         this.expiryDate = LocalDateTime.now().plusSeconds(EXPIRATION);
     }
     

@@ -56,13 +56,59 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         isbn: {
             element: document.getElementById('isbn'),
-            errorMsg: 'Valid ISBN (10 or 13 digits) is required',
+            // Cập nhật thông báo lỗi để rõ ràng hơn
+            errorMsg: 'Invalid ISBN. Please provide a valid 10 or 13-digit ISBN.',
             validator: (value) => {
-                // Simple ISBN validation (more complex validation could be added)
-                const cleanedValue = value.replace(/[-\s]/g, '');
-                return /^(\d{10}|\d{13})$/.test(cleanedValue);
+                // 1. Xóa các ký tự gạch nối và khoảng trắng
+                const cleanedIsbn = value.replace(/[-\s]/g, '');
+
+                // 2. Kiểm tra ISBN-10
+                if (cleanedIsbn.length === 10) {
+                    // Biểu thức chính quy để đảm bảo 9 ký tự đầu là số, ký tự cuối có thể là số hoặc 'X'
+                    if (!/^\d{9}[\dX]$/i.test(cleanedIsbn)) {
+                        return false;
+                    }
+
+                    let sum = 0;
+                    for (let i = 0; i < 9; i++) {
+                        sum += parseInt(cleanedIsbn[i]) * (i + 1);
+                    }
+
+                    let checksum = sum % 11;
+                    let lastChar = cleanedIsbn[9].toUpperCase();
+
+                    if (checksum === 10) {
+                        return lastChar === 'X';
+                    } else {
+                        return checksum === parseInt(lastChar);
+                    }
+                }
+                // 3. Kiểm tra ISBN-13
+                else if (cleanedIsbn.length === 13) {
+                    // Biểu thức chính quy để đảm bảo tất cả 13 ký tự là số
+                    if (!/^\d{13}$/.test(cleanedIsbn)) {
+                        return false;
+                    }
+
+                    let sum = 0;
+                    for (let i = 0; i < 12; i++) {
+                        const digit = parseInt(cleanedIsbn[i]);
+                        // Vị trí lẻ nhân 1, vị trí chẵn nhân 3 (tính từ 1)
+                        const weight = (i % 2 === 0) ? 1 : 3;
+                        sum += digit * weight;
+                    }
+
+                    // (10 - (tổng % 10)) % 10 để xử lý trường hợp tổng chia hết cho 10
+                    const checksum = (10 - (sum % 10)) % 10;
+                    const lastDigit = parseInt(cleanedIsbn[12]);
+
+                    return checksum === lastDigit;
+                }
+
+                // 4. Nếu không phải 10 hay 13 ký tự thì không hợp lệ
+                return false;
             }
-        },
+        }
         numberOfPages: {
             element: document.getElementById('numberOfPages'),
             errorMsg: 'Number of pages must be greater than 0',
@@ -107,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Validate file type
                 const file = element.files[0];
-                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
                 const isValidType = validTypes.includes(file.type);
                 
                 if (!isValidType) {
@@ -397,15 +443,73 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('DOMContentLoaded', function() {
         const successMessage = document.querySelector('.alert-success');
         const errorMessage = document.querySelector('.alert-danger:not(#validationErrorSummary)');
-
+        
         if (successMessage) {
-            showNotification(successMessage.querySelector('span').textContent, 'success');
-            successMessage.remove(); // Remove original message
+            showNotification(successMessage.textContent.trim(), 'success');
         }
-
         if (errorMessage) {
-            showNotification(errorMessage.querySelector('span').textContent, 'danger');
-            errorMessage.remove(); // Remove original message
+            showNotification(errorMessage.textContent.trim(), 'danger');
         }
     });
+
+    // ISBN availability checking
+    const isbnField = document.getElementById('isbn');
+    if (isbnField) {
+        let isbnCheckTimeout;
+        
+        isbnField.addEventListener('input', function() {
+            const isbn = this.value.trim();
+            
+            // Clear previous timeout
+            if (isbnCheckTimeout) {
+                clearTimeout(isbnCheckTimeout);
+            }
+            
+            // Clear previous validation states
+            this.classList.remove('is-valid', 'is-invalid');
+            
+            // Only check if ISBN is valid format and not empty
+            if (isbn && /^(\d{10}|\d{13})$/.test(isbn.replace(/[-\s]/g, ''))) {
+                // Add loading state
+                this.classList.add('is-loading');
+                
+                // Debounce the API call
+                isbnCheckTimeout = setTimeout(() => {
+                    checkIsbnAvailability(isbn);
+                }, 500);
+            }
+        });
+        
+        function checkIsbnAvailability(isbn) {
+            fetch(`/seller/api/check-isbn?isbn=${encodeURIComponent(isbn)}`)
+                .then(response => response.json())
+                .then(data => {
+                    isbnField.classList.remove('is-loading');
+                    
+                    if (data.available) {
+                        isbnField.classList.add('is-valid');
+                        isbnField.classList.remove('is-invalid');
+                        
+                        // Update feedback message
+                        let feedbackElement = isbnField.nextElementSibling;
+                        if (feedbackElement && feedbackElement.classList.contains('valid-feedback')) {
+                            feedbackElement.textContent = 'ISBN is available';
+                        }
+                    } else {
+                        isbnField.classList.add('is-invalid');
+                        isbnField.classList.remove('is-valid');
+                        
+                        // Update feedback message
+                        let feedbackElement = isbnField.nextElementSibling;
+                        if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                            feedbackElement.textContent = data.message || 'ISBN already exists';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking ISBN availability:', error);
+                    isbnField.classList.remove('is-loading');
+                });
+        }
+    }
 }); 

@@ -99,44 +99,59 @@
                     <div class="card-header bg-white py-3">
                     </div>
                     <div class="card-body p-4">
-                        <!-- NỘI DUNG VÀ ĐƯỜNG DẪN CŨ ĐƯỢC GIỮ NGUYÊN -->
-                        <form th:action="@{/buyer/perform-delete-account}" method="post">
-                            <p class="text-muted">We're sorry to see you go. Please tell us why you're deleting your account.</p>
+                        <h2 class="card-title text-danger mb-4"><i class="fas fa-exclamation-triangle me-2"></i> Delete Account Permanently</h2>
 
-                            <div class="form-group">
-                                <label for="delete-reason">Select a reason:</label>
-                                <select id="delete-reason" name="reason" class="form-select">
-                                    <option value="change_contact">I want to change my email or phone number</option>
-                                    <option value="privacy_concerns">I have privacy concerns</option>
-                                    <option value="not_using">I'm not using the service anymore</option>
-                                    <option value="too_many_notifications">Too many notifications</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
+                        <div th:if="${error}" class="alert alert-danger" role="alert">
+                            <span th:text="${error}"></span>
+                        </div>
+                        <div th:if="${success}" class="alert alert-success" role="alert">
+                            <span th:text="${success}"></span>
+                        </div>
 
-                            <div class="notice">
-                                Please carefully read our policies and terms before proceeding with deletion.
-                            </div>
+                        <div class="mb-3">
+                            <label for="reason" class="form-label fw-bold">Reason for Deletion</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
+                        </div>
 
-                            <div class="consequences">
-                                <ul>
-                                    <li>You will <strong>permanently lose</strong> all your data, points, rewards, and any other items associated with your RedHub account.</li>
-                                    <li>Ensure your account has <strong>no pending transactions</strong>, active subscriptions, or ongoing processes that require this account.</li>
-                                    <li>RedHub may retain some transaction or activity data for a limited period for auditing and legal purposes after successful deletion, as outlined in our Privacy Policy.</li>
-                                    <li>After successful deletion, you will <strong>no longer be able to log in</strong> or access the deleted account.</li>
-                                    <li>The email address and phone number linked to the deleted account <strong>cannot be used</strong> to register a new RedHub account or link to another existing account for a certain period.</li>
-                                    <li>If this account is used to access any associated services (e.g., premium features, partner portals), access to those services will also be <strong>revoked</strong>.</li>
-                                </ul>
+                        <p class="text-muted mb-4">You are about to permanently delete your Bookix account. This action is irreversible.</p>
+
+                        <div class="notice">
+                            <i class="fas fa-info-circle me-2"></i> Please read the following warnings and consequences carefully before proceeding.
+                        </div>
+
+                        <div class="consequences mb-4">
+                            <ul>
+                                <li>You will <strong>permanently lose</strong> all your data, including your purchase history, reviews, wishlists, and any other items associated with your Bookix account.</li>
+                                <li>Ensure your account has <strong>no pending orders</strong> or unresolved complaints. Active orders or complaints must be resolved before your account can be deleted.</li>
+                                <li>Bookix may retain some transaction or activity data for a limited period for auditing and legal purposes after successful deletion, as outlined in our Privacy Policy.</li>
+                                <li>After successful deletion, you will <strong>no longer be able to log in</strong> or access the deleted account.</li>
+                                <li>The email address and phone number linked to the deleted account <strong>cannot be used</strong> to register a new Bookix account or link to another existing account for a certain period.</li>
+                                <li>If this account is used to access any associated services (e.g., seller dashboard if you are a seller), access to those services will also be <strong>revoked</strong>.</li>
+                            </ul>
+                        </div>
+
+                        <div class="notice">
+                            <i class="fas fa-info-circle me-2"></i> Please note that if you have any active orders or complaints, you will not be able to delete your account until they are resolved.
+                        </div>
+
+                       
+
+                        <p class="mb-3">To proceed with your account deletion request, please re-enter your password to confirm your identity.</p>
+
+                        <form th:action="@{/account-delete-request}" method="post">
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-bold">Your Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
                             </div>
 
                             <div class="form-check confirmation-group">
                                 <input class="form-check-input" type="checkbox" id="confirm-delete" name="confirmDelete" required>
                                 <label class="form-check-label" for="confirm-delete">
-                                    I understand the consequences and wish to permanently delete my RedHub account.
+                                    I understand the consequences and wish to proceed with deleting my Bookix account.
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn btn-danger w-100 fw-bold py-2 submit-btn" id="submitDeleteBtn" disabled>Delete My Account</button>
+                            <button type="submit" class="btn btn-danger w-100 fw-bold py-2 submit-btn" id="submitDeleteBtn" disabled>Request Account Deletion</button>
                         </form>
                     </div>
                 </div>

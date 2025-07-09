@@ -278,21 +278,15 @@ public class OrderService {
      * @return List of maps with revenue data
      */
     public List<Map<String, Object>> getRevenueByPeriod(Integer shopId, LocalDate startDate, LocalDate endDate, String period) {
-        String groupBy;
         switch (period) {
             case "daily":
-                groupBy = "day";
-                break;
+                return orderRepository.getRevenueByDay(shopId, startDate, endDate);
             case "weekly":
-                groupBy = "week";
-                break;
+                return orderRepository.getRevenueByWeek(shopId, startDate, endDate);
             case "monthly":
             default:
-                groupBy = "month";
-                break;
+                return orderRepository.getRevenueByMonth(shopId, startDate, endDate);
         }
-        
-        return orderRepository.getRevenueByPeriod(shopId, startDate, endDate, groupBy);
     }
     
     /**
@@ -372,5 +366,14 @@ public class OrderService {
     }
     public Optional<Order> findOrderByIdForSeller(Integer orderId, Integer sellerId) {
         return orderRepository.findOrderByIdForSeller(orderId, sellerId);
+    }
+    public BigDecimal getTotalRevenue(Integer shopId, LocalDate startDate, LocalDate endDate) {
+        BigDecimal total = orderRepository.getTotalRevenue(shopId, startDate, endDate);
+        return total != null ? total : BigDecimal.ZERO;
+    }
+
+    public Long getTotalOrders(Integer shopId, LocalDate startDate, LocalDate endDate) {
+        Long total = orderRepository.getTotalOrders(shopId, startDate, endDate);
+        return total != null ? total : 0L;
     }
 }
