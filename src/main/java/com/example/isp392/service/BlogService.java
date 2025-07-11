@@ -1,17 +1,23 @@
 package com.example.isp392.service;
 
 import com.example.isp392.model.Blog;
+import com.example.isp392.model.BlogCategory;
 import com.example.isp392.model.User;
+import com.example.isp392.repository.BlogCategoryRepository;
 import com.example.isp392.repository.BlogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.criteria.Predicate;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +25,12 @@ import org.slf4j.LoggerFactory;
 public class BlogService {
     private static final Logger log = LoggerFactory.getLogger(BlogService.class);
     private final BlogRepository blogRepository;
-
-    public BlogService(BlogRepository blogRepository) {
+    private final BlogCategoryRepository blogCategoryRepository;
+    public BlogService(BlogRepository blogRepository, BlogCategoryRepository blogCategoryRepository) {
         this.blogRepository = blogRepository;
+        this.blogCategoryRepository = blogCategoryRepository;
     }
+
 
     /**
      * Creates and saves a new blog post.
@@ -156,5 +164,80 @@ public class BlogService {
         }
 
         blogRepository.delete(blogToDelete);
+    }
+
+
+
+    // Method to get all blogs for admin view with pagination and search
+    @Transactional(readOnly = true)
+    public Page<Blog> getAllBlogsForAdmin(String keyword, String status, Pageable pageable) {
+
+        // PHƯƠNG THỨC NÀY BẮT BUỘC PHẢI DÙNG SPECIFICATION
+        Specification<Blog> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Lọc theo keyword
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), "%" + keyword.toLowerCase() + "%"));
+            }
+
+            // Lọc theo status
+            if (status != null && !status.isEmpty()) {
+                if ("pinned".equals(status)) {
+                    predicates.add(criteriaBuilder.isTrue(root.get("isPinned")));
+                } else if ("locked".equals(status)) {
+                    predicates.add(criteriaBuilder.isTrue(root.get("isLocked")));
+                }
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return blogRepository.findAll(spec, pageable);
+    }
+
+    // Method to Pin/Unpin a blog post
+    @Transactional
+    public Blog togglePinStatus(int blogId) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog not found with id: " + blogId));
+        blog.setPinned(!blog.isPinned());
+        return blogRepository.save(blog);
+    }
+
+    // Method to Lock/Unlock a blog post
+    @Transactional
+    public Blog toggleLockStatus(int blogId) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog not found with id: " + blogId));
+        blog.setLocked(!blog.isLocked());
+        return blogRepository.save(blog);
+    }
+
+
+    // Method to move a blog to a different category
+    @Transactional
+    public Blog moveBlogCategory(int blogId, Integer newCategoryId) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog not found with id: " + blogId));
+        BlogCategory newCategory = blogCategoryRepository.findById(newCategoryId)
+                .orElseThrow(() -> new RuntimeException("Category not found with id: " + newCategoryId));
+        blog.setCategory(newCategory);
+        return blogRepository.save(blog);
+    }
+
+// Admin can delete any post (re-using existing delete logic but ensuring it's called from an admin context)
+// The existing deleteBlog(Integer blogId, User currentUser) already supports admins, which is great.
+
+    // Admin can edit any post
+    @Transactional
+    public Blog updateBlogByAdmin(Integer blogId, String title, String content) {
+        Blog blogToUpdate = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog post not found with id: " + blogId));
+
+        blogToUpdate.setTitle(title);
+        blogToUpdate.setContent(content);
+
+        return blogRepository.save(blogToUpdate);
     }
 }

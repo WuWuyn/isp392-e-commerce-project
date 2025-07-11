@@ -41,7 +41,13 @@ public class Blog {
     @Column(name = "is_locked", nullable = false, columnDefinition = "BIT DEFAULT 0")
     private boolean isLocked = false;
 
+    @Column(name = "is_pinned", nullable = false, columnDefinition = "BIT DEFAULT 0")
+    private boolean isPinned = false;
+
     @OneToMany(mappedBy = "blogPost", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<BlogComment> comments = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "blog_category_id")
+    private BlogCategory category;
 }
