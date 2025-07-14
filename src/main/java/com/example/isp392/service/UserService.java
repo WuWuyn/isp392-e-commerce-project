@@ -7,11 +7,18 @@ import com.example.isp392.model.UserRole;
 import com.example.isp392.repository.RoleRepository;
 import com.example.isp392.repository.UserRepository;
 import com.example.isp392.repository.UserRoleRepository;
+import com.example.isp392.repository.OrderRepository;
 
 // No imports needed for annotations since we use constructor injection
 import java.security.SecureRandom;
-import java.util.Base64;
+import java.util.*;
 
+import jakarta.persistence.criteria.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,18 +30,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
-
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OrderRepository orderRepository;
 
     /**
      * Constructor with explicit dependency injection
@@ -49,11 +54,13 @@ public class UserService implements UserDetailsService {
     public UserService(UserRepository userRepository, 
                       RoleRepository roleRepository,
                       UserRoleRepository userRoleRepository,
-                      PasswordEncoder passwordEncoder) {
+                      PasswordEncoder passwordEncoder,
+                      OrderRepository orderRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.orderRepository = orderRepository;
     }
 
     /**
@@ -362,4 +369,171 @@ public class UserService implements UserDetailsService {
         // Use the password encoder to check if the given password matches the stored password
         return passwordEncoder.matches(password, user.getPassword());
     }
+    private Specification<User> createSpecification(String keyword, String role) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Predicate for keyword search
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                String likePattern = "%" + keyword.toLowerCase() + "%";
+                Predicate keywordPredicate = criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("fullName")), likePattern),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), likePattern)
+                );
+                predicates.add(keywordPredicate);
+            }
+
+            // Predicate for role filtering
+            if (role != null && !role.trim().isEmpty()) {
+                Predicate rolePredicate = criteriaBuilder.equal(
+                        root.join("userRoles").join("role").get("roleName"),
+                        role.toUpperCase()
+                );
+                predicates.add(rolePredicate);
+            }
+            // To prevent duplicates when joining
+            query.distinct(true);
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    public Page<User> searchUsers(String keyword, String role, Pageable pageable) {
+        Specification<User> spec = createSpecification(keyword, role);
+        return userRepository.findAll(spec, pageable);
+    }
+
+    public User findUserById(Integer userId) {
+        return userRepository.findByIdWithAddresses(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    }
+    public List<Role> getAllRoles() {
+        // Lấy tất cả trừ role "ADMIN" để tránh việc gán nhầm
+        return roleRepository.findAll().stream()
+                .filter(role -> !role.getRoleName().equals("ADMIN"))
+                .collect(Collectors.toList());
+    }
+    @Transactional
+    public void updateUserRoles(Integer userId, List<String> newRoleNames) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        // Nếu newRoleNames là null (do không checkbox nào được chọn), coi như là danh sách rỗng
+        if (newRoleNames == null) {
+            newRoleNames = new ArrayList<>();
+        }
+
+        // Lấy các vai trò hiện tại của người dùng
+        Set<UserRole> currentUserRoles = user.getUserRoles();
+
+        // Tạo một map để dễ dàng xóa
+        Map<String, UserRole> currentRoleMap = currentUserRoles.stream()
+                .collect(Collectors.toMap(ur -> ur.getRole().getRoleName(), ur -> ur));
+
+        // Xóa các vai trò không còn được chọn
+        List<UserRole> rolesToRemove = new ArrayList<>();
+        for (UserRole userRole : currentUserRoles) {
+            if (!newRoleNames.contains(userRole.getRole().getRoleName())) {
+                rolesToRemove.add(userRole);
+            }
+        }
+        currentUserRoles.removeAll(rolesToRemove);
+        userRoleRepository.deleteAll(rolesToRemove); // Xóa khỏi bảng join
+
+        // Thêm các vai trò mới
+        for (String roleName : newRoleNames) {
+            if (!currentRoleMap.containsKey(roleName)) {
+                Role role = roleRepository.findByRoleName(roleName)
+                        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                UserRole newUserRole = new UserRole(user, role);
+                currentUserRoles.add(newUserRole);
+            }
+        }
+
+        userRepository.save(user);
+    }
+    @Transactional
+    public void updateUserActivationStatus(Integer userId, boolean isActive) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        user.setActive(isActive);
+        userRepository.save(user);
+        log.info("Activation status for user ID {} has been updated to {}.", userId, isActive);
+    }
+
+    @Transactional
+    public void upgradeUserToSeller(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        Role sellerRole = roleRepository.findByRoleName("SELLER")
+                .orElseThrow(() -> new RuntimeException("Error: SELLER role not found."));
+
+        boolean hasSellerRole = user.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().equals(sellerRole));
+
+        if (!hasSellerRole) {
+            UserRole newUserRole = new UserRole(user, sellerRole);
+            user.getUserRoles().add(newUserRole);
+            userRepository.save(user);
+            log.info("Upgraded user with ID {} to SELLER.", userId);
+        } else {
+            // Ghi log nếu người dùng đã là SELLER để tránh xử lý thừa
+            log.warn("User with ID {} is already a SELLER.", userId);
+        }
+
+    }
+
+    public long countAllUsers() {
+        return userRepository.count();
+    }
+
+    @Transactional
+    public void deactivateUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        user.setActive(false);
+        userRepository.save(user);
+        log.info("User account for {} has been deactivated.", email);
+    }
+
+    @Transactional
+    public void deleteUserById(Integer userId) {
+        // Kiểm tra xem user có tồn tại không trước khi xóa
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found with ID: " + userId);
+        }
+        userRepository.deleteById(userId);
+        log.info("Successfully deleted user with ID: {}", userId);
+    }
+
+    /**
+     * Check if a user has any active orders.
+     * For now, 'active' means PENDING, PROCESSING, or SHIPPED.
+     * @param userId the ID of the user to check
+     * @return true if the user has active orders, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean hasActiveOrders(Integer userId) {
+        long activeOrderCount = orderRepository.countActiveOrdersByUserId(userId);
+        return activeOrderCount > 0;
+    }
+
+    /**
+     * Performs a soft delete on a user account.
+     * Sets the user's is_active status to false.
+     * @param userId the ID of the user to deactivate
+     * @throws RuntimeException if the user is not found
+     */
+    @Transactional
+    public void softDeleteUser(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        user.setActive(false);
+        userRepository.save(user);
+        log.info("User with ID {} has been soft-deleted (deactivated).", userId);
+    }
+
 }

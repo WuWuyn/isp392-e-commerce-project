@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Shop - Bookix</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/seller-style.css}">
+
+    <style>
+        .consequences ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .consequences li {
+            background-color: #f8f9fa;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.6;
+            border-left: 3px solid #dc3545; /* Red border for warnings */
+        }
+        .consequences li strong {
+            color: #dc3545;
+        }
+        .notice {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .confirmation-group {
+            margin-top: 25px;
+            margin-bottom: 25px;
+        }
+        .submit-btn {
+            background-color: #dc3545; /* Red for deletion action */
+            border-color: #dc3545;
+        }
+        .submit-btn:hover {
+            background-color: #c82333;
+            border-color: #c82333;
+        }
+        .submit-btn:disabled {
+            background-color: #f8d7da;
+            border-color: #f8d7da;
+            cursor: not-allowed;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Include Topbar -->
+<div th:replace="fragments/seller-topbar :: seller-topbar"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <nav aria-label="breadcrumb mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/seller/dashboard}">Seller Dashboard</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/seller/account-info}">Account Information</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Delete Shop</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Include Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div th:replace="fragments/seller-sidebar :: seller-sidebar"></div>
+            </div>
+
+            <!-- Main content -->
+            <section class="col-lg-9 account-content">
+                <div class="card">
+                    <div class="card-header bg-white py-3">
+                        <h2 class="card-title text-danger mb-0"><i class="fas fa-store-slash me-2"></i> Delete Your Shop Permanently</h2>
+                    </div>
+                    <div class="card-body p-4">
+                        <div th:if="${error}" class="alert alert-danger" role="alert">
+                            <span th:text="${error}"></span>
+                        </div>
+                        <div th:if="${success}" class="alert alert-success" role="alert">
+                            <span th:text="${success}"></span>
+                        </div>
+
+                        <p class="text-muted mb-4">You are about to permanently delete your shop. This action is irreversible.</p>
+
+                        <div class="alert alert-info mb-4" role="alert">
+                            <i class="fas fa-info-circle me-2"></i> <strong>Consider Holiday Mode:</strong> If you just need a break, you can temporarily suspend your shop activities without permanent deletion. This keeps your shop data and settings intact.
+                        </div>
+
+                        <div class="notice">
+                            <i class="fas fa-exclamation-triangle me-2"></i> Please read the following warnings and consequences carefully before proceeding.
+                        </div>
+
+                        <div class="consequences mb-4">
+                            <ul>
+                                <li>All your products will be <strong>deactivated</strong> and no longer visible or purchasable.</li>
+                                <li>You will <strong>permanently lose</strong> all shop-related data, analytics, and settings.</li>
+                                <li>Ensure your shop has <strong>no pending orders</strong>, active complaints, or unresolved financial issues. These must be resolved before deletion.</li>
+                                <li>Any pending payouts or balances will be processed according to our financial policies, but further earnings will cease.</li>
+                                <li>The shop name and associated information <strong>cannot be used</strong> to create a new shop for a certain period.</li>
+                            </ul>
+                        </div>
+
+                        <p class="mb-3">To proceed with your shop deletion request, please re-enter your password to confirm your identity.</p>
+
+                        <form th:action="@{/seller/shop-delete-request}" method="post">
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-bold">Your Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+
+                            <div class="form-check confirmation-group">
+                                <input class="form-check-input" type="checkbox" id="confirm-delete-shop" name="confirmDeleteShop" required>
+                                <label class="form-check-label" for="confirm-delete-shop">
+                                    I understand the consequences and wish to proceed with deleting my shop.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger w-100 fw-bold py-2 submit-btn" id="submitDeleteShopBtn" disabled>Request Shop Deletion</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const confirmCheckbox = document.getElementById('confirm-delete-shop');
+    const submitButton = document.getElementById('submitDeleteShopBtn');
+
+    confirmCheckbox.addEventListener('change', function() {
+        submitButton.disabled = !this.checked;
+    });
+</script>
+
+</body>
+</html> 

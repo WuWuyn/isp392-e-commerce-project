@@ -3,249 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders - ReadHub Seller</title>
-    <!-- Bootstrap CSS -->
+    <title>All Orders - ReadHub Seller</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/seller-style.css}">
+
     <style>
-        body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: #F8F5F0;
-            color: #333;
-        }
-        .section-title {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: #2C3E50;
-            border-bottom: 2px solid #2C3E50;
-            padding-bottom: 0.5rem;
-        }
-        .content-container {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .btn-primary {
-            background-color: #2C3E50;
-            border-color: #2C3E50;
-        }
-        .btn-primary:hover {
-            background-color: #1e2b37;
-            border-color: #1e2b37;
-        }
-        .order-card {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            padding: 1.5rem;
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px dashed #ced4da;
-        }
-        .order-id {
-            font-weight: 700;
-            color: #2C3E50;
-            font-size: 1.2rem;
-        }
-        .order-date {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-        .order-status-badge {
-            font-size: 0.8rem;
-            padding: 0.4em 0.6em;
-        }
-        .order-item-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .order-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .order-item img {
-            width: 80px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-right: 1rem;
-            border: 1px solid #eee;
-        }
-        .order-item-details {
-            flex-grow: 1;
-        }
-        .order-item-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-        .order-item-quantity,
-        .order-item-price {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-        .order-summary {
-            border-top: 1px dashed #ced4da;
-            padding-top: 1rem;
-            margin-top: 1rem;
-            text-align: right;
-        }
-        .order-total-amount {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #e74c3c;
-        }
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-        .filter-form .form-control, .filter-form .form-select {
-            max-width: 200px;
-            display: inline-block;
-            vertical-align: middle;
-        }
+
+        body { font-family: 'Open Sans', sans-serif; background-color: #F8F5F0; color: #333; }
+        .navbar-brand { font-family: 'Lora', serif; font-weight: 700; font-size: 1.8rem; color: #2C3E50; }
+        .section-title { font-family: 'Montserrat', sans-serif; font-weight: 700; margin-bottom: 1.5rem; color: #2C3E50; border-bottom: 2px solid #2C3E50; padding-bottom: 0.5rem; }
+        .account-container { background-color: #fff; border-radius: 8px; box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08); padding: 2rem; margin-bottom: 2rem; }
+        .btn-primary { background-color: #2C3E50; border-color: #2C3E50; }
+        .btn-primary:hover { background-color: #1e2b37; border-color: #1e2b37; }
+        .btn-outline-primary { color: #2C3E50; border-color: #2C3E50; }
+        .btn-outline-primary:hover { background-color: #2C3E50; color: #fff; }
+        .table th, .table td { vertical-align: middle; }
+        .table thead th { font-family: 'Montserrat', sans-serif; font-weight: 600; color: #333; }
+        .pagination .page-link { color: #2C3E50; }
+        .pagination .page-item.active .page-link { background-color: #2C3E50; border-color: #2C3E50; }
+        .card-footer { border-top: 1px solid #dee2e6; background-color: #fff; padding: 1rem; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; margin-top: -1.5rem; }
+
     </style>
 </head>
 <body>
-<!-- Include Topbar -->
+
 <div th:replace="fragments/seller-topbar :: seller-topbar"></div>
 
 <div class="container my-4">
     <div class="row">
-        <!-- Include Sidebar -->
         <div class="col-lg-3 mb-4">
-            <div th:replace="fragments/seller-account-sidebar :: seller-sidebar"></div>
+            <div th:replace="fragments/seller-sidebar :: seller-sidebar"></div>
         </div>
 
+
         <div class="col-lg-9">
-            <div class="content-container">
-                <h3 class="section-title">My Orders</h3>
+            <main>
+                <h3 class="section-title">Orders Management</h3>
 
-                <!-- Filter Form -->
-                <form th:action="@{/seller/orders}" method="get" class="filter-form mb-4 d-flex gap-2 align-items-center flex-wrap">
-                    <div class="input-group">
-                        <label for="statusFilter" class="visually-hidden">Filter by Status</label>
-                        <select class="form-select" id="statusFilter" name="status" onchange="this.form.submit()">
-                            <option value="" th:selected="${param.status == null || param.status == ''}">All Statuses</option>
-                            <option th:each="status : ${T(com.example.isp392.model.OrderStatus).values()}"
-                                    th:value="${status}"
-                                    th:text="${status.displayName}"
-                                    th:selected="${param.status == status.name()}">
-                                Status
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="dateFromFilter" class="visually-hidden">Date From</label>
-                        <input type="date" class="form-control" id="dateFromFilter" name="dateFrom" th:value="${param.dateFrom}" onchange="this.form.submit()">
-                    </div>
-
-                    <div class="input-group">
-                        <label for="dateToFilter" class="visually-hidden">Date To</label>
-                        <input type="date" class="form-control" id="dateToFilter" name="dateTo" th:value="${param.dateTo}" onchange="this.form.submit()">
-                    </div>
-
-                    <input type="hidden" name="page" th:value="${currentPage}">
-                    <input type="hidden" name="size" th:value="${ordersPage.size}">
-                </form>
-
-                <!-- Order List -->
-                <div th:if="${ordersPage.isEmpty()}" class="alert alert-info">
-                    No orders found matching your criteria.
+                <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <div th:text="${successMessage}"></div>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div th:text="${errorMessage}"></div>
                 </div>
 
-                <div th:unless="${ordersPage.isEmpty()}">
-                    <div class="order-card" th:each="order : ${ordersPage.content}">
-                        <div class="order-header">
-                            <span class="order-id">Order #<span th:text="${order.orderId}"></span></span>
-                            <span th:classappend="'badge ' + (${order.orderStatus.name()} == 'PENDING' ? 'bg-warning text-dark' : 
-                               (${order.orderStatus.name()} == 'PROCESSING' ? 'bg-info text-dark' : 
-                               (${order.orderStatus.name()} == 'SHIPPED' ? 'bg-primary' : 
-                               (${order.orderStatus.name()} == 'DELIVERED' ? 'bg-success' : 
-                               (${order.orderStatus.name()} == 'CANCELLED' ? 'bg-danger' : 'bg-secondary')))))"
-                               class="order-status-badge" th:text="${order.orderStatus.displayName}">Status</span>
-                            <span class="order-date" th:text="${#temporals.format(order.orderDate, 'dd MMM yyyy HH:mm')}">Date</span>
+                <div class="account-container" style="padding-bottom: 1rem; margin-bottom: 0;">
+                    <form th:action="@{/seller/orders}" method="get">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-lg-4 col-md-12">
+                                <label for="keyword" class="form-label">Search</label>
+                                <input type="text" id="keyword" name="keyword" class="form-control" placeholder="Order ID, Buyer Name..." th:value="${keyword}">
+                            </div>
+
+                            <div class="col-lg-2 col-md-6">
+                                <label for="statusFilter" class="form-label">Status</label>
+                                <select id="statusFilter" name="status" class="form-select">
+                                    <option value="">All Statuses</option>
+                                    <option th:each="s : ${T(com.example.isp392.model.OrderStatus).values()}"
+                                            th:value="${s}" th:text="${s}" th:selected="${s == selectedStatus}"></option>
+                                </select>
+                            </div>
+
+                            <div class="col-lg-2 col-md-6">
+                                <label for="startDate" class="form-label">From Date</label>
+                                <input type="date" id="startDate" name="startDate" class="form-control" th:value="${startDate}">
+                            </div>
+
+                            <div class="col-lg-2 col-md-6">
+                                <label for="endDate" class="form-label">To Date</label>
+                                <input type="date" id="endDate" name="endDate" class="form-control" th:value="${endDate}">
+                            </div>
+
+                            <div class="col-lg-1 col-md-3">
+                                <button type="submit" class="btn btn-primary w-100" title="Filter">
+                                    <i class="fas fa-filter"></i>
+                                </button>
+                            </div>
+
+                            <div class="col-lg-1 col-md-3">
+                                <a th:href="@{/seller/orders}" class="btn btn-outline-secondary w-100" title="Clear Filters">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
                         </div>
+                    </form>
+                </div>
 
-                        <p class="mb-2"><strong>Customer:</strong> <span th:text="${order.user.fullName}"></span> (<span th:text="${order.user.email}"></span>)</p>
-                        <p class="mb-2"><strong>Payment Method:</strong> <span th:text="${order.paymentMethod.displayName}"></span></p>
-                        <p class="mb-2"><strong>Total Amount:</strong> <span th:text="${#numbers.formatCurrency(order.totalAmount)}"></span></p>
+                <div class="account-container" style="border-top-left-radius: 0; border-top-right-radius: 0; padding-top: 1rem;">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Date</th>
+                                <th>Buyer</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="order : ${orderPage.content}" th:object="${order}">
+                                <td>
+                                    <a class="fw-bold text-decoration-none" th:href="@{/seller/orders/{id}(id=*{orderId})}" th:text="*{'#' + orderId}"></a>
+                                    <div class="small text-muted" th:text="${#lists.size(order.orderItems)} + ' items'"></div>
+                                </td>
+                                <td class="small" th:text="*{#temporals.format(orderDate, 'dd MMM yy, HH:mm')}"></td>
+                                <td>
+                                    <div class="fw-bold" th:text="*{recipientName}"></div>
+                                    <div class="small text-muted" th:text="*{recipientPhone}"></div>
+                                </td>
+                                <td class="fw-bold" th:text="*{#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></td>
+                                <td>
+                                    <span class="badge rounded-pill"
+                                          th:classappend="*{orderStatus == null ? 'bg-secondary' :
+                                                         (orderStatus.name() == 'PENDING' ? 'bg-warning text-dark' :
+                                                         (orderStatus.name() == 'PROCESSING' ? 'bg-info text-dark' :
+                                                         (orderStatus.name() == 'SHIPPED' ? 'bg-primary' :
+                                                         (orderStatus.name() == 'DELIVERED' ? 'bg-success' : 'bg-danger'))))}"
+                                          th:text="*{orderStatus != null ? orderStatus : 'N/A'}">
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            Actions
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" th:href="@{/seller/orders/{id}(id=*{orderId})}"><i class="fas fa-eye me-2"></i>View Details</a></li>
 
-                        <div class="order-items-section mt-3">
-                            <h5>Items:</h5>
-                            <ul class="order-item-list">
-                                <li class="order-item" th:each="item : ${order.orderItems}">
-                                    <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}" alt="Book Cover">
-                                    <div class="order-item-details">
-                                        <div class="order-item-title" th:text="${item.book.title}">Book Title</div>
-                                        <div class="order-item-quantity">Quantity: <span th:text="${item.quantity}"></span></div>
-                                        <div class="order-item-price">Price: <span th:text="${#numbers.formatCurrency(item.price.multiply(new BigDecimal(item.quantity)))}"></span></div>
+                                            <li th:if="*{orderStatus != null and orderStatus.name() == 'PENDING'}">
+                                                <form th:action="@{/seller/orders/update-status/{orderId}(orderId=*{orderId})}" method="post" class="d-inline">
+                                                    <input type="hidden" name="newStatus" th:value="${T(com.example.isp392.model.OrderStatus).PROCESSING}"/>
+                                                    <button type="submit" class="dropdown-item"><i class="fas fa-check me-2"></i>Confirm Order</button>
+                                                </form>
+                                            </li>
+
+                                            <li th:if="*{orderStatus != null and orderStatus.name() == 'PROCESSING'}">
+                                                <a class="dropdown-item" th:href="@{/seller/orders/print-label/{id}(id=*{orderId})}"><i class="fas fa-print me-2"></i>Print Label</a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li class="px-2">
+                                                <form th:action="@{/seller/orders/update-status/{orderId}(orderId=*{orderId})}" method="post" class="d-inline-block w-100">
+                                                    <div class="input-group input-group-sm">
+                                                        <select name="newStatus" class="form-select">
+                                                            <option th:each="s : ${T(com.example.isp392.model.OrderStatus).values()}" th:value="${s}" th:text="${s}" th:selected="${s == order.orderStatus}"></option>
+                                                        </select>
+                                                        <button type="submit" class="btn btn-outline-primary">Set</button>
+                                                    </div>
+                                                </form>
+                                            </li>
+                                        </ul>
                                     </div>
-                                </li>
-                            </ul>
-                        </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${orderPage.empty}">
+                                <td colspan="6" class="text-center py-4">No orders found with the current filters.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                        <div class="order-summary">
-                            <a th:href="@{/seller/orders/{orderId}(orderId=${order.orderId})}" class="btn btn-sm btn-outline-primary">View Details</a>
+                    <div class="card-footer bg-white py-3" th:if="${orderPage.totalPages > 1}">
+                        <div class="row align-items-center">
+                            <div class="col-md-6 text-muted small">
+                                Showing <strong th:text="${orderPage.number * orderPage.size + 1}"></strong>
+                                to <strong th:text="${orderPage.number * orderPage.size + orderPage.numberOfElements}"></strong>
+                                of <strong th:text="${orderPage.totalElements}"></strong> entries
+                            </div>
+                            <div class="col-md-6">
+                                <nav aria-label="Order table navigation" class="float-md-end">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item" th:classappend="${orderPage.isFirst() ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/seller/orders(page=${orderPage.number - 1}, size=${orderPage.size}, keyword=${keyword}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate})}">Previous</a>
+                                        </li>
+                                        <li class="page-item" th:each="i : ${#numbers.sequence(0, orderPage.totalPages - 1)}" th:classappend="${i == orderPage.number ? 'active' : ''}">
+                                            <a class="page-link" th:href="@{/seller/orders(page=${i}, size=${orderPage.size}, keyword=${keyword}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate})}" th:text="${i + 1}"></a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${orderPage.isLast() ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/seller/orders(page=${orderPage.number + 1}, size=${orderPage.size}, keyword=${keyword}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate})}">Next</a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Pagination -->
-                <nav aria-label="Order pagination" class="pagination-container" th:if="${ordersPage.totalPages > 0}">
-                    <ul class="pagination">
-                        <li class="page-item" th:classappend="${ordersPage.first ? 'disabled' : ''}">
-                            <a class="page-link" th:href="@{/seller/orders(
-                                page=${ordersPage.number - 1},
-                                size=${ordersPage.size},
-                                status=${param.status},
-                                dateFrom=${param.dateFrom},
-                                dateTo=${param.dateTo}
-                            )}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
-                        </li>
-                        <li class="page-item" th:each="i : ${#numbers.sequence(0, ordersPage.totalPages - 1)}" th:classappend="${i == ordersPage.number ? 'active' : ''}">
-                            <a class="page-link" th:href="@{/seller/orders(
-                                page=${i},
-                                size=${ordersPage.size},
-                                status=${param.status},
-                                dateFrom=${param.dateFrom},
-                                dateTo=${param.dateTo}
-                            )}" th:text="${i + 1}">1</a>
-                        </li>
-                        <li class="page-item" th:classappend="${ordersPage.last ? 'disabled' : ''}">
-                            <a class="page-link" th:href="@{/seller/orders(
-                                page=${ordersPage.number + 1},
-                                size=${ordersPage.size},
-                                status=${param.status},
-                                dateFrom=${param.dateFrom},
-                                dateTo=${param.dateTo}
-                            )}" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+            </main>
         </div>
     </div>
 </div>
 
-<!-- Bootstrap JS Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html> 
+</html>

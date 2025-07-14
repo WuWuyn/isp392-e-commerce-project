@@ -78,17 +78,73 @@ public class CartService {
         return total;
     }
 
+    /**
+     * Kiểm tra số lượng sách trong kho
+     * @param bookId ID của sách cần kiểm tra
+     * @param requestedQuantity Số lượng sách yêu cầu
+     * @return true nếu đủ số lượng, false nếu không đủ
+     * @throws RuntimeException nếu sách không tồn tại
+     */
+    public boolean checkBookAvailability(Integer bookId, int requestedQuantity) {
+        Book book = bookService.getBookById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found for id " + bookId));
+        
+        return book.getStockQuantity() != null && book.getStockQuantity() >= requestedQuantity;
+    }
+
+    /**
+     * Kiểm tra sản phẩm đã có trong giỏ hàng với số lượng mới có vượt quá số lượng trong kho không
+     * @param user Người dùng
+     * @param bookId ID của sách
+     * @param newQuantity Số lượng mới muốn thêm vào
+     * @return true nếu số lượng hợp lệ, false nếu vượt quá kho
+     */
+    public boolean checkCartItemAvailability(User user, Integer bookId, int newQuantity) {
+        Book book = bookService.getBookById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found for id " + bookId));
+                
+        // Kiểm tra số lượng hiện có trong giỏ hàng
+        Cart cart = getCartForUser(user);
+        Optional<CartItem> existingItem = cart.getItems().stream()
+                .filter(item -> item.getBook().getBook_id().equals(bookId))
+                .findFirst();
+                
+        int currentQuantity = existingItem.map(CartItem::getQuantity).orElse(0);
+        int totalRequestedQuantity = currentQuantity + newQuantity;
+        
+        return book.getStockQuantity() != null && book.getStockQuantity() >= totalRequestedQuantity;
+    }
+
     public void addBookToCart(User user, Integer bookId, int quantity) {
         Cart cart = getCartForUser(user);
         Book book = bookService.getBookById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found for id " + bookId));
+                
+        // Kiểm tra số lượng sách trong kho
+        if (book.getStockQuantity() == null || book.getStockQuantity() <= 0) {
+            throw new RuntimeException("Sách đã hết hàng");
+        }
+        
         Optional<CartItem> existingItemOptional = cart.getItems().stream()
                 .filter(item -> item.getBook().getBook_id().equals(bookId))
                 .findFirst();
+                
         if (existingItemOptional.isPresent()) {
             CartItem item = existingItemOptional.get();
-            item.setQuantity(item.getQuantity() + quantity);
+            int newQuantity = item.getQuantity() + quantity;
+            
+            // Kiểm tra số lượng mới có vượt quá số lượng trong kho không
+            if (newQuantity > book.getStockQuantity()) {
+                throw new RuntimeException("Số lượng sách yêu cầu vượt quá số lượng hiện có (" + book.getStockQuantity() + ")");
+            }
+            
+            item.setQuantity(newQuantity);
         } else {
+            // Kiểm tra số lượng yêu cầu có vượt quá số lượng trong kho không
+            if (quantity > book.getStockQuantity()) {
+                throw new RuntimeException("Số lượng sách yêu cầu vượt quá số lượng hiện có (" + book.getStockQuantity() + ")");
+            }
+            
             CartItem item = new CartItem();
             item.setBook(book);
             item.setQuantity(quantity);
@@ -100,6 +156,19 @@ public class CartService {
 
     public void updateQuantity(User user, Integer bookId, int quantity) {
         Cart cart = getCartForUser(user);
+        
+        // Kiểm tra số lượng sách trong kho
+        Book book = bookService.getBookById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found for id " + bookId));
+                
+        if (book.getStockQuantity() == null || book.getStockQuantity() <= 0) {
+            throw new RuntimeException("Sách đã hết hàng");
+        }
+        
+        if (quantity > book.getStockQuantity()) {
+            throw new RuntimeException("Số lượng sách yêu cầu vượt quá số lượng hiện có (" + book.getStockQuantity() + ")");
+        }
+        
         cart.getItems().forEach(item -> {
             if (item.getBook().getBook_id().equals(bookId)) {
                 item.setQuantity(quantity);
@@ -162,10 +231,20 @@ public class CartService {
      */
     public void transferCartItemsToOrder(Cart cart, Order order) {
         for (CartItem cartItem : cart.getItems()) {
+            Book book = cartItem.getBook();
+            
+            // Kiểm tra số lượng sách trong kho trước khi chuyển sang đơn hàng
+            if (book.getStockQuantity() == null || book.getStockQuantity() < cartItem.getQuantity()) {
+                throw new RuntimeException("Sản phẩm " + book.getTitle() + " không đủ số lượng trong kho");
+            }
+            
+            // Trừ số lượng sách trong kho
+            book.setStockQuantity(book.getStockQuantity() - cartItem.getQuantity());
+            
             OrderItem orderItem = new OrderItem();
-            orderItem.setBook(cartItem.getBook());
+            orderItem.setBook(book);
             orderItem.setQuantity(cartItem.getQuantity());
-            orderItem.setUnitPrice(cartItem.getBook().getSellingPrice());
+            orderItem.setUnitPrice(book.getSellingPrice());
             orderItem.setOrder(order);
             order.getOrderItems().add(orderItem);
         }

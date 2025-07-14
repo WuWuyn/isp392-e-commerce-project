@@ -1,9 +1,12 @@
 package com.example.isp392.service;
 
 import com.example.isp392.dto.ShopDTO;
-import com.example.isp392.dto.ShopFormDTO;
 import com.example.isp392.model.Shop;
+import com.example.isp392.model.ShopApprovalHistory;
 import com.example.isp392.model.User;
+import com.example.isp392.model.TokenType;
+import com.example.isp392.repository.OrderRepository;
+import com.example.isp392.repository.ShopApprovalHistoryRepository;
 import com.example.isp392.repository.ShopRepository;
 import com.example.isp392.repository.UserRepository;
 
@@ -13,48 +16,52 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Service for shop operations
  */
 @Service // Mark as Spring service component
 public class ShopService {
-    
+
     // Repository dependencies
     private final ShopRepository shopRepository; // For shop data access
-    private final UserRepository userRepository; // For user data access
-    private final String UPLOAD_DIR = "src/main/resources/static/uploads/shop/";
-    
+    private final UserRepository userRepository;
+    private final UserService userService;
+    private final FileStorageService fileStorageService;// For user data access
+    private final ShopApprovalHistoryRepository historyRepository;
+    private final OrderRepository orderRepository;
+    private final EmailService emailService;
+    private final OtpService otpService;
+    private final BookService bookService;
+
     /**
      * Constructor for dependency injection
      * @param shopRepository repository for shop data
      * @param userRepository repository for user data
      */
-    public ShopService(ShopRepository shopRepository, UserRepository userRepository) {
+    public ShopService(ShopRepository shopRepository, UserRepository userRepository, UserService userService, FileStorageService fileStorageService, ShopApprovalHistoryRepository historyRepository, OrderRepository orderRepository, EmailService emailService, OtpService otpService, BookService bookService) {
         // Constructor injection instead of using @Autowired
         this.shopRepository = shopRepository;
         this.userRepository = userRepository;
-        // Ensure the upload directory exists
-        try {
-            Files.createDirectories(Paths.get(UPLOAD_DIR));
-        } catch (IOException e) {
-            throw new RuntimeException("Could not create upload directory!", e);
-        }
+        this.userService = userService;
+        this.fileStorageService = fileStorageService;
+        this.historyRepository = historyRepository;
+        this.orderRepository = orderRepository;
+        this.emailService = emailService;
+        this.otpService = otpService;
+        this.bookService = bookService;
     }
-    
+
     /**
      * Get a shop by user ID
      * @param userId the user ID
      * @return the shop or null if not found
      */
     public Shop getShopByUserId(Integer userId) {
-        // Find shop by the user ID using repository
-        return shopRepository.findByUserUserId(userId);
+        return shopRepository.findByUserUserId(userId).orElse(null);
     }
     
     /**
@@ -65,9 +72,9 @@ public class ShopService {
     @Transactional // Ensure transaction management
     public Shop saveShopInformation(ShopDTO shopDTO) {
         // Find existing shop or create new one
-        Shop shop = shopDTO.getShopId() != null ? 
+        Shop shop = shopDTO.getShopId() != null ?
                 shopRepository.findById(shopDTO.getShopId())
-                    .orElseThrow(() -> new RuntimeException("Shop not found")) :
+                        .orElseThrow(() -> new RuntimeException("Shop not found")) :
                 new Shop();
         
         // Find the user
@@ -96,78 +103,159 @@ public class ShopService {
         return shopRepository.save(shop);
     }
 
-    /**
-     * Update existing shop information from ShopFormDTO
-     * @param shopForm DTO with updated shop information
-     * @return updated shop entity
-     * @throws IOException if there's an error during file upload
-     */
+    public Shop getShopById(Integer shopId) {
+        return shopRepository.findById(shopId)
+                .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
+    }
+    public List<Shop> getPendingShops() {
+        return shopRepository.findByApprovalStatus(Shop.ApprovalStatus.PENDING);
+    }
     @Transactional
-    public Shop updateShop(ShopFormDTO shopForm) throws IOException {
-        Shop shop = shopRepository.findById(shopForm.getShopId())
-                .orElseThrow(() -> new IllegalArgumentException("Shop not found with ID: " + shopForm.getShopId()));
+    public void approveShop(Integer shopId, User adminUser) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
 
-        // Update basic fields
-        shop.setShopName(shopForm.getShopName());
-        shop.setDescription(shopForm.getDescription());
-        shop.setShopDetailAddress(shopForm.getShopDetailAddress());
-        shop.setShopWard(shopForm.getShopWardName());
-        shop.setShopDistrict(shopForm.getShopDistrictName());
-        shop.setShopProvince(shopForm.getShopProvinceName());
-        shop.setContactEmail(shopForm.getContactEmail());
-        shop.setContactPhone(shopForm.getContactPhone());
-        shop.setTaxCode(shopForm.getTaxCode());
+        shop.setApproval_status(Shop.ApprovalStatus.APPROVED);
+        shop.setAdminApproverId(adminUser);
+        shop.setActive(true);
+        shopRepository.save(shop);
 
-        // Set isActive status based on form submission
-        if (shopForm.getIsActive() != null) {
-            shop.setIsActive(shopForm.getIsActive());
-        } else {
-            // Default to false if checkbox is not checked (and thus not present in request params)
-            shop.setIsActive(false);
+        // Ghi lại lịch sử
+        historyRepository.save(new ShopApprovalHistory(shop, adminUser, Shop.ApprovalStatus.APPROVED, "Shop approved."));
+
+        userService.upgradeUserToSeller(shop.getUser().getUserId());
+    }
+    public long countPendingShops() {
+        return shopRepository.countByApprovalStatus(Shop.ApprovalStatus.PENDING);
+    }
+    @Transactional
+    public void rejectShop(Integer shopId, String reason, User adminUser) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
+
+        shop.setApproval_status(Shop.ApprovalStatus.REJECTED);
+        shop.setReasonForStatus(reason); // Vẫn lưu lý do vào shop để hiển thị khi user đăng ký lại
+        shop.setAdminApproverId(adminUser);
+        shopRepository.save(shop);
+
+        // Ghi lại lịch sử
+        historyRepository.save(new ShopApprovalHistory(shop, adminUser, Shop.ApprovalStatus.REJECTED, reason));
+    }
+    public Optional<Shop> findShopByUserId(Integer userId) {
+        return shopRepository.findByUserUserId(userId);
+    }
+    public Shop registerNewShop(Shop shop, User user, MultipartFile logoFile, MultipartFile coverImageFile, MultipartFile idFile) throws IOException {
+        // Xử lý upload file (chỉ upload nếu file mới được cung cấp)
+        if (logoFile != null && !logoFile.isEmpty()) {
+            shop.setLogoUrl(fileStorageService.storeFile(logoFile, "shop-logos"));
+        }
+        if (coverImageFile != null && !coverImageFile.isEmpty()) {
+            shop.setCoverImageUrl(fileStorageService.storeFile(coverImageFile, "shop-covers"));
+        }
+        if (idFile != null && !idFile.isEmpty()) {
+            shop.setIdentificationFileUrl(fileStorageService.storeFile(idFile, "shop-identifications"));
         }
 
-        // Handle logo file upload
-        if (shopForm.getLogoFile() != null && !shopForm.getLogoFile().isEmpty()) {
-            String logoUrl = saveFile(shopForm.getLogoFile(), "logo");
-            shop.setLogoUrl(logoUrl);
-        } else if (shopForm.getExistingLogoUrl() == null || shopForm.getExistingLogoUrl().isEmpty()) {
-            // If no new file and no existing URL, set to null
-            shop.setLogoUrl(null);
-        }
+        shop.setUser(user);
 
-        // Handle cover image file upload
-        if (shopForm.getCoverImageFile() != null && !shopForm.getCoverImageFile().isEmpty()) {
-            String coverImageUrl = saveFile(shopForm.getCoverImageFile(), "cover");
-            shop.setCoverImageUrl(coverImageUrl);
-        } else if (shopForm.getExistingCoverImageUrl() == null || shopForm.getExistingCoverImageUrl().isEmpty()) {
-            shop.setCoverImageUrl(null);
-        }
+        // === THAY ĐỔI QUAN TRỌNG: RESET TRẠNG THÁI KHI NỘP LẠI ===
+        shop.setApproval_status(Shop.ApprovalStatus.PENDING); // Luôn set lại là PENDING
+        shop.setRequestAt(LocalDateTime.now());         // Cập nhật thời gian yêu cầu
+        shop.setReasonForStatus(null);                  // Xóa lý do từ chối cũ
+        shop.setAdminApproverId(null);                  // Xóa người duyệt cũ
+        shop.setActive(false);                          // Shop chưa hoạt động
 
-        // Handle identification file upload
-        if (shopForm.getIdentificationFile() != null && !shopForm.getIdentificationFile().isEmpty()) {
-            String identificationUrl = saveFile(shopForm.getIdentificationFile(), "identification");
-            shop.setIdentificationFileUrl(identificationUrl);
-        } else if (shopForm.getExistingIdentificationFileUrl() == null || shopForm.getExistingIdentificationFileUrl().isEmpty()) {
-            shop.setIdentificationFileUrl(null);
+        // Chỉ đặt ngày đăng ký nếu đây là lần đầu
+        if (shop.getRegistrationDate() == null) {
+            shop.setRegistrationDate(LocalDateTime.now());
         }
 
         return shopRepository.save(shop);
     }
+    public List<Shop> getRejectedShops() {
+        return shopRepository.findByApprovalStatus(Shop.ApprovalStatus.REJECTED);
+    }
+    public LocalDateTime getRegistrationDateByShopId(Integer shopId) {
+        return shopRepository.getRegistrationDateByShopId(shopId);
+    }
+    public long countActiveSellers() {
+        return shopRepository.countByApprovalStatus(Shop.ApprovalStatus.APPROVED);
+    }
 
-    private String saveFile(MultipartFile file, String type) throws IOException {
-        if (file.isEmpty()) {
+    /**
+     * Check if a shop has any active orders.
+     * 'Active' means PENDING, PROCESSING, or SHIPPED.
+     * @param shopId the ID of the shop to check
+     * @return true if the shop has active orders, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean hasActiveOrdersForShop(Integer shopId) {
+        long activeOrderCount = orderRepository.countActiveOrdersByShopId(shopId);
+        return activeOrderCount > 0;
+    }
+
+    /**
+     * Performs a soft delete on a shop.
+     * Sets the shop's isActive status to false and deactivates all its books.
+     * @param shopId the ID of the shop to deactivate
+     * @throws RuntimeException if the shop is not found
+     */
+    @Transactional
+    public void softDeleteShop(Integer shopId) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
+        shop.setActive(false);
+        shopRepository.save(shop);
+        bookService.deactivateBooksByShopId(shopId);
+        // Optionally, set approval status to a 'DELETED' or 'INACTIVE' enum if needed
+        // shop.setApproval_status(Shop.ApprovalStatus.INACTIVE);
+        // shopRepository.save(shop);
+        // log.info("Shop with ID {} has been soft-deleted (deactivated) and its products deactivated.", shopId);
+    }
+
+    /**
+     * Initiates the shop deletion process by sending a confirmation email.
+     * @param shop The shop to be deleted.
+     * @param seller The user (seller) associated with the shop.
+     * @param baseUrl The base URL for generating the confirmation link.
+     * @return true if the email was sent, false otherwise.
+     */
+    @Transactional
+    public boolean requestShopDeletion(Shop shop, User seller, String baseUrl) {
+        String confirmationToken = otpService.generateToken(seller, TokenType.SHOP_DELETION);
+        String confirmationLink = baseUrl + "/seller/shop-delete-confirm?token=" + confirmationToken;
+        return emailService.sendShopDeletionConfirmationEmail(seller.getEmail(), confirmationLink);
+    }
+
+    /**
+     * Confirms the shop deletion based on a valid token.
+     * If the token is valid, the shop and its associated user are soft-deleted,
+     * and an email is sent to the seller.
+     * @param tokenString The token received in the confirmation link.
+     * @return The User object of the seller if deletion is successful, null otherwise.
+     */
+    @Transactional
+    public User confirmShopDeletion(String tokenString) {
+        Optional<User> userOptional = otpService.validateToken(tokenString, TokenType.SHOP_DELETION);
+        if (userOptional.isEmpty()) {
             return null;
         }
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+
+        User seller = userOptional.get();
+        Shop shop = shopRepository.findByUserUserId(seller.getUserId()).orElse(null);
+
+        if (shop == null) {
+            // This should ideally not happen if the token is valid and associated with a seller
+            return null;
         }
-        String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        Path filePath = uploadPath.resolve(uniqueFileName);
-        Files.copy(file.getInputStream(), filePath);
-        // Return the relative path for web access
-        return "/uploads/shop/" + uniqueFileName;
+
+        // Perform soft deletion of the shop and its books
+        softDeleteShop(shop.getShopId());
+
+        // Soft delete the user (seller) associated with the shop
+        // Assuming userService.deactivateUser exists and handles soft deletion of user
+        userService.deactivateUser(seller.getEmail());
+
+        return seller;
     }
 } 

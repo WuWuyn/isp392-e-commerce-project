@@ -1,15 +1,19 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.dto.UserRegistrationDTO;
+import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
 import com.example.isp392.service.CartService;
+import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -18,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -36,7 +41,7 @@ public class BuyerController {
 
     private final UserService userService;
     private final CartService cartService;
-
+    private final ShopService shopService;
     /**
      * Constructor with explicit dependency injection
      * This is preferred over field injection with @Autowired as it makes dependencies clear,
@@ -45,9 +50,10 @@ public class BuyerController {
      * @param userService Service for user-related operations
      * @param cartService Service for cart-related operations
      */
-    public BuyerController(UserService userService, CartService cartService) {
+    public BuyerController(UserService userService, CartService cartService, ShopService shopService) {
         this.userService = userService;
         this.cartService = cartService;
+        this.shopService = shopService;
     }
 
     /**
@@ -67,10 +73,11 @@ public class BuyerController {
     /**
      * Display signup page
      * @param model Model to add attributes
+     * @param sellerFlow Request parameter indicating if this is for seller registration
      * @return signup page view
      */
     @GetMapping("/signup")
-    public String showSignupPage(Model model) {
+    public String showSignupPage(Model model, @RequestParam(required = false) Boolean sellerFlow) {
         // Check if user is already authenticated
         if (isUserAuthenticated()) {
             return "redirect:/buyer/account-info";
@@ -79,6 +86,11 @@ public class BuyerController {
         // Add registration DTO to model if not already present
         if (!model.containsAttribute("userRegistrationDTO")) {
             model.addAttribute("userRegistrationDTO", new UserRegistrationDTO());
+        }
+
+        // Add seller flow parameter to model
+        if (sellerFlow != null && sellerFlow) {
+            model.addAttribute("sellerFlow", true);
         }
 
         return "buyer/signup";
@@ -435,6 +447,103 @@ public class BuyerController {
         }
     }
 
+    //seller register
+    @GetMapping("/register-shop")
+    public String showShopRegistrationForm(Model model, RedirectAttributes redirectAttributes) {
+        User currentUser = getCurrentUser(); // Giả định bạn có phương thức này để lấy user hiện tại
+        if (currentUser == null) {
+
+
+            return "redirect:/buyer/login";
+        }
+
+        // Phương thức này trong service nên là Optional<Shop> findShopByUserId(Integer userId)
+        Optional<Shop> existingShopOpt = shopService.findShopByUserId(currentUser.getUserId());
+
+        if (existingShopOpt.isPresent()) {
+            Shop shop = existingShopOpt.get();
+
+            // SỬA LỖI TẠI ĐÂY:
+            // 1. Dùng Shop.ApprovalStatus thay vì ApprovalStatus
+            // 2. Dùng getApproval_status() thay vì getApprovalStatus()
+            if (shop.getApproval_status() == Shop.ApprovalStatus.PENDING) {
+                redirectAttributes.addFlashAttribute("infoMessage", "Yêu cầu đăng ký cửa hàng của bạn đang được xử lý. Vui lòng đợi.");
+                return "redirect:/buyer/account-info";
+            } else if (shop.getApproval_status() == Shop.ApprovalStatus.APPROVED) {
+                redirectAttributes.addFlashAttribute("infoMessage", "Bạn đã là người bán hàng!");
+                return "redirect:/buyer/account-info";
+            } else if (shop.getApproval_status() == Shop.ApprovalStatus.REJECTED) {
+                // Logic để người dùng đăng ký lại đã đúng
+                model.addAttribute("shop", shop);
+                model.addAttribute("rejectionReason", shop.getReasonForStatus());
+                return "buyer/seller-registration";
+            }
+        }
+
+        // Nếu chưa có shop nào, tạo shop mới như bình thường
+        model.addAttribute("shop", new Shop());
+        return "buyer/seller-registration";
+    }
+
+    @PostMapping("/register-shop")
+    public String processShopRegistration(
+            @ModelAttribute("shop") Shop shop,
+            @RequestParam("logoFile") MultipartFile logoFile,
+            @RequestParam("coverImageFile") MultipartFile coverImageFile,
+            @RequestParam("identificationFile") MultipartFile identificationFile,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return "redirect:/buyer/login";
+        }
+
+        // Các logic kiểm tra lỗi và tìm shop cũ của bạn đã ổn
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("shop", shop);
+            return "buyer/seller-registration";
+        }
+
+        try {
+            // Chúng ta cần tìm xem user đã có shop record chưa
+            Optional<Shop> existingShopOpt = shopService.findShopByUserId(currentUser.getUserId());
+
+            Shop shopToSave;
+            if (existingShopOpt.isPresent()) {
+                // Nếu đã có, cập nhật bản ghi cũ
+                shopToSave = existingShopOpt.get();
+
+                // Cập nhật thông tin từ form (các setter này đúng vì thuộc tính trong Shop.java là camelCase)
+                shopToSave.setShopName(shop.getShopName());
+                shopToSave.setContactEmail(shop.getContactEmail());
+                shopToSave.setContactPhone(shop.getContactPhone());
+                shopToSave.setShopDetailAddress(shop.getShopDetailAddress());
+                shopToSave.setShopWard(shop.getShopWard());
+                shopToSave.setShopDistrict(shop.getShopDistrict());
+                shopToSave.setShopProvince(shop.getShopProvince());
+                shopToSave.setDescription(shop.getDescription());
+                shopToSave.setTaxCode(shop.getTaxCode());
+
+            } else {
+                // Nếu chưa, đây là shop mới
+                shopToSave = shop;
+            }
+
+
+            shopService.registerNewShop(shopToSave, currentUser, logoFile, coverImageFile, identificationFile);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Yêu cầu đăng ký của bạn đã được gửi lại thành công! Vui lòng chờ phê duyệt.");
+            return "redirect:/buyer/account-info";
+        } catch (IOException e) {
+            // log.error("Lỗi khi đăng ký shop: {}", e.getMessage());
+            model.addAttribute("errorMessage", "Đã xảy ra lỗi khi tải file lên. Vui lòng thử lại.");
+            model.addAttribute("shop", shop);
+            return "buyer/seller-registration";
+        }
+    }
+
     // Helper methods for authentication
     
     /**
@@ -489,4 +598,41 @@ public class BuyerController {
         
         return userOptional.orElse(null);
     }
+
+    @GetMapping("/account-deletion")
+    public String showDeleteAccountPage(Model model) {
+        User user = getCurrentUser();
+        if (user == null) {
+            return "redirect:/buyer/login";
+        }
+        model.addAttribute("user", user);
+        return "buyer/delete-account"; // Trả về trang delete-account.html
+    }
+
+    /**
+     * Process the account deactivation request.
+     * Deactivates the user account and logs the user out.
+     */
+    @PostMapping("/perform-delete-account")
+    public String performAccountDeactivation(Authentication authentication, HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            String email = authentication.getName();
+            userService.deactivateUser(email);
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Your account has been successfully deactivated. We're sorry to see you go.");
+            return "redirect:/buyer/login?deactivated=true";
+
+        } catch (Exception e) {
+            log.error("Error during account deactivation for user {}: {}", authentication.getName(), e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while deactivating your account. Please try again.");
+            return "redirect:/buyer/account-info";
+        }
+    }
+
+
 }

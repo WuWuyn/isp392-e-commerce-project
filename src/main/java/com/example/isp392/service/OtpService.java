@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import com.example.isp392.model.TokenType;
 
 @Service
 public class OtpService {
@@ -55,22 +56,22 @@ public class OtpService {
         }
         
         // Find existing OTP token for this user
-        Optional<OtpToken> existingTokenOpt = otpTokenRepository.findByUser(user);
+        Optional<OtpToken> existingTokenOpt = otpTokenRepository.findByUserAndTokenType(user, TokenType.PASSWORD_RESET);
         OtpToken otpToken;
         
         // Generate 6-digit OTP
-        String otp = generateOtp();
+        String otp = generateOtpCode();
         
         if (existingTokenOpt.isPresent()) {
             // Update existing token
             otpToken = existingTokenOpt.get();
-            otpToken.setOtp(otp);
+            otpToken.setToken(otp);
             otpToken.setExpiryDate(LocalDateTime.now().plusSeconds(OtpToken.EXPIRATION));
             otpToken.setUsed(false);
             otpToken.setAttempts(0);
         } else {
             // Create new token
-            otpToken = new OtpToken(otp, user);
+            otpToken = new OtpToken(otp, user, TokenType.PASSWORD_RESET);
         }
         
         // Save the token
@@ -78,6 +79,24 @@ public class OtpService {
         
         // Send OTP via email
         return emailService.sendOtpEmail(user.getEmail(), otp);
+    }
+
+    /**
+     * Generate a unique token for a specific purpose (e.g., account deletion, shop deletion).
+     * @param user The user associated with the token.
+     * @param tokenType The type of token to generate.
+     * @return The generated token string.
+     */
+    @Transactional
+    public String generateToken(User user, TokenType tokenType) {
+        // Invalidate any existing tokens of the same type for this user
+        otpTokenRepository.findByUserAndTokenType(user, tokenType)
+                .ifPresent(otpTokenRepository::delete);
+
+        String token = generateUuidToken();
+        OtpToken newToken = new OtpToken(token, user, tokenType);
+        otpTokenRepository.save(newToken);
+        return token;
     }
     
     /**
@@ -88,7 +107,7 @@ public class OtpService {
      */
     @Transactional
     public VerificationResult verifyOtpAndResetPassword(String otp, String newPassword) {
-        Optional<OtpToken> tokenOpt = otpTokenRepository.findByOtp(otp);
+        Optional<OtpToken> tokenOpt = otpTokenRepository.findByTokenAndTokenType(otp, TokenType.OTP);
         
         // OTP not found
         if (tokenOpt.isEmpty()) {
@@ -115,7 +134,7 @@ public class OtpService {
         }
         
         // Save the token with incremented attempts (if verification fails)
-        if (!otp.equals(token.getOtp())) {
+        if (!otp.equals(token.getToken())) {
             otpTokenRepository.save(token);
             return VerificationResult.INVALID_OTP;
         }
@@ -130,15 +149,50 @@ public class OtpService {
         
         return VerificationResult.SUCCESS;
     }
-    
+
     /**
-     * Generate 6-digit OTP
+     * Validate a token (e.g., for account deletion confirmation).
+     * @param tokenString The token string to validate.
+     * @param tokenType The type of token expected.
+     * @return An Optional containing the User if the token is valid, empty otherwise.
+     */
+    @Transactional
+    public Optional<User> validateToken(String tokenString, TokenType tokenType) {
+        Optional<OtpToken> tokenOpt = otpTokenRepository.findByTokenAndTokenType(tokenString, tokenType);
+
+        if (tokenOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        OtpToken token = tokenOpt.get();
+
+        if (token.isUsed() || token.isExpired()) {
+            return Optional.empty();
+        }
+
+        // Mark token as used after successful validation
+        token.setUsed(true);
+        otpTokenRepository.save(token);
+
+        return Optional.of(token.getUser());
+    }
+
+    /**
+     * Generate 6-digit OTP code
      * @return 6-digit OTP code
      */
-    private String generateOtp() {
+    private String generateOtpCode() {
         SecureRandom random = new SecureRandom();
         int otp = 100000 + random.nextInt(900000);
         return String.valueOf(otp);
+    }
+
+    /**
+     * Generate a unique UUID token.
+     * @return A UUID string.
+     */
+    private String generateUuidToken() {
+        return java.util.UUID.randomUUID().toString();
     }
     
     /**

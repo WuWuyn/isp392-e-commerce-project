@@ -39,6 +39,10 @@ public class Shop {
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)") // Specific for SQL Server if needed
     private String description;
 
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OrderBy("processedAt DESC")
+    private List<ShopApprovalHistory> approvalHistory = new ArrayList<>();
+
     @Column(name = "logo_url", columnDefinition = "NVARCHAR(MAX)")
     private String logoUrl;
 
@@ -82,6 +86,9 @@ public class Shop {
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
+    @Column(name = "views_count", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer viewsCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_approver_id")
     private User adminApproverId;
@@ -93,9 +100,5 @@ public class Shop {
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Book> books = new ArrayList<>();
 
-    // Explicit setter for isActive to ensure it's recognized by the compiler
-    public void setIsActive(boolean isActive) {
-        this.isActive = isActive;
-    }
 }
 

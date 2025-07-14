@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Become a Seller</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .registration-container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .form-label { font-weight: 600; }
+        /* Thêm style để select trông tốt hơn khi bị disable */
+        select:disabled {
+            background-color: #e9ecef;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js"></script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<div class="container registration-container">
+    <h2 class="text-center mb-4">Register Your Seller Channel</h2>
+    <p class="text-center text-muted mb-4">Complete the information below to submit your shop application.</p>
+
+    <div th:if="${rejectionReason != null && !rejectionReason.isEmpty()}"
+         class="alert alert-warning"
+         role="alert">
+        <h5 class="alert-heading">Requirement Previously Rejected</h5>
+        <p>Your previous requirement was rejected for the following reason: <br>
+            <strong><th:block th:text="${rejectionReason}"></th:block></strong>
+        </p>
+        <hr>
+        <p class="mb-0">Please review the information below, make the necessary corrections, and resubmit.</p>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+    <form th:action="@{/buyer/register-shop}" th:object="${shop}" method="post" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <label for="shopName" class="form-label">Shop Name</label>
+                <input type="text" class="form-control" id="shopName" th:field="*{shopName}" required
+                       pattern="^[a-zA-Z0-9\u00C0-\u017F\s]+$"
+                       title="Shop name can only contain letters, numbers, and spaces."
+                       oninput="this.value = this.value.replace(/[^a-zA-Z0-9\u00C0-\u017F\s]/g, '')">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="contactEmail" class="form-label">Contact Email</label>
+                <input type="email" class="form-control" id="contactEmail" th:field="*{contactEmail}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="contactPhone" class="form-label">Phone Number</label>
+                <input type="text" class="form-control" id="contactPhone" th:field="*{contactPhone}" required
+                       pattern="\d{10}" title="Phone number must be exactly 10 digits." maxlength="10"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+
+            <div class="col-md-12 mb-3">
+                <label for="shopDetailAddress" class="form-label">Street Address / Building</label>
+                <input type="text" class="form-control" id="shopDetailAddress" th:field="*{shopDetailAddress}" placeholder="E.g., 123 Nguyen Hue Street" required>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label for="province" class="form-label">Province / City</label>
+                <select class="form-select" id="province" required>
+                    <option value="" selected disabled>Select Province/City</option>
+                </select>
+                <input type="hidden" id="provinceName" th:field="*{shopProvince}">
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label for="district" class="form-label">District</label>
+                <select class="form-select" id="district" required disabled>
+                    <option value="" selected disabled>Select District</option>
+                </select>
+                <input type="hidden" id="districtName" th:field="*{shopDistrict}">
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label for="ward" class="form-label">Ward / Commune</label>
+                <select class="form-select" id="ward" required disabled>
+                    <option value="" selected disabled>Select Ward/Commune</option>
+                </select>
+                <input type="hidden" id="wardName" th:field="*{shopWard}">
+            </div>
+            <div class="col-md-12 mb-3">
+                <label for="description" class="form-label">Shop Description</label>
+                <textarea class="form-control" id="description" rows="3" th:field="*{description}" maxlength="200"></textarea>
+                <div id="descriptionCounter" class="form-text text-end char-counter">0 / 200</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="taxCode" class="form-label">Tax Code</label>
+                <input type="text" class="form-control" id="taxCode" th:field="*{taxCode}" required
+                       pattern="\d{10}" title="Tax code must be exactly 10 digits." maxlength="10"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="identificationFile" class="form-label">Identification (ID Card/Passport)</label>
+                <input type="file" class="form-control" id="identificationFile" name="identificationFile" accept="image/*,application/pdf" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="logoFile" class="form-label">Shop Logo</label>
+                <input type="file" class="form-control" id="logoFile" name="logoFile" accept="image/*">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="coverImageFile" class="form-label">Cover Image</label>
+                <input type="file" class="form-control" id="coverImageFile" name="coverImageFile" accept="image/*">
+            </div>
+        </div>
+
+        <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">Submit Registration</button>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        const provinceSelect = $('#province');
+        const districtSelect = $('#district');
+        const wardSelect = $('#ward');
+
+        const provinceNameInput = $('#provinceName');
+        const districtNameInput = $('#districtName');
+        const wardNameInput = $('#wardName');
+
+        // API endpoint được proxy qua controller của chúng ta
+        const host = "/api/location";
+
+        // Hàm để render options cho select
+        function renderOptions(selectElement, data, placeholder) {
+            selectElement.html(`<option value="" selected disabled>${placeholder}</option>`);
+            $.each(data, function(index, item) {
+                selectElement.append(`<option value="${item.code}">${item.name}</option>`);
+            });
+        }
+
+        // Lấy danh sách tỉnh/thành phố
+        axios.get(host + "/provinces")
+            .then(function(response) {
+                renderOptions(provinceSelect, response.data, "Select Province/City");
+            })
+            .catch(function(error) {
+                console.error("Error fetching provinces:", error);
+            });
+
+        // Bắt sự kiện thay đổi tỉnh/thành phố
+        provinceSelect.change(function() {
+            const provinceCode = $(this).val();
+            const provinceName = $(this).find('option:selected').text();
+            provinceNameInput.val(provinceName); // Cập nhật trường ẩn
+
+            if (provinceCode) {
+                axios.get(host + `/provinces/${provinceCode}?depth=2`)
+                    .then(function(response) {
+                        renderOptions(districtSelect, response.data.districts, "Select District");
+                        districtSelect.prop('disabled', false);
+                        wardSelect.html('<option value="" selected disabled>Select Ward/Commune</option>').prop('disabled', true);
+                        // Reset các trường ẩn cấp dưới
+                        districtNameInput.val('');
+                        wardNameInput.val('');
+                    })
+                    .catch(function(error) {
+                        console.error("Error fetching districts:", error);
+                    });
+            } else {
+                districtSelect.html('<option value="" selected disabled>Select District</option>').prop('disabled', true);
+                wardSelect.html('<option value="" selected disabled>Select Ward/Commune</option>').prop('disabled', true);
+            }
+        });
+
+        // Bắt sự kiện thay đổi quận/huyện
+        districtSelect.change(function() {
+            const districtCode = $(this).val();
+            const districtName = $(this).find('option:selected').text();
+            districtNameInput.val(districtName); // Cập nhật trường ẩn
+
+            if (districtCode) {
+                axios.get(host + `/districts/${districtCode}?depth=2`)
+                    .then(function(response) {
+                        renderOptions(wardSelect, response.data.wards, "Select Ward/Commune");
+                        wardSelect.prop('disabled', false);
+                        // Reset trường ẩn cấp dưới
+                        wardNameInput.val('');
+                    })
+                    .catch(function(error) {
+                        console.error("Error fetching wards:", error);
+                    });
+            } else {
+                wardSelect.html('<option value="" selected disabled>Select Ward/Commune</option>').prop('disabled', true);
+            }
+        });
+
+        // Bắt sự kiện thay đổi phường/xã
+        wardSelect.change(function() {
+            const wardName = $(this).find('option:selected').text();
+            wardNameInput.val(wardName); // Cập nhật trường ẩn
+        });
+    });
+</script>
+
+</body>
+</html>
