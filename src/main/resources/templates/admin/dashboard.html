@@ -107,6 +107,10 @@
             padding: 1.5rem;
             margin-bottom: 1.5rem;
             border-left: 4px solid #2C3E50;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
         }
         .stat-card h4 {
             font-size: 1rem;
@@ -125,36 +129,133 @@
             position: absolute;
             right: 1.5rem;
         }
-        
+        .stat-card .trend {
+            font-size: 0.9rem;
+            color: #28a745;
+        }
+        .stat-card .trend.down {
+            color: #dc3545;
+        }
+
         /* Additional styles for new components */
         .notification-card {
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid;
+            transition: transform 0.3s ease;
         }
-        
+        .notification-card:hover {
+            transform: translateY(-3px);
+        }
+        .notification-card.warning {
+            border-color: #f39c12;
+        }
+        .notification-card.danger {
+            border-color: #e74c3c;
+        }
+        .notification-card.info {
+            border-color: #3498db;
+        }
+        .notification-card.success {
+            border-color: #2ecc71;
+        }
+
         .activity-item {
             padding: 1rem;
             border-bottom: 1px solid #eee;
+            transition: background-color 0.2s ease;
         }
-        
+        .activity-item:hover {
+            background-color: #f8f9fa;
+        }
         .activity-item:last-child {
             border-bottom: none;
         }
-        
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+        .activity-icon.order {
+            background-color: rgba(44, 62, 80, 0.1);
+            color: #2C3E50;
+        }
+        .activity-icon.user {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+        .activity-icon.product {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+        }
+        .activity-icon.shop {
+            background-color: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+        }
+
         .chart-container {
             position: relative;
             height: 300px;
             margin-bottom: 2rem;
         }
-        
+
+        .overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .overview-header h3 {
+            margin-bottom: 0;
+        }
+        .period-badge {
+            background-color: #ecf0f1;
+            color: #2C3E50;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .table-responsive {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .table th {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+        }
+
+        .progress-sm {
+            height: 5px;
+        }
+
         .quick-action-btn {
             width: 100%;
             margin-bottom: 1rem;
             text-align: left;
             padding: 1rem;
+            transition: all 0.3s ease;
         }
-        
+
+        .quick-action-btn:hover {
+            transform: translateY(-3px);
+        }
+
         .quick-action-btn i {
             margin-right: 0.5rem;
+        }
+        .activity-list {
+            max-height: 300px; /* Adjust as needed */
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -168,27 +269,47 @@
             <div class="col-lg-3 mb-4">
                 <div th:replace="fragments/admin-sidebar :: admin-sidebar"></div>
             </div>
-            
+
             <div class="col-lg-9">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="mb-0">Platform Overview</h2>
+                    <span class="text-muted" th:text="${#dates.format(#dates.createNow(), 'EEEE, dd MMMM yyyy')}">Thursday, 11 July 2023</span>
+                </div>
+
                 <!-- Success message -->
                 <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
                     <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                
+
+                <!-- Error message -->
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
                 <!-- Quick Stats -->
                 <div class="row mb-4">
                     <div class="col-md-3">
                         <div class="stat-card position-relative">
                             <h4>Total Users</h4>
                             <p th:text="${totalUsers ?: '0'}">0</p>
+                            <div class="trend" th:if="${newUsers > 0}">
+                                <i class="fas fa-arrow-up"></i>
+                                <span th:text="${newUsers}">0</span> new
+                            </div>
                             <i class="fas fa-users"></i>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="stat-card position-relative">
-                            <h4>Total Revenue</h4>
-                            <p th:text="${totalRevenue ?: '$0'}">$0</p>
+                            <h4>Platform Revenue</h4>
+                            <p th:text="${totalRevenue != null ? #numbers.formatCurrency(totalRevenue) : '$0'}">$0</p>
+                            <div class="trend">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Commission</span>
+                            </div>
                             <i class="fas fa-dollar-sign"></i>
                         </div>
                     </div>
@@ -196,6 +317,10 @@
                         <div class="stat-card position-relative">
                             <h4>Active Sellers</h4>
                             <p th:text="${activeSellers ?: '0'}">0</p>
+                            <div class="trend" th:if="${newSellerRegistrations > 0}">
+                                <i class="fas fa-user-plus"></i>
+                                <span th:text="${newSellerRegistrations}">0</span> pending
+                            </div>
                             <i class="fas fa-store"></i>
                         </div>
                     </div>
@@ -203,67 +328,218 @@
                         <div class="stat-card position-relative">
                             <h4>Total Products</h4>
                             <p th:text="${totalProducts ?: '0'}">0</p>
+                            <div class="trend" th:if="${newProducts > 0}">
+                                <i class="fas fa-arrow-up"></i>
+                                <span th:text="${newProducts}">0</span> new
+                            </div>
                             <i class="fas fa-book"></i>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Important Notifications -->
-                <div class="account-container mb-4">
-                    <h3 class="section-title">System Notifications</h3>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="notification-card p-3 mb-3 bg-light">
-                                <h5><i class="fas fa-user-plus text-primary"></i> New Seller Registrations</h5>
-                                <p class="mb-0" th:text="${newSellerRegistrations ?: '0'} + ' new sellers awaiting approval'">0 new sellers awaiting approval</p>
-                                <a href="/admin/seller-approvals" class="btn btn-sm btn-outline-primary mt-2">Review Applications</a>
+                    <div class="col-md-3">
+                        <div class="stat-card position-relative">
+                            <h4>Total Platform Orders</h4>
+                            <p th:text="${totalPlatformOrders ?: '0'}">0</p>
+                            <div class="trend">
+                                <i class="fas fa-shopping-bag"></i>
+                                <span>All-time</span>
                             </div>
+                            <i class="fas fa-receipt"></i>
                         </div>
-                        <div class="col-md-6">
-                            <div class="notification-card p-3 mb-3 bg-light">
-                                <h5><i class="fas fa-exclamation-triangle text-warning"></i> System Alerts</h5>
-                                <p class="mb-0" th:text="${systemAlerts ?: '0'} + ' system alerts need attention'">0 system alerts need attention</p>
-                                <a href="/admin/system-alerts" class="btn btn-sm btn-outline-primary mt-2">View Alerts</a>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card position-relative">
+                            <h4>Average Order Value</h4>
+                            <p th:text="${averageOrderValue != null ? #numbers.formatCurrency(averageOrderValue) : '$0'}">$0</p>
+                            <div class="trend">
+                                <i class="fas fa-dollar-sign"></i>
+                                <span>Platform-wide</span>
+                            </div>
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card position-relative">
+                            <h4>Total Platform Views</h4>
+                            <p th:text="${totalPlatformViews ?: '0'}">0</p>
+                            <div class="trend">
+                                <i class="fas fa-eye"></i>
+                                <span>All-time</span>
+                            </div>
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="account-container h-100">
+                            <h3 class="section-title">Required Actions</h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="notification-card warning p-3 mb-3 bg-light">
+                                        <h5><i class="fas fa-user-plus text-warning"></i> Seller Applications</h5>
+                                        <p class="mb-0" th:text="${newSellerRegistrations ?: '0'} + ' new sellers awaiting approval'">0 new sellers awaiting approval</p>
+                                        <a href="/admin/seller-approvals" class="btn btn-sm btn-outline-primary mt-2">Review Applications</a>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="notification-card info p-3 mb-3 bg-light">
+                                        <h5><i class="fas fa-exclamation-triangle text-info"></i> System Alerts</h5>
+                                        <p class="mb-0" th:text="${systemAlerts ?: '0'} + ' system alerts need attention'">0 system alerts need attention</p>
+                                        <a href="/admin/system-alerts" class="btn btn-sm btn-outline-primary mt-2">View Alerts</a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Performance Charts -->
-                <div class="account-container mb-4">
-                    <h3 class="section-title">Platform Overview</h3>
-                    <div class="row">
-                        <div class="col-md-6">
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <!-- Revenue Chart -->
+                    <div class="col-md-12">
+                        <div class="account-container h-100">
+                            <div class="overview-header">
+                                <h3 class="section-title mb-0">Daily Platform Revenue</h3>
+                                <span class="period-badge">Last 7 Days</span>
+                            </div>
                             <div class="chart-container">
                                 <canvas id="revenueChart"></canvas>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="chart-container">
-                                <canvas id="usersChart"></canvas>
+                            <div class="text-end mt-3">
+                                <h5>Total Revenue (Last 7 Days): <span th:text="${#numbers.formatCurrency(totalRevenueLast7Days)}">0</span></h5>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Recent Activity -->
-                <div class="account-container">
-                    <h3 class="section-title">Recent Activity</h3>
-                    <div class="activity-list">
-                        <div class="activity-item" th:each="activity : ${recentActivities}">
-                            <div class="d-flex align-items-center">
-                                <div class="activity-icon me-3">
-                                    <i class="fas fa-circle-notch text-primary"></i>
+
+                <!-- NEW: Product Views Chart (moved to its own row) -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="account-container h-100">
+                            <h3 class="section-title">Top Viewed Products</h3>
+                            <div class="chart-container">
+                                <canvas id="productViewsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tables Row -->
+                <div class="row mb-4">
+                    <!-- Top Products Table -->
+                    <div class="col-md-6">
+                        <div class="account-container h-100">
+                            <h3 class="section-title">Top Products</h3>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Shop</th>
+                                            <th>Sales</th>
+                                            <th>Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="product : ${topProducts}">
+                                            <td th:text="${product.title}">Book Title</td>
+                                            <td th:text="${product.shop_name}">Shop Name</td>
+                                            <td th:text="${product.total_quantity}">123</td>
+                                            <td th:text="${#numbers.formatCurrency(product.total_revenue)}">$1,234</td>
+                                        </tr>
+                                        <tr th:if="${topProducts == null || topProducts.isEmpty()}">
+                                            <td colspan="4" class="text-center py-3">No products data available</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Sellers Table -->
+                    <div class="col-md-6">
+                        <div class="account-container h-100">
+                            <h3 class="section-title">Top Sellers</h3>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Shop</th>
+                                            <th>Owner</th>
+                                            <th>Orders</th>
+                                            <th>Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="seller : ${topSellers}">
+                                            <td th:text="${seller.shop_name}">Shop Name</td>
+                                            <td th:text="${seller.seller_name}">John Doe</td>
+                                            <td th:text="${seller.total_orders}">45</td>
+                                            <td th:text="${#numbers.formatCurrency(seller.total_revenue)}">$5,678</td>
+                                        </tr>
+                                        <tr th:if="${topSellers == null || topSellers.isEmpty()}">
+                                            <td colspan="4" class="text-center py-3">No sellers data available</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity and Quick Actions -->
+                <div class="row">
+                    <!-- Recent Activity -->
+                    <div class="col-md-8">
+                        <div class="account-container">
+                            <h3 class="section-title">Recent Activity</h3>
+                            <div class="activity-list">
+                                <div class="activity-item" th:each="activity : ${recentActivities}">
+                                    <div class="d-flex align-items-start">
+                                        <div th:if="${activity.type == 'order'}" class="activity-icon order">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </div>
+                                        <div th:if="${activity.type == 'user_registration'}" class="activity-icon user">
+                                            <i class="fas fa-user-plus"></i>
+                                        </div>
+                                        <div th:if="${activity.type == 'product'}" class="activity-icon product">
+                                            <i class="fas fa-book"></i>
+                                        </div>
+                                        <div th:if="${activity.type == 'shop'}" class="activity-icon shop">
+                                            <i class="fas fa-store"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1" th:text="${activity.description}">Activity Description</h6>
+                                            <small class="text-muted" th:text="${#temporals.format(activity.timestamp, 'dd MMM, HH:mm')}">10 minutes ago</small>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="activity-details">
-                                    <h6 class="mb-1" th:text="${activity.description}">Activity Description</h6>
-                                    <small class="text-muted" th:text="${activity.timestamp}">Timestamp</small>
+                                <!-- Fallback when no activities -->
+                                <div th:if="${#lists.isEmpty(recentActivities)}" class="text-center py-3">
+                                    <p class="text-muted mb-0">No recent activities to display</p>
                                 </div>
                             </div>
                         </div>
-                        <!-- Fallback when no activities -->
-                        <div th:if="${#lists.isEmpty(recentActivities)}" class="text-center py-3">
-                            <p class="text-muted mb-0">No recent activities to display</p>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="col-md-4">
+                        <div class="account-container">
+                            <h3 class="section-title">Quick Actions</h3>
+                            <a href="/admin/users" class="btn btn-outline-primary quick-action-btn">
+                                <i class="fas fa-users"></i> Manage Users
+                            </a>
+                            <a href="/admin/products" class="btn btn-outline-primary quick-action-btn">
+                                <i class="fas fa-book"></i> Manage Products
+                            </a>
+                            <a href="/admin/seller-approvals" class="btn btn-outline-primary quick-action-btn">
+                                <i class="fas fa-store"></i> Seller Approvals
+                            </a>
+                            <a href="/admin/categories" class="btn btn-outline-primary quick-action-btn">
+                                <i class="fas fa-tags"></i> Manage Categories
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -273,47 +549,94 @@
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Chart Initialization -->
     <script th:inline="javascript">
         // Revenue Chart
         const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+
+        // Lấy chuỗi JSON từ Thymeleaf và chuyển đổi thành mảng JavaScript
+        const dailyLabelsJson = /*[[${dailyLabelsJson}]]*/ '[]';
+        const dailyLabels = JSON.parse(dailyLabelsJson);
+
+        const dailyRevenueJson = /*[[${dailyRevenueJson}]]*/ '[]';
+        const dailyRevenueData = JSON.parse(dailyRevenueJson);
+
         new Chart(revenueCtx, {
             type: 'line',
             data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: dailyLabels, // Bây giờ đây là một mảng hợp lệ
                 datasets: [{
-                    label: 'Platform Revenue',
-                    data: [12000, 19000, 15000, 25000, 22000, 30000],
+                    label: 'Daily Revenue',
+                    data: dailyRevenueData, // Và đây cũng vậy
                     borderColor: '#2C3E50',
-                    tension: 0.1
+                    backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: {
+                            // Bỏ các tùy chọn xoay để Chart.js tự động xử lý
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
             }
         });
 
-        // Users Chart
-        const usersCtx = document.getElementById('usersChart').getContext('2d');
-        new Chart(usersCtx, {
+        // Product Views Chart (giữ nguyên hoặc áp dụng tương tự nếu cần)
+        const productViewsCtx = document.getElementById('productViewsChart').getContext('2d');
+        const productViewsLabelsJson = /*[[${productViewsLabelsJson}]]*/ '[]';
+        const productViewsDataJson = /*[[${productViewsDataJson}]]*/ '[]';
+        const productViewsLabels = JSON.parse(productViewsLabelsJson);
+        const productViewsData = JSON.parse(productViewsDataJson);
+
+        new Chart(productViewsCtx, {
             type: 'bar',
             data: {
-                labels: ['Buyers', 'Sellers', 'Admin Staff'],
+                labels: productViewsLabels,
                 datasets: [{
-                    label: 'User Distribution',
-                    data: [500, 50, 5],
-                    backgroundColor: [
-                        '#3498db',
-                        '#2ecc71',
-                        '#e74c3c'
-                    ]
+                    label: 'Top Viewed Products',
+                    data: productViewsData,
+                    backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                    borderColor: '#2C3E50',
+                    borderWidth: 1,
+                    borderRadius: 3
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
             }
         });
     </script>

@@ -237,4 +237,28 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
     @Modifying
     @Query("UPDATE Book b SET b.isActive = false WHERE b.shop.shopId = :shopId")
     void updateIsActiveByShopId(@Param("shopId") Integer shopId);
+
+    /**
+     * Count books added after a specific date
+     * 
+     * @param date The cutoff date
+     * @return Count of books added after the specified date
+     */
+    @Query("SELECT COUNT(b) FROM Book b WHERE b.dateAdded >= :date")
+    long countByDateAddedAfter(@Param("date") LocalDate date);
+
+    /**
+     * Get total views for all books across the platform
+     * @return total views (sum of viewsCount)
+     */
+    @Query(value = "SELECT COALESCE(SUM(b.views_count), 0) FROM books b", nativeQuery = true)
+    Integer getTotalViewsAllBooks();
+
+    /**
+     * Get views for each product across the platform (top N)
+     * @param limit Maximum number of products to return
+     * @return list of Object[]: [bookId, title, viewsCount]
+     */
+    @Query(value = "SELECT TOP(:limit) b.book_id, b.title, b.views_count FROM books b ORDER BY b.views_count DESC", nativeQuery = true)
+    List<Object[]> getTopViewedBooks(@Param("limit") Integer limit);
 }
