@@ -298,4 +298,146 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("SELECT COUNT(o) FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE b.shop.shopId = :shopId AND o.orderStatus IN ('PENDING', 'PROCESSING', 'SHIPPED')")
     long countActiveOrdersByShopId(@Param("shopId") Integer shopId);
+    
+    /**
+     * Calculate the total value of all orders (except cancelled/refunded)
+     * Used for platform revenue calculations
+     * 
+     * @return Total order value
+     */
+    @Query(value = "SELECT COALESCE(SUM(total_amount), 0) FROM orders " +
+           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED')", 
+           nativeQuery = true)
+    BigDecimal calculateTotalOrderValue();
+    
+    /**
+     * Get monthly revenue for the platform
+     * 
+     * @param startDate Start date for the data
+     * @param endDate End date for the data
+     * @return List of monthly revenue data
+     */
+    @Query(value = "SELECT FORMAT(order_date, 'yyyy-MM') AS month, " +
+           "COALESCE(SUM(total_amount), 0) AS revenue " +
+           "FROM orders " +
+           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "AND order_date BETWEEN :startDate AND :endDate " +
+           "GROUP BY FORMAT(order_date, 'yyyy-MM') " +
+           "ORDER BY month",
+           nativeQuery = true)
+    List<Map<String, Object>> getMonthlyRevenue(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+    
+    /**
+     * Get top selling products across the platform
+     * 
+     * @param limit Maximum number of products to return
+     * @return List of top selling products with sales data
+     */
+    @Query(value = "SELECT TOP(:limit) b.book_id, b.title, " +
+           "SUM(oi.quantity) AS total_quantity, " +
+           "SUM(oi.unit_price * oi.quantity) AS total_revenue, " +
+           "s.shop_name AS shop_name " +
+           "FROM books b " +
+           "JOIN order_items oi ON b.book_id = oi.book_id " +
+           "JOIN orders o ON oi.order_id = o.order_id " +
+           "JOIN shops s ON b.shop_id = s.shop_id " +
+           "WHERE o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "GROUP BY b.book_id, b.title, s.shop_name " +
+           "ORDER BY SUM(oi.quantity) DESC",
+           nativeQuery = true)
+    List<Map<String, Object>> getTopSellingProducts(@Param("limit") int limit);
+    
+    /**
+     * Get top sellers by revenue
+     * 
+     * @param limit Maximum number of sellers to return
+     * @return List of top sellers with revenue data
+     */
+    @Query(value = "SELECT TOP(:limit) s.shop_id, s.shop_name, u.full_name AS seller_name, " +
+           "COUNT(DISTINCT o.order_id) AS total_orders, " +
+           "SUM(oi.unit_price * oi.quantity) AS total_revenue " +
+           "FROM shops s " +
+           "JOIN books b ON s.shop_id = b.shop_id " +
+           "JOIN users u ON s.user_id = u.user_id " +
+           "JOIN order_items oi ON b.book_id = oi.book_id " +
+           "JOIN orders o ON oi.order_id = o.order_id " +
+           "WHERE o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "GROUP BY s.shop_id, s.shop_name, u.full_name " +
+           "ORDER BY SUM(oi.unit_price * oi.quantity) DESC",
+           nativeQuery = true)
+    List<Map<String, Object>> getTopSellers(@Param("limit") int limit);
+    
+    /**
+     * Get recent orders across the platform
+     * 
+     * @param limit Maximum number of orders to return
+     * @return List of recent orders
+     */
+    @Query(value = "SELECT TOP(:limit) o.order_id, o.order_date, o.order_status, " +
+           "o.total_amount, u.full_name AS customer_name " +
+           "FROM orders o " +
+           "JOIN users u ON o.user_id = u.user_id " +
+           "ORDER BY o.order_date DESC",
+           nativeQuery = true)
+    List<Map<String, Object>> getRecentPlatformOrders(@Param("limit") int limit);
+    
+    /**
+     * Count orders placed within the specified number of days
+     * 
+     * @param days Number of days to look back
+     * @return Count of new orders
+     */
+    @Query(value = "SELECT COUNT(*) FROM orders " +
+           "WHERE order_date >= DATEADD(day, -:days, GETDATE())",
+           nativeQuery = true)
+    long countOrdersInLastDays(@Param("days") int days);
+    
+    /**
+     * Calculate total platform revenue for a time period
+     * 
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
+     * @param commissionRate Platform commission rate (decimal)
+     * @return Total platform revenue
+     */
+    @Query(value = "SELECT COALESCE(SUM(total_amount * :commissionRate), 0) " +
+           "FROM orders " +
+           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "AND CAST(order_date AS DATE) BETWEEN :startDate AND :endDate",
+           nativeQuery = true)
+    BigDecimal calculatePlatformRevenue(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("commissionRate") BigDecimal commissionRate);
+
+    /**
+     * Count total orders across the platform.
+     * @return Total count of orders.
+     */
+    @Query(value = "SELECT COUNT(*) FROM orders", nativeQuery = true)
+    long countAllOrders();
+
+    /**
+     * Get daily platform revenue data for a date range
+     * 
+     * @param startDate Start date of the period
+     * @param endDate End date of the period
+     * @param commissionRate Platform commission rate (decimal)
+     * @return List of daily revenue data
+     */
+    @Query(value = "SELECT " +
+           "CAST(order_date AS DATE) AS order_date, " +
+           "COALESCE(SUM(sub_total * :commissionRate), 0) AS daily_revenue " +
+           "FROM orders " +
+           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "AND CAST(order_date AS DATE) BETWEEN :startDate AND :endDate " +
+           "GROUP BY CAST(order_date AS DATE) " +
+           "ORDER BY CAST(order_date AS DATE)",
+           nativeQuery = true)
+    List<Map<String, Object>> getDailyPlatformRevenue(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("commissionRate") BigDecimal commissionRate);
 } 

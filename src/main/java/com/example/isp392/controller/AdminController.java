@@ -1,15 +1,20 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.model.Book;
+import com.example.isp392.model.OrderStatus;
 import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
-import com.example.isp392.repository.ShopRepository;
 import com.example.isp392.service.AdminService;
 import com.example.isp392.service.BookService;
+import com.example.isp392.service.OrderService;
 import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,12 +31,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,13 +54,14 @@ import java.util.stream.Collectors;
 @RequestMapping("/admin")
 public class AdminController {
     
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
     private final UserService userService;
     private final AdminService adminService;
     private final BookService bookService;
     private final CategoryRepository categoryRepository;
     private final PublisherRepository publisherRepository;
     private final ShopService shopService;
-    private final ShopRepository shopRepository;
+    private final OrderService orderService;
 
     /**
      * Constructor with explicit dependency injection
@@ -59,16 +70,20 @@ public class AdminController {
      * @param userService service for user-related operations
      * @param adminService service for admin-specific operations
      */
-    public AdminController(UserService userService, AdminService adminService, BookService bookService,
-                           CategoryRepository categoryRepository, PublisherRepository publisherRepository,
-                           ShopRepository shopRepository, ShopService shopService) {
+    public AdminController(UserService userService, 
+                          AdminService adminService, 
+                          BookService bookService,
+                          CategoryRepository categoryRepository, 
+                          PublisherRepository publisherRepository,
+                          ShopService shopService,
+                          OrderService orderService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
         this.categoryRepository = categoryRepository;
         this.publisherRepository = publisherRepository;
-        this.shopRepository = shopRepository;
         this.shopService = shopService;
+        this.orderService = orderService;
     }
     
     /**
@@ -83,7 +98,7 @@ public class AdminController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser") && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
             // If user is authenticated and has ADMIN role, redirect to product management
-            return "redirect:/admin/products";
+            return "redirect:/admin/dashboard";
         }     
         
         // No active menu for login page
@@ -93,13 +108,6 @@ public class AdminController {
     }
     
     /**
-     * Display product management page
-     * This page is only accessible to authenticated users with ADMIN role
-     * 
-     * @param model Model to add attributes
-     * @return the product management view
-     */
-    /**
      * Display dashboard page
      * This page is only accessible to authenticated users with ADMIN role
      * 
@@ -108,50 +116,175 @@ public class AdminController {
      */
     @GetMapping("/dashboard")
     public String showDashboardPage(Model model) {
-        // Use AdminService to get the current admin user
-        Optional<User> adminUserOpt = adminService.getCurrentAdminUser();
-        long pendingSellerCount = shopService.countPendingShops();
-        if (adminUserOpt.isPresent()) {
-            User adminUser = adminUserOpt.get();
+        try {
+            // Use AdminService to get the current admin user
+            Optional<User> adminUserOpt = adminService.getCurrentAdminUser();
+            if (adminUserOpt.isPresent()) {
+                User adminUser = adminUserOpt.get();
+                model.addAttribute("user", adminUser);
+                model.addAttribute("roles", userService.getUserRoles(adminUser));
+                String firstName = adminService.extractFirstName(adminUser.getFullName());
+                model.addAttribute("firstName", firstName);
+            }
+
+            // === Dashboard statistics ===
+            // 1. Total users count
+            long totalUsers = userService.countAllUsers();
+            model.addAttribute("totalUsers", totalUsers);
+
+            // 2. New users (registered in the last 30 days)
+            long newUsers = adminService.countNewUsers(30);
+            model.addAttribute("newUsers", newUsers);
+
+            // 3. Buyers count
+            long buyerCount = adminService.countUsersByRole("BUYER");
+            model.addAttribute("buyerCount", buyerCount);
+
+            // 4. Sellers count
+            long sellerCount = adminService.countUsersByRole("SELLER");
+            model.addAttribute("sellerCount", sellerCount);
+
+            // 5. Active sellers (count of shops with APPROVED status and active)
+            long activeSellers = shopService.countActiveSellers();
+            model.addAttribute("activeSellers", activeSellers);
+
+            // 6. Total products
+            long totalProducts = bookService.countAllBooks();
+            model.addAttribute("totalProducts", totalProducts);
+
+            // 7. New products listed (in last 30 days)
+            long newProducts = adminService.countNewProducts(30);
+            model.addAttribute("newProducts", newProducts);
+
+            // 8. Pending seller approvals count
+            long pendingSellerCount = shopService.countPendingShops();
             model.addAttribute("newSellerRegistrations", pendingSellerCount);
-            model.addAttribute("user", adminUser);
-            model.addAttribute("roles", userService.getUserRoles(adminUser));
-            String firstName = adminService.extractFirstName(adminUser.getFullName());
-            model.addAttribute("firstName", firstName);
+
+            // 9. Platform revenue (commission from orders) - Assuming 10% commission
+            BigDecimal platformRevenue = adminService.calculateTotalPlatformRevenue();
+            model.addAttribute("totalRevenue", platformRevenue);
+
+            // NEW: Total orders across the platform
+            long totalPlatformOrders = adminService.countAllOrders();
+            model.addAttribute("totalPlatformOrders", totalPlatformOrders);
+
+            // NEW: Average order value across the platform
+            BigDecimal averageOrderValue = adminService.calculateAverageOrderValue();
+            model.addAttribute("averageOrderValue", averageOrderValue);
+
+            // NEW: Total platform views
+            int totalPlatformViews = adminService.getTotalPlatformViews();
+            model.addAttribute("totalPlatformViews", totalPlatformViews);
+
+            // NEW: Top viewed products
+            List<Map<String, Object>> topViewedProducts = adminService.getTopViewedProducts(5);
+            model.addAttribute("topViewedProducts", topViewedProducts);
+            // For chart.js: push product titles and views as JSON arrays
+            List<String> productTitles = new ArrayList<>();
+            List<Integer> productViewsCounts = new ArrayList<>();
+            for (Map<String, Object> pv : topViewedProducts) {
+                productTitles.add((String) pv.get("title"));
+                productViewsCounts.add(pv.get("viewsCount") != null ? ((Number) pv.get("viewsCount")).intValue() : 0);
+            }
+            model.addAttribute("productViewsLabelsJson", safeConvertToJsonArray(productTitles));
+            model.addAttribute("productViewsDataJson", safeConvertToJsonArray(productViewsCounts));
+
+            // 10. Daily revenue data for the last 7 days
+            List<Map<String, Object>> dailyRevenueData = adminService.getDailyPlatformRevenue();
+            List<String> dayLabels = new ArrayList<>();
+            List<BigDecimal> dailyRevenueValues = new ArrayList<>();
+            BigDecimal totalRevenueLast7Days = BigDecimal.ZERO;
+
+            for (Map<String, Object> data : dailyRevenueData) {
+                dayLabels.add((String) data.get("day"));
+                dailyRevenueValues.add((BigDecimal) data.get("revenue"));
+                totalRevenueLast7Days = totalRevenueLast7Days.add((BigDecimal) data.get("revenue"));
+            }
+
+            model.addAttribute("dailyLabelsJson", safeConvertToJsonArray(dayLabels));
+            model.addAttribute("dailyRevenueJson", safeConvertToJsonArray(dailyRevenueValues));
+            model.addAttribute("totalRevenueLast7Days", totalRevenueLast7Days);
+
+            // 11. User distribution data for chart
+            List<Integer> userDistribution = new ArrayList<>();
+            userDistribution.add(Long.valueOf(buyerCount).intValue());
+            userDistribution.add(Long.valueOf(sellerCount).intValue());
+            userDistribution.add(adminService.countUsersByRole("ADMIN").intValue());
+            model.addAttribute("userDistributionJson", safeConvertToJsonArray(userDistribution));
+
+            // 12. Top products by sales
+            List<Map<String, Object>> topProducts = adminService.getTopSellingProducts(5);
+            model.addAttribute("topProducts", topProducts);
+
+            // 13. Top sellers by revenue
+            List<Map<String, Object>> topSellers = adminService.getTopSellers(5);
+            model.addAttribute("topSellers", topSellers);
+
+            // 14. Recent orders
+            List<Map<String, Object>> recentOrders = adminService.getRecentOrders(5);
+            model.addAttribute("recentOrders", recentOrders);
+
+            // 15. System alerts (mocked for now)
+            int systemAlerts = 0;
+            model.addAttribute("systemAlerts", systemAlerts);
+
+            // 16. Recent activities
+            List<Map<String, Object>> recentActivities = adminService.getRecentActivities(10);
+            model.addAttribute("recentActivities", recentActivities);
+            
+            log.debug("Dashboard loaded with stats: users={}, products={}, activeSellers={}, pendingApprovals={}",
+                totalUsers, totalProducts, activeSellers, pendingSellerCount);
+
+            // Add active menu information for sidebar highlighting
+            model.addAttribute("activeMenu", "dashboard");
+            
+            return "admin/dashboard";
+        } catch (Exception e) {
+            log.error("Error loading admin dashboard: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage", "Error loading dashboard data: " + e.getMessage());
+            
+            // Add empty data to prevent JavaScript errors
+            model.addAttribute("totalUsers", 0);
+            model.addAttribute("newUsers", 0);
+            model.addAttribute("buyerCount", 0);
+            model.addAttribute("sellerCount", 0);
+            model.addAttribute("activeSellers", 0);
+            model.addAttribute("totalProducts", 0);
+            model.addAttribute("newProducts", 0);
+            model.addAttribute("newSellerRegistrations", 0);
+            model.addAttribute("totalRevenue", BigDecimal.ZERO);
+            model.addAttribute("totalRevenueLast7Days", BigDecimal.ZERO);
+            model.addAttribute("dailyLabelsJson", "[]");
+            model.addAttribute("dailyRevenueJson", "[]");
+            model.addAttribute("topProducts", new ArrayList<>());
+            model.addAttribute("topSellers", new ArrayList<>());
+            model.addAttribute("recentOrders", new ArrayList<>());
+            model.addAttribute("systemAlerts", 0);
+            model.addAttribute("recentActivities", new ArrayList<>());
+            model.addAttribute("activeMenu", "dashboard");
+            
+            return "admin/dashboard";
         }
+    }
 
-        // === Dashboard statistics ===
-        // Total users
-        long totalUsers = userService.countAllUsers();
-        model.addAttribute("totalUsers", totalUsers);
-
-        // Total products
-        long totalProducts = bookService.countAllBooks();
-        model.addAttribute("totalProducts", totalProducts);
-
-        // Active sellers (count of shops with APPROVED status and active)
-        long activeSellers = shopService.countActiveSellers();
-        model.addAttribute("activeSellers", activeSellers);
-
-        // Total revenue (sum of all order revenue)
-        // TODO: Replace with actual total revenue from all orders (across all shops)
-        // You may need to add a method in OrderRepository for this
-        java.math.BigDecimal totalRevenue = java.math.BigDecimal.ZERO; // Mocked for now
-        model.addAttribute("totalRevenue", totalRevenue);
-
-        // System alerts (mocked)
-        int systemAlerts = 0; // TODO: Replace with actual system alert count
-        model.addAttribute("systemAlerts", systemAlerts);
-
-        // Recent activities (mocked)
-        java.util.List<java.util.Map<String, Object>> recentActivities = new java.util.ArrayList<>();
-        // TODO: Replace with actual recent activities (e.g., recent orders, new users, etc.)
-        model.addAttribute("recentActivities", recentActivities);
-
-        // Add active menu information for sidebar highlighting
-        model.addAttribute("activeMenu", "dashboard");
-
-        return "admin/dashboard";
+    /**
+     * Convert a list to a JSON array string safely using the standard Jackson library
+     *
+     * @param <T> Type of list elements
+     * @param list List to convert
+     * @return JSON array string
+     */
+    private <T> String safeConvertToJsonArray(List<T> list) {
+        if (list == null) {
+            return "[]";
+        }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.writeValueAsString(list);
+        } catch (Exception e) {
+            log.error("Error converting list to JSON array: {}", e.getMessage());
+            return "[]"; // Fallback on error
+        }
     }
     
     /**
@@ -476,7 +609,7 @@ public class AdminController {
     @GetMapping("/shops/detail/{id}")
     public String showShopDetailPage(@PathVariable("id") Integer shopId, Model model) {
         adminService.addAdminInfoToModel(model);
-        Shop shop = shopRepository.findById(shopId).orElse(null);
+        Shop shop = shopService.getShopById(shopId); // Assuming shopService has a getShopById method
         if(shop == null) return "redirect:/admin/seller-approvals";
 
         model.addAttribute("shop", shop);

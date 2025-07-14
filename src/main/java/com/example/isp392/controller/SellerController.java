@@ -190,17 +190,7 @@ public class SellerController {
             model.addAttribute("weeklyRevenue", weeklyRevenue);
 
             // Convert weekly revenue to JSON array for chart.js
-            // Ensure we're sending numeric values, not strings
-            StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < weeklyRevenue.size(); i++) {
-                sb.append(weeklyRevenue.get(i).toString());
-                if (i < weeklyRevenue.size() - 1) {
-                    sb.append(",");
-                }
-            }
-            sb.append("]");
-            String weeklyRevenueJson = sb.toString();
-
+            String weeklyRevenueJson = safeConvertToJsonArray(weeklyRevenue);
             model.addAttribute("weeklyRevenueJson", weeklyRevenueJson);
 
             log.debug("Dashboard loaded for shop ID: {}", shop.getShopId());
