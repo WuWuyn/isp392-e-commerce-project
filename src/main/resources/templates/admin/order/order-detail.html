@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details - ReadHub Admin</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8F5F0;
+            color: #333;
+        }
+        .navbar-brand {
+            font-family: 'Lora', serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: #2C3E50;
+        }
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2C3E50;
+            border-bottom: 2px solid #2C3E50;
+            padding-bottom: 0.5rem;
+        }
+        .account-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .btn-primary {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-primary:hover {
+            background-color: #1e2b37;
+            border-color: #1e2b37;
+        }
+        .btn-outline-primary {
+            color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-outline-primary:hover {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .account-sidebar {
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+        .account-sidebar .list-group-item {
+            border: none;
+            border-left: 4px solid transparent;
+            font-weight: 600;
+        }
+        .account-sidebar .list-group-item.active {
+            background-color: #f8f9fa;
+            color: #2C3E50;
+            border-left: 4px solid #2C3E50;
+        }
+        .account-sidebar .list-group-item i {
+            margin-right: 10px;
+            color: #6c757d;
+        }
+        .account-sidebar .list-group-item.active i {
+            color: #2C3E50;
+        }
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+        }
+        .table th {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+        .detail-row {
+            display: flex;
+            margin-bottom: 0.75rem;
+        }
+        .detail-row .label {
+            font-weight: 600;
+            min-width: 150px;
+            color: #6c757d;
+        }
+        .detail-row .value {
+            flex-grow: 1;
+        }
+        .order-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .status-pending {
+            background-color: #ffe0b2;
+            color: #e65100;
+        }
+        .status-processing {
+            background-color: #b3e5fc;
+            color: #01579b;
+        }
+        .status-shipped {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        .status-delivered {
+            background-color: #a5d6a7;
+            color: #1b5e20;
+        }
+        .status-cancelled {
+            background-color: #ffcdd2;
+            color: #b71c1c;
+        }
+        .order-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        .order-item .item-image {
+            width: 80px;
+            height: 100px;
+            object-fit: cover;
+            margin-right: 1rem;
+            border-radius: 4px;
+        }
+        .order-item .item-details {
+            flex-grow: 1;
+        }
+        .order-item .item-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .order-item .item-price {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .order-item .item-quantity {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .order-item .item-subtotal {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+        .order-totals {
+            padding: 1rem;
+            border-top: 1px solid #eee;
+        }
+        .order-totals .row {
+            margin-bottom: 0.5rem;
+        }
+        .order-totals .total-label {
+            font-weight: 600;
+            text-align: right;
+        }
+        .order-totals .total-value {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+        .order-totals .grand-total {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .notes-section {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+        .notes-section pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Topbar -->
+    <div th:replace="fragments/admin-topbar :: admin-topbar"></div>
+
+    <div class="container my-4">
+        <div class="row">
+            <!-- Include Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div th:replace="fragments/admin-sidebar :: admin-sidebar"></div>
+            </div>
+            
+            <div class="col-lg-9">
+                <!-- Success and Error Messages -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Page Header with Back Button -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <a href="/admin/orders" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left"></i> Back to Orders
+                        </a>
+                        <h3 class="d-inline-block mb-0">Order #<span th:text="${order.orderId}">12345</span></h3>
+                    </div>
+                    <span th:class="'order-status status-' + ${#strings.toLowerCase(order.orderStatus)}" th:text="${order.orderStatus}">Status</span>
+                </div>
+
+                <div class="row">
+                    <!-- Order Information -->
+                    <div class="col-md-8">
+                        <div class="account-container">
+                            <h5 class="section-title">Order Details</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="detail-row">
+                                        <span class="label">Order ID:</span>
+                                        <span class="value" th:text="${order.orderId}">12345</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Order Date:</span>
+                                        <span class="value" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">01/01/2023 12:34</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Payment Method:</span>
+                                        <span class="value" th:text="${order.paymentMethod}">Credit Card</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Payment Status:</span>
+                                        <span class="value" th:text="${order.paymentStatus}">Paid</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <div class="detail-row">
+                                        <span class="label">Customer:</span>
+                                        <span class="value" th:text="${order.user.fullName}">John Doe</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Customer Email:</span>
+                                        <span class="value" th:text="${order.user.email}">john@example.com</span>
+                                    </div>
+                                    <div class="detail-row" th:if="${order.updatedAt != null}">
+                                        <span class="label">Last Updated:</span>
+                                        <span class="value" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2023 14:30</span>
+                                    </div>
+                                    <div class="detail-row" th:if="${order.orderStatus.name() == 'CANCELLED' && order.cancelledAt != null}">
+                                        <span class="label">Cancelled At:</span>
+                                        <span class="value" th:text="${#temporals.format(order.cancelledAt, 'dd/MM/yyyy HH:mm')}">01/01/2023 15:45</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Shipping Address -->
+                            <h5 class="section-title mt-4">Shipping Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="detail-row">
+                                        <span class="label">Recipient:</span>
+                                        <span class="value" th:text="${order.recipientName}">John Doe</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Phone:</span>
+                                        <span class="value" th:text="${order.recipientPhone}">123-456-7890</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="detail-row">
+                                        <span class="label">Address:</span>
+                                        <span class="value">
+                                            <span th:text="${order.shippingAddressDetail}">123 Main St</span><br>
+                                            <span th:text="${order.shippingWard + ', ' + order.shippingDistrict + ', ' + order.shippingProvince}">Ward, District, Province</span>
+                                        </span>
+                                    </div>
+                                    <div class="detail-row" th:if="${order.shippingCompany != null}">
+                                        <span class="label">Shipping Company:</span>
+                                        <span class="value" th:text="${order.shippingCompany}">Express Shipping</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Order Items -->
+                            <h5 class="section-title mt-4">Order Items</h5>
+                            <div class="order-items">
+                                <div class="order-item" th:each="item : ${order.orderItems}">
+                                    <img th:if="${item.book.coverImgUrl != null}" th:src="${item.book.coverImgUrl}" alt="Book Cover" class="item-image">
+                                    <img th:unless="${item.book.coverImgUrl != null}" src="/images/book-placeholder.jpg" alt="No Cover" class="item-image">
+                                    <div class="item-details">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <h6 class="item-title" th:text="${item.book.title}">Book Title</h6>
+                                                <p class="item-price" th:text="${'Price: ' + #numbers.formatCurrency(item.unitPrice)}">Price: $19.99</p>
+                                                <p class="item-quantity" th:text="${'Quantity: ' + item.quantity}">Quantity: 2</p>
+                                                <p class="small text-muted">
+                                                    Seller: <span th:text="${item.book.shop.shopName}">Shop Name</span>
+                                                </p>
+                                            </div>
+                                            <div class="col-md-4 text-end">
+                                                <div class="item-subtotal" th:text="${#numbers.formatCurrency(item.subtotal)}">$39.98</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Order Totals -->
+                            <div class="order-totals">
+                                <div class="row">
+                                    <div class="col-md-9 total-label">Subtotal:</div>
+                                    <div class="col-md-3 total-value" th:text="${#numbers.formatCurrency(order.subTotal)}">$39.98</div>
+                                </div>
+                                <div class="row" th:if="${order.shippingFee != null && order.shippingFee.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                                    <div class="col-md-9 total-label">Shipping:</div>
+                                    <div class="col-md-3 total-value" th:text="${#numbers.formatCurrency(order.shippingFee)}">$5.00</div>
+                                </div>
+                                <div class="row" th:if="${order.discountAmount != null && order.discountAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                                    <div class="col-md-9 total-label">Discount:</div>
+                                    <div class="col-md-3 total-value text-danger" th:text="${'-' + #numbers.formatCurrency(order.discountAmount)}">-$5.00</div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-9 total-label grand-total">Total:</div>
+                                    <div class="col-md-3 total-value grand-total" th:text="${#numbers.formatCurrency(order.totalAmount)}">$39.98</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Notes -->
+                            <div th:if="${order.notes != null && !order.notes.empty}" class="mt-4">
+                                <h5 class="section-title">Notes</h5>
+                                <div class="notes-section">
+                                    <pre th:text="${order.notes}">Order notes go here...</pre>
+                                </div>
+                            </div>
+                            
+                            <!-- Cancellation Reason -->
+                            <div th:if="${order.orderStatus.name() == 'CANCELLED' && order.cancellationReason != null}" class="mt-4">
+                                <h5 class="section-title">Cancellation Reason</h5>
+                                <div class="notes-section">
+                                    <pre th:text="${order.cancellationReason}">Cancellation reason goes here...</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Actions Panel -->
+                    <div class="col-md-4">
+                        <!-- Update Order Status -->
+                        <div class="account-container">
+                            <h5 class="section-title">Update Status</h5>
+                            <form th:action="@{/admin/orders/{id}/update-status(id=${order.orderId})}" method="post">
+                                <div class="mb-3">
+                                    <label for="newStatus" class="form-label">New Status:</label>
+                                    <select class="form-select" id="newStatus" name="newStatus" required>
+                                        <option value="" disabled selected>Select status</option>
+                                        <option th:each="status : ${allStatuses}" 
+                                                th:value="${status}" 
+                                                th:text="${status}"
+                                                th:selected="${status == order.orderStatus}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="adminNotes" class="form-label">Admin Notes:</label>
+                                    <textarea class="form-control" id="adminNotes" name="adminNotes" rows="3" placeholder="Add notes about this status change"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-save me-2"></i>Update Status
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Process Refund -->
+                        <div class="account-container mt-4" th:if="${order.orderStatus.name() != 'CANCELLED'}">
+                            <h5 class="section-title">Process Refund</h5>
+                            <form th:action="@{/admin/orders/{id}/process-refund(id=${order.orderId})}" method="post">
+                                <div class="mb-3">
+                                    <label for="refundReason" class="form-label">Refund Reason:</label>
+                                    <textarea class="form-control" id="refundReason" name="refundReason" rows="3" placeholder="Enter reason for refund" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to process a refund for this order?');">
+                                    <i class="fas fa-undo me-2"></i>Process Refund
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Add Internal Note -->
+                        <div class="account-container mt-4">
+                            <h5 class="section-title">Add Internal Note</h5>
+                            <form th:action="@{/admin/orders/{id}/add-note(id=${order.orderId})}" method="post">
+                                <div class="mb-3">
+                                    <label for="adminNote" class="form-label">Admin Note:</label>
+                                    <textarea class="form-control" id="adminNote" name="adminNote" rows="4" placeholder="Add internal note (not visible to customer)" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-sticky-note me-2"></i>Add Note
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

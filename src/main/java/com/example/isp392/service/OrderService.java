@@ -53,7 +53,7 @@ public class OrderService {
         return orderRepository.findById(orderId).map(order -> {
             OrderStatus oldStatus = order.getOrderStatus();
             order.setOrderStatus(newStatus);
-            
+
             // Xử lý số lượng sách dựa trên thay đổi trạng thái
             if (oldStatus != newStatus) {
                 if (newStatus == OrderStatus.CANCELLED) {
@@ -61,7 +61,7 @@ public class OrderService {
                     for (OrderItem item : order.getOrderItems()) {
                         bookService.increaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
                     }
-                } else if (oldStatus == OrderStatus.CANCELLED && 
+                } else if (oldStatus == OrderStatus.CANCELLED &&
                          (newStatus == OrderStatus.PENDING || newStatus == OrderStatus.PROCESSING)) {
                     // Nếu đơn hàng từ trạng thái hủy chuyển sang pending/confirmed, giảm lại số lượng sách
                     for (OrderItem item : order.getOrderItems()) {
@@ -69,7 +69,7 @@ public class OrderService {
                     }
                 }
             }
-            
+
             orderRepository.save(order);
             return true;
         }).orElse(false);
@@ -197,10 +197,10 @@ public class OrderService {
 
         return savedOrder;
     }
-    
+
     /**
      * Get today's revenue for a shop
-     * 
+     *
      * @param shopId ID of the shop
      * @return Today's revenue
      */
@@ -209,10 +209,10 @@ public class OrderService {
         BigDecimal revenue = orderRepository.getTodayRevenue(shopId, today);
         return revenue != null ? revenue : BigDecimal.ZERO;
     }
-    
+
     /**
      * Get new orders count for a shop within the last N days
-     * 
+     *
      * @param shopId ID of the shop
      * @param daysAgo Number of days to look back
      * @return Count of new orders
@@ -220,46 +220,46 @@ public class OrderService {
     public int getNewOrdersCount(Integer shopId, int daysAgo) {
         return orderRepository.getNewOrdersCount(shopId, daysAgo);
     }
-    
+
     /**
      * Get weekly revenue data for a shop
-     * 
+     *
      * @param shopId ID of the shop
      * @return List of BigDecimal values representing daily revenue for the last 7 days
      */
     public List<BigDecimal> getWeeklyRevenue(Integer shopId) {
         List<Map<String, Object>> results = orderRepository.getWeeklyRevenue(shopId);
-        
+
         // Create a map to store revenue by date
         Map<String, BigDecimal> revenueByDate = new HashMap<>();
-        
+
         // Fill the map with results from the query
         for (Map<String, Object> result : results) {
             String date = (String) result.get("order_date");
             BigDecimal revenue = (BigDecimal) result.get("daily_revenue");
             revenueByDate.put(date, revenue);
         }
-        
+
         // Create a list of the last 7 days
         List<String> last7Days = new ArrayList<>();
         for (int i = 6; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
             last7Days.add(date.toString());
         }
-        
+
         // Create the final revenue list with 0 for days without data
         List<BigDecimal> weeklyRevenue = new ArrayList<>();
         for (String date : last7Days) {
             BigDecimal revenue = revenueByDate.getOrDefault(date, BigDecimal.ZERO);
             weeklyRevenue.add(revenue);
         }
-        
+
         return weeklyRevenue;
     }
-    
+
     /**
      * Get bestselling books by quantity sold
-     * 
+     *
      * @param shopId ID of the shop
      * @param limit Maximum number of books to return
      * @return List of maps with book data
@@ -267,10 +267,10 @@ public class OrderService {
     public List<Map<String, Object>> getBestsellingBooks(Integer shopId, int limit) {
         return orderRepository.getBestsellingBooksByQuantity(shopId, limit);
     }
-    
+
     /**
      * Get revenue data for a period (daily, weekly, monthly)
-     * 
+     *
      * @param shopId ID of the shop
      * @param startDate Start date of the period
      * @param endDate End date of the period
@@ -288,10 +288,10 @@ public class OrderService {
                 return orderRepository.getRevenueByMonth(shopId, startDate, endDate);
         }
     }
-    
+
     /**
      * Get recent orders for a shop
-     * 
+     *
      * @param shopId ID of the shop
      * @param limit Maximum number of orders to return
      * @return List of maps with order data
@@ -299,10 +299,10 @@ public class OrderService {
     public List<Map<String, Object>> getRecentOrders(Integer shopId, int limit) {
         return orderRepository.getRecentOrders(shopId, limit);
     }
-    
+
     /**
      * Get geographic distribution of orders
-     * 
+     *
      * @param shopId ID of the shop
      * @return List of maps with region and order count
      */
@@ -375,5 +375,170 @@ public class OrderService {
     public Long getTotalOrders(Integer shopId, LocalDate startDate, LocalDate endDate) {
         Long total = orderRepository.getTotalOrders(shopId, startDate, endDate);
         return total != null ? total : 0L;
+    }
+
+    /**
+     * Find orders for admin with search, filtering and pagination
+     *
+     * @param search Search term for order ID or customer name
+     * @param status Filter by order status
+     * @param fromDate Filter by start date
+     * @param toDate Filter by end date
+     * @param pageable Pagination and sorting information
+     * @return Page of filtered orders
+     */
+    public Page<Order> findOrdersForAdmin(String search, OrderStatus status, LocalDate fromDate, LocalDate toDate, Pageable pageable) {
+        Specification<Order> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Search by order ID or customer name
+            if (search != null && !search.trim().isEmpty()) {
+                String likePattern = "%" + search.toLowerCase() + "%";
+                Predicate searchPredicate = criteriaBuilder.or(
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("recipientName")), likePattern),
+                    criteriaBuilder.like(root.get("orderId").as(String.class), likePattern)
+                );
+                predicates.add(searchPredicate);
+            }
+
+            // Filter by status
+            if (status != null) {
+                predicates.add(criteriaBuilder.equal(root.get("orderStatus"), status));
+            }
+
+            // Filter by date range
+            if (fromDate != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
+                    root.get("orderDate"), fromDate.atStartOfDay()));
+            }
+
+            if (toDate != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(
+                    root.get("orderDate"), toDate.plusDays(1).atStartOfDay().minusNanos(1)));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return orderRepository.findAll(spec, pageable);
+    }
+
+    /**
+     * Update order status by admin
+     *
+     * @param orderId ID of the order to update
+     * @param newStatus New status to set
+     * @param adminNotes Notes added by admin
+     * @return true if update was successful
+     */
+    @Transactional
+    public boolean updateOrderStatusByAdmin(Integer orderId, OrderStatus newStatus, String adminNotes) {
+        return orderRepository.findById(orderId).map(order -> {
+            OrderStatus oldStatus = order.getOrderStatus();
+            order.setOrderStatus(newStatus);
+            order.setUpdatedAt(LocalDateTime.now());
+
+            // Add admin notes if provided
+            if (adminNotes != null && !adminNotes.trim().isEmpty()) {
+                // If the order already has notes, append the new note
+                if (order.getNotes() != null && !order.getNotes().isEmpty()) {
+                    order.setNotes(order.getNotes() + "\n\nADMIN (" + LocalDateTime.now() + "): " + adminNotes);
+                } else {
+                    order.setNotes("ADMIN (" + LocalDateTime.now() + "): " + adminNotes);
+                }
+            }
+
+            // Handle inventory based on status change
+            handleInventoryForStatusChange(order, oldStatus, newStatus);
+
+            orderRepository.save(order);
+            return true;
+        }).orElse(false);
+    }
+
+    /**
+     * Process a refund for an order
+     *
+     * @param orderId ID of the order to refund
+     * @param refundReason Reason for the refund
+     * @return true if refund was successful
+     */
+    @Transactional
+    public boolean processRefund(Integer orderId, String refundReason) {
+        return orderRepository.findById(orderId).map(order -> {
+            // Only process refund if order is not already cancelled or refunded
+            if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+                return false;
+            }
+
+            // Set status to CANCELLED
+            order.setOrderStatus(OrderStatus.CANCELLED);
+            order.setCancelledAt(LocalDateTime.now());
+            order.setCancellationReason("ADMIN REFUND: " + (refundReason != null ? refundReason : "No reason provided"));
+
+            // Return items to inventory
+            for (OrderItem item : order.getOrderItems()) {
+                bookService.increaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
+            }
+
+            // Set payment status to refunded
+            order.setPaymentStatus(PaymentStatus.REFUNDED);
+
+            orderRepository.save(order);
+            return true;
+        }).orElse(false);
+    }
+
+    /**
+     * Add admin note to an order
+     *
+     * @param orderId ID of the order
+     * @param adminNote Note to add
+     * @return true if successful
+     */
+    @Transactional
+    public boolean addAdminNote(Integer orderId, String adminNote) {
+        if (adminNote == null || adminNote.trim().isEmpty()) {
+            return false;
+        }
+
+        return orderRepository.findById(orderId).map(order -> {
+            // Format the note with timestamp and admin prefix
+            String formattedNote = "ADMIN (" + LocalDateTime.now() + "): " + adminNote;
+
+            // Append to existing notes or create new note
+            if (order.getNotes() != null && !order.getNotes().isEmpty()) {
+                order.setNotes(order.getNotes() + "\n\n" + formattedNote);
+            } else {
+                order.setNotes(formattedNote);
+            }
+
+            orderRepository.save(order);
+            return true;
+        }).orElse(false);
+    }
+
+    /**
+     * Handle inventory updates based on order status changes
+     *
+     * @param order The order being updated
+     * @param oldStatus Previous order status
+     * @param newStatus New order status
+     */
+    private void handleInventoryForStatusChange(Order order, OrderStatus oldStatus, OrderStatus newStatus) {
+        // If order is cancelled, return items to inventory
+        if (newStatus == OrderStatus.CANCELLED && oldStatus != OrderStatus.CANCELLED) {
+            for (OrderItem item : order.getOrderItems()) {
+                bookService.increaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
+            }
+        }
+
+        // If order was cancelled but is now being reactivated, remove items from inventory again
+        if (oldStatus == OrderStatus.CANCELLED &&
+            (newStatus == OrderStatus.PENDING || newStatus == OrderStatus.PROCESSING || newStatus == OrderStatus.SHIPPED)) {
+            for (OrderItem item : order.getOrderItems()) {
+                bookService.decreaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
+            }
+        }
     }
 }
