@@ -28,6 +28,11 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.example.isp392.model.Blog;
+import com.example.isp392.service.BlogService;
+import com.example.isp392.service.CategoryService;
+import com.example.isp392.service.PublisherService;
+import jakarta.persistence.EntityNotFoundException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,6 +67,9 @@ public class AdminController {
     private final PublisherRepository publisherRepository;
     private final ShopService shopService;
     private final OrderService orderService;
+    private final BlogService blogService;
+    private final CategoryService categoryService;
+    private final PublisherService publisherService;
 
     /**
      * Constructor with explicit dependency injection
@@ -76,7 +84,7 @@ public class AdminController {
                           CategoryRepository categoryRepository, 
                           PublisherRepository publisherRepository,
                           ShopService shopService,
-                          OrderService orderService) {
+                          OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
@@ -84,6 +92,9 @@ public class AdminController {
         this.publisherRepository = publisherRepository;
         this.shopService = shopService;
         this.orderService = orderService;
+        this.blogService = blogService;
+        this.categoryService = categoryService;
+        this.publisherService = publisherService;
     }
     
     /**
@@ -661,5 +672,104 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
         }
         return "redirect:" + returnUrl;
+    }
+
+    // ==================== BLOG MANAGEMENT (MỚI) =====================
+    // ==================================================================
+
+    @GetMapping("/blogs")
+    public String showBlogListPage(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "sortField", defaultValue = "createdDate") String sortField,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir,
+            Model model) {
+
+        adminService.addAdminInfoToModel(model);
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+
+        Page<Blog> blogPage = blogService.findBlogsForAdmin(keyword, status, pageable);
+
+        model.addAttribute("blogPage", blogPage);
+        model.addAttribute("activeMenu", "blog");
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("statusFilter", status);
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", "asc".equals(sortDir) ? "desc" : "asc");
+        return "admin/blog/blog-list";
+    }
+
+    @GetMapping("/blogs/detail/{id}")
+    public String showBlogDetailPage(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
+        adminService.addAdminInfoToModel(model);
+        Optional<Blog> blogOpt = blogService.getBlogById(id);
+        if (blogOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Blog post not found.");
+            return "redirect:/admin/blogs";
+        }
+        model.addAttribute("blog", blogOpt.get());
+        model.addAttribute("activeMenu", "blog");
+        return "admin/blog/blog-detail";
+    }
+
+    @GetMapping("/blogs/edit/{id}")
+    public String showEditBlogForm(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
+        adminService.addAdminInfoToModel(model);
+        Optional<Blog> blogOpt = blogService.getBlogById(id);
+        if (blogOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Blog post not found.");
+            return "redirect:/admin/blogs";
+        }
+        model.addAttribute("blog", blogOpt.get());
+        model.addAttribute("activeMenu", "blog");
+        return "admin/blog/blog-edit";
+    }
+
+    @PostMapping("/blogs/edit/{id}")
+    public String updateBlogPost(@PathVariable("id") Integer id, @ModelAttribute("blog") Blog blog, RedirectAttributes redirectAttributes) {
+        try {
+            blogService.updateBlog(id, blog);
+            redirectAttributes.addFlashAttribute("successMessage", "Blog post updated successfully!");
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    @PostMapping("/blogs/delete/{id}")
+    public String deleteBlogPost(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            blogService.deleteBlogById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Blog post deleted successfully.");
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    @PostMapping("/blogs/toggle-pin/{id}")
+    public String togglePinBlogPost(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            String message = blogService.togglePinStatus(id) ? "Post has been pinned." : "Post has been unpinned.";
+            redirectAttributes.addFlashAttribute("successMessage", message);
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    @PostMapping("/blogs/toggle-lock/{id}")
+    public String toggleLockBlogPost(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            String message = blogService.toggleLockStatus(id) ? "Post has been locked." : "Post has been unlocked.";
+            redirectAttributes.addFlashAttribute("successMessage", message);
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/blogs";
     }
 }
