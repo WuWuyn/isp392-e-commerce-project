@@ -78,10 +78,10 @@ public class AdminController {
      * @param userService service for user-related operations
      * @param adminService service for admin-specific operations
      */
-    public AdminController(UserService userService, 
-                          AdminService adminService, 
+    public AdminController(UserService userService,
+                          AdminService adminService,
                           BookService bookService,
-                          CategoryRepository categoryRepository, 
+                          CategoryRepository categoryRepository,
                           PublisherRepository publisherRepository,
                           ShopService shopService,
                           OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService) {
@@ -117,7 +117,7 @@ public class AdminController {
         
         return "admin/admin-login";
     }
-    
+
     /**
      * Display dashboard page
      * This page is only accessible to authenticated users with ADMIN role
@@ -242,18 +242,18 @@ public class AdminController {
             // 16. Recent activities
             List<Map<String, Object>> recentActivities = adminService.getRecentActivities(10);
             model.addAttribute("recentActivities", recentActivities);
-            
+
             log.debug("Dashboard loaded with stats: users={}, products={}, activeSellers={}, pendingApprovals={}",
                 totalUsers, totalProducts, activeSellers, pendingSellerCount);
 
             // Add active menu information for sidebar highlighting
             model.addAttribute("activeMenu", "dashboard");
-            
+
             return "admin/dashboard";
         } catch (Exception e) {
             log.error("Error loading admin dashboard: {}", e.getMessage(), e);
             model.addAttribute("errorMessage", "Error loading dashboard data: " + e.getMessage());
-            
+
             // Add empty data to prevent JavaScript errors
             model.addAttribute("totalUsers", 0);
             model.addAttribute("newUsers", 0);
@@ -273,7 +273,7 @@ public class AdminController {
             model.addAttribute("systemAlerts", 0);
             model.addAttribute("recentActivities", new ArrayList<>());
             model.addAttribute("activeMenu", "dashboard");
-            
+
             return "admin/dashboard";
         }
     }
