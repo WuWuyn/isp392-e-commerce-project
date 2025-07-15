@@ -179,7 +179,7 @@ public class ShopService {
         return shopRepository.getRegistrationDateByShopId(shopId);
     }
     public long countActiveSellers() {
-        return shopRepository.countByApprovalStatus(com.example.isp392.model.Shop.ApprovalStatus.APPROVED);
+        return shopRepository.countByApprovalStatus(Shop.ApprovalStatus.APPROVED);
     }
 
     /**
