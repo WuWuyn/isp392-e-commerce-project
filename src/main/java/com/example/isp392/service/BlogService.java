@@ -3,9 +3,11 @@ package com.example.isp392.service;
 import com.example.isp392.model.Blog;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.BlogRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 @Service
 public class BlogService {
@@ -156,5 +159,73 @@ public class BlogService {
         }
 
         blogRepository.delete(blogToDelete);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Blog> findBlogsForAdmin(String keyword, String status, Pageable pageable) {
+        Specification<Blog> spec = (root, query, cb) -> cb.conjunction(); // Base spec (always true)
+
+        if (StringUtils.hasText(keyword)) {
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("title")), "%" + keyword.toLowerCase() + "%"));
+        }
+
+        if (StringUtils.hasText(status)) {
+            if ("pinned".equalsIgnoreCase(status)) {
+                spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isPinned")));
+            } else if ("locked".equalsIgnoreCase(status)) {
+                spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isLocked")));
+            }
+        }
+        return blogRepository.findAll(spec, pageable);
+    }
+
+
+    /**
+     * Cập nhật bài viết từ trang Admin.
+     */
+    @Transactional
+    public Blog updateBlog(Integer blogId, Blog blogFromForm) {
+        Blog existingBlog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new EntityNotFoundException("Blog not found with id: " + blogId));
+
+        existingBlog.setTitle(blogFromForm.getTitle());
+        existingBlog.setContent(blogFromForm.getContent());
+        // Có thể cập nhật các trường khác ở đây nếu form có
+        return blogRepository.save(existingBlog);
+    }
+
+    /**
+     * Xóa bài viết bởi admin.
+     */
+    @Transactional
+    public void deleteBlogById(Integer blogId) {
+        if (!blogRepository.existsById(blogId)) {
+            throw new EntityNotFoundException("Blog not found with id: " + blogId);
+        }
+        blogRepository.deleteById(blogId);
+    }
+
+    /**
+     * Thay đổi trạng thái ghim (pin) của bài viết.
+     */
+    @Transactional
+    public boolean togglePinStatus(Integer blogId) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new EntityNotFoundException("Blog not found with id: " + blogId));
+        blog.setPinned(!blog.isPinned());
+        blogRepository.save(blog);
+        return blog.isPinned();
+    }
+
+    /**
+     * Thay đổi trạng thái khóa (lock) của bài viết.
+     */
+    @Transactional
+    public boolean toggleLockStatus(Integer blogId) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new EntityNotFoundException("Blog not found with id: " + blogId));
+        blog.setLocked(!blog.isLocked());
+        blogRepository.save(blog);
+        return blog.isLocked();
     }
 }
