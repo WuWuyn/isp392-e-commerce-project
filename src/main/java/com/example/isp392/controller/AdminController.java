@@ -51,6 +51,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.http.HttpServletResponse;
+import com.example.isp392.service.DataImportExportService;
 /**
  * Controller for handling admin-related requests
  * This controller manages the admin login page and admin panel pages
@@ -70,6 +72,7 @@ public class AdminController {
     private final BlogService blogService;
     private final CategoryService categoryService;
     private final PublisherService publisherService;
+    private final DataImportExportService dataImportExportService;
 
     /**
      * Constructor with explicit dependency injection
@@ -84,7 +87,7 @@ public class AdminController {
                           CategoryRepository categoryRepository,
                           PublisherRepository publisherRepository,
                           ShopService shopService,
-                          OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService) {
+                          OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService, DataImportExportService dataImportExportService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
@@ -95,6 +98,7 @@ public class AdminController {
         this.blogService = blogService;
         this.categoryService = categoryService;
         this.publisherService = publisherService;
+        this.dataImportExportService = dataImportExportService;
     }
     
     /**
@@ -771,5 +775,100 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/admin/blogs";
+    }
+
+    // NEW: Admin Data Import/Export Tools
+    @GetMapping("/data-management")
+    public String showDataManagementPage(Model model) {
+        adminService.addAdminInfoToModel(model);
+        model.addAttribute("activeMenu", "data-management");
+        return "admin/data-management"; // Create this new Thymeleaf template
+    }
+
+    @PostMapping("/data-management/import/users")
+    public String importUsers(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
+            return "redirect:/admin/data-management";
+        }
+        try {
+            // Assuming your service handles CSV parsing and saving
+            dataImportExportService.importUsersFromCsv(file);
+            redirectAttributes.addFlashAttribute("successMessage", "Users imported successfully!");
+        } catch (IOException e) {
+            log.error("Error importing users: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error importing users: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error importing users: " + e.getMessage());
+        }
+        return "redirect:/admin/data-management";
+    }
+
+    @PostMapping("/data-management/import/products")
+    public String importProducts(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
+            return "redirect:/admin/data-management";
+        }
+        try {
+            dataImportExportService.importBooksFromCsv(file);
+            redirectAttributes.addFlashAttribute("successMessage", "Products imported successfully!");
+        } catch (IOException e) {
+            log.error("Error importing products: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error importing products: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error importing products: " + e.getMessage());
+        }
+        return "redirect:/admin/data-management";
+    }
+
+    @GetMapping("/data-management/export/users")
+    public void exportUsers(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"users_export_" + LocalDate.now() + ".csv\"");
+        try {
+            dataImportExportService.exportUsersToCsv(response.getWriter());
+            redirectAttributes.addFlashAttribute("successMessage", "Users exported successfully!");
+        } catch (IOException e) {
+            log.error("Error exporting users: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting users: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error exporting users: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting users: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/data-management/export/products")
+    public void exportProducts(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"products_export_" + LocalDate.now() + ".csv\"");
+        try {
+            dataImportExportService.exportBooksToCsv(response.getWriter());
+            redirectAttributes.addFlashAttribute("successMessage", "Products exported successfully!");
+        } catch (IOException e) {
+            log.error("Error exporting products: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting products: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error exporting products: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting products: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/data-management/export/orders")
+    public void exportOrders(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"orders_export_" + LocalDate.now() + ".csv\"");
+        try {
+            dataImportExportService.exportOrdersToCsv(response.getWriter());
+            redirectAttributes.addFlashAttribute("successMessage", "Orders exported successfully!");
+        } catch (IOException e) {
+            log.error("Error exporting orders: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting orders: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error exporting orders: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting orders: " + e.getMessage());
+        }
     }
 }

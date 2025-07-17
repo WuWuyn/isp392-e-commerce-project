@@ -8,44 +8,49 @@
   <link rel="stylesheet" th:href="@{/css/admin-style.css}">
 </head>
 <body>
+<div th:replace="~{fragments/admin-topbar :: admin-topbar}"></div>
 
-<div class="d-flex" id="wrapper">
-  <div th:replace="~{fragments/admin-sidebar :: admin-sidebar}"></div>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-3 mb-4">
+      <div th:replace="~{fragments/admin-sidebar :: admin-sidebar}"></div>
+    </div>
 
-  <div id="page-content-wrapper">
-    <div class="container-fluid p-4">
-      <a th:href="@{/admin/blogs}" class="btn btn-secondary mb-4">
-        <i class="fas fa-arrow-left me-2"></i>Back to Blog List
-      </a>
+    <div class="col-lg-9">
+      <main class="py-4">
+        <a th:href="@{/admin/blogs}" class="btn btn-outline-secondary mb-4">
+          <i class="fas fa-arrow-left me-2"></i>Back to Blog List
+        </a>
 
-      <div class="card" th:if="${blog}">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h2 class="mb-0" th:text="${blog.title}">Blog Title</h2>
-          <div>
-            <span th:if="${blog.isPinned()}" class="badge bg-info me-1">Pinned</span>
-            <span th:if="${blog.isLocked()}" class="badge bg-warning text-dark">Locked</span>
+        <div class="card" th:if="${blog}">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h3 class="section-title mb-0" th:text="${blog.title}">Blog Title</h3>
+            <div>
+              <span th:if="${blog.isPinned()}" class="badge bg-info me-1">Pinned</span>
+              <span th:if="${blog.isLocked()}" class="badge bg-warning text-dark">Locked</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="text-muted mb-3">
+              <span>By: <strong><th:block th:text="${blog.user.fullName}">Author Name</th:block></strong></span> |
+              <span>Created: <strong><th:block th:text="${#temporals.format(blog.createdDate, 'dd MMM yyyy, HH:mm')}">Date</th:block></strong></span> |
+              <span>Views: <strong><th:block th:text="${blog.viewsCount}">0</th:block></strong></span>
+            </div>
+            <hr>
+            <div th:utext="${blog.content}" class="mt-4">
+            </div>
+          </div>
+          <div class="card-footer text-end bg-white">
+            <a th:href="@{/admin/blogs/edit/{id}(id=${blog.blogId})}" class="btn btn-primary">
+              <i class="fas fa-edit me-2"></i>Edit Post
+            </a>
           </div>
         </div>
-        <div class="card-body">
-          <div class="text-muted mb-3">
-            <span>By: <strong><th:block th:text="${blog.user.fullName}">Author Name</th:block></strong></span> |
-            <span>Created: <strong><th:block th:text="${#temporals.format(blog.createdDate, 'dd MMM yyyy, HH:mm')}">Date</th:block></strong></span> |
-            <span>Views: <strong><th:block th:text="${blog.viewsCount}">0</th:block></strong></span>
-          </div>
-          <hr>
-          <div th:utext="${blog.content}" class="mt-4">
-          </div>
-        </div>
-        <div class="card-footer text-end">
-          <a th:href="@{/admin/blogs/edit/{id}(id=${blog.blogId})}" class="btn btn-primary">
-            <i class="fas fa-edit me-2"></i>Edit Post
-          </a>
-        </div>
-      </div>
 
-      <div th:if="${blog == null}" class="alert alert-danger">
-        Blog post not found.
-      </div>
+        <div th:if="${blog == null}" class="alert alert-danger">
+          Blog post not found.
+        </div>
+      </main>
     </div>
   </div>
 </div>
