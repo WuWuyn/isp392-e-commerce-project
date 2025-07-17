@@ -243,6 +243,11 @@ public class BookService {
     public Book createBook(BookFormDTO bookForm, String coverImageUrl) {
         log.debug("Creating new book: {}", bookForm.getTitle());
 
+        // Validate prices
+        if (bookForm.getSellingPrice().compareTo(bookForm.getOriginalPrice()) > 0) {
+            throw new IllegalArgumentException("Giá bán không được lớn hơn giá gốc");
+        }
+
         // Create new book entity
         Book book = new Book();
 
@@ -266,6 +271,7 @@ public class BookService {
         // Default values for new book
         book.setAverageRating(new BigDecimal("0.0"));
         book.setTotalReviews(0);
+        book.setViewsCount(0);
         book.setActive(true); // New books are active by default
 
         // Get and set shop
@@ -291,7 +297,7 @@ public class BookService {
 
         // Save and return book
         Book savedBook = bookRepository.save(book);
-        log.info("Book created successfully with ID: {}", savedBook.getBook_id());
+        log.info("Book created successfully with ID: {}", savedBook.getBookId());
 
         return savedBook;
     }
@@ -307,6 +313,11 @@ public class BookService {
     @Transactional
     public Book updateBook(Integer bookId, BookFormDTO bookForm, String coverImageUrl) {
         log.debug("Updating book with ID: {}", bookId);
+
+        // Validate prices
+        if (bookForm.getSellingPrice().compareTo(bookForm.getOriginalPrice()) > 0) {
+            throw new IllegalArgumentException("Giá bán không được lớn hơn giá gốc");
+        }
 
         // Find existing book
         Book book = bookRepository.findById(bookId)
@@ -348,7 +359,7 @@ public class BookService {
 
         // Save and return updated book
         Book updatedBook = bookRepository.save(book);
-        log.info("Book updated successfully with ID: {}", updatedBook.getBook_id());
+        log.info("Book updated successfully with ID: {}", updatedBook.getBookId());
 
         return updatedBook;
     }

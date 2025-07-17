@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/buyer/checkout")
@@ -41,11 +42,12 @@ public class CheckoutController {
     @GetMapping
     public String showCheckoutPage(
             @RequestParam(name = "items", required = false) String selectedItems,
+            @RequestParam(name = "buyNow", required = false) Boolean buyNow,
             Model model,
             Authentication authentication,
             HttpSession session
     ) {
-        logger.info("Checkout request received with items: {}", selectedItems);
+        logger.info("Checkout request received with items: {}, buyNow: {}", selectedItems, buyNow);
         
         // Validate authentication
         if (authentication == null) {
@@ -62,7 +64,12 @@ public class CheckoutController {
             return "redirect:/login";
         }
 
-        // Validate selected items
+        // Handle Buy Now flow
+        if (Boolean.TRUE.equals(buyNow)) {
+            return handleBuyNowCheckout(model, session, user);
+        }
+
+        // Validate selected items for regular cart checkout
         if (!StringUtils.hasText(selectedItems)) {
             logger.warn("No items selected for checkout, redirecting to cart");
             return "redirect:/buyer/cart";
@@ -98,8 +105,12 @@ public class CheckoutController {
                     .findFirst()
                     .orElse(null);
 
+            // Group selected items by shop
+            Map<String, List<CartItem>> itemsByShop = cartService.groupCartItemsByShop(selectedCartItems);
+
             // Add to model
             model.addAttribute("selectedItems", selectedCartItems);
+            model.addAttribute("itemsByShop", itemsByShop);
             model.addAttribute("subtotal", subtotal);
             model.addAttribute("userAddresses", userAddresses);
             model.addAttribute("defaultAddress", defaultAddress);
@@ -114,4 +125,71 @@ public class CheckoutController {
             return "redirect:/buyer/cart?error=checkout_failed";
         }
     }
-} 
+
+    @SuppressWarnings("unchecked")
+    private String handleBuyNowCheckout(Model model, HttpSession session, User user) {
+        // Get Buy Now session data
+        Map<String, Object> buyNowSession = (Map<String, Object>) session.getAttribute("buyNowSession");
+
+        if (buyNowSession == null) {
+            logger.warn("No Buy Now session found, redirecting to cart");
+            return "redirect:/buyer/cart";
+        }
+
+        try {
+            Integer bookId = (Integer) buyNowSession.get("bookId");
+            Integer quantity = (Integer) buyNowSession.get("quantity");
+            Integer userId = (Integer) buyNowSession.get("userId");
+
+            // Validate session data
+            if (bookId == null || quantity == null || userId == null || !userId.equals(user.getUserId())) {
+                logger.warn("Invalid Buy Now session data, redirecting to cart");
+                session.removeAttribute("buyNowSession");
+                return "redirect:/buyer/cart";
+            }
+
+            // Create a temporary cart item for Buy Now
+            List<CartItem> buyNowItems = cartService.createBuyNowCartItems(user, bookId, quantity);
+
+            if (buyNowItems.isEmpty()) {
+                logger.warn("Could not create Buy Now cart items, redirecting to cart");
+                session.removeAttribute("buyNowSession");
+                return "redirect:/buyer/cart";
+            }
+
+            // Calculate totals
+            double subtotal = buyNowItems.stream()
+                    .mapToDouble(item -> item.getBook().getSellingPrice().doubleValue() * item.getQuantity())
+                    .sum();
+
+            // Get user's addresses
+            List<UserAddress> userAddresses = userAddressService.findByUser(user);
+            UserAddress defaultAddress = userAddresses.stream()
+                    .filter(UserAddress::isDefault)
+                    .findFirst()
+                    .orElse(null);
+
+            // Group items by shop (for Buy Now, there should be only one shop)
+            Map<String, List<CartItem>> itemsByShop = cartService.groupCartItemsByShop(buyNowItems);
+
+            // Add to model
+            model.addAttribute("selectedItems", buyNowItems);
+            model.addAttribute("itemsByShop", itemsByShop);
+            model.addAttribute("subtotal", subtotal);
+            model.addAttribute("userAddresses", userAddresses);
+            model.addAttribute("defaultAddress", defaultAddress);
+            model.addAttribute("user", user);
+            model.addAttribute("isBuyNow", true);
+
+            // Store Buy Now items in session for order processing
+            session.setAttribute("checkoutItems", buyNowItems);
+            session.setAttribute("isBuyNow", true);
+
+            return "buyer/checkout";
+        } catch (Exception e) {
+            logger.error("Error processing Buy Now checkout: {}", e.getMessage(), e);
+            session.removeAttribute("buyNowSession");
+            return "redirect:/buyer/cart?error=buynow_failed";
+        }
+    }
+}

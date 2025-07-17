@@ -83,6 +83,20 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             User user, OrderStatus status, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
 
     Optional<Order> findByOrderIdAndUser(Integer orderId, User user);
+    
+    // New methods for shop-specific orders
+    List<Order> findByShopShopId(Integer shopId);
+    
+    List<Order> findByShopShopIdOrderByOrderDateDesc(Integer shopId, Pageable pageable);
+    
+    int countByShopShopIdAndOrderDateAfter(Integer shopId, LocalDateTime startDate);
+    
+    Long countByShopShopIdAndOrderDateBetween(Integer shopId, LocalDateTime startDate, LocalDateTime endDate);
+    
+    List<Order> findByShopShopIdAndOrderDateBetweenAndOrderStatus(
+            Integer shopId, LocalDateTime startDate, LocalDateTime endDate, OrderStatus status);
+    
+    Optional<Order> findByOrderIdAndShopUserUserId(Integer orderId, Integer userId);
 
     /**
      * Get today's revenue for a shop
@@ -248,7 +262,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * Get geographic distribution of orders
      * 
      * @param shopId ID of the shop
-     * @return List of order counts by region
+     * @return List of regions with order counts
      */
     @Query(value = "SELECT " +
            "COALESCE(o.shipping_province, 'Unknown') AS region, " +

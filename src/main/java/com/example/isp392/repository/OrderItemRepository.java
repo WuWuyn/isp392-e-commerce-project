@@ -36,6 +36,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
      * @param bookId the book ID
      * @return count of purchases of the book by the user
      */
-    @Query("SELECT SUM(oi.quantity) FROM OrderItem oi JOIN oi.order o WHERE o.user.userId = :userId AND oi.book.book_id = :bookId")
+    @Query("SELECT SUM(oi.quantity) FROM OrderItem oi JOIN oi.order o WHERE o.user.userId = :userId AND oi.book.bookId = :bookId")
     Integer countBookPurchasesByUser(@Param("userId") Integer userId, @Param("bookId") Integer bookId);
 } 

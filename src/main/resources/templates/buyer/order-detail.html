@@ -115,7 +115,7 @@
                                                 <span th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
                                                 <!-- Rebuy button for individual item -->
                                                 <div class="mt-2" th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}">
-                                                    <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.book_id} + '/rebuy'}"
+                                                    <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.bookId} + '/rebuy'}"
                                                           method="post" class="d-inline-block">
                                                         <input type="hidden" name="quantity" th:value="${item.quantity}"/>
                                                         <button type="submit" class="btn btn-sm btn-outline-success rounded-3">

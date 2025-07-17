@@ -17,7 +17,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -106,7 +108,7 @@ public class CartService {
         // Kiểm tra số lượng hiện có trong giỏ hàng
         Cart cart = getCartForUser(user);
         Optional<CartItem> existingItem = cart.getItems().stream()
-                .filter(item -> item.getBook().getBook_id().equals(bookId))
+                .filter(item -> item.getBook().getBookId().equals(bookId))
                 .findFirst();
                 
         int currentQuantity = existingItem.map(CartItem::getQuantity).orElse(0);
@@ -126,7 +128,7 @@ public class CartService {
         }
         
         Optional<CartItem> existingItemOptional = cart.getItems().stream()
-                .filter(item -> item.getBook().getBook_id().equals(bookId))
+                .filter(item -> item.getBook().getBookId().equals(bookId))
                 .findFirst();
                 
         if (existingItemOptional.isPresent()) {
@@ -170,16 +172,10 @@ public class CartService {
         }
         
         cart.getItems().forEach(item -> {
-            if (item.getBook().getBook_id().equals(bookId)) {
+            if (item.getBook().getBookId().equals(bookId)) {
                 item.setQuantity(quantity);
             }
         });
-        cartRepository.save(cart);
-    }
-
-    public void removeItem(User user, Integer bookId) {
-        Cart cart = getCartForUser(user);
-        cart.getItems().removeIf(item -> item.getBook().getBook_id().equals(bookId));
         cartRepository.save(cart);
     }
 
@@ -215,14 +211,6 @@ public class CartService {
         }
     }
 
-    /**
-     * Get cart for a user
-     * @param user the user whose cart to get
-     * @return the user's cart
-     */
-    public Cart getCart(User user) {
-        return getCartForUser(user);
-    }
 
     /**
      * Transfer items from cart to order
@@ -257,5 +245,102 @@ public class CartService {
     public void clearCart(Cart cart) {
         cart.getItems().clear();
         cartRepository.save(cart);
+    }
+
+    public CartItem findCartItemByBookId(User user, Integer bookId) {
+        Cart cart = getCartForUser(user);
+        return cart.getItems().stream()
+                .filter(item -> item.getBook().getBookId().equals(bookId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void updateItemQuantity(User user, Integer bookId, int quantity) {
+        Cart cart = getCartForUser(user);
+        cart.getItems().stream()
+                .filter(item -> item.getBook().getBookId().equals(bookId))
+                .findFirst()
+                .ifPresent(item -> {
+                    item.setQuantity(quantity);
+                    cartItemRepository.save(item);
+                });
+    }
+
+    public void removeItem(User user, Integer bookId) {
+        Cart cart = getCartForUser(user);
+        CartItem itemToRemove = null;
+        
+        for (CartItem item : cart.getItems()) {
+            if (item.getBook().getBookId().equals(bookId)) {
+                itemToRemove = item;
+                break;
+            }
+        }
+        
+        if (itemToRemove != null) {
+            cart.getItems().remove(itemToRemove);
+            cartItemRepository.delete(itemToRemove);
+            cartRepository.save(cart);
+        }
+    }
+
+    /**
+     * Group cart items by shop for better organization in cart and checkout pages
+     * @param cartItems List of cart items to group
+     * @return Map with shop as key and list of cart items as value
+     */
+    public Map<String, List<CartItem>> groupCartItemsByShop(List<CartItem> cartItems) {
+        return cartItems.stream()
+                .filter(item -> item.getShop() != null && item.getShop().getShopName() != null)
+                .collect(Collectors.groupingBy(
+                        item -> item.getShop().getShopName(),
+                        Collectors.toList()
+                ));
+    }
+
+    /**
+     * Get cart items grouped by shop for a user
+     * @param user The user whose cart to retrieve
+     * @return Map with shop name as key and list of cart items as value
+     */
+    public Map<String, List<CartItem>> getCartItemsGroupedByShop(User user) {
+        Cart cart = getCartForUser(user);
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+            return Map.of();
+        }
+        return groupCartItemsByShop(cart.getItems());
+    }
+
+    /**
+     * Create temporary cart items for Buy Now functionality
+     * @param user the user
+     * @param bookId the book ID
+     * @param quantity the quantity
+     * @return list of cart items for Buy Now
+     */
+    public List<CartItem> createBuyNowCartItems(User user, Integer bookId, Integer quantity) {
+        try {
+            Optional<Book> bookOpt = bookService.getBookById(bookId);
+            if (bookOpt.isEmpty()) {
+                return new ArrayList<>();
+            }
+            Book book = bookOpt.get();
+
+            // Check availability
+            if (!checkBookAvailability(bookId, quantity)) {
+                return new ArrayList<>();
+            }
+
+            // Create temporary cart item (not saved to database)
+            CartItem cartItem = new CartItem();
+            cartItem.setBook(book);
+            cartItem.setQuantity(quantity);
+            cartItem.setShop(book.getShop());
+
+            return List.of(cartItem);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 }

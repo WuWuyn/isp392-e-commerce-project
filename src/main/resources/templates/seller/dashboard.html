@@ -444,7 +444,7 @@
                                     <span th:if="${book.stockQuantity == 0}" class="badge bg-danger stock-badge">Out of Stock</span>
                                     <span th:unless="${book.stockQuantity == 0}" class="badge bg-warning stock-badge"
                                           th:text="${book.stockQuantity} + ' left'">3 left</span>
-                                    <a th:href="@{'/seller/products/' + ${book.book_id} + '/edit'}"
+                                    <a th:href="@{'/seller/products/' + ${book.bookId} + '/edit'}"
                                        class="d-block small mt-1">Update</a>
                                 </div>
                             </div>

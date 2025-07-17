@@ -230,7 +230,7 @@
                         <div class="product-author" th:text="${book.authors}">Author Name</div>
                     </div>
                     <div class="header-actions">
-                        <a th:href="@{'/seller/products/' + ${book.book_id} + '/edit'}" class="btn btn-outline-primary btn-icon">
+                        <a th:href="@{'/seller/products/' + ${book.bookId} + '/edit'}" class="btn btn-outline-primary btn-icon">
                             <i class="fas fa-edit"></i> Edit Product
                         </a>
                         <button type="button" class="btn btn-outline-danger btn-icon" data-bs-toggle="modal" data-bs-target="#deleteProductModal">
@@ -384,7 +384,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form th:action="@{'/seller/products/' + ${book.book_id} + '/delete'}" method="post">
+                <form th:action="@{'/seller/products/' + ${book.bookId} + '/delete'}" method="post">
                     <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
             </div>

@@ -231,7 +231,7 @@
                             <div class="book-card shop-book-card">
                                 <div class="position-relative">
                                     <!-- Book cover image with fallback -->
-                                    <a th:href="@{/product-detail(book_id=${book.book_id})}">
+                                    <a th:href="@{/product-detail(book_id=${book.bookId})}">
                                         <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/book-placeholder.jpg'}" 
                                              th:alt="${book.title}" class="book-cover img-fluid">
                                     </a>
@@ -243,7 +243,7 @@
                                 <div class="book-info">
                                     <!-- Book title with link to details -->
                                     <h6 class="book-title">
-                                        <a th:href="@{/product-detail(book_id=${book.book_id})}" th:text="${book.title}">Book Title</a>
+                                        <a th:href="@{/product-detail(book_id=${book.bookId})}" th:text="${book.title}">Book Title</a>
                                     </h6>
                                     
                                     <!-- Star rating using the fragment -->

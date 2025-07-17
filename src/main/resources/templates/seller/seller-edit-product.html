@@ -172,7 +172,7 @@
                         <h1 class="mt-2">Edit Book</h1>
                     </div>
                     <div class="header-actions mt-3 mt-md-0">
-                        <a th:href="@{'/seller/products/' + ${book.book_id}}" class="btn btn-outline-secondary">
+                        <a th:href="@{'/seller/products/' + ${book.bookId}}" class="btn btn-outline-secondary">
                             <i class="fas fa-eye me-2"></i>
                             View Product
                         </a>
@@ -181,7 +181,7 @@
                 </div>
 
 
-                <form id="editBookForm" th:action="@{'/seller/products/' + ${book.book_id} + '/edit'}"
+                <form id="editBookForm" th:action="@{'/seller/products/' + ${book.bookId} + '/edit'}"
                       th:object="${bookForm}" method="post" enctype="multipart/form-data"
                       class="form-grid needs-validation" novalidate>
                     <!-- LEFT COLUMN -->

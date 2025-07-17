@@ -50,10 +50,19 @@
             <a th:href="@{/admin/categories}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'categories' ? 'active' : ''}">
                 <i class="fas fa-tags"></i> Category Management
             </a>
-            
+
+            <!-- Promotion Management -->
+            <a th:href="@{/admin/promotions}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'promotions' ? 'active' : ''}">
+                <i class="fas fa-percentage"></i> Promotion Management
+            </a>
+
             <!-- Blog Management -->
             <a th:href="@{/admin/blogs}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'blog' ? 'active' : ''}">
                 <i class="fas fa-blog"></i> Blog Management
+            </a>
+
+            <a th:href="@{/admin/moderation}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'moderation' ? 'active' : ''}">
+                <i class="fas fa-comments-dollar"></i> Review Moderation
             </a>
 
             <a th:href="@{/admin/data-management}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'data-management' ? 'active' : ''}">

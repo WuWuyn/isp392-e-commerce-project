@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -154,6 +155,7 @@ public class ProductController {
             Book book = bookOptional.get();
 
             // Session-based view count logic
+            @SuppressWarnings("unchecked")
             Set<Integer> viewedBooks = (Set<Integer>) session.getAttribute("viewed_books");
             if (viewedBooks == null) {
                 viewedBooks = new HashSet<>();
@@ -165,6 +167,13 @@ public class ProductController {
             }
 
             model.addAttribute("book", book);
+            
+            // Get categories
+            Set<Category> categories = book.getCategories();
+            if (categories != null && !categories.isEmpty()) {
+                model.addAttribute("categories", categories);
+                model.addAttribute("categoryNames", categories.stream().map(Category::getCategoryName).collect(Collectors.joining(", ")));
+            }
             
             // Lấy các sách liên quan (cùng danh mục)
             if (book.getCategories() != null && !book.getCategories().isEmpty()) {

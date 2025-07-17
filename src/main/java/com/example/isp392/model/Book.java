@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,7 +20,7 @@ public class Book {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "book_id")
-    private Integer book_id;
+    private Integer bookId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shop_id", nullable = false)
@@ -93,4 +94,49 @@ public class Book {
             inverseJoinColumns = @JoinColumn(name = "category_id") // Foreign key for Category in join table
     )
     private Set<Category> categories = new HashSet<>();
+    
+    /**
+     * Phương thức tương thích ngược để đảm bảo code cũ vẫn hoạt động
+     * @return ID của sách
+     */
+    public Integer getBook_id() {
+        return this.bookId;
+    }
+    
+    /**
+     * Kiểm tra xem giá bán có hợp lệ không (không lớn hơn giá gốc)
+     * @return true nếu giá bán hợp lệ, false nếu không
+     */
+    public boolean isValidPrice() {
+        if (originalPrice == null || sellingPrice == null) {
+            return false;
+        }
+        return sellingPrice.compareTo(originalPrice) <= 0;
+    }
+    
+    /**
+     * Tính phần trăm giảm giá
+     * @return Phần trăm giảm giá, hoặc 0 nếu không có giảm giá
+     */
+    public int getDiscountPercentage() {
+        if (originalPrice == null || sellingPrice == null || originalPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            return 0;
+        }
+        
+        if (originalPrice.equals(sellingPrice)) {
+            return 0;
+        }
+        
+        BigDecimal discount = originalPrice.subtract(sellingPrice);
+        BigDecimal percentage = discount.multiply(new BigDecimal(100)).divide(originalPrice, 0, RoundingMode.HALF_UP);
+        return percentage.intValue();
+    }
+    
+    /**
+     * Phương thức tương thích ngược để đảm bảo code cũ vẫn hoạt động
+     * @return ID của sách
+     */
+    public Integer getBookId() {
+        return this.bookId;
+    }
 }

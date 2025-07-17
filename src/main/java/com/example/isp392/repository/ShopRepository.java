@@ -16,10 +16,10 @@ public interface ShopRepository extends JpaRepository<Shop, Integer> {
 
     Optional<Shop> findByUserUserId(Integer userId);
 
-    @Query("SELECT s FROM Shop s WHERE s.approval_status = :status")
+    @Query("SELECT s FROM Shop s WHERE s.approvalStatus = :status")
     List<Shop> findByApprovalStatus(@Param("status") Shop.ApprovalStatus status);
 
-    @Query("SELECT count(s) FROM Shop s WHERE s.approval_status = :status")
+    @Query("SELECT count(s) FROM Shop s WHERE s.approvalStatus = :status")
     long countByApprovalStatus(@Param("status") Shop.ApprovalStatus status);
 
     /**

@@ -82,21 +82,21 @@ public class ShopService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Copy properties from DTO to entity
-        BeanUtils.copyProperties(shopDTO, shop, "user", "books", "approval_status", "registrationDate");
-        
+        BeanUtils.copyProperties(shopDTO, shop, "user", "books", "approvalStatus", "registrationDate");
+
         // Set specific fields that need manual mapping
         shop.setUser(user);
-        
+
         // If it's a new shop
         if (shop.getShopId() == null) {
             // Set pending status for new shops
-            shop.setApproval_status(Shop.ApprovalStatus.PENDING);
+            shop.setApprovalStatus(Shop.ApprovalStatus.PENDING);
             // Set request and registration dates
             shop.setRequestAt(LocalDateTime.now());
             shop.setRegistrationDate(LocalDateTime.now());
         } else if (shopDTO.getApprovalStatus() != null) {
             // Only update status if explicitly set and shop exists
-            shop.setApproval_status(shopDTO.getApprovalStatus());
+            shop.setApprovalStatus(shopDTO.getApprovalStatus());
         }
         
         // Save the shop
@@ -107,6 +107,14 @@ public class ShopService {
         return shopRepository.findById(shopId)
                 .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
     }
+
+    /**
+     * Get all shops
+     * @return List of all shops
+     */
+    public List<Shop> getAllShops() {
+        return shopRepository.findAll();
+    }
     public List<Shop> getPendingShops() {
         return shopRepository.findByApprovalStatus(Shop.ApprovalStatus.PENDING);
     }
@@ -115,7 +123,7 @@ public class ShopService {
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
 
-        shop.setApproval_status(Shop.ApprovalStatus.APPROVED);
+        shop.setApprovalStatus(Shop.ApprovalStatus.APPROVED);
         shop.setAdminApproverId(adminUser);
         shop.setActive(true);
         shopRepository.save(shop);
@@ -133,7 +141,7 @@ public class ShopService {
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
 
-        shop.setApproval_status(Shop.ApprovalStatus.REJECTED);
+        shop.setApprovalStatus(Shop.ApprovalStatus.REJECTED);
         shop.setReasonForStatus(reason); // Vẫn lưu lý do vào shop để hiển thị khi user đăng ký lại
         shop.setAdminApproverId(adminUser);
         shopRepository.save(shop);
@@ -159,7 +167,7 @@ public class ShopService {
         shop.setUser(user);
 
         // === THAY ĐỔI QUAN TRỌNG: RESET TRẠNG THÁI KHI NỘP LẠI ===
-        shop.setApproval_status(Shop.ApprovalStatus.PENDING); // Luôn set lại là PENDING
+        shop.setApprovalStatus(Shop.ApprovalStatus.PENDING); // Luôn set lại là PENDING
         shop.setRequestAt(LocalDateTime.now());         // Cập nhật thời gian yêu cầu
         shop.setReasonForStatus(null);                  // Xóa lý do từ chối cũ
         shop.setAdminApproverId(null);                  // Xóa người duyệt cũ
@@ -208,7 +216,7 @@ public class ShopService {
         shopRepository.save(shop);
         bookService.deactivateBooksByShopId(shopId);
         // Optionally, set approval status to a 'DELETED' or 'INACTIVE' enum if needed
-        // shop.setApproval_status(Shop.ApprovalStatus.INACTIVE);
+        // shop.setApprovalStatus(Shop.ApprovalStatus.INACTIVE);
         // shopRepository.save(shop);
         // log.info("Shop with ID {} has been soft-deleted (deactivated) and its products deactivated.", shopId);
     }

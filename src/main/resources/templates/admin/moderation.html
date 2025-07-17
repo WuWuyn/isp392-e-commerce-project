@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Review & Comment Moderation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-style.css}">
+    <style>
+        .sort-link { text-decoration: none; color: inherit; }
+        .sort-link:hover { color: #0d6efd; }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/admin-topbar :: admin-topbar}"></div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-3 mb-4">
+            <div th:replace="~{fragments/admin-sidebar :: admin-sidebar}"></div>
+        </div>
+        <div class="col-lg-9">
+            <main class="py-4">
+                <h3 class="section-title">Review & Comment Moderation</h3>
+
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <ul class="nav nav-tabs" id="moderationTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" th:classappend="${param.tab == null or param.tab == 'reviews' ? 'active' : ''}" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-panel" type="button" role="tab">
+                            Product Reviews <span class="badge bg-danger" th:text="${reviews.totalElements}"></span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" th:classappend="${param.tab == 'comments' ? 'active' : ''}" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments-panel" type="button" role="tab">
+                            Blog Comments <span class="badge bg-danger" th:text="${comments.totalElements}"></span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="moderationTabContent">
+                    <div class="tab-pane fade" th:classappend="${param.tab == null or param.tab == 'reviews' ? 'show active' : ''}" id="reviews-panel" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-white py-3">
+                                <form th:action="@{/admin/moderation}" method="get">
+                                    <input type="hidden" name="tab" value="reviews">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-md-4"><input type="text" name="reviewSearch" class="form-control form-control-sm" placeholder="Search by content..." th:value="${reviewSearch}"></div>
+                                        <div class="col-md-2">
+                                            <select name="reviewRating" class="form-select form-select-sm">
+                                                <option value="">All Ratings</option>
+                                                <option th:each="r : ${#numbers.sequence(5,1)}" th:value="${r}" th:text="${r} + ' Stars'" th:selected="${reviewRating == r}"></option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2"><input type="date" name="reviewStartDate" class="form-control form-control-sm" th:value="${reviewStartDate}"></div>
+                                        <div class="col-md-2"><input type="date" name="reviewEndDate" class="form-control form-control-sm" th:value="${reviewEndDate}"></div>
+                                        <div class="col-md-2 d-flex gap-2">
+                                            <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+                                            <a th:href="@{/admin/moderation(tab='reviews')}" class="btn btn-sm btn-secondary" title="Clear"><i class="fas fa-times"></i></a>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                        <tr>
+                                            <th><a class="sort-link" th:href="@{/admin/moderation(tab='reviews', reviewSortField='user.fullName', reviewSortDir=${reviewReverseSortDir}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating})}">User</a></th>
+                                            <th><a class="sort-link" th:href="@{/admin/moderation(tab='reviews', reviewSortField='rating', reviewSortDir=${reviewReverseSortDir}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating})}">Rating</a></th>
+                                            <th><a class="sort-link" th:href="@{/admin/moderation(tab='reviews', reviewSortField='orderItem.book.title', reviewSortDir=${reviewReverseSortDir}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating})}">Book Title</a></th>
+                                            <th>Review Content</th>
+                                            <th><a class="sort-link" th:href="@{/admin/moderation(tab='reviews', reviewSortField='createdDate', reviewSortDir=${reviewReverseSortDir}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating})}">Date</a></th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="review : ${reviews.content}">
+                                            <td th:text="${review.user.fullName}"></td>
+                                            <td><span th:each="i : ${#numbers.sequence(1, review.rating)}" class="text-warning"><i class="fas fa-star"></i></span></td>
+                                            <td th:text="${review.orderItem != null && review.orderItem.book != null} ? ${#strings.abbreviate(review.orderItem.book.title, 50)} : 'N/A'"></td>
+                                            <td th:text="${#strings.abbreviate(review.content, 80)}"></td>
+                                            <td th:text="${#temporals.format(review.createdDate, 'dd-MM-yyyy HH:mm')}"></td>
+                                            <td><span class="badge" th:classappend="${review.isApproved} ? 'bg-success' : 'bg-warning'" th:text="${review.isApproved} ? 'Approved' : 'Pending'"></span></td>
+                                            <td>
+                                                <form th:if="${!review.isApproved}" th:action="@{/admin/reviews/approve/{id}(id=${review.reviewId})}" method="post" class="d-inline"><button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="fas fa-check"></i></button></form>
+                                                <form th:action="@{/admin/reviews/delete/{id}(id=${review.reviewId})}" method="post" onsubmit="return confirm('Delete this review?')" class="d-inline"><button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button></form>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${reviews.empty}"><td colspan="7" class="text-center p-3">No reviews found.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white py-3" th:if="${reviews.totalPages > 1}">
+                                <nav>
+                                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                                        <li class="page-item" th:classappend="${reviews.first ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=0, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">First</a></li>
+                                        <li class="page-item" th:classappend="${!reviews.hasPrevious() ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.number - 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Previous</a></li>
+                                        <li class="page-item" th:each="i : ${#numbers.sequence(0, reviews.totalPages - 1)}" th:classappend="${i == reviews.number ? 'active' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${i}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}" th:text="${i + 1}"></a></li>
+                                        <li class="page-item" th:classappend="${!reviews.hasNext() ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.number + 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Next</a></li>
+                                        <li class="page-item" th:classappend="${reviews.last ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.totalPages - 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Last</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" th:classappend="${param.tab == 'comments' ? 'show active' : ''}" id="comments-panel" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-white py-3">
+                                <form th:action="@{/admin/moderation}" method="get">
+                                    <input type="hidden" name="tab" value="comments">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-md-5"><input type="text" name="commentSearch" class="form-control form-control-sm" placeholder="Search by content..." th:value="${commentSearch}"></div>
+                                        <div class="col-md-2"><input type="date" name="commentStartDate" class="form-control form-control-sm" th:value="${commentStartDate}"></div>
+                                        <div class="col-md-2"><input type="date" name="commentEndDate" class="form-control form-control-sm" th:value="${commentEndDate}"></div>
+                                        <div class="col-md-3 d-flex gap-2">
+                                            <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+                                            <a th:href="@{/admin/moderation(tab='comments')}" class="btn btn-sm btn-secondary" title="Clear"><i class="fas fa-times"></i></a>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                        <tr>
+                                            <th><a class="sort-link" th:href="@{/admin/moderation(tab='comments', commentSortField='user.fullName', commentSortDir=${commentReverseSortDir}, commentSearch=${commentSearch})}">User</a></th>
+                                            <th>Comment Content</th>
+                                            <th><a class="sort-link" th:href="@{/admin/moderation(tab='comments', commentSortField='blogPost.title', commentSortDir=${commentReverseSortDir}, commentSearch=${commentSearch})}">Blog Post</a></th>
+                                            <th><a class="sort-link" th:href="@{/admin/moderation(tab='comments', commentSortField='createdDate', commentSortDir=${commentReverseSortDir}, commentSearch=${commentSearch})}">Date</a></th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="comment : ${comments.content}">
+                                            <td th:text="${comment.user.fullName}"></td>
+                                            <td th:text="${#strings.abbreviate(comment.content, 80)}"></td>
+                                            <td th:text="${comment.blogPost != null ? #strings.abbreviate(comment.blogPost.title, 50) : 'N/A'}"></td>
+                                            <td th:text="${#temporals.format(comment.createdDate, 'dd-MM-yyyy HH:mm')}"></td>
+                                            <td><span class="badge" th:classappend="${comment.isApproved} ? 'bg-success' : 'bg-warning'" th:text="${comment.isApproved} ? 'Approved' : 'Pending'"></span></td>
+                                            <td>
+                                                <form th:if="${!comment.isApproved}" th:action="@{/admin/comments/approve/{id}(id=${comment.commentId})}" method="post" class="d-inline"><button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="fas fa-check"></i></button></form>
+                                                <form th:action="@{/admin/comments/delete/{id}(id=${comment.commentId})}" method="post" onsubmit="return confirm('Delete this comment?')" class="d-inline"><button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button></form>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${comments.empty}"><td colspan="6" class="text-center p-3">No comments found.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white py-3" th:if="${comments.totalPages > 1}">
+                                <nav>
+                                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                                        <li class="page-item" th:classappend="${comments.first ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=0, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">First</a></li>
+                                        <li class="page-item" th:classappend="${!comments.hasPrevious() ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.number - 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Previous</a></li>
+                                        <li class="page-item" th:each="i : ${#numbers.sequence(0, comments.totalPages - 1)}" th:classappend="${i == comments.number ? 'active' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${i}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}" th:text="${i + 1}"></a></li>
+                                        <li class="page-item" th:classappend="${!comments.hasNext() ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.number + 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Next</a></li>
+                                        <li class="page-item" th:classappend="${comments.last ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.totalPages - 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Last</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

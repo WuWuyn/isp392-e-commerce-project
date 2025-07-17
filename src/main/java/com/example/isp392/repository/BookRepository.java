@@ -218,7 +218,7 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
      * @param shopId the shop ID
      * @return list of Object[]: [bookId, title, viewsCount]
      */
-    @Query("SELECT b.book_id, b.title, b.viewsCount FROM Book b WHERE b.shop.shopId = :shopId")
+    @Query(value = "SELECT b.book_id, b.title, b.views_count FROM books b WHERE b.shop_id = :shopId", nativeQuery = true)
     List<Object[]> getViewsByProductInShop(@Param("shopId") Integer shopId);
 
     /**
@@ -226,7 +226,7 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
      * @param bookId the book ID
      */
     @Modifying
-    @Query("UPDATE Book b SET b.viewsCount = b.viewsCount + 1 WHERE b.id = :bookId")
+    @Query("UPDATE Book b SET b.viewsCount = b.viewsCount + 1 WHERE b.bookId = :bookId")
     void incrementViewsCount(@Param("bookId") int bookId);
 
     /**

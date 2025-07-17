@@ -94,14 +94,14 @@
         <!-- Hiển thị sách được đánh giá cao từ cơ sở dữ liệu -->
         <div class="col-lg col-md-4 col-sm-6 mb-4" th:each="book : ${topRatedBooks}">
           <div class="book-card">
-            <a th:href="@{/product-detail(book_id=${book.book_id})}">
+            <a th:href="@{/product-detail(book_id=${book.bookId})}">
               <!-- Hiển thị ảnh bìa từ cơ sở dữ liệu hoặc mặc định nếu không có -->
               <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/book-placeholder.jpg'}" 
                   th:alt="${book.title}" class="book-cover img-fluid">
             </a>
             <div class="book-info">
               <h6 class="book-title">
-                <a th:href="@{/product-detail(book_id=${book.book_id})}" th:text="${book.title}">Book Title</a>
+                <a th:href="@{/product-detail(book_id=${book.bookId})}" th:text="${book.title}">Book Title</a>
               </h6>
               <!-- Sử dụng fragment đánh giá sao -->
               <div th:replace="~{fragments/book-rating :: star-rating(${book.averageRating})}"></div>
@@ -150,8 +150,8 @@
         <div class="col-lg col-md-4 col-sm-6 mb-4" th:each="book : ${newAdditions}">
           <div class="book-card">
             <div class="position-relative">
-              <a th:href="@{/product-detail(book_id=${book.book_id})}">
-                <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/book-placeholder.jpg'}" 
+              <a th:href="@{/product-detail(book_id=${book.bookId})}">
+                <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/book-placeholder.jpg'}"
                      th:alt="${book.title}" class="book-cover img-fluid">
               </a>
               <!-- Hiển thị badge Sale nếu đây là sách giảm giá -->
@@ -160,7 +160,7 @@
             </div>
             <div class="book-info">
               <h6 class="book-title">
-                <a th:href="@{/product-detail(book_id=${book.book_id})}" th:text="${book.title}">Book Title</a>
+                <a th:href="@{/product-detail(book_id=${book.bookId})}" th:text="${book.title}">Book Title</a>
               </h6>
               <!-- Sử dụng fragment đánh giá sao -->
               <div th:replace="~{fragments/book-rating :: star-rating(${book.averageRating})}"></div>
