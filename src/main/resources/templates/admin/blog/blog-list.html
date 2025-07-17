@@ -3,11 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin - Blog Management</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link rel="stylesheet" th:href="@{/css/admin-style.css}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+        font-family: 'Open Sans', sans-serif;
+        background-color: #F8F5F0;
+        color: #333;
+    }
+    .navbar-brand {
+        font-family: 'Lora', serif;
+        font-weight: 700;
+        font-size: 1.8rem;
+        color: #2C3E50;
+    }
+    .section-title {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #2C3E50;
+        border-bottom: 2px solid #2C3E50;
+        padding-bottom: 0.5rem;
+    }
+    .btn-primary {
+        background-color: #2C3E50;
+        border-color: #2C3E50;
+    }
+    .btn-primary:hover {
+        background-color: #1e2b37;
+        border-color: #1e2b37;
+    }
+    .btn-outline-primary {
+        color: #2C3E50;
+        border-color: #2C3E50;
+    }
+    .btn-outline-primary:hover {
+        background-color: #2C3E50;
+        border-color: #2C3E50;
+        color: #fff;
+    }
+    .card {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+    }
+    .table th {
+        font-weight: 600;
+        color: #2C3E50;
+    }
+    .table a.sort-link {
+        text-decoration: none;
+        color: inherit;
+    }
+    .dropdown-item {
+        cursor: pointer;
+    }
+  </style>
 </head>
 <body>
+
 <div th:replace="~{fragments/admin-topbar :: admin-topbar}"></div>
 
 <div class="container-fluid">
@@ -20,33 +76,22 @@
       <main class="py-4">
         <h3 class="section-title">Blog Post Management</h3>
 
-        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-          <span th:text="${successMessage}"></span>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-          <span th:text="${errorMessage}"></span>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
-        <div class="card mb-4">
+        <div class="card">
           <div class="card-header bg-white py-3">
             <form th:action="@{/admin/blogs}" method="get" class="row g-3 align-items-center">
               <div class="col-md-6">
                 <input type="text" class="form-control" name="keyword" th:value="${keyword}" placeholder="Search by post title...">
               </div>
-
               <div class="col-md-3">
                 <select name="status" class="form-select">
-                  <option value="" th:selected="${statusFilter == null or statusFilter == ''}">All Statuses</option>
-                  <option value="pinned" th:selected="${statusFilter == 'pinned'}">Pinned Only</option>
-                  <option value="locked" th:selected="${statusFilter == 'locked'}">Locked Only</option>
+                  <option value="">All Statuses</option>
+                  <option value="pinned" th:selected="${statusFilter == 'pinned'}">Pinned </option>
+                  <option value="locked" th:selected="${statusFilter == 'locked'}">Locked </option>
                 </select>
               </div>
-
               <div class="col-md-3 d-flex gap-2">
                 <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
-                <a th:href="@{/admin/blogs}" class="btn btn-outline-secondary"><i class="fas fa-times"></i></a>
+                <a th:href="@{/admin/blogs}" class="btn btn-outline-secondary" title="Clear Filters"><i class="fas fa-times"></i></a>
               </div>
             </form>
           </div>
@@ -57,7 +102,13 @@
                 <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Title</th>
+                  <th>
+                    <a th:href="@{/admin/blogs(sortField='title', sortDir=${reverseSortDir}, keyword=${keyword}, status=${statusFilter})}" class="sort-link">
+                      Title
+                      <i th:if="${sortField == 'title'}" th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"></i>
+                      <i th:if="${sortField != 'title'}" class="fas fa-sort text-muted"></i>
+                    </a>
+                  </th>
                   <th>Author</th>
                   <th>Views</th>
                   <th>Created Date</th>
@@ -74,14 +125,44 @@
                   <td th:text="${#strings.abbreviate(blog.title, 50)}"></td>
                   <td th:text="${blog.user != null ? blog.user.fullName : 'N/A'}"></td>
                   <td th:text="${blog.viewsCount}"></td>
-                  <td th:text="${#temporals.format(blog.createdDate, 'dd-MMM-yyyy HH:mm')}"></td>
+                  <td th:text="${#temporals.format(blog.createdDate, 'dd-MMM-yyyy')}"></td>
                   <td>
                     <span th:if="${blog.isPinned()}" class="badge bg-info me-1">Pinned</span>
                     <span th:if="${blog.isLocked()}" class="badge bg-warning text-dark">Locked</span>
                   </td>
                   <td class="text-center">
-                    <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/blogs/edit/{id}(id=${blog.blogId})}"><i class="fas fa-edit"></i></a>
-                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/blogs/detail/{id}(id=${blog.blogId})}"><i class="fas fa-eye"></i></a>
+                    <div class="dropdown">
+                      <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" th:id="'dropdownMenuButton' + ${blog.blogId}" data-bs-toggle="dropdown" aria-expanded="false">
+                        Actions
+                      </button>
+                      <ul class="dropdown-menu" th:aria-labelledby="'dropdownMenuButton' + ${blog.blogId}">
+                        <li><a class="dropdown-item" th:href="@{/admin/blogs/detail/{id}(id=${blog.blogId})}"><i class="fas fa-eye me-2"></i>View</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/blogs/edit/{id}(id=${blog.blogId})}"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <form th:action="@{/admin/blogs/toggle-pin/{id}(id=${blog.blogId})}" method="post" class="d-inline">
+                            <button type="submit" class="dropdown-item">
+                              <i th:class="${blog.isPinned() ? 'fas fa-thumbtack me-2 text-danger' : 'fas fa-thumbtack me-2'}"></i>
+                              <span th:text="${blog.isPinned() ? 'Unpin Post' : 'Pin Post'}"></span>
+                            </button>
+                          </form>
+                        </li>
+                        <li>
+                          <form th:action="@{/admin/blogs/toggle-lock/{id}(id=${blog.blogId})}" method="post" class="d-inline">
+                            <button type="submit" class="dropdown-item">
+                              <i th:class="${blog.isLocked() ? 'fas fa-lock-open me-2' : 'fas fa-lock me-2'}"></i>
+                              <span th:text="${blog.isLocked() ? 'Unlock Post' : 'Lock Post'}"></span>
+                            </button>
+                          </form>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <form th:action="@{/admin/blogs/delete/{id}(id=${blog.blogId})}" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this post? This action cannot be undone.')">
+                            <button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash-alt me-2"></i>Delete</button>
+                          </form>
+                        </li>
+                      </ul>
+                    </div>
                   </td>
                 </tr>
                 </tbody>
@@ -89,12 +170,9 @@
             </div>
           </div>
 
-          <div class="card-footer bg-white py-3" th:if="${blogPage.totalPages > 0}">
-            <nav th:if="${blogPage.totalPages > 1}">
+          <div class="card-footer bg-white py-3" th:if="${blogPage.totalPages > 1}">
+            <nav aria-label="Page navigation">
               <ul class="pagination pagination-sm justify-content-center mb-0">
-                <li class="page-item" th:classappend="${blogPage.first ? 'disabled' : ''}">
-                  <a class="page-link" th:href="@{/admin/blogs(page=0, keyword=${keyword}, status=${statusFilter}, sortField=${sortField}, sortDir=${sortDir})}">First</a>
-                </li>
               </ul>
             </nav>
           </div>
@@ -104,6 +182,6 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
