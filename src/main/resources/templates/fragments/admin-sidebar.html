@@ -55,6 +55,10 @@
             <a th:href="@{/admin/blogs}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'blog' ? 'active' : ''}">
                 <i class="fas fa-blog"></i> Blog Management
             </a>
+
+            <a th:href="@{/admin/data-management}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'data-management' ? 'active' : ''}">
+                <i class="fas fa-database"></i> Data Management
+            </a>
             
             <!-- Reports -->
             <a th:href="@{/admin/reports}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'reports' ? 'active' : ''}">

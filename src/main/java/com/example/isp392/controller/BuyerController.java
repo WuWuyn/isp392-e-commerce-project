@@ -503,7 +503,7 @@ public class BuyerController {
         // Các logic kiểm tra lỗi và tìm shop cũ của bạn đã ổn
         if (bindingResult.hasErrors()) {
             model.addAttribute("shop", shop);
-            return "buyer/seller-registration";
+            return "buyer/seller-registrations";
         }
 
         try {
