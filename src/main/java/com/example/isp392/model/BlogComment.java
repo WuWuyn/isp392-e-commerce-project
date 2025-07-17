@@ -33,6 +33,10 @@ public class BlogComment {
     private LocalDateTime createdDate;
 
     // Kiểm tra xem comment bài viết có bị khóa không?
-    @Column(name = "is_locked", nullable = false, columnDefinition = "BIT DEFAULT 0")
-    private boolean isLocked = false;
+    @Column(name = "is_hidden", nullable = false, columnDefinition = "BIT DEFAULT 0")
+    private boolean isHidden = false;
+
+    @Column(name = "is_approved", nullable = false, columnDefinition = "BIT DEFAULT 0")
+    private boolean isApproved = false;
+
 }

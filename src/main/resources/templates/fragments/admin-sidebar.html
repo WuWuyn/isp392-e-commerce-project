@@ -56,6 +56,10 @@
                 <i class="fas fa-blog"></i> Blog Management
             </a>
 
+            <a th:href="@{/admin/moderation}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'moderation' ? 'active' : ''}">
+                <i class="fas fa-comments-dollar"></i> Review Moderation
+            </a>
+
             <a th:href="@{/admin/data-management}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'data-management' ? 'active' : ''}">
                 <i class="fas fa-database"></i> Data Management
             </a>
