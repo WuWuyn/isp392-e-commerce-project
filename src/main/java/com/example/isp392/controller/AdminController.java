@@ -8,8 +8,6 @@ import com.example.isp392.model.BookReview;
 import com.example.isp392.model.BlogComment;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
-import com.example.isp392.repository.BookReviewRepository;
-import com.example.isp392.repository.BlogCommentRepository;
 import com.example.isp392.service.AdminService;
 import com.example.isp392.service.BookService;
 import com.example.isp392.service.OrderService;
@@ -36,6 +34,7 @@ import com.example.isp392.model.Blog;
 import com.example.isp392.service.BlogService;
 import com.example.isp392.service.CategoryService;
 import com.example.isp392.service.PublisherService;
+import com.example.isp392.service.ModerationService;
 import jakarta.persistence.EntityNotFoundException;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -79,8 +78,7 @@ public class AdminController {
     private final CategoryService categoryService;
     private final PublisherService publisherService;
     private final DataImportExportService dataImportExportService;
-    private final BookReviewRepository bookReviewRepository;
-    private final BlogCommentRepository blogCommentRepository;
+    private final ModerationService moderationService;
 
     /**
      * Constructor with explicit dependency injection
@@ -96,7 +94,7 @@ public class AdminController {
                           PublisherRepository publisherRepository,
                           ShopService shopService,
                           OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService, DataImportExportService dataImportExportService
-    , BookReviewRepository bookReviewRepository, BlogCommentRepository blogCommentRepository) {
+    , ModerationService moderationService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
@@ -108,8 +106,7 @@ public class AdminController {
         this.categoryService = categoryService;
         this.publisherService = publisherService;
         this.dataImportExportService = dataImportExportService;
-        this.bookReviewRepository = bookReviewRepository;
-        this.blogCommentRepository = blogCommentRepository;
+        this.moderationService = moderationService;
 
     }
     
@@ -910,51 +907,19 @@ public class AdminController {
 
         adminService.addAdminInfoToModel(model);
 
-        // --- SỬA LỖI DEPRECATED CHO REVIEWS ---
-        // Bắt đầu với một Specification trống, không làm gì cả (thay cho where(null))
-        Specification<BookReview> reviewSpec = (root, query, cb) -> cb.conjunction();
+        // Controller chỉ gọi Service, không tự xử lý logic
+        Pageable reviewPageable = PageRequest.of(reviewPage, size, Sort.by(Sort.Direction.fromString(reviewSortDir), reviewSortField));
+        Page<BookReview> reviews = moderationService.findPaginatedReviews(reviewSearch, reviewRating, reviewStartDate, reviewEndDate, reviewPageable);
 
-        if (reviewSearch != null && !reviewSearch.isEmpty()) {
-            reviewSpec = reviewSpec.and((root, query, cb) -> cb.like(root.get("content"), "%" + reviewSearch + "%"));
-        }
-        if (reviewRating != null && reviewRating > 0) {
-            reviewSpec = reviewSpec.and((root, query, cb) -> cb.equal(root.get("rating"), reviewRating));
-        }
-        if (reviewStartDate != null) {
-            reviewSpec = reviewSpec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdDate"), reviewStartDate.atStartOfDay()));
-        }
-        if (reviewEndDate != null) {
-            reviewSpec = reviewSpec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdDate"), reviewEndDate.atTime(23, 59, 59)));
-        }
+        Pageable commentPageable = PageRequest.of(commentPage, size, Sort.by(Sort.Direction.fromString(commentSortDir), commentSortField));
+        Page<BlogComment> comments = moderationService.findPaginatedComments(commentSearch, commentStartDate, commentEndDate, commentPageable);
 
-        Sort reviewSort = Sort.by(Sort.Direction.fromString(reviewSortDir), reviewSortField);
-        Pageable reviewPageable = PageRequest.of(reviewPage, size, reviewSort);
-        Page<BookReview> reviews = bookReviewRepository.findAll(reviewSpec, reviewPageable);
-
-        // --- SỬA LỖI DEPRECATED CHO COMMENTS ---
-        // Tương tự, bắt đầu với một Specification trống
-        Specification<BlogComment> commentSpec = (root, query, cb) -> cb.conjunction();
-
-        if (commentSearch != null && !commentSearch.isEmpty()) {
-            commentSpec = commentSpec.and((root, query, cb) -> cb.like(root.get("content"), "%" + commentSearch + "%"));
-        }
-        if (commentStartDate != null) {
-            commentSpec = commentSpec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdDate"), commentStartDate.atStartOfDay()));
-        }
-        if (commentEndDate != null) {
-            commentSpec = commentSpec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdDate"), commentEndDate.atTime(23, 59, 59)));
-        }
-
-        Sort commentSort = Sort.by(Sort.Direction.fromString(commentSortDir), commentSortField);
-        Pageable commentPageable = PageRequest.of(commentPage, size, commentSort);
-        Page<BlogComment> comments = blogCommentRepository.findAll(commentSpec, commentPageable);
-
-        // Gửi dữ liệu ra view (giữ nguyên)
+        // Gửi dữ liệu ra view
         model.addAttribute("reviews", reviews);
         model.addAttribute("comments", comments);
         model.addAttribute("activeMenu", "moderation");
 
-        // Giữ lại trạng thái lọc (giữ nguyên)
+        // Giữ lại trạng thái lọc, tìm kiếm, sắp xếp cho reviews
         model.addAttribute("reviewSearch", reviewSearch);
         model.addAttribute("reviewRating", reviewRating);
         model.addAttribute("reviewStartDate", reviewStartDate);
@@ -963,6 +928,7 @@ public class AdminController {
         model.addAttribute("reviewSortDir", reviewSortDir);
         model.addAttribute("reviewReverseSortDir", "asc".equals(reviewSortDir) ? "desc" : "asc");
 
+        // Giữ lại trạng thái lọc, tìm kiếm, sắp xếp cho comments
         model.addAttribute("commentSearch", commentSearch);
         model.addAttribute("commentStartDate", commentStartDate);
         model.addAttribute("commentEndDate", commentEndDate);
@@ -973,59 +939,44 @@ public class AdminController {
         return "admin/moderation";
     }
 
-    // === XỬ LÝ CHO BOOK REVIEWS ===
-
     @PostMapping("/reviews/approve/{id}")
     public String approveReview(@PathVariable("id") Integer reviewId, RedirectAttributes redirectAttributes) {
-        return bookReviewRepository.findById(reviewId)
-                .map(review -> {
-                    review.setApproved(true);
-                    bookReviewRepository.save(review);
-                    redirectAttributes.addFlashAttribute("successMessage", "Review approved successfully.");
-                    return "redirect:/admin/moderation";
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("errorMessage", "Review not found.");
-                    return "redirect:/admin/moderation";
-                });
-    }
-
-    @PostMapping("/reviews/delete/{id}")
-    public String deleteReview(@PathVariable("id") Integer reviewId, RedirectAttributes redirectAttributes) {
-        if (bookReviewRepository.existsById(reviewId)) {
-            bookReviewRepository.deleteById(reviewId);
-            redirectAttributes.addFlashAttribute("successMessage", "Review deleted successfully.");
+        if (moderationService.approveReview(reviewId)) {
+            redirectAttributes.addFlashAttribute("successMessage", "Review approved successfully.");
         } else {
             redirectAttributes.addFlashAttribute("errorMessage", "Review not found.");
         }
         return "redirect:/admin/moderation";
     }
 
-
-    // === XỬ LÝ CHO BLOG COMMENTS ===
+    @PostMapping("/reviews/delete/{id}")
+    public String deleteReview(@PathVariable("id") Integer reviewId, RedirectAttributes redirectAttributes) {
+        try {
+            moderationService.deleteReview(reviewId);
+            redirectAttributes.addFlashAttribute("successMessage", "Review deleted successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting review.");
+        }
+        return "redirect:/admin/moderation";
+    }
 
     @PostMapping("/comments/approve/{id}")
     public String approveComment(@PathVariable("id") Integer commentId, RedirectAttributes redirectAttributes) {
-        return blogCommentRepository.findById(commentId)
-                .map(comment -> {
-                    comment.setApproved(true);
-                    blogCommentRepository.save(comment);
-                    redirectAttributes.addFlashAttribute("successMessage", "Comment approved successfully.");
-                    return "redirect:/admin/moderation?tab=comments"; // Chuyển về đúng tab comments
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("errorMessage", "Comment not found.");
-                    return "redirect:/admin/moderation?tab=comments";
-                });
+        if (moderationService.approveComment(commentId)) {
+            redirectAttributes.addFlashAttribute("successMessage", "Comment approved successfully.");
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Comment not found.");
+        }
+        return "redirect:/admin/moderation?tab=comments";
     }
 
     @PostMapping("/comments/delete/{id}")
     public String deleteComment(@PathVariable("id") Integer commentId, RedirectAttributes redirectAttributes) {
-        if (blogCommentRepository.existsById(commentId)) {
-            blogCommentRepository.deleteById(commentId);
+        try {
+            moderationService.deleteComment(commentId);
             redirectAttributes.addFlashAttribute("successMessage", "Comment deleted successfully.");
-        } else {
-            redirectAttributes.addFlashAttribute("errorMessage", "Comment not found.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting comment.");
         }
         return "redirect:/admin/moderation?tab=comments";
     }
