@@ -3,6 +3,7 @@ package com.example.isp392.service;
 import com.example.isp392.dto.BookFormDTO;
 import com.example.isp392.model.Book;
 import com.example.isp392.model.Category;
+import com.example.isp392.model.OrderItem;
 import com.example.isp392.model.Publisher;
 import com.example.isp392.model.Shop;
 import com.example.isp392.repository.BookRepository;
@@ -14,6 +15,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
 import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
@@ -384,17 +386,66 @@ public class BookService {
      */
     @Transactional
     public void updateStockQuantity(Integer bookId, int quantity) {
-        Book book = bookRepository.findById(bookId)
+        // Use SELECT FOR UPDATE to prevent race conditions
+        Book book = bookRepository.findByIdForUpdate(bookId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sách với ID: " + bookId));
 
-        int newQuantity = book.getStockQuantity() + quantity;
+        int currentStock = book.getStockQuantity();
+        int newQuantity = currentStock + quantity;
+
+        log.info("Updating stock for book ID {}: current={}, change={}, new={}",
+                bookId, currentStock, quantity, newQuantity);
+
         if (newQuantity < 0) {
-            throw new IllegalArgumentException("Số lượng sách trong kho không đủ");
+            log.error("Insufficient stock for book ID {}: requested change={}, current stock={}",
+                     bookId, quantity, currentStock);
+            throw new IllegalArgumentException("Số lượng sách trong kho không đủ. Còn lại: " + currentStock +
+                                             ", yêu cầu: " + Math.abs(quantity));
         }
 
         book.setStockQuantity(newQuantity);
         bookRepository.save(book);
-        log.info("Đã cập nhật số lượng sách ID {} thành {}", bookId, newQuantity);
+        log.info("Successfully updated stock for book ID {} from {} to {}", bookId, currentStock, newQuantity);
+    }
+
+    /**
+     * Atomic method to check and reserve inventory for multiple items
+     * This prevents race conditions when multiple users order the same items
+     */
+    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.SERIALIZABLE)
+    public void reserveInventoryForOrder(List<OrderItem> orderItems) {
+        log.info("Reserving inventory for {} items", orderItems.size());
+
+        for (OrderItem item : orderItems) {
+            Integer bookId = item.getBook().getBookId();
+            int requestedQuantity = item.getQuantity();
+
+            // Use SELECT FOR UPDATE to lock the row
+            Book book = bookRepository.findByIdForUpdate(bookId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sách với ID: " + bookId));
+
+            int currentStock = book.getStockQuantity();
+
+            log.info("Checking inventory for book ID {}: requested={}, available={}",
+                    bookId, requestedQuantity, currentStock);
+
+            if (requestedQuantity > currentStock) {
+                log.error("Insufficient inventory for book ID {}: requested={}, available={}",
+                         bookId, requestedQuantity, currentStock);
+                throw new IllegalArgumentException("Sản phẩm '" + book.getTitle() +
+                                                 "' không đủ số lượng trong kho. Còn lại: " + currentStock +
+                                                 ", yêu cầu: " + requestedQuantity);
+            }
+
+            // Reserve the inventory
+            book.setStockQuantity(currentStock - requestedQuantity);
+            bookRepository.save(book);
+
+            log.info("Reserved {} units of book ID {}, remaining stock: {}",
+                    requestedQuantity, bookId, book.getStockQuantity());
+        }
+
+        log.info("Successfully reserved inventory for all {} items", orderItems.size());
     }
 
     /**

@@ -124,7 +124,7 @@ public class CheckoutService {
                 order.setNotes(shopOrderDTO.getShopNotes());
                 order.setOrderDate(LocalDateTime.now());
 
-                // Create order items and update inventory
+                // Create order items
                 List<OrderItem> orderItems = new ArrayList<>();
                 for (CartItem cartItem : shopItems) {
                     OrderItem orderItem = new OrderItem();
@@ -133,11 +133,19 @@ public class CheckoutService {
                     orderItem.setQuantity(cartItem.getQuantity());
                     orderItem.setUnitPrice(cartItem.getBook().getSellingPrice());
                     orderItems.add(orderItem);
-                    
-                    // Update inventory
-                    bookService.decreaseStockQuantity(cartItem.getBook().getBookId(), cartItem.getQuantity());
                 }
                 order.setOrderItems(orderItems);
+
+                // Atomically reserve inventory for this shop's items
+                try {
+                    logger.info("Reserving inventory for shop {} with {} items",
+                               shop.getShopName(), orderItems.size());
+                    bookService.reserveInventoryForOrder(orderItems);
+                    logger.info("Successfully reserved inventory for shop {}", shop.getShopName());
+                } catch (IllegalArgumentException e) {
+                    logger.error("Failed to reserve inventory for shop {}: {}", shop.getShopName(), e.getMessage());
+                    throw new RuntimeException("Đặt hàng thất bại cho shop " + shop.getShopName() + ": " + e.getMessage());
+                }
 
                 // Save order
                 order = orderRepository.save(order);

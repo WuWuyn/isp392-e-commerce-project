@@ -5,6 +5,7 @@ import com.example.isp392.repository.OrderRepository;
 import com.example.isp392.repository.GroupOrderRepository;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -206,7 +207,7 @@ public class OrderService {
      * @param order Đơn hàng cần lưu
      * @return Đơn hàng đã được lưu
      */
-    @Transactional
+    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.SERIALIZABLE)
     public Order save(Order order) {
         logger.info("Saving order with {} items for user: {}",
                    order.getOrderItems().size(), order.getUser().getEmail());
@@ -214,28 +215,30 @@ public class OrderService {
         // Validate order data
         validateOrderData(order);
 
-        // Kiểm tra tồn kho và giảm số lượng sách
+        // Validate order items first
         for (OrderItem item : order.getOrderItems()) {
-            try {
-                // Validate pricing
-                if (item.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new RuntimeException("Giá sản phẩm không hợp lệ: " + item.getBook().getTitle());
-                }
-
-                // Validate quantity
-                if (item.getQuantity() <= 0) {
-                    throw new RuntimeException("Số lượng sản phẩm không hợp lệ: " + item.getBook().getTitle());
-                }
-
-                logger.info("Decreasing stock for book ID: {}, quantity: {}",
-                    item.getBook().getBookId(), item.getQuantity());
-                bookService.decreaseStockQuantity(item.getBook().getBookId(), item.getQuantity());
-                logger.info("Successfully decreased stock for book ID: {}", item.getBook().getBookId());
-            } catch (IllegalArgumentException e) {
-                logger.error("Failed to decrease stock for book ID: {}, error: {}",
-                    item.getBook().getBookId(), e.getMessage());
-                throw new RuntimeException("Không thể cập nhật số lượng sách: " + e.getMessage());
+            // Validate pricing
+            if (item.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new RuntimeException("Giá sản phẩm không hợp lệ: " + item.getBook().getTitle());
             }
+
+            // Validate quantity
+            if (item.getQuantity() <= 0) {
+                throw new RuntimeException("Số lượng sản phẩm không hợp lệ: " + item.getBook().getTitle());
+            }
+        }
+
+        // Atomically reserve inventory for all items to prevent race conditions
+        try {
+            logger.info("Reserving inventory for order with {} items", order.getOrderItems().size());
+            bookService.reserveInventoryForOrder(order.getOrderItems());
+            logger.info("Successfully reserved inventory for all order items");
+        } catch (IllegalArgumentException e) {
+            logger.error("Failed to reserve inventory: {}", e.getMessage());
+            throw new RuntimeException("Đặt hàng thất bại: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during inventory reservation: {}", e.getMessage(), e);
+            throw new RuntimeException("Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.");
         }
 
         Order savedOrder = orderRepository.save(order);

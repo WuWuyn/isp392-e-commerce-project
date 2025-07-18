@@ -259,7 +259,18 @@ public class ProcessCheckoutController {
 
         } catch (Exception e) {
             logger.error("Error processing checkout: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+
+            // Add user-friendly error message
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("không đủ số lượng") || errorMessage.contains("Insufficient")) {
+                errorMessage = "Một số sản phẩm trong giỏ hàng đã hết hàng. Vui lòng kiểm tra lại giỏ hàng.";
+            } else if (errorMessage.contains("Đặt hàng thất bại")) {
+                // Keep the original message as it's already user-friendly
+            } else {
+                errorMessage = "Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại sau.";
+            }
+
+            redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
             return "redirect:/buyer/checkout?error";
         }
     }
@@ -374,7 +385,18 @@ public class ProcessCheckoutController {
 
         } catch (Exception e) {
             logger.error("Error processing VNPay payment: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+
+            // Add user-friendly error message
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("không đủ số lượng") || errorMessage.contains("Insufficient")) {
+                errorMessage = "Một số sản phẩm trong giỏ hàng đã hết hàng. Vui lòng kiểm tra lại giỏ hàng.";
+            } else if (errorMessage.contains("Đặt hàng thất bại")) {
+                // Keep the original message as it's already user-friendly
+            } else {
+                errorMessage = "Có lỗi xảy ra khi tạo thanh toán. Vui lòng thử lại sau.";
+            }
+
+            redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
             return "redirect:/buyer/checkout?error";
         }
     }

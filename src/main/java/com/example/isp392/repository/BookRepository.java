@@ -5,9 +5,11 @@ import com.example.isp392.model.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -18,6 +20,14 @@ import java.util.Optional;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Integer> {
+
+    /**
+     * Find book by ID with pessimistic lock to prevent race conditions
+     * This is used for inventory management to ensure atomic updates
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Book b WHERE b.bookId = :bookId")
+    Optional<Book> findByIdForUpdate(@Param("bookId") Integer bookId);
 
     // Tìm sách theo tiêu đề (phân trang)
     Page<Book> findByTitleContainingIgnoreCase(String title, Pageable pageable);
