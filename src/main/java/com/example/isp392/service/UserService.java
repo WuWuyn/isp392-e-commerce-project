@@ -369,7 +369,7 @@ public class UserService implements UserDetailsService {
         // Use the password encoder to check if the given password matches the stored password
         return passwordEncoder.matches(password, user.getPassword());
     }
-    private Specification<User> createSpecification(String keyword, String role) {
+    private Specification<User> createSpecification(String keyword, String role, String status) { // <-- Thêm 'String status'
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -391,15 +391,19 @@ public class UserService implements UserDetailsService {
                 );
                 predicates.add(rolePredicate);
             }
+            if (status != null && !status.trim().isEmpty()) {
+                // Chuyển chuỗi "active" thành boolean true, và các chuỗi khác thành false
+                boolean isActive = "active".equalsIgnoreCase(status);
+                predicates.add(criteriaBuilder.equal(root.get("isActive"), isActive));
+            }
             // To prevent duplicates when joining
             query.distinct(true);
-
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    public Page<User> searchUsers(String keyword, String role, Pageable pageable) {
-        Specification<User> spec = createSpecification(keyword, role);
+    public Page<User> searchUsers(String keyword, String role, String status, Pageable pageable) { // <-- Thêm 'String status'
+        Specification<User> spec = createSpecification(keyword, role, status); // <-- Truyền status vào đây
         return userRepository.findAll(spec, pageable);
     }
 

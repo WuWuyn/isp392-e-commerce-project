@@ -364,7 +364,7 @@ public class AdminController {
         Pageable pageable = PageRequest.of(pageNo - 1, size, Sort.by("userId").ascending());
 
         // Gọi phương thức searchUsers của bạn với Pageable
-        Page<User> userPage = userService.searchUsers(keyword, role, pageable);
+        Page<User> userPage = userService.searchUsers(keyword, role, status, pageable);
 
 
         model.addAttribute("userPage", userPage); // Đối tượng Page chính
