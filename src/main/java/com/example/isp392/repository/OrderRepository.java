@@ -115,6 +115,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      */
     @Query(value = "SELECT COALESCE(sum(o.sub_total), 0) " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
@@ -131,6 +132,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      */
     @Query(value = "SELECT COUNT(DISTINCT o.order_id) " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
@@ -146,6 +148,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query(value = "SELECT CONVERT(varchar, CONVERT(date, o.order_date), 120) AS order_date, " +
            "COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS daily_revenue " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
@@ -308,6 +311,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE o.orderId = :orderId AND b.shop.user.userId = :sellerId")
     Optional<Order> findOrderByIdForSeller(@Param("orderId") Integer orderId, @Param("sellerId") Integer sellerId);
 
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.customerOrder LEFT JOIN FETCH o.orderItems oi LEFT JOIN FETCH oi.book WHERE o.orderId = :orderId")
+    Optional<Order> findByIdWithCustomerOrder(@Param("orderId") Integer orderId);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.customerOrder JOIN FETCH o.orderItems oi JOIN FETCH oi.book b WHERE o.orderId = :orderId AND b.shop.user.userId = :sellerId")
+    Optional<Order> findOrderByIdForSellerWithCustomerOrder(@Param("orderId") Integer orderId, @Param("sellerId") Integer sellerId);
+
     @Query(value = "SELECT COUNT(DISTINCT o.order_id) " +
             "FROM orders o " +
             "JOIN order_items oi ON o.order_id = oi.order_id " +
@@ -329,8 +338,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * 
      * @return Total order value
      */
-    @Query(value = "SELECT COALESCE(SUM(total_amount), 0) FROM orders " +
-           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED')", 
+    @Query(value = "SELECT COALESCE(SUM(total_amount), 0) FROM customer_orders " +
+           "WHERE status NOT IN ('CANCELLED', 'REFUNDED')",
            nativeQuery = true)
     BigDecimal calculateTotalOrderValue();
     
@@ -366,6 +375,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "FROM books b " +
            "JOIN order_items oi ON b.book_id = oi.book_id " +
            "JOIN orders o ON oi.order_id = o.order_id " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN shops s ON b.shop_id = s.shop_id " +
            "WHERE o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
            "GROUP BY b.book_id, b.title, s.shop_name " +
@@ -387,6 +397,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "JOIN users u ON s.user_id = u.user_id " +
            "JOIN order_items oi ON b.book_id = oi.book_id " +
            "JOIN orders o ON oi.order_id = o.order_id " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "WHERE o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
            "GROUP BY s.shop_id, s.shop_name, u.full_name " +
            "ORDER BY SUM(oi.unit_price * oi.quantity) DESC",
@@ -399,11 +410,11 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param limit Maximum number of orders to return
      * @return List of recent orders
      */
-    @Query(value = "SELECT TOP(:limit) o.order_id, o.order_date, o.order_status, " +
-           "o.total_amount, u.full_name AS customer_name " +
-           "FROM orders o " +
-           "JOIN users u ON o.user_id = u.user_id " +
-           "ORDER BY o.order_date DESC",
+    @Query(value = "SELECT TOP(:limit) co.customer_order_id AS order_id, co.created_at AS order_date, co.status, " +
+           "co.total_amount, u.full_name AS customer_name " +
+           "FROM customer_orders co " +
+           "JOIN users u ON co.user_id = u.user_id " +
+           "ORDER BY co.created_at DESC",
            nativeQuery = true)
     List<Map<String, Object>> getRecentPlatformOrders(@Param("limit") int limit);
     
@@ -427,9 +438,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @return Total platform revenue
      */
     @Query(value = "SELECT COALESCE(SUM(total_amount * :commissionRate), 0) " +
-           "FROM orders " +
-           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "AND CAST(order_date AS DATE) BETWEEN :startDate AND :endDate",
+           "FROM customer_orders " +
+           "WHERE status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "AND CAST(created_at AS DATE) BETWEEN :startDate AND :endDate",
            nativeQuery = true)
     BigDecimal calculatePlatformRevenue(
             @Param("startDate") LocalDate startDate,
@@ -440,7 +451,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * Count total orders across the platform.
      * @return Total count of orders.
      */
-    @Query(value = "SELECT COUNT(*) FROM orders", nativeQuery = true)
+    @Query(value = "SELECT COUNT(*) FROM customer_orders", nativeQuery = true)
     long countAllOrders();
 
     /**
@@ -452,13 +463,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @return List of daily revenue data
      */
     @Query(value = "SELECT " +
-           "CAST(order_date AS DATE) AS order_date, " +
-           "COALESCE(SUM(sub_total * :commissionRate), 0) AS daily_revenue " +
-           "FROM orders " +
-           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "AND CAST(order_date AS DATE) BETWEEN :startDate AND :endDate " +
-           "GROUP BY CAST(order_date AS DATE) " +
-           "ORDER BY CAST(order_date AS DATE)",
+           "CAST(created_at AS DATE) AS order_date, " +
+           "COALESCE(SUM(total_amount * :commissionRate), 0) AS daily_revenue " +
+           "FROM customer_orders " +
+           "WHERE status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "AND CAST(created_at AS DATE) BETWEEN :startDate AND :endDate " +
+           "GROUP BY CAST(created_at AS DATE) " +
+           "ORDER BY CAST(created_at AS DATE)",
            nativeQuery = true)
     List<Map<String, Object>> getDailyPlatformRevenue(
             @Param("startDate") LocalDate startDate,

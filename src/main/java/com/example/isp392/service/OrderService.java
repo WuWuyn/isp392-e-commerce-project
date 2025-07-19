@@ -3,6 +3,7 @@ package com.example.isp392.service;
 import com.example.isp392.model.*;
 import com.example.isp392.repository.OrderRepository;
 import com.example.isp392.repository.CustomerOrderRepository;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import org.springframework.transaction.annotation.Isolation;
@@ -116,7 +117,7 @@ public class OrderService {
     }
 
     public Optional<Order> findOrderById(Integer orderId) {
-        return orderRepository.findById(orderId);
+        return orderRepository.findByIdWithCustomerOrder(orderId);
     }
 
     public Page<Order> findOrders(User user, String status, LocalDate dateFrom, LocalDate dateTo, Pageable pageable) {
@@ -283,20 +284,7 @@ public class OrderService {
     // Seller-specific methods
     
     public List<Map<String, Object>> getRecentOrders(Integer shopId, int limit) {
-        List<Order> orders = orderRepository.findByShopShopIdOrderByOrderDateDesc(shopId, PageRequest.of(0, limit));
-        List<Map<String, Object>> result = new ArrayList<>();
-        
-        for (Order order : orders) {
-            Map<String, Object> orderMap = new HashMap<>();
-            orderMap.put("orderId", order.getOrderId());
-            orderMap.put("customerName", order.getCustomerOrder().getUser().getFullName());
-            orderMap.put("amount", order.getTotalAmount());
-            orderMap.put("status", order.getOrderStatus());
-            orderMap.put("date", order.getOrderDate());
-            result.add(orderMap);
-        }
-        
-        return result;
+        return orderRepository.getRecentOrders(shopId, limit);
     }
     
     public int getNewOrdersCount(Integer shopId, int daysAgo) {
@@ -361,7 +349,7 @@ public class OrderService {
     }
     
     public Optional<Order> findOrderByIdForSeller(Integer orderId, Integer sellerId) {
-        return orderRepository.findByOrderIdAndUserUserId(orderId, sellerId);
+        return orderRepository.findOrderByIdForSellerWithCustomerOrder(orderId, sellerId);
     }
     
     public Page<Order> searchOrdersForSeller(Integer sellerId, String keyword, OrderStatus status, 
@@ -450,7 +438,12 @@ public class OrderService {
     public Page<Order> findOrdersForAdmin(String search, OrderStatus orderStatus, LocalDate fromDate, LocalDate toDate, Pageable pageable) {
         return orderRepository.findAll((Specification<Order>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            
+
+            // Add JOIN FETCH for customerOrder to avoid lazy loading issues
+            if (query.getResultType().equals(Order.class)) {
+                root.fetch("customerOrder", JoinType.LEFT);
+            }
+
             // Search by keyword
             if (search != null && !search.trim().isEmpty()) {
                 String searchTerm = "%" + search.trim().toLowerCase() + "%";

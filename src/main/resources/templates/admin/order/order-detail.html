@@ -291,9 +291,9 @@
                                             <span th:text="${order.customerOrder.shippingWard + ', ' + order.customerOrder.shippingDistrict + ', ' + order.customerOrder.shippingProvince}">Ward, District, Province</span>
                                         </span>
                                     </div>
-                                    <div class="detail-row" th:if="${order.shippingCompany != null}">
+                                    <div class="detail-row" th:if="${order.customerOrder != null and order.customerOrder.shippingCompany != null}">
                                         <span class="label">Shipping Company:</span>
-                                        <span class="value" th:text="${order.shippingCompany}">Express Shipping</span>
+                                        <span class="value" th:text="${order.customerOrder.shippingCompany}">Express Shipping</span>
                                     </div>
                                 </div>
                             </div>

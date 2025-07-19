@@ -98,15 +98,15 @@
               </div>
 
               <div style="border-bottom: 1px dashed #ccc; padding: 8px 0; font-size: 14pt; line-height: 1.4;">
-                <strong>TO: <span th:text="*{recipientName}"></span></strong><br>
-                <span th:text="*{recipientPhone}"></span><br>
-                <span th:text="*{shippingAddressDetail}"></span><br>
-                <span th:text="*{shippingWard + ', ' + shippingDistrict + ', ' + shippingProvince}"></span>
+                <strong>TO: <span th:text="*{customerOrder != null ? customerOrder.recipientName : 'N/A'}"></span></strong><br>
+                <span th:text="*{customerOrder != null ? customerOrder.recipientPhone : 'N/A'}"></span><br>
+                <span th:text="*{customerOrder != null ? customerOrder.shippingAddressDetail : 'N/A'}"></span><br>
+                <span th:text="*{customerOrder != null ? (customerOrder.shippingWard + ', ' + customerOrder.shippingDistrict + ', ' + customerOrder.shippingProvince) : 'N/A'}"></span>
               </div>
 
               <div style="border-bottom: 1px dashed #ccc; padding: 8px 0; font-size: 10pt;">
                 <p style="margin-bottom: 0;"><strong>Note:</strong> <span th:text="*{notes != null and !notes.isEmpty() ? notes : 'No notes'}"></span></p>
-                <p style="margin-bottom: 0;"><strong>Payment:</strong> <span th:text="*{paymentMethod}"></span> (<span style="font-weight: bold;" th:text="*{paymentStatus}"></span>)</p>
+                <p style="margin-bottom: 0;"><strong>Payment:</strong> <span th:text="*{customerOrder != null ? customerOrder.paymentMethod : 'N/A'}"></span> (<span style="font-weight: bold;" th:text="*{customerOrder != null ? customerOrder.paymentStatus : 'N/A'}"></span>)</p>
               </div>
 
               <div style="text-align: center; padding-top: 10px;">

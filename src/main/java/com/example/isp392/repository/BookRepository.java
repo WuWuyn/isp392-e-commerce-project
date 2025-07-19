@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Repository
-public interface BookRepository extends JpaRepository<Book, Integer> {
+public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecificationExecutor<Book> {
 
     /**
      * Find book by ID with pessimistic lock to prevent race conditions
@@ -29,8 +29,6 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM Book b WHERE b.bookId = :bookId")
     Optional<Book> findByIdForUpdate(@Param("bookId") Integer bookId);
-
-public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecificationExecutor<Book> {
     Page<Book> findByShop_ShopIdAndIsActiveTrue(Integer shopId, Pageable pageable);
     // Tìm sách theo tiêu đề (phân trang)
     Page<Book> findByTitleContainingIgnoreCase(String title, Pageable pageable);
