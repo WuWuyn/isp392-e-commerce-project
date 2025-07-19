@@ -3,14 +3,17 @@ package com.example.isp392.controller;
 import com.example.isp392.dto.ShopDTO;
 import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
+import com.example.isp392.model.Book;
 import com.example.isp392.repository.UserRepository;
 import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
+import com.example.isp392.service.BookService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -41,16 +44,18 @@ public class ShopInformationController {
     private final UserService userService;
     private final UserRepository userRepository;
     private final HttpSession httpSession;
+    private final BookService bookService;
     
     /**
      * Constructor for dependency injection
      */
     public ShopInformationController(ShopService shopService, UserService userService, 
-                                    UserRepository userRepository, HttpSession httpSession) {
+                                    UserRepository userRepository, HttpSession httpSession, BookService bookService) {
         this.shopService = shopService;
         this.userService = userService;
         this.userRepository = userRepository;
         this.httpSession = httpSession;
+        this.bookService = bookService;
     }
     
     /**
@@ -230,4 +235,5 @@ public class ShopInformationController {
         log.debug("Found user: id={}, name={}", user.getUserId(), user.getFullName());
         return user;
     }
+
 } 

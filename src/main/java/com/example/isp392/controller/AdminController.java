@@ -65,7 +65,7 @@ import com.example.isp392.service.DataImportExportService;
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
-    
+
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
     private final UserService userService;
     private final AdminService adminService;
@@ -83,18 +83,18 @@ public class AdminController {
     /**
      * Constructor with explicit dependency injection
      * Using constructor injection instead of @Autowired for better clarity and testability
-     * 
-     * @param userService service for user-related operations
+     *
+     * @param userService  service for user-related operations
      * @param adminService service for admin-specific operations
      */
     public AdminController(UserService userService,
-                          AdminService adminService,
-                          BookService bookService,
-                          CategoryRepository categoryRepository,
-                          PublisherRepository publisherRepository,
-                          ShopService shopService,
-                          OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService, DataImportExportService dataImportExportService
-    , ModerationService moderationService) {
+                           AdminService adminService,
+                           BookService bookService,
+                           CategoryRepository categoryRepository,
+                           PublisherRepository publisherRepository,
+                           ShopService shopService,
+                           OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService, DataImportExportService dataImportExportService
+            , ModerationService moderationService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
@@ -109,11 +109,11 @@ public class AdminController {
         this.moderationService = moderationService;
 
     }
-    
+
     /**
      * Display admin login page
      * This page is accessible to everyone, but only admin users can successfully login
-     * 
+     *
      * @return the admin login view
      */
     @GetMapping("/login")
@@ -123,18 +123,18 @@ public class AdminController {
         if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser") && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
             // If user is authenticated and has ADMIN role, redirect to product management
             return "redirect:/admin/dashboard";
-        }     
-        
+        }
+
         // No active menu for login page
         model.addAttribute("activeMenu", "");
-        
+
         return "admin/admin-login";
     }
 
     /**
      * Display dashboard page
      * This page is only accessible to authenticated users with ADMIN role
-     * 
+     *
      * @param model Model to add attributes
      * @return the dashboard view
      */
@@ -257,7 +257,7 @@ public class AdminController {
             model.addAttribute("recentActivities", recentActivities);
 
             log.debug("Dashboard loaded with stats: users={}, products={}, activeSellers={}, pendingApprovals={}",
-                totalUsers, totalProducts, activeSellers, pendingSellerCount);
+                    totalUsers, totalProducts, activeSellers, pendingSellerCount);
 
             // Add active menu information for sidebar highlighting
             model.addAttribute("activeMenu", "dashboard");
@@ -294,7 +294,7 @@ public class AdminController {
     /**
      * Convert a list to a JSON array string safely using the standard Jackson library
      *
-     * @param <T> Type of list elements
+     * @param <T>  Type of list elements
      * @param list List to convert
      * @return JSON array string
      */
@@ -310,11 +310,11 @@ public class AdminController {
             return "[]"; // Fallback on error
         }
     }
-    
+
     /**
      * Display blog management page
      * This page is only accessible to authenticated users with ADMIN role
-     * 
+     *
      * @param model Model to add attributes
      * @return the blog management view
      */
@@ -322,7 +322,7 @@ public class AdminController {
     public String showBlogManagementPage(Model model) {
         // Use AdminService to get the current admin user
         Optional<User> adminUserOpt = adminService.getCurrentAdminUser();
-        
+
         if (adminUserOpt.isPresent()) {
             User adminUser = adminUserOpt.get();
             model.addAttribute("user", adminUser);
@@ -330,16 +330,16 @@ public class AdminController {
             String firstName = adminService.extractFirstName(adminUser.getFullName());
             model.addAttribute("firstName", firstName);
         }
-        
+
         // Add active menu information for sidebar highlighting
         model.addAttribute("activeMenu", "blog");
-        
+
         return "admin/blog-management";
     }
-    
+
     /**
      * Default admin page - redirects to product management
-     * 
+     *
      * @return redirect to product management page
      */
     @GetMapping({"", "/"})
@@ -499,6 +499,7 @@ public class AdminController {
 
         return "admin/product/product-management";
     }
+
     @GetMapping("/products/add")
     public String showAddProductForm(Model model) {
         adminService.addAdminInfoToModel(model);
@@ -601,6 +602,7 @@ public class AdminController {
 
         return "redirect:/admin/products";
     }
+
     @GetMapping("/products/detail/{id}")
     public String showProductDetail(@PathVariable("id") Integer bookId, Model model) {
         adminService.addAdminInfoToModel(model);
@@ -634,7 +636,7 @@ public class AdminController {
     public String showShopDetailPage(@PathVariable("id") Integer shopId, Model model) {
         adminService.addAdminInfoToModel(model);
         Shop shop = shopService.getShopById(shopId); // Assuming shopService has a getShopById method
-        if(shop == null) return "redirect:/admin/seller-approvals";
+        if (shop == null) return "redirect:/admin/seller-approvals";
 
         model.addAttribute("shop", shop);
         model.addAttribute("activeMenu", "seller");
@@ -979,5 +981,37 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("errorMessage", "Error deleting comment.");
         }
         return "redirect:/admin/moderation?tab=comments";
+    }
+
+    @GetMapping("/moderation/reviews/{id}")
+    public String showReviewDetailPage(@PathVariable("id") Integer reviewId, Model model, RedirectAttributes redirectAttributes) {
+        adminService.addAdminInfoToModel(model);
+        Optional<BookReview> reviewOpt = moderationService.getReviewById(reviewId);
+
+        if (reviewOpt.isPresent()) {
+            model.addAttribute("review", reviewOpt.get());
+            model.addAttribute("contentType", "review"); // Đánh dấu đây là trang chi tiết review
+            model.addAttribute("activeMenu", "moderation");
+            return "admin/moderation-detail"; // Trả về template mới
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Review not found.");
+            return "redirect:/admin/moderation";
+        }
+    }
+
+    @GetMapping("/moderation/comments/{id}")
+    public String showCommentDetailPage(@PathVariable("id") Integer commentId, Model model, RedirectAttributes redirectAttributes) {
+        adminService.addAdminInfoToModel(model);
+        Optional<BlogComment> commentOpt = moderationService.getCommentById(commentId);
+
+        if (commentOpt.isPresent()) {
+            model.addAttribute("comment", commentOpt.get());
+            model.addAttribute("contentType", "comment"); // Đánh dấu đây là trang chi tiết comment
+            model.addAttribute("activeMenu", "moderation");
+            return "admin/moderation-detail"; // Trả về template mới
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Comment not found.");
+            return "redirect:/admin/moderation?tab=comments";
+        }
     }
 }

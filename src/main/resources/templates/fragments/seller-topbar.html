@@ -15,8 +15,8 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <!-- View Store -->
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/store/{id}(id=${user.userId})}">
+                    <li class="nav-item" th:if="${shop != null}">
+                        <a class="nav-link" th:href="@{/shops/{shopId}(shopId=${shop.shopId})}">
                             <i class="fas fa-store"></i> View Store
                         </a>
                     </li>
