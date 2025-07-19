@@ -1,6 +1,7 @@
 package com.example.isp392.service;
 
 import com.example.isp392.model.*;
+import com.example.isp392.repository.OrderItemRepository;
 import com.example.isp392.repository.OrderRepository;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
@@ -26,11 +27,13 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final PromotionService promotionService;
     private final BookService bookService;
+    private final OrderItemRepository orderItemRepository;
 
-    public OrderService(OrderRepository orderRepository, PromotionService promotionService, BookService bookService) {
+    public OrderService(OrderRepository orderRepository, PromotionService promotionService, BookService bookService, OrderItemRepository orderItemRepository){
         this.orderRepository = orderRepository;
         this.promotionService = promotionService;
         this.bookService = bookService;
+        this.orderItemRepository = orderItemRepository;
     }
 
     /**
@@ -540,5 +543,9 @@ public class OrderService {
                 bookService.decreaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
             }
         }
+    }
+
+    public Optional<OrderItem> findOrderItemById(Integer orderItemId) {
+        return orderItemRepository.findById(orderItemId);
     }
 }

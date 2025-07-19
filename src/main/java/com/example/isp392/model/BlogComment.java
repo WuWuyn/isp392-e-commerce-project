@@ -36,7 +36,7 @@ public class BlogComment {
     @Column(name = "is_hidden", nullable = false, columnDefinition = "BIT DEFAULT 0")
     private boolean isHidden = false;
 
-    @Column(name = "is_approved", nullable = false, columnDefinition = "BIT DEFAULT 0")
-    private boolean isApproved = false;
+    @Column(name = "is_approved", nullable = false, columnDefinition = "BIT DEFAULT 1")
+    private boolean isApproved = true;
 
 }
