@@ -4,14 +4,16 @@ import com.example.isp392.model.Blog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 
 @Repository
-public interface BlogRepository extends JpaRepository<Blog, Integer> {
+public interface BlogRepository extends JpaRepository<Blog, Integer>, JpaSpecificationExecutor<Blog> {
     
     // Find blogs containing the search term in title or content
     @Query("SELECT b FROM Blog b WHERE b.title LIKE %:searchTerm% OR b.content LIKE %:searchTerm%")
@@ -39,4 +41,5 @@ public interface BlogRepository extends JpaRepository<Blog, Integer> {
     // Get blog with previous ID for navigation
     @Query("SELECT b FROM Blog b WHERE b.blogId < :blogId ORDER BY b.blogId DESC")
     List<Blog> findPreviousBlog(@Param("blogId") int blogId, Pageable pageable);
+    Page<Blog> findByTitleContainingIgnoreCase(String title, Pageable pageable);
 }

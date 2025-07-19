@@ -4,6 +4,8 @@ import com.example.isp392.model.Book;
 import com.example.isp392.model.OrderStatus;
 import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
+import com.example.isp392.model.BookReview;
+import com.example.isp392.model.BlogComment;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
 import com.example.isp392.service.AdminService;
@@ -28,7 +30,15 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.example.isp392.model.Blog;
+import com.example.isp392.service.BlogService;
+import com.example.isp392.service.CategoryService;
+import com.example.isp392.service.PublisherService;
+import com.example.isp392.service.ModerationService;
+import jakarta.persistence.EntityNotFoundException;
 
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.format.annotation.DateTimeFormat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -46,6 +56,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.http.HttpServletResponse;
+import com.example.isp392.service.DataImportExportService;
 /**
  * Controller for handling admin-related requests
  * This controller manages the admin login page and admin panel pages
@@ -62,6 +74,11 @@ public class AdminController {
     private final PublisherRepository publisherRepository;
     private final ShopService shopService;
     private final OrderService orderService;
+    private final BlogService blogService;
+    private final CategoryService categoryService;
+    private final PublisherService publisherService;
+    private final DataImportExportService dataImportExportService;
+    private final ModerationService moderationService;
 
     /**
      * Constructor with explicit dependency injection
@@ -70,13 +87,14 @@ public class AdminController {
      * @param userService service for user-related operations
      * @param adminService service for admin-specific operations
      */
-    public AdminController(UserService userService, 
-                          AdminService adminService, 
+    public AdminController(UserService userService,
+                          AdminService adminService,
                           BookService bookService,
-                          CategoryRepository categoryRepository, 
+                          CategoryRepository categoryRepository,
                           PublisherRepository publisherRepository,
                           ShopService shopService,
-                          OrderService orderService) {
+                          OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService, DataImportExportService dataImportExportService
+    , ModerationService moderationService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
@@ -84,6 +102,12 @@ public class AdminController {
         this.publisherRepository = publisherRepository;
         this.shopService = shopService;
         this.orderService = orderService;
+        this.blogService = blogService;
+        this.categoryService = categoryService;
+        this.publisherService = publisherService;
+        this.dataImportExportService = dataImportExportService;
+        this.moderationService = moderationService;
+
     }
     
     /**
@@ -106,7 +130,7 @@ public class AdminController {
         
         return "admin/admin-login";
     }
-    
+
     /**
      * Display dashboard page
      * This page is only accessible to authenticated users with ADMIN role
@@ -231,18 +255,18 @@ public class AdminController {
             // 16. Recent activities
             List<Map<String, Object>> recentActivities = adminService.getRecentActivities(10);
             model.addAttribute("recentActivities", recentActivities);
-            
+
             log.debug("Dashboard loaded with stats: users={}, products={}, activeSellers={}, pendingApprovals={}",
                 totalUsers, totalProducts, activeSellers, pendingSellerCount);
 
             // Add active menu information for sidebar highlighting
             model.addAttribute("activeMenu", "dashboard");
-            
+
             return "admin/dashboard";
         } catch (Exception e) {
             log.error("Error loading admin dashboard: {}", e.getMessage(), e);
             model.addAttribute("errorMessage", "Error loading dashboard data: " + e.getMessage());
-            
+
             // Add empty data to prevent JavaScript errors
             model.addAttribute("totalUsers", 0);
             model.addAttribute("newUsers", 0);
@@ -262,7 +286,7 @@ public class AdminController {
             model.addAttribute("systemAlerts", 0);
             model.addAttribute("recentActivities", new ArrayList<>());
             model.addAttribute("activeMenu", "dashboard");
-            
+
             return "admin/dashboard";
         }
     }
@@ -661,5 +685,299 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
         }
         return "redirect:" + returnUrl;
+    }
+
+    // ==================== BLOG MANAGEMENT (MỚI) =====================
+    // ==================================================================
+
+    @GetMapping("/blogs")
+    public String showBlogListPage(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "sortField", defaultValue = "createdDate") String sortField,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir,
+            Model model) {
+
+        adminService.addAdminInfoToModel(model);
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+
+        Page<Blog> blogPage = blogService.findBlogsForAdmin(keyword, status, pageable);
+
+        model.addAttribute("blogPage", blogPage);
+        model.addAttribute("activeMenu", "blog");
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("statusFilter", status);
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", "asc".equals(sortDir) ? "desc" : "asc");
+        return "admin/blog/blog-list";
+    }
+
+    @GetMapping("/blogs/detail/{id}")
+    public String showBlogDetailPage(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
+        adminService.addAdminInfoToModel(model);
+        Optional<Blog> blogOpt = blogService.getBlogById(id);
+        if (blogOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Blog post not found.");
+            return "redirect:/admin/blogs";
+        }
+        model.addAttribute("blog", blogOpt.get());
+        model.addAttribute("activeMenu", "blog");
+        return "admin/blog/blog-detail";
+    }
+
+    @GetMapping("/blogs/edit/{id}")
+    public String showEditBlogForm(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
+        adminService.addAdminInfoToModel(model);
+        Optional<Blog> blogOpt = blogService.getBlogById(id);
+        if (blogOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Blog post not found.");
+            return "redirect:/admin/blogs";
+        }
+        model.addAttribute("blog", blogOpt.get());
+        model.addAttribute("activeMenu", "blog");
+        return "admin/blog/blog-edit";
+    }
+
+    @PostMapping("/blogs/edit/{id}")
+    public String updateBlogPost(@PathVariable("id") Integer id, @ModelAttribute("blog") Blog blog, RedirectAttributes redirectAttributes) {
+        try {
+            blogService.updateBlog(id, blog);
+            redirectAttributes.addFlashAttribute("successMessage", "Blog post updated successfully!");
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    @PostMapping("/blogs/delete/{id}")
+    public String deleteBlogPost(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            blogService.deleteBlogById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Blog post deleted successfully.");
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    @PostMapping("/blogs/toggle-pin/{id}")
+    public String togglePinBlogPost(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            String message = blogService.togglePinStatus(id) ? "Post has been pinned." : "Post has been unpinned.";
+            redirectAttributes.addFlashAttribute("successMessage", message);
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    @PostMapping("/blogs/toggle-lock/{id}")
+    public String toggleLockBlogPost(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            String message = blogService.toggleLockStatus(id) ? "Post has been locked." : "Post has been unlocked.";
+            redirectAttributes.addFlashAttribute("successMessage", message);
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/blogs";
+    }
+
+    // NEW: Admin Data Import/Export Tools
+    @GetMapping("/data-management")
+    public String showDataManagementPage(Model model) {
+        adminService.addAdminInfoToModel(model);
+        model.addAttribute("activeMenu", "data-management");
+        return "admin/data-management"; // Create this new Thymeleaf template
+    }
+
+    @PostMapping("/data-management/import/users")
+    public String importUsers(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
+            return "redirect:/admin/data-management";
+        }
+        try {
+            // Assuming your service handles CSV parsing and saving
+            dataImportExportService.importUsersFromCsv(file);
+            redirectAttributes.addFlashAttribute("successMessage", "Users imported successfully!");
+        } catch (IOException e) {
+            log.error("Error importing users: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error importing users: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error importing users: " + e.getMessage());
+        }
+        return "redirect:/admin/data-management";
+    }
+
+    @PostMapping("/data-management/import/products")
+    public String importProducts(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
+            return "redirect:/admin/data-management";
+        }
+        try {
+            dataImportExportService.importBooksFromCsv(file);
+            redirectAttributes.addFlashAttribute("successMessage", "Products imported successfully!");
+        } catch (IOException e) {
+            log.error("Error importing products: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error importing products: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error importing products: " + e.getMessage());
+        }
+        return "redirect:/admin/data-management";
+    }
+
+    @GetMapping("/data-management/export/users")
+    public void exportUsers(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"users_export_" + LocalDate.now() + ".csv\"");
+        try {
+            dataImportExportService.exportUsersToCsv(response.getWriter());
+            redirectAttributes.addFlashAttribute("successMessage", "Users exported successfully!");
+        } catch (IOException e) {
+            log.error("Error exporting users: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting users: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error exporting users: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting users: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/data-management/export/products")
+    public void exportProducts(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"products_export_" + LocalDate.now() + ".csv\"");
+        try {
+            dataImportExportService.exportBooksToCsv(response.getWriter());
+            redirectAttributes.addFlashAttribute("successMessage", "Products exported successfully!");
+        } catch (IOException e) {
+            log.error("Error exporting products: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting products: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error exporting products: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting products: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/data-management/export/orders")
+    public void exportOrders(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"orders_export_" + LocalDate.now() + ".csv\"");
+        try {
+            dataImportExportService.exportOrdersToCsv(response.getWriter());
+            redirectAttributes.addFlashAttribute("successMessage", "Orders exported successfully!");
+        } catch (IOException e) {
+            log.error("Error exporting orders: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting orders: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error exporting orders: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting orders: " + e.getMessage());
+        }
+    }
+
+    // ==================== REVIEW & COMMENT MODERATION =====================
+
+    @GetMapping("/moderation")
+    public String showModerationPage(
+            // Tham số cho tab Reviews
+            @RequestParam(name = "reviewPage", defaultValue = "0") int reviewPage,
+            @RequestParam(name = "reviewSearch", required = false) String reviewSearch,
+            @RequestParam(name = "reviewRating", required = false) Integer reviewRating,
+            @RequestParam(name = "reviewStartDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate reviewStartDate,
+            @RequestParam(name = "reviewEndDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate reviewEndDate,
+            @RequestParam(name = "reviewSortField", defaultValue = "createdDate") String reviewSortField,
+            @RequestParam(name = "reviewSortDir", defaultValue = "desc") String reviewSortDir,
+
+            // Tham số cho tab Comments
+            @RequestParam(name = "commentPage", defaultValue = "0") int commentPage,
+            @RequestParam(name = "commentSearch", required = false) String commentSearch,
+            @RequestParam(name = "commentStartDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate commentStartDate,
+            @RequestParam(name = "commentEndDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate commentEndDate,
+            @RequestParam(name = "commentSortField", defaultValue = "createdDate") String commentSortField,
+            @RequestParam(name = "commentSortDir", defaultValue = "desc") String commentSortDir,
+
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            Model model) {
+
+        adminService.addAdminInfoToModel(model);
+
+        // Controller chỉ gọi Service, không tự xử lý logic
+        Pageable reviewPageable = PageRequest.of(reviewPage, size, Sort.by(Sort.Direction.fromString(reviewSortDir), reviewSortField));
+        Page<BookReview> reviews = moderationService.findPaginatedReviews(reviewSearch, reviewRating, reviewStartDate, reviewEndDate, reviewPageable);
+
+        Pageable commentPageable = PageRequest.of(commentPage, size, Sort.by(Sort.Direction.fromString(commentSortDir), commentSortField));
+        Page<BlogComment> comments = moderationService.findPaginatedComments(commentSearch, commentStartDate, commentEndDate, commentPageable);
+
+        // Gửi dữ liệu ra view
+        model.addAttribute("reviews", reviews);
+        model.addAttribute("comments", comments);
+        model.addAttribute("activeMenu", "moderation");
+
+        // Giữ lại trạng thái lọc, tìm kiếm, sắp xếp cho reviews
+        model.addAttribute("reviewSearch", reviewSearch);
+        model.addAttribute("reviewRating", reviewRating);
+        model.addAttribute("reviewStartDate", reviewStartDate);
+        model.addAttribute("reviewEndDate", reviewEndDate);
+        model.addAttribute("reviewSortField", reviewSortField);
+        model.addAttribute("reviewSortDir", reviewSortDir);
+        model.addAttribute("reviewReverseSortDir", "asc".equals(reviewSortDir) ? "desc" : "asc");
+
+        // Giữ lại trạng thái lọc, tìm kiếm, sắp xếp cho comments
+        model.addAttribute("commentSearch", commentSearch);
+        model.addAttribute("commentStartDate", commentStartDate);
+        model.addAttribute("commentEndDate", commentEndDate);
+        model.addAttribute("commentSortField", commentSortField);
+        model.addAttribute("commentSortDir", commentSortDir);
+        model.addAttribute("commentReverseSortDir", "asc".equals(commentSortDir) ? "desc" : "asc");
+
+        return "admin/moderation";
+    }
+
+    @PostMapping("/reviews/approve/{id}")
+    public String approveReview(@PathVariable("id") Integer reviewId, RedirectAttributes redirectAttributes) {
+        if (moderationService.approveReview(reviewId)) {
+            redirectAttributes.addFlashAttribute("successMessage", "Review approved successfully.");
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Review not found.");
+        }
+        return "redirect:/admin/moderation";
+    }
+
+    @PostMapping("/reviews/delete/{id}")
+    public String deleteReview(@PathVariable("id") Integer reviewId, RedirectAttributes redirectAttributes) {
+        try {
+            moderationService.deleteReview(reviewId);
+            redirectAttributes.addFlashAttribute("successMessage", "Review deleted successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting review.");
+        }
+        return "redirect:/admin/moderation";
+    }
+
+    @PostMapping("/comments/approve/{id}")
+    public String approveComment(@PathVariable("id") Integer commentId, RedirectAttributes redirectAttributes) {
+        if (moderationService.approveComment(commentId)) {
+            redirectAttributes.addFlashAttribute("successMessage", "Comment approved successfully.");
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Comment not found.");
+        }
+        return "redirect:/admin/moderation?tab=comments";
+    }
+
+    @PostMapping("/comments/delete/{id}")
+    public String deleteComment(@PathVariable("id") Integer commentId, RedirectAttributes redirectAttributes) {
+        try {
+            moderationService.deleteComment(commentId);
+            redirectAttributes.addFlashAttribute("successMessage", "Comment deleted successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting comment.");
+        }
+        return "redirect:/admin/moderation?tab=comments";
     }
 }
