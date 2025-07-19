@@ -40,8 +40,8 @@ public class BookReview {
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;
 
-    @Column(name = "is_approved", nullable = false, columnDefinition = "BIT DEFAULT 0")
-    private boolean isApproved = false;
+    @Column(name = "is_approved", nullable = false, columnDefinition = "BIT DEFAULT 1")
+    private boolean isApproved = true;
 
 
     @Column(name = "img_url_1", columnDefinition = "NVARCHAR(MAX)")
