@@ -25,7 +25,13 @@
             <div class="col-lg-8">
                 <div class="card rounded-4 shadow-sm">
                     <div class="card-body p-4 p-md-5">
-                        <h3 class="card-title mb-4" th:text="${isEditing} ? 'Edit Your Review' : 'Write a Review'"></h3>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-3">
+                                <i class="fas fa-arrow-left me-1"></i> Back
+                            </a>
+                            <h3 class="card-title mb-0" th:text="${isEditing} ? 'Edit Your Review' : 'Write a Review'"></h3>
+                        </div>
 
                         <div class="d-flex align-items-center mb-4 border-bottom pb-3">
                             <img th:src="${orderItem.book.coverImgUrl}" class="rounded-3 me-3" style="width: 80px;" alt="Product Image">
@@ -35,7 +41,7 @@
                             </div>
                         </div>
 
-                        <form th:action="@{/buyer/orders/review}" method="post" th:object="${review}">
+                        <form th:action="@{/buyer/orders/review}" method="post" th:object="${review}" id="review-form">
                             <input type="hidden" th:field="*{reviewId}" />
                             <input type="hidden" name="orderItemId" th:value="${orderItem.orderItemId}" />
 
@@ -57,13 +63,29 @@
 
                             <div class="mb-4">
                                 <label for="content" class="form-label fw-bold">Your Review:</label>
-                                <textarea class="form-control rounded-3" id="content" th:field="*{content}" rows="6" placeholder="Tell us more about the product..."></textarea>
-                            </div>
+                                <textarea class="form-control rounded-3" id="content" th:field="*{content}" rows="6" placeholder="Tell us more about the product..." maxlength="200"></textarea>
 
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg rounded-3" th:text="${isEditing} ? 'Update Review' : 'Submit Review'"></button>
+                                <small id="char-counter" class="form-text text-muted float-end">200 characters remaining</small>
                             </div>
                         </form>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <form th:if="${isEditing}"
+                                  th:action="@{/buyer/orders/review/delete}"
+                                  method="post"
+                                  onsubmit="return confirm('Are you sure you want to delete this review?');"
+                                  class="me-md-auto">
+                                <input type="hidden" name="reviewId" th:value="${review.reviewId}" />
+                                <button type="submit" class="btn btn-outline-danger btn-lg rounded-3">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </form>
+
+                            <button type="submit" form="review-form" class="btn btn-primary btn-lg rounded-3"
+                                    th:text="${isEditing} ? 'Update Review' : 'Submit Review'">
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -72,6 +94,30 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer-content}"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const contentArea = document.getElementById('content');
+        const charCounter = document.getElementById('char-counter');
+        const maxLength = 200;
+
+        // Cập nhật bộ đếm khi trang tải lần đầu
+        const initialLength = contentArea.value.length;
+        charCounter.textContent = (maxLength - initialLength) + ' characters remaining';
+
+        // Lắng nghe sự kiện nhập liệu
+        contentArea.addEventListener('input', function() {
+            const currentLength = contentArea.value.length;
+            const remaining = maxLength - currentLength;
+            charCounter.textContent = remaining + ' characters remaining';
+
+            // Đổi màu khi gần hết ký tự
+            if (remaining < 0) {
+                charCounter.classList.add('text-danger');
+            } else {
+                charCounter.classList.remove('text-danger');
+            }
+        });
+    });
+</script>
 </body>
 </html>

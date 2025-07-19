@@ -282,4 +282,25 @@ public class OrderController {
         String email = authentication.getName();
         return userService.findByEmail(email).orElse(null);
     }
-} 
+
+    @PostMapping("/orders/review/delete")
+    public String deleteReview(@RequestParam("reviewId") Integer reviewId,
+                               Authentication authentication,
+                               RedirectAttributes redirectAttributes) {
+
+        User currentUser = getCurrentUser(authentication);
+        if (currentUser == null) {
+            return "redirect:/buyer/login";
+        }
+
+        boolean isDeleted = bookReviewService.deleteReview(reviewId, currentUser);
+
+        if (isDeleted) {
+            redirectAttributes.addFlashAttribute("success", "Your review has been deleted successfully.");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Could not delete the review. It may not exist or you do not have permission.");
+        }
+
+        return "redirect:/buyer/orders";
+    }
+}

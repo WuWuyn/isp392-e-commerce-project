@@ -59,4 +59,23 @@ public class BookReviewService {
                 .map(review -> review.getOrderItem().getOrderItemId())
                 .collect(Collectors.toSet());
     }
+
+    public boolean deleteReview(Integer reviewId, User currentUser) {
+        Optional<BookReview> reviewOpt = bookReviewRepository.findById(reviewId);
+
+        if (reviewOpt.isPresent()) {
+            BookReview review = reviewOpt.get();
+
+            // THÊM 2 DÒNG SAU ĐỂ KIỂM TRA
+            System.out.println("ID người dùng của review: " + review.getUser().getUserId());
+            System.out.println("ID người dùng đang đăng nhập: " + currentUser.getUserId());
+
+            // **Kiểm tra bảo mật**:
+            if (review.getUser().getUserId().equals(currentUser.getUserId())) {
+                bookReviewRepository.delete(review);
+                return true;
+            }
+        }
+        return false;
+    }
 }
