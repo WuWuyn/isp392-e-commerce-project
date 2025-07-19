@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class ModerationService {
@@ -86,5 +87,13 @@ public class ModerationService {
     @Transactional
     public void deleteComment(Integer commentId) {
         blogCommentRepository.deleteById(commentId);
+    }
+
+    public Optional<BookReview> getReviewById(Integer reviewId) {
+        return bookReviewRepository.findById(reviewId);
+    }
+
+    public Optional<BlogComment> getCommentById(Integer commentId) {
+        return blogCommentRepository.findById(commentId);
     }
 }

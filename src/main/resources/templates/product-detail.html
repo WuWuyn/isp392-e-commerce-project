@@ -109,10 +109,17 @@
                         <p class="mb-1"><strong class="text-secondary">Views:</strong> <span th:text="${book.viewsCount}">0</span></p>
                         <!-- Hiển thị thông tin về số lượng tồn kho -->
                         <p class="mb-1">
-                            <strong class="text-secondary">Availability:</strong> 
+                            <strong class="text-secondary">Availability:</strong>
                             <span th:if="${book.stockQuantity > 10}" class="text-success">In Stock</span>
-                            <span th:if="${book.stockQuantity > 0 && book.stockQuantity <= 10}" class="text-warning">Low Stock (only <span th:text="${book.stockQuantity}"></span> left)</span>
-                            <span th:if="${book.stockQuantity <= 0}" class="text-danger">Out of Stock</span>
+                        </p>
+
+                        <p class="mb-1" th:if="${book.shop != null}">
+                            <strong class="text-secondary">Sold by:</strong>
+                            <a th:href="@{/shops/{shopId}(shopId=${book.shop.shopId})}"
+                               th:text="${book.shop.shopName}"
+                               class="text-decoration-none fw-bold">
+                                Shop Name
+                            </a>
                         </p>
                     </div>
                 </div>
