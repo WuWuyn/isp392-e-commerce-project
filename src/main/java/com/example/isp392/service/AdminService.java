@@ -37,15 +37,15 @@ public class AdminService {
     private final BookRepository bookRepository;
     private final OrderRepository orderRepository;
     private final ShopRepository shopRepository;
-    
+
     /**
      * Constructor with explicit dependency injection
      * Using constructor injection instead of @Autowired for better clarity and testability
      * 
      * @param userRepository repository for user data access
      */
-    public AdminService(UserRepository userRepository, 
-                        UserService userService, 
+    public AdminService(UserRepository userRepository,
+                        UserService userService,
                         UserRoleRepository userRoleRepository,
                         BookRepository bookRepository,
                         OrderRepository orderRepository,
@@ -98,10 +98,10 @@ public class AdminService {
             model.addAttribute("firstName", extractFirstName(adminUser.getFullName()));
         });
     }
-    
+
     /**
      * Count users registered within the specified number of days
-     * 
+     *
      * @param days Number of days to look back
      * @return Count of new users
      */
@@ -110,10 +110,10 @@ public class AdminService {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(days);
         return userRepository.countByRegistrationDateAfter(cutoffDate);
     }
-    
+
     /**
      * Count users by role
-     * 
+     *
      * @param roleName Role name to count
      * @return Count of users with the specified role
      */
@@ -121,10 +121,10 @@ public class AdminService {
     public Long countUsersByRole(String roleName) {
         return userRoleRepository.countByRoleNameAndActive(roleName, true);
     }
-    
+
     /**
      * Count products added within the specified number of days
-     * 
+     *
      * @param days Number of days to look back
      * @return Count of new products
      */
@@ -133,10 +133,10 @@ public class AdminService {
         LocalDate cutoffDate = LocalDate.now().minusDays(days);
         return bookRepository.countByDateAddedAfter(cutoffDate);
     }
-    
+
     /**
      * Calculate total platform revenue (commission from all orders)
-     * 
+     *
      * @return Total platform revenue
      */
     @Transactional(readOnly = true)
@@ -144,10 +144,10 @@ public class AdminService {
         BigDecimal totalSales = orderRepository.calculateTotalOrderValue();
         return totalSales.multiply(platformCommissionRate);
     }
-    
+
     /**
      * Get monthly platform revenue for the last several months
-     * 
+     *
      * @param months Number of months to include
      * @return List of monthly revenue data
      */
@@ -155,10 +155,10 @@ public class AdminService {
     public List<Map<String, Object>> getMonthlyPlatformRevenue(int months) {
         LocalDate startDate = LocalDate.now().minusMonths(months - 1).withDayOfMonth(1);
         LocalDate endDate = LocalDate.now();
-        
+
         List<Map<String, Object>> monthlyRevenue = orderRepository.getMonthlyRevenue(startDate, endDate);
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         for (Map<String, Object> data : monthlyRevenue) {
             Map<String, Object> item = new HashMap<>();
             String month = (String) data.get("month");
@@ -168,17 +168,17 @@ public class AdminService {
 
             BigDecimal sales = (BigDecimal) data.get("revenue");
             BigDecimal commission = sales.multiply(platformCommissionRate);
-            
+
             item.put("revenue", commission);
             result.add(item);
         }
-        
+
         return result;
     }
-    
+
     /**
      * Get top selling products
-     * 
+     *
      * @param limit Maximum number of products to return
      * @return List of top selling products
      */
@@ -186,10 +186,10 @@ public class AdminService {
     public List<Map<String, Object>> getTopSellingProducts(int limit) {
         return orderRepository.getTopSellingProducts(limit);
     }
-    
+
     /**
      * Get top sellers by revenue
-     * 
+     *
      * @param limit Maximum number of sellers to return
      * @return List of top sellers
      */
@@ -197,10 +197,10 @@ public class AdminService {
     public List<Map<String, Object>> getTopSellers(int limit) {
         return orderRepository.getTopSellers(limit);
     }
-    
+
     /**
      * Get recent orders
-     * 
+     *
      * @param limit Maximum number of orders to return
      * @return List of recent orders
      */
@@ -208,17 +208,17 @@ public class AdminService {
     public List<Map<String, Object>> getRecentOrders(int limit) {
         return orderRepository.getRecentPlatformOrders(limit);
     }
-    
+
     /**
      * Get recent activities (user registrations, orders, shop approvals, etc.)
-     * 
+     *
      * @param limit Maximum number of activities to return
      * @return List of recent activities
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getRecentActivities(int limit) {
         List<Map<String, Object>> activities = new ArrayList<>();
-        
+
         // Add recent user registrations
         List<User> recentUsers = userRepository.findRecentUsers(limit);
         for (User user : recentUsers) {
@@ -243,7 +243,7 @@ public class AdminService {
             Map<String, Object> activity = new HashMap<>();
             activity.put("type", "order");
             activity.put("description", "New order #" + order.get("order_id") + " placed by " + order.get("customer_name"));
-            
+
             // Convert java.sql.Timestamp to java.time.LocalDateTime
             Object orderDateObject = order.get("order_date");
             if (orderDateObject instanceof java.sql.Timestamp) {
@@ -255,7 +255,7 @@ public class AdminService {
             }
             activities.add(activity);
         }
-        
+
         // Sort by timestamp (most recent first) and limit
         activities.sort((a, b) -> {
             // Safely convert objects to LocalDateTime for comparison
@@ -269,7 +269,7 @@ public class AdminService {
 
             return timeB.compareTo(timeA); // Reverse order for newest first
         });
-        
+
         // Limit the list size
         return activities.size() <= limit ? activities : activities.subList(0, limit);
     }
@@ -345,10 +345,10 @@ public class AdminService {
         }
         return result;
     }
-    
+
     /**
      * Get weekly platform revenue for the last several weeks
-     * 
+     *
      * @param weeks Number of weeks to include
      * @return List of weekly revenue data
      */
@@ -356,7 +356,7 @@ public class AdminService {
     public List<Map<String, Object>> getWeeklyPlatformRevenue(int weeks) {
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusWeeks(weeks - 1);
-        
+
         // Generate a list of week start dates
         List<LocalDate> weekStartDates = new ArrayList<>();
         LocalDate currentDate = startDate;
@@ -364,7 +364,7 @@ public class AdminService {
             weekStartDates.add(currentDate);
             currentDate = currentDate.plusWeeks(1);
         }
-        
+
         // Create a map to store revenue by week
         Map<String, BigDecimal> revenueByWeek = new LinkedHashMap<>();
         for (LocalDate date : weekStartDates) {
@@ -373,7 +373,7 @@ public class AdminService {
             String weekLabel = date.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM"));
             revenueByWeek.put(weekLabel, weeklyRevenue);
         }
-        
+
         // Convert to list of maps for return
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map.Entry<String, BigDecimal> entry : revenueByWeek.entrySet()) {
@@ -382,32 +382,32 @@ public class AdminService {
             item.put("revenue", entry.getValue());
             result.add(item);
         }
-        
+
         return result;
     }
-    
+
     /**
      * Get daily platform revenue for the last 7 days
-     * 
+     *
      * @return List of daily revenue data
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getDailyPlatformRevenue() {
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(6); // Last 7 days including today
-        
+
         // Create a map to store revenue by day with zero values for all days
         Map<String, BigDecimal> revenueByDay = new LinkedHashMap<>();
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             String dayLabel = date.format(java.time.format.DateTimeFormatter.ofPattern("dd/M"));
             revenueByDay.put(dayLabel, BigDecimal.ZERO);
         }
-        
+
         // Query the database once for all days in the range using the new repository method
         try {
             List<Map<String, Object>> dailyRevenue = orderRepository.getDailyPlatformRevenue(
                     startDate, endDate, platformCommissionRate);
-            
+
             // Update the map with actual revenue data
             for (Map<String, Object> day : dailyRevenue) {
                 java.sql.Date sqlDate = (java.sql.Date) day.get("order_date");
@@ -420,7 +420,7 @@ public class AdminService {
             log.error("Error fetching daily revenue data: {}", e.getMessage());
             // Continue with zero values if there's an error
         }
-        
+
         // Convert to list of maps for return
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map.Entry<String, BigDecimal> entry : revenueByDay.entrySet()) {
@@ -429,13 +429,13 @@ public class AdminService {
             item.put("revenue", entry.getValue());
             result.add(item);
         }
-        
+
         return result;
     }
-    
+
     /**
      * Generate empty daily revenue data for the given date range
-     * 
+     *
      * @param startDate Start date of the period
      * @param endDate End date of the period
      * @return List of daily revenue data with zero values
@@ -443,7 +443,7 @@ public class AdminService {
     private List<Map<String, Object>> generateEmptyDailyRevenueData(LocalDate startDate, LocalDate endDate) {
         List<Map<String, Object>> result = new ArrayList<>();
         LocalDate currentDate = startDate;
-        
+
         while (!currentDate.isAfter(endDate)) {
             Map<String, Object> item = new HashMap<>();
             String dayLabel = currentDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/M"));
@@ -452,13 +452,13 @@ public class AdminService {
             result.add(item);
             currentDate = currentDate.plusDays(1);
         }
-        
+
         return result;
     }
-    
+
     /**
      * Calculate total revenue for the last 7 days
-     * 
+     *
      * @return Total revenue for the last 7 days
      */
     @Transactional(readOnly = true)

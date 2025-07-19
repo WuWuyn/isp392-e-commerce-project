@@ -7,7 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-
+import com.example.isp392.model.User;
+import java.util.Optional;
 import java.util.List;
 
 @Repository
@@ -34,4 +35,9 @@ public interface BookReviewRepository extends JpaRepository<BookReview, Integer>
     Page<BookReview> findAllByOrderByCreatedDateDesc(Pageable pageable);
 
     long countByIsApproved(boolean isApproved);
+
+    Optional<BookReview> findByUserAndOrderItem_OrderItemId(User user, Integer orderItemId);
+
+    List<BookReview> findByUser(User user);
 }
+

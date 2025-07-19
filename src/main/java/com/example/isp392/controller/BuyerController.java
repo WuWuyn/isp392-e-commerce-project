@@ -475,8 +475,9 @@ public class BuyerController {
                 return "redirect:/buyer/account-info";
             } else if (shop.getApprovalStatus() == Shop.ApprovalStatus.REJECTED) {
                 // Logic để người dùng đăng ký lại đã đúng
-                redirectAttributes.addFlashAttribute("errorMessage", "Yêu cầu đăng ký cửa hàng của bạn đã bị từ chối. Lý do: " + shop.getReasonForStatus() + ". Vui lòng cập nhật thông tin và thử lại.");
-                return "redirect:/buyer/account-info";
+                model.addAttribute("shop", shop);
+                model.addAttribute("rejectionReason", shop.getReasonForStatus());
+                return "buyer/seller-registration";
             }
         }
 
@@ -538,8 +539,9 @@ public class BuyerController {
             return "redirect:/buyer/account-info";
         } catch (IOException e) {
             // log.error("Lỗi khi đăng ký shop: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi tải file lên. Vui lòng thử lại.");
-            return "redirect:/buyer/account-info";
+            model.addAttribute("errorMessage", "Đã xảy ra lỗi khi tải file lên. Vui lòng thử lại.");
+            model.addAttribute("shop", shop);
+            return "buyer/seller-registration";
         }
     }
 
