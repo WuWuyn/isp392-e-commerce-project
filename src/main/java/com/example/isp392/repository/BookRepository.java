@@ -5,6 +5,7 @@ import com.example.isp392.model.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,8 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 
 @Repository
-public interface BookRepository extends JpaRepository<Book, Integer> {
-
+public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecificationExecutor<Book> {
+    Page<Book> findByShop_ShopIdAndIsActiveTrue(Integer shopId, Pageable pageable);
     // Tìm sách theo tiêu đề (phân trang)
     Page<Book> findByTitleContainingIgnoreCase(String title, Pageable pageable);
     
@@ -261,4 +262,10 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
      */
     @Query(value = "SELECT TOP(:limit) b.book_id, b.title, b.views_count FROM books b ORDER BY b.views_count DESC", nativeQuery = true)
     List<Object[]> getTopViewedBooks(@Param("limit") Integer limit);
+
+    @Modifying
+    @Query("UPDATE Book b SET b.isActive = false WHERE b.shop.shopId = :shopId")
+    void deactivateBooksByShopId(@Param("shopId") Integer shopId);
+
+    Page<Book> findByShop_ShopIdAndIsActiveTrueAndTitleContainingIgnoreCase(Integer shopId, String title, Pageable pageable);
 }

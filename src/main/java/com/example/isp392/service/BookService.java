@@ -20,6 +20,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -41,7 +42,7 @@ public class BookService {
     private final CategoryRepository categoryRepository;
     private final PublisherRepository publisherRepository;
     private final ShopRepository shopRepository;
-    
+
     // Lớp nội bộ để giữ sách và điểm số
     private static class BookWithScore {
         private final Book book;
@@ -52,8 +53,19 @@ public class BookService {
             this.score = score;
         }
 
-        public Book getBook() { return book; }
-        public int getScore() { return score; }
+        public Book getBook() {
+            return book;
+        }
+
+        public int getScore() {
+            return score;
+        }
+    }
+
+    @Transactional
+    public void deactivateBooksByShopId(Integer shopId) {
+        log.info("Deactivating all books for shop ID: {}", shopId);
+        bookRepository.deactivateBooksByShopId(shopId);
     }
 
     @PersistenceContext
@@ -62,10 +74,10 @@ public class BookService {
     /**
      * Constructor for dependency injection
      *
-     * @param bookRepository Repository for book data access
-     * @param categoryRepository Repository for category data access
+     * @param bookRepository      Repository for book data access
+     * @param categoryRepository  Repository for category data access
      * @param publisherRepository Repository for publisher data access
-     * @param shopRepository Repository for shop data access
+     * @param shopRepository      Repository for shop data access
      */
     public BookService(
             BookRepository bookRepository,
@@ -118,43 +130,43 @@ public class BookService {
 
         // Get all books
         List<Book> allBooks = bookRepository.findAll();
-        
+
         // Chuyển query về chữ thường để so sánh nhất quán
         final String lowerCaseQuery = title.toLowerCase();
-        
+
         // Filter books using advanced fuzzy search
         List<Book> matchedBooks = allBooks.stream()
-            .map(book -> {
-                String bookTitle = book.getTitle().toLowerCase();
-                
-                // 1. Tính điểm cho lỗi chính tả (so khớp các từ)
-                int tokenScore = FuzzySearch.tokenSetRatio(lowerCaseQuery, bookTitle);
-                
-                // 2. Tính điểm cho chuỗi con/tiền tố (để "Har" khớp với "Harry")
-                int partialScore = FuzzySearch.partialRatio(lowerCaseQuery, bookTitle);
-                
-                // 3. Lấy điểm cao nhất từ hai thuật toán trên làm điểm cuối cùng
-                int finalScore = Math.max(tokenScore, partialScore);
-                
-                return new BookWithScore(book, finalScore);
-            })
-            .filter(bookWithScore -> bookWithScore.getScore() >= 60) // Ngưỡng điểm hợp lý là 65
-            .sorted((b1, b2) -> Integer.compare(b2.getScore(), b1.getScore()))
-            .map(BookWithScore::getBook)
-            .collect(Collectors.toList());
+                .map(book -> {
+                    String bookTitle = book.getTitle().toLowerCase();
+
+                    // 1. Tính điểm cho lỗi chính tả (so khớp các từ)
+                    int tokenScore = FuzzySearch.tokenSetRatio(lowerCaseQuery, bookTitle);
+
+                    // 2. Tính điểm cho chuỗi con/tiền tố (để "Har" khớp với "Harry")
+                    int partialScore = FuzzySearch.partialRatio(lowerCaseQuery, bookTitle);
+
+                    // 3. Lấy điểm cao nhất từ hai thuật toán trên làm điểm cuối cùng
+                    int finalScore = Math.max(tokenScore, partialScore);
+
+                    return new BookWithScore(book, finalScore);
+                })
+                .filter(bookWithScore -> bookWithScore.getScore() >= 60) // Ngưỡng điểm hợp lý là 65
+                .sorted((b1, b2) -> Integer.compare(b2.getScore(), b1.getScore()))
+                .map(BookWithScore::getBook)
+                .collect(Collectors.toList());
 
         // Convert list to page
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), matchedBooks.size());
-        
+
         if (start >= matchedBooks.size()) {
             return new PageImpl<>(new ArrayList<>(), pageable, matchedBooks.size());
         }
-        
+
         return new PageImpl<>(
-            matchedBooks.subList(start, end),
-            pageable,
-            matchedBooks.size()
+                matchedBooks.subList(start, end),
+                pageable,
+                matchedBooks.size()
         );
     }
 
@@ -168,7 +180,7 @@ public class BookService {
     /**
      * Find books by shop ID with pagination and sorting
      *
-     * @param shopId ID of the shop
+     * @param shopId   ID of the shop
      * @param pageable Pagination and sorting information
      * @return Page of books belonging to the shop
      */
@@ -179,8 +191,8 @@ public class BookService {
     /**
      * Search for books by title within a specific shop using advanced fuzzy search
      *
-     * @param shopId ID of the shop
-     * @param title Search term for book title
+     * @param shopId   ID of the shop
+     * @param title    Search term for book title
      * @param pageable Pagination and sorting information
      * @return Page of matching books belonging to the shop
      */
@@ -192,50 +204,50 @@ public class BookService {
 
         // Get all books from the shop
         List<Book> shopBooks = bookRepository.findByShopShopId(shopId, Pageable.unpaged()).getContent();
-        
+
         // Chuyển query về chữ thường để so sánh nhất quán
         final String lowerCaseQuery = title.toLowerCase();
-        
+
         // Filter books using advanced fuzzy search
         List<Book> matchedBooks = shopBooks.stream()
-            .map(book -> {
-                String bookTitle = book.getTitle().toLowerCase();
-                
-                // 1. Tính điểm cho lỗi chính tả (so khớp các từ)
-                int tokenScore = FuzzySearch.tokenSetRatio(lowerCaseQuery, bookTitle);
-                
-                // 2. Tính điểm cho chuỗi con/tiền tố (để "Har" khớp với "Harry")
-                int partialScore = FuzzySearch.partialRatio(lowerCaseQuery, bookTitle);
-                
-                // 3. Lấy điểm cao nhất từ hai thuật toán trên làm điểm cuối cùng
-                int finalScore = Math.max(tokenScore, partialScore);
-                
-                return new BookWithScore(book, finalScore);
-            })
-            .filter(bookWithScore -> bookWithScore.getScore() >= 65) // Ngưỡng điểm hợp lý là 65
-            .sorted((b1, b2) -> Integer.compare(b2.getScore(), b1.getScore()))
-            .map(BookWithScore::getBook)
-            .collect(Collectors.toList());
+                .map(book -> {
+                    String bookTitle = book.getTitle().toLowerCase();
+
+                    // 1. Tính điểm cho lỗi chính tả (so khớp các từ)
+                    int tokenScore = FuzzySearch.tokenSetRatio(lowerCaseQuery, bookTitle);
+
+                    // 2. Tính điểm cho chuỗi con/tiền tố (để "Har" khớp với "Harry")
+                    int partialScore = FuzzySearch.partialRatio(lowerCaseQuery, bookTitle);
+
+                    // 3. Lấy điểm cao nhất từ hai thuật toán trên làm điểm cuối cùng
+                    int finalScore = Math.max(tokenScore, partialScore);
+
+                    return new BookWithScore(book, finalScore);
+                })
+                .filter(bookWithScore -> bookWithScore.getScore() >= 65) // Ngưỡng điểm hợp lý là 65
+                .sorted((b1, b2) -> Integer.compare(b2.getScore(), b1.getScore()))
+                .map(BookWithScore::getBook)
+                .collect(Collectors.toList());
 
         // Convert list to page
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), matchedBooks.size());
-        
+
         if (start >= matchedBooks.size()) {
             return new PageImpl<>(new ArrayList<>(), pageable, matchedBooks.size());
         }
-        
+
         return new PageImpl<>(
-            matchedBooks.subList(start, end),
-            pageable,
-            matchedBooks.size()
+                matchedBooks.subList(start, end),
+                pageable,
+                matchedBooks.size()
         );
     }
 
     /**
      * Create a new book from BookFormDTO
      *
-     * @param bookForm DTO with book information
+     * @param bookForm      DTO with book information
      * @param coverImageUrl URL of the uploaded cover image
      * @return Created book entity
      */
@@ -299,8 +311,8 @@ public class BookService {
     /**
      * Update an existing book from BookFormDTO
      *
-     * @param bookId ID of the book to update
-     * @param bookForm DTO with updated book information
+     * @param bookId        ID of the book to update
+     * @param bookForm      DTO with updated book information
      * @param coverImageUrl URL of the updated cover image (or null to keep existing)
      * @return Updated book entity
      */
@@ -367,7 +379,8 @@ public class BookService {
 
     /**
      * Cập nhật số lượng sách trong kho
-     * @param bookId ID của sách
+     *
+     * @param bookId   ID của sách
      * @param quantity Số lượng cần giảm (số âm để giảm, số dương để tăng)
      * @throws IllegalArgumentException nếu số lượng không hợp lệ hoặc không đủ trong kho
      */
@@ -388,7 +401,8 @@ public class BookService {
 
     /**
      * Giảm số lượng sách trong kho sau khi đặt hàng
-     * @param bookId ID của sách
+     *
+     * @param bookId   ID của sách
      * @param quantity Số lượng cần giảm
      * @throws IllegalArgumentException nếu số lượng không hợp lệ hoặc không đủ trong kho
      */
@@ -402,7 +416,8 @@ public class BookService {
 
     /**
      * Tăng số lượng sách trong kho (ví dụ: khi hủy đơn hàng)
-     * @param bookId ID của sách
+     *
+     * @param bookId   ID của sách
      * @param quantity Số lượng cần tăng
      * @throws IllegalArgumentException nếu số lượng không hợp lệ
      */
@@ -563,7 +578,7 @@ public class BookService {
     /**
      * Find books with low stock by shop ID
      *
-     * @param shopId ID of the shop
+     * @param shopId    ID of the shop
      * @param threshold Stock threshold
      * @return List of books with stock below threshold
      */
@@ -575,7 +590,7 @@ public class BookService {
      * Find bestselling books by shop ID
      *
      * @param shopId ID of the shop
-     * @param limit Maximum number of books to return
+     * @param limit  Maximum number of books to return
      * @return List of bestselling books
      */
     public List<Book> findBestsellingBooksByShopId(Integer shopId, int limit) {
@@ -594,7 +609,7 @@ public class BookService {
     /**
      * Checks if an ISBN already exists within a specific shop.
      *
-     * @param isbn The ISBN to check.
+     * @param isbn   The ISBN to check.
      * @param shopId The ID of the shop to check within.
      * @return true if the ISBN exists in the specified shop, false otherwise.
      */
@@ -620,6 +635,7 @@ public class BookService {
 
     /**
      * Get total views for all books in a shop
+     *
      * @param shopId the shop ID
      * @return total views (sum of viewsCount)
      */
@@ -630,6 +646,7 @@ public class BookService {
 
     /**
      * Get views for each product in a shop
+     *
      * @param shopId the shop ID
      * @return list of maps: {bookId, title, viewsCount}
      */
@@ -653,10 +670,17 @@ public class BookService {
 
     /**
      * Deactivates all books belonging to a specific shop.
+     *
      * @param shopId ID of the shop whose books are to be deactivated
      */
     @Transactional
-    public void deactivateBooksByShopId(Integer shopId) {
-        bookRepository.updateIsActiveByShopId(shopId);
+    public Page<Book> searchActiveBooksByShop(Integer shopId, String searchQuery, Pageable pageable) {
+        if (searchQuery != null && !searchQuery.trim().isEmpty()) {
+            // Nếu có từ khóa tìm kiếm, gọi phương thức repository mới
+            return bookRepository.findByShop_ShopIdAndIsActiveTrueAndTitleContainingIgnoreCase(shopId, searchQuery, pageable);
+        } else {
+            // Nếu không, trả về tất cả sách của shop
+            return bookRepository.findByShop_ShopIdAndIsActiveTrue(shopId, pageable);
+        }
     }
 }
