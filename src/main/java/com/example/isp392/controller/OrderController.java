@@ -2,7 +2,7 @@ package com.example.isp392.controller;
 
 import com.example.isp392.model.*;
 import com.example.isp392.service.CartService;
-import com.example.isp392.service.GroupOrderService;
+import com.example.isp392.service.CustomerOrderService;
 import com.example.isp392.service.OrderService;
 import com.example.isp392.service.UserService;
 import org.springframework.data.domain.Page;
@@ -27,13 +27,13 @@ public class OrderController {
     private final OrderService orderService;
     private final CartService cartService;
     private final UserService userService;
-    private final GroupOrderService groupOrderService;
+    private final CustomerOrderService customerOrderService;
 
-    public OrderController(OrderService orderService, CartService cartService, UserService userService, GroupOrderService groupOrderService) {
+    public OrderController(OrderService orderService, CartService cartService, UserService userService, CustomerOrderService customerOrderService) {
         this.orderService = orderService;
         this.cartService = cartService;
         this.userService = userService;
-        this.groupOrderService = groupOrderService;
+        this.customerOrderService = customerOrderService;
     }
 
     @GetMapping("/orders")
@@ -48,11 +48,7 @@ public class OrderController {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Get group orders with status
-        List<GroupOrder> groupOrders = groupOrderService.findByUser(user);
-        model.addAttribute("groupOrders", groupOrders);
-
-        // Get individual orders with filters
+        // Get individual orders with filters (display individual orders, not grouped by CustomerOrder)
         Page<Order> orderPage = orderService.findOrders(
             user, status, dateFrom, dateTo, PageRequest.of(page, 10)
         );
@@ -80,11 +76,7 @@ public class OrderController {
         }
         
         Order order = orderOpt.get();
-        // Check if order belongs to a group order
-        if (order.getGroupOrder() != null) {
-            return "redirect:/buyer/group-orders/" + order.getGroupOrder().getGroupOrderId();
-        }
-        
+
         model.addAttribute("order", order);
         return "buyer/order-detail";
     }
@@ -160,16 +152,16 @@ public class OrderController {
     }
 
     @GetMapping("/order-success")
-    public String orderSuccessPage(@RequestParam Integer groupOrderId, Model model, Authentication authentication) {
+    public String orderSuccessPage(@RequestParam Integer customerOrderId, Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Optional<GroupOrder> groupOrderOpt = groupOrderService.findByIdAndUser(groupOrderId, user);
-        if (groupOrderOpt.isEmpty()) {
+        Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
+        if (customerOrderOpt.isEmpty()) {
             return "redirect:/buyer/orders";
         }
 
-        model.addAttribute("groupOrder", groupOrderOpt.get());
+        model.addAttribute("customerOrder", customerOrderOpt.get());
         return "buyer/order-success";
     }
 } 

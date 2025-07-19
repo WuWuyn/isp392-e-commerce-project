@@ -30,7 +30,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param userId the user ID
      * @return list of orders belonging to the user
      */
-    List<Order> findByUserUserIdOrderByOrderDateDesc(Integer userId);
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user.userId = :userId ORDER BY o.orderDate DESC")
+    List<Order> findByUserUserIdOrderByOrderDateDesc(@Param("userId") Integer userId);
     
     /**
      * Find a specific order by ID and user ID (for security)
@@ -38,14 +39,16 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param userId the user ID
      * @return the order if found and belongs to the user
      */
-    Optional<Order> findByOrderIdAndUserUserId(Integer orderId, Integer userId);
+    @Query("SELECT o FROM Order o WHERE o.orderId = :orderId AND o.customerOrder.user.userId = :userId")
+    Optional<Order> findByOrderIdAndUserUserId(@Param("orderId") Integer orderId, @Param("userId") Integer userId);
     
     /**
      * Count the number of orders for a user
      * @param userId the user ID
      * @return count of orders for the user
      */
-    long countByUserUserId(Integer userId);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.customerOrder.user.userId = :userId")
+    long countByUserUserId(@Param("userId") Integer userId);
     
     /**
      * Find recent orders for a user, limited to a specific count
@@ -53,7 +56,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param limit the maximum number of orders to return
      * @return list of recent orders for the user
      */
-    @Query("SELECT o FROM Order o WHERE o.user.userId = :userId ORDER BY o.orderDate DESC")
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user.userId = :userId ORDER BY o.orderDate DESC")
     List<Order> findRecentOrdersByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
 
     /**
@@ -72,17 +75,22 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.orderId = :orderId")
     Optional<Order> findByIdWithItems(@Param("orderId") Integer orderId);
 
-    Page<Order> findByUserOrderByOrderDateDesc(User user, Pageable pageable);
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user = :user ORDER BY o.orderDate DESC")
+    Page<Order> findByUserOrderByOrderDateDesc(@Param("user") User user, Pageable pageable);
 
-    Page<Order> findByUserAndOrderStatusOrderByOrderDateDesc(User user, OrderStatus status, Pageable pageable);
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user = :user AND o.orderStatus = :status ORDER BY o.orderDate DESC")
+    Page<Order> findByUserAndOrderStatusOrderByOrderDateDesc(@Param("user") User user, @Param("status") OrderStatus status, Pageable pageable);
 
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user = :user AND o.orderDate BETWEEN :startDate AND :endDate ORDER BY o.orderDate DESC")
     Page<Order> findByUserAndOrderDateBetweenOrderByOrderDateDesc(
-            User user, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+            @Param("user") User user, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user = :user AND o.orderStatus = :status AND o.orderDate BETWEEN :startDate AND :endDate ORDER BY o.orderDate DESC")
     Page<Order> findByUserAndOrderStatusAndOrderDateBetweenOrderByOrderDateDesc(
-            User user, OrderStatus status, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+            @Param("user") User user, @Param("status") OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
-    Optional<Order> findByOrderIdAndUser(Integer orderId, User user);
+    @Query("SELECT o FROM Order o WHERE o.orderId = :orderId AND o.customerOrder.user = :user")
+    Optional<Order> findByOrderIdAndUser(@Param("orderId") Integer orderId, @Param("user") User user);
     
     // New methods for shop-specific orders
     List<Order> findByShopShopId(Integer shopId);
@@ -251,9 +259,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "u.full_name AS customer_name, " +
            "(SELECT SUM(oi2.unit_price * oi2.quantity) FROM order_items oi2 WHERE oi2.order_id = o.order_id) AS total_amount " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
-           "JOIN users u ON o.user_id = u.user_id " +
+           "JOIN users u ON co.user_id = u.user_id " +
            "WHERE b.shop_id = :shopId " +
            "ORDER BY o.order_date DESC", nativeQuery = true)
     List<Map<String, Object>> getRecentOrders(@Param("shopId") Integer shopId, @Param("limit") int limit);
@@ -265,14 +274,15 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @return List of regions with order counts
      */
     @Query(value = "SELECT " +
-           "COALESCE(o.shipping_province, 'Unknown') AS region, " +
+           "COALESCE(co.shipping_province, 'Unknown') AS region, " +
            "COUNT(DISTINCT o.order_id) AS order_count " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "GROUP BY o.shipping_province " +
+           "GROUP BY co.shipping_province " +
            "ORDER BY COUNT(DISTINCT o.order_id) DESC", nativeQuery = true)
     List<Map<String, Object>> getGeographicDistribution(@Param("shopId") Integer shopId);
 
@@ -307,7 +317,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             nativeQuery = true)
     Long getTotalOrders(@Param("shopId") Integer shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.user.userId = :userId AND o.orderStatus IN ('PENDING', 'PROCESSING', 'SHIPPED')")
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.customerOrder.user.userId = :userId AND o.orderStatus IN ('PENDING', 'PROCESSING', 'SHIPPED')")
     long countActiveOrdersByUserId(@Param("userId") Integer userId);
 
     @Query("SELECT COUNT(o) FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE b.shop.shopId = :shopId AND o.orderStatus IN ('PENDING', 'PROCESSING', 'SHIPPED')")

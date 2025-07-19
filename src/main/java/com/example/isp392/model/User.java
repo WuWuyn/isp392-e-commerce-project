@@ -79,7 +79,7 @@ public class User {
     private Shop shop;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Order> orders;
+    private List<CustomerOrder> customerOrders = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<BookReview> reviewsWritten = new ArrayList<>();
@@ -89,4 +89,20 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BlogComment> blogComments;
+
+    /**
+     * Get all orders from all customer orders (derived property for backward compatibility)
+     * @return list of all orders belonging to this user
+     */
+    public List<Order> getOrders() {
+        List<Order> allOrders = new ArrayList<>();
+        if (customerOrders != null) {
+            for (CustomerOrder customerOrder : customerOrders) {
+                if (customerOrder.getOrders() != null) {
+                    allOrders.addAll(customerOrder.getOrders());
+                }
+            }
+        }
+        return allOrders;
+    }
 }

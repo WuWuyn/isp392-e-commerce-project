@@ -12,6 +12,6 @@ import java.util.List;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Integer> {
     
-    @Query("SELECT ci FROM CartItem ci WHERE ci.cart.user = :user AND ci.book.bookId IN :bookIds")
+    @Query("SELECT ci FROM CartItem ci JOIN FETCH ci.book b JOIN FETCH b.shop s WHERE ci.cart.user = :user AND ci.book.bookId IN :bookIds")
     List<CartItem> findByCartUserAndBookIds(@Param("user") User user, @Param("bookIds") List<Integer> bookIds);
 }

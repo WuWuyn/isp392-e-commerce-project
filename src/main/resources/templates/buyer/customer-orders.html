@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Orders - ReadHub</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <nav aria-label="breadcrumb mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Customer Orders</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Account Sidebar using fragment -->
+            <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('orders')}"></div>
+
+            <!-- Account Content -->
+            <section class="col-lg-9 account-content">
+                <div class="card">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="mb-0">Customer Orders</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Filters -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label for="statusFilter" class="form-label small text-muted">Status</label>
+                                <select class="form-select rounded-3" id="statusFilter">
+                                    <option value="">All Statuses</option>
+                                    <option th:each="status : ${T(com.example.isp392.model.OrderStatus).values()}"
+                                            th:value="${status}"
+                                            th:text="${status.toString()}"
+                                            th:selected="${param.status != null && param.status[0] == status.toString()}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="dateFrom" class="form-label small text-muted">From Date</label>
+                                <input type="date" class="form-control rounded-3" id="dateFrom" th:value="${param.dateFrom != null ? param.dateFrom[0] : ''}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="dateTo" class="form-label small text-muted">To Date</label>
+                                <input type="date" class="form-control rounded-3" id="dateTo" th:value="${param.dateTo != null ? param.dateTo[0] : ''}">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="button" class="btn btn-primary rounded-3 me-2" onclick="filterOrders()">
+                                    <i class="fas fa-search me-1"></i>Filter
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary rounded-3" onclick="resetFilters()">
+                                    <i class="fas fa-undo me-1"></i>Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Customer Orders List -->
+                        <div th:if="${customerOrders != null and !customerOrders.isEmpty()}">
+                            <div th:each="customerOrder : ${customerOrders}" class="customer-order-card mb-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">Customer Order #<span th:text="${customerOrder.customerOrderId}"></span></h6>
+                                            <small class="text-muted" th:text="${#temporals.format(customerOrder.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
+                                        </div>
+                                        <div>
+                                            <span th:class="'badge ' + (${customerOrder.status.name() == 'PENDING'} ? 'bg-warning' : 
+                                                                      ${customerOrder.status.name() == 'PROCESSING'} ? 'bg-info' : 
+                                                                      ${customerOrder.status.name() == 'SHIPPED'} ? 'bg-primary' : 
+                                                                      ${customerOrder.status.name() == 'DELIVERED'} ? 'bg-success' : 'bg-danger')"
+                                                  th:text="${customerOrder.status}">
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Individual Orders within Customer Order -->
+                                        <div th:each="order : ${customerOrder.orders}" class="order-item mb-3 p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-2">
+                                                        <i class="fas fa-store text-primary me-2"></i>
+                                                        <span th:text="${order.shop.shopName}">Shop Name</span>
+                                                    </h6>
+                                                    <div class="order-items">
+                                                        <div th:each="item : ${order.orderItems}" class="d-flex align-items-center mb-2">
+                                                            <img th:src="${item.book.imageUrl}" alt="Book Image" class="me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                                            <div class="flex-grow-1">
+                                                                <p class="mb-0 fw-medium" th:text="${item.book.title}">Book Title</p>
+                                                                <small class="text-muted">Qty: <span th:text="${item.quantity}"></span> × <span th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <p class="mb-1 fw-bold text-primary" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'">Total</p>
+                                                    <span th:class="'badge ' + (${order.orderStatus.name() == 'PENDING'} ? 'bg-warning' : 
+                                                                              ${order.orderStatus.name() == 'PROCESSING'} ? 'bg-info' : 
+                                                                              ${order.orderStatus.name() == 'SHIPPED'} ? 'bg-primary' : 
+                                                                              ${order.orderStatus.name() == 'DELIVERED'} ? 'bg-success' : 'bg-danger')"
+                                                          th:text="${order.orderStatus}">
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Customer Order Summary -->
+                                        <div class="border-top pt-3 mt-3">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <p class="mb-1"><strong>Recipient:</strong> <span th:text="${customerOrder.recipientName}"></span></p>
+                                                    <p class="mb-1"><strong>Phone:</strong> <span th:text="${customerOrder.recipientPhone}"></span></p>
+                                                    <p class="mb-1"><strong>Payment Method:</strong> <span th:text="${customerOrder.paymentMethod}"></span></p>
+                                                </div>
+                                                <div class="col-md-4 text-end">
+                                                    <p class="mb-1 fs-5 fw-bold text-primary">
+                                                        Total: <span th:text="${#numbers.formatDecimal(customerOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
+                                                    </p>
+                                                    <div class="btn-group">
+                                                        <a th:href="@{/buyer/customer-orders/{id}(id=${customerOrder.customerOrderId})}" class="btn btn-outline-primary btn-sm">
+                                                            <i class="fas fa-eye me-1"></i>View Details
+                                                        </a>
+                                                        <button th:if="${customerOrder.canCancel()}" 
+                                                                class="btn btn-outline-danger btn-sm"
+                                                                th:onclick="'cancelCustomerOrder(' + ${customerOrder.customerOrderId} + ')'">
+                                                            <i class="fas fa-times me-1"></i>Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div th:if="${customerOrders == null or customerOrders.isEmpty()}" class="text-center py-5">
+                            <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No customer orders found</h5>
+                            <p class="text-muted">You haven't placed any orders yet.</p>
+                            <a th:href="@{/}" class="btn btn-primary">
+                                <i class="fas fa-shopping-cart me-2"></i>Start Shopping
+                            </a>
+                        </div>
+
+                        <!-- Pagination -->
+                        <nav th:if="${totalPages > 1}" aria-label="Customer Orders pagination">
+                            <ul class="pagination justify-content-center">
+                                <li th:class="'page-item' + (${currentPage == 0} ? ' disabled' : '')">
+                                    <a class="page-link" th:href="@{/buyer/customer-orders(page=${currentPage - 1}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}">Previous</a>
+                                </li>
+                                <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                                    th:class="'page-item' + (${i == currentPage} ? ' active' : '')">
+                                    <a class="page-link" th:href="@{/buyer/customer-orders(page=${i}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}" th:text="${i + 1}">1</a>
+                                </li>
+                                <li th:class="'page-item' + (${currentPage == totalPages - 1} ? ' disabled' : '')">
+                                    <a class="page-link" th:href="@{/buyer/customer-orders(page=${currentPage + 1}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function filterOrders() {
+        const status = document.getElementById('statusFilter').value;
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        
+        let url = '/buyer/customer-orders?';
+        if (status) url += `status=${status}&`;
+        if (dateFrom) url += `dateFrom=${dateFrom}&`;
+        if (dateTo) url += `dateTo=${dateTo}&`;
+        
+        // Remove trailing & if any
+        if (url.endsWith('&')) {
+            url = url.slice(0, -1);
+        }
+        
+        window.location.href = url;
+    }
+
+    function resetFilters() {
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+        window.location.href = '/buyer/customer-orders';
+    }
+
+    function cancelCustomerOrder(customerOrderId) {
+        if (confirm('Are you sure you want to cancel this customer order?')) {
+            fetch(`/buyer/customer-orders/${customerOrderId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while cancelling the order.');
+            });
+        }
+    }
+</script>
+</body>
+</html>

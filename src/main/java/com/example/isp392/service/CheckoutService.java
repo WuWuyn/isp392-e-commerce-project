@@ -28,7 +28,7 @@ public class CheckoutService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
-    private final GroupOrderRepository groupOrderRepository;
+    private final CustomerOrderRepository customerOrderRepository;
     private final UserRepository userRepository;
     private final ShopRepository shopRepository;
     private final VNPayService vnPayService;
@@ -38,7 +38,7 @@ public class CheckoutService {
     private final Lock inventoryLock = new ReentrantLock();
 
     @Transactional
-    public GroupOrder checkout(Integer userId, CheckoutDTO checkoutDTO) {
+    public CustomerOrder checkout(Integer userId, CheckoutDTO checkoutDTO) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -72,12 +72,26 @@ public class CheckoutService {
             }
             logger.info("Inventory validation passed for all items");
             
-            // Create group order
-            GroupOrder groupOrder = new GroupOrder();
-            groupOrder.setUser(user);
-            groupOrder.setTotalAmount(BigDecimal.ZERO);
-            groupOrder.setCreatedAt(LocalDateTime.now());
-            groupOrder = groupOrderRepository.save(groupOrder);
+            // Create customer order with shipping and payment information
+            CustomerOrder customerOrder = new CustomerOrder();
+            customerOrder.setUser(user);
+            customerOrder.setRecipientName(checkoutDTO.getRecipientName());
+            customerOrder.setRecipientPhone(checkoutDTO.getRecipientPhone());
+            customerOrder.setShippingProvince(checkoutDTO.getShippingProvince());
+            customerOrder.setShippingDistrict(checkoutDTO.getShippingDistrict());
+            customerOrder.setShippingWard(checkoutDTO.getShippingWard());
+            customerOrder.setShippingAddressDetail(checkoutDTO.getShippingAddressDetail());
+            customerOrder.setShippingCompany(checkoutDTO.getShippingCompany());
+            customerOrder.setShippingAddressType(checkoutDTO.getShippingAddressType());
+            customerOrder.setPaymentMethod(PaymentMethod.valueOf(checkoutDTO.getPaymentMethod()));
+            customerOrder.setPaymentStatus(PaymentStatus.PENDING);
+            customerOrder.setTotalAmount(BigDecimal.ZERO);
+            customerOrder.setShippingFee(BigDecimal.ZERO);
+            customerOrder.setDiscountAmount(BigDecimal.ZERO);
+            customerOrder.setStatus(OrderStatus.PENDING);
+            customerOrder.setNotes(checkoutDTO.getNotes());
+            customerOrder.setCreatedAt(LocalDateTime.now());
+            customerOrder = customerOrderRepository.save(customerOrder);
 
             // Group cart items by shop
             Map<Integer, List<CartItem>> itemsByShop = selectedItems.stream()
@@ -103,24 +117,13 @@ public class CheckoutService {
 
                 // Create order for this shop
                 Order order = new Order();
-                order.setUser(user);
                 order.setShop(shop);
-                order.setGroupOrder(groupOrder);
-                order.setRecipientName(checkoutDTO.getRecipientName());
-                order.setRecipientPhone(checkoutDTO.getRecipientPhone());
-                order.setShippingProvince(checkoutDTO.getShippingProvince());
-                order.setShippingDistrict(checkoutDTO.getShippingDistrict());
-                order.setShippingWard(checkoutDTO.getShippingWard());
-                order.setShippingAddressDetail(checkoutDTO.getShippingAddressDetail());
-                order.setShippingCompany(checkoutDTO.getShippingCompany());
-                order.setShippingAddressType(checkoutDTO.getShippingAddressType());
+                order.setCustomerOrder(customerOrder);
                 order.setSubTotal(subTotal);
                 order.setShippingFee(PaymentConfig.DEFAULT_SHIPPING_FEE);
                 order.setDiscountAmount(BigDecimal.ZERO);
                 order.setTotalAmount(subTotal.add(PaymentConfig.DEFAULT_SHIPPING_FEE));
                 order.setOrderStatus(OrderStatus.PENDING);
-                order.setPaymentMethod(PaymentMethod.valueOf(checkoutDTO.getPaymentMethod()));
-                order.setPaymentStatus(PaymentStatus.PENDING);
                 order.setNotes(shopOrderDTO.getShopNotes());
                 order.setOrderDate(LocalDateTime.now());
 
@@ -156,18 +159,27 @@ public class CheckoutService {
                 cartItemRepository.deleteAll(shopItems);
             }
 
-            // Update group order total and orders
-            groupOrder.setTotalAmount(groupTotal);
-            groupOrder.setOrders(orders);
-            groupOrder = groupOrderRepository.save(groupOrder);
+            // Update customer order total and orders
+            BigDecimal totalShippingFee = orders.stream()
+                    .map(Order::getShippingFee)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalDiscountAmount = orders.stream()
+                    .map(Order::getDiscountAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            customerOrder.setShippingFee(totalShippingFee);
+            customerOrder.setDiscountAmount(totalDiscountAmount);
+            customerOrder.setTotalAmount(groupTotal);
+            customerOrder.setOrders(orders);
+            customerOrder = customerOrderRepository.save(customerOrder);
 
             // If payment method is VNPAY, create payment URL
             if (PaymentMethod.VNPAY.name().equals(checkoutDTO.getPaymentMethod())) {
-                String paymentUrl = vnPayService.createPaymentUrl(groupOrder);
-                groupOrder.setPaymentUrl(paymentUrl);
+                String paymentUrl = vnPayService.createPaymentUrl(customerOrder);
+                customerOrder.setPaymentUrl(paymentUrl);
             }
 
-            return groupOrder;
+            return customerOrder;
             
         } finally {
             inventoryLock.unlock();
@@ -187,7 +199,7 @@ public class CheckoutService {
         Map<String, String> transactionStatus = vnPayService.queryTransactionStatus(orderId);
         String apiResponseCode = transactionStatus.get("vnp_ResponseCode");
 
-        GroupOrder groupOrder = groupOrderRepository.findById(Integer.parseInt(orderId))
+        CustomerOrder customerOrder = customerOrderRepository.findById(Integer.parseInt(orderId))
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
         try {
@@ -195,22 +207,25 @@ public class CheckoutService {
             // Only update if both callback and API check confirm success
             if ("00".equals(vnpayResponseCode) && "00".equals(apiResponseCode)) {
                 // Payment successful
-                for (Order order : groupOrder.getOrders()) {
-                    order.setPaymentStatus(PaymentStatus.PAID);
+                customerOrder.setPaymentStatus(PaymentStatus.PAID);
+                for (Order order : customerOrder.getOrders()) {
                     orderRepository.save(order);
                 }
+                customerOrderRepository.save(customerOrder);
             } else {
                 // Payment failed - rollback inventory
-                for (Order order : groupOrder.getOrders()) {
-                    order.setPaymentStatus(PaymentStatus.FAILED);
+                customerOrder.setPaymentStatus(PaymentStatus.FAILED);
+                customerOrder.setStatus(OrderStatus.CANCELLED);
+                for (Order order : customerOrder.getOrders()) {
                     order.setOrderStatus(OrderStatus.CANCELLED);
                     orderRepository.save(order);
-                    
+
                     // Return items to inventory
                     for (OrderItem item : order.getOrderItems()) {
                         bookService.increaseStockQuantity(item.getBook().getBookId(), item.getQuantity());
                     }
                 }
+                customerOrderRepository.save(customerOrder);
             }
         } finally {
             inventoryLock.unlock();

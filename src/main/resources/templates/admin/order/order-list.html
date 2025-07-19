@@ -263,8 +263,8 @@
                                 <td th:text="${'#' + order.orderId}">Order ID</td>
                                 <td>
                                     <div class="d-flex flex-column">
-                                        <span th:text="${order.recipientName}">Customer Name</span>
-                                        <small class="text-muted" th:text="${order.recipientPhone}">Phone</small>
+                                        <span th:text="${order.customerOrder != null ? order.customerOrder.recipientName : 'N/A'}">Customer Name</span>
+                                        <small class="text-muted" th:text="${order.customerOrder != null ? order.customerOrder.recipientPhone : 'N/A'}">Phone</small>
                                     </div>
                                 </td>
                                 <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">Order Date</td>

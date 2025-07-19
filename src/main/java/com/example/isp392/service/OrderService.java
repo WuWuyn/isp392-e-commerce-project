@@ -2,7 +2,7 @@ package com.example.isp392.service;
 
 import com.example.isp392.model.*;
 import com.example.isp392.repository.OrderRepository;
-import com.example.isp392.repository.GroupOrderRepository;
+import com.example.isp392.repository.CustomerOrderRepository;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import org.springframework.transaction.annotation.Isolation;
@@ -30,22 +30,22 @@ public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     private final OrderRepository orderRepository;
-    private final GroupOrderRepository groupOrderRepository;
+    private final CustomerOrderRepository customerOrderRepository;
     private final PromotionService promotionService;
     private final BookService bookService;
-    private final GroupOrderService groupOrderService;
+    private final CustomerOrderService customerOrderService;
     private final Lock orderStatusLock = new ReentrantLock();
 
-    public OrderService(OrderRepository orderRepository, 
-                       GroupOrderRepository groupOrderRepository,
-                       PromotionService promotionService, 
+    public OrderService(OrderRepository orderRepository,
+                       CustomerOrderRepository customerOrderRepository,
+                       PromotionService promotionService,
                        BookService bookService,
-                       GroupOrderService groupOrderService) {
+                       CustomerOrderService customerOrderService) {
         this.orderRepository = orderRepository;
-        this.groupOrderRepository = groupOrderRepository;
+        this.customerOrderRepository = customerOrderRepository;
         this.promotionService = promotionService;
         this.bookService = bookService;
-        this.groupOrderService = groupOrderService;
+        this.customerOrderService = customerOrderService;
     }
 
     public List<Order> getOrdersForSeller(Integer sellerId) {
@@ -63,9 +63,9 @@ public class OrderService {
                         order.getOrderStatus() + " sang " + newStatus);
                 }
                 
-                // Check if order is part of a group order
-                if (order.getGroupOrder() != null) {
-                    validateGroupOrderStatus(order.getGroupOrder(), newStatus);
+                // Check if order is part of a customer order
+                if (order.getCustomerOrder() != null) {
+                    validateCustomerOrderStatus(order.getCustomerOrder(), newStatus);
                 }
                 
                 OrderStatus oldStatus = order.getOrderStatus();
@@ -77,9 +77,9 @@ public class OrderService {
 
                 orderRepository.save(order);
                 
-                // Update group order status if needed
-                if (order.getGroupOrder() != null) {
-                    groupOrderService.updateGroupOrderStatus(order.getGroupOrder());
+                // Update customer order status if needed
+                if (order.getCustomerOrder() != null) {
+                    customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
                 }
                 
                 return true;
@@ -106,9 +106,9 @@ public class OrderService {
         }
     }
 
-    private void validateGroupOrderStatus(GroupOrder groupOrder, OrderStatus newStatus) {
-        // Check if any order in the group is in an incompatible state
-        for (Order order : groupOrder.getOrders()) {
+    private void validateCustomerOrderStatus(CustomerOrder customerOrder, OrderStatus newStatus) {
+        // Check if any order in the customer order is in an incompatible state
+        for (Order order : customerOrder.getOrders()) {
             if (order.getOrderStatus() == OrderStatus.CANCELLED && newStatus != OrderStatus.CANCELLED) {
                 throw new IllegalStateException("Không thể cập nhật trạng thái khi có đơn hàng đã hủy trong nhóm");
             }
@@ -122,8 +122,8 @@ public class OrderService {
     public Page<Order> findOrders(User user, String status, LocalDate dateFrom, LocalDate dateTo, Pageable pageable) {
         return orderRepository.findAll((Specification<Order>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            
-            predicates.add(cb.equal(root.get("user"), user));
+
+            predicates.add(cb.equal(root.get("customerOrder").get("user"), user));
             
             if (status != null && !status.isEmpty()) {
                 predicates.add(cb.equal(root.get("orderStatus"), OrderStatus.valueOf(status)));
@@ -184,7 +184,7 @@ public class OrderService {
         }
 
         order.setDiscountAmount(discountAmount);
-        promotionService.updatePromotionUsage(promotionCode, order.getUser().getUserId());
+        promotionService.updatePromotionUsage(promotionCode, order.getCustomerOrder().getUser().getUserId());
     }
 
     private void handleInventoryForStatusChange(Order order, OrderStatus oldStatus, OrderStatus newStatus) {
@@ -210,7 +210,9 @@ public class OrderService {
     @org.springframework.transaction.annotation.Transactional(isolation = Isolation.SERIALIZABLE)
     public Order save(Order order) {
         logger.info("Saving order with {} items for user: {}",
-                   order.getOrderItems().size(), order.getUser().getEmail());
+                   order.getOrderItems().size(),
+                   order.getCustomerOrder() != null && order.getCustomerOrder().getUser() != null ?
+                   order.getCustomerOrder().getUser().getEmail() : "Unknown");
 
         // Validate order data
         validateOrderData(order);
@@ -243,12 +245,14 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
         logger.info("Order saved successfully with ID: {} for user: {}",
-                   savedOrder.getOrderId(), savedOrder.getUser().getEmail());
+                   savedOrder.getOrderId(),
+                   savedOrder.getCustomerOrder() != null && savedOrder.getCustomerOrder().getUser() != null ?
+                   savedOrder.getCustomerOrder().getUser().getEmail() : "Unknown");
         return savedOrder;
     }
 
     private void validateOrderData(Order order) {
-        if (order.getUser() == null) {
+        if (order.getCustomerOrder() == null || order.getCustomerOrder().getUser() == null) {
             throw new RuntimeException("Thông tin người dùng không hợp lệ");
         }
 
@@ -260,19 +264,20 @@ public class OrderService {
             throw new RuntimeException("Tổng tiền đơn hàng không hợp lệ");
         }
 
-        if (order.getRecipientName() == null || order.getRecipientName().trim().isEmpty()) {
+        CustomerOrder customerOrder = order.getCustomerOrder();
+        if (customerOrder.getRecipientName() == null || customerOrder.getRecipientName().trim().isEmpty()) {
             throw new RuntimeException("Tên người nhận không được để trống");
         }
 
-        if (order.getRecipientPhone() == null || order.getRecipientPhone().trim().isEmpty()) {
+        if (customerOrder.getRecipientPhone() == null || customerOrder.getRecipientPhone().trim().isEmpty()) {
             throw new RuntimeException("Số điện thoại người nhận không được để trống");
         }
 
-        if (order.getShippingAddressDetail() == null || order.getShippingAddressDetail().trim().isEmpty()) {
+        if (customerOrder.getShippingAddressDetail() == null || customerOrder.getShippingAddressDetail().trim().isEmpty()) {
             throw new RuntimeException("Địa chỉ giao hàng không được để trống");
         }
 
-        logger.info("Order validation passed for user: {}", order.getUser().getEmail());
+        logger.info("Order validation passed for user: {}", customerOrder.getUser().getEmail());
     }
     
     // Seller-specific methods
@@ -284,7 +289,7 @@ public class OrderService {
         for (Order order : orders) {
             Map<String, Object> orderMap = new HashMap<>();
             orderMap.put("orderId", order.getOrderId());
-            orderMap.put("customerName", order.getUser().getFullName());
+            orderMap.put("customerName", order.getCustomerOrder().getUser().getFullName());
             orderMap.put("amount", order.getTotalAmount());
             orderMap.put("status", order.getOrderStatus());
             orderMap.put("date", order.getOrderDate());
@@ -369,8 +374,8 @@ public class OrderService {
             if (keyword != null && !keyword.trim().isEmpty()) {
                 String searchTerm = "%" + keyword.trim().toLowerCase() + "%";
                 predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("recipientName")), searchTerm),
-                    cb.like(cb.lower(root.get("recipientPhone")), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("recipientName")), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("recipientPhone")), searchTerm),
                     cb.like(cb.lower(root.get("orderId").as(String.class)), searchTerm)
                 ));
             }
@@ -450,11 +455,11 @@ public class OrderService {
             if (search != null && !search.trim().isEmpty()) {
                 String searchTerm = "%" + search.trim().toLowerCase() + "%";
                 predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("recipientName")), searchTerm),
-                    cb.like(cb.lower(root.get("recipientPhone")), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("recipientName")), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("recipientPhone")), searchTerm),
                     cb.like(cb.lower(root.get("orderId").as(String.class)), searchTerm),
-                    cb.like(cb.lower(root.get("user").get("email")), searchTerm),
-                    cb.like(cb.lower(root.get("user").get("fullName")), searchTerm)
+                    cb.like(cb.lower(root.get("customerOrder").get("user").get("email")), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("user").get("fullName")), searchTerm)
                 ));
             }
             
@@ -509,9 +514,9 @@ public class OrderService {
                     handleInventoryForStatusChange(order, oldStatus, newStatus);
                 }
                 
-                // Update group order status if needed
-                if (order.getGroupOrder() != null) {
-                    groupOrderService.updateGroupOrderStatus(order.getGroupOrder());
+                // Update customer order status if needed
+                if (order.getCustomerOrder() != null) {
+                    customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
                 }
                 
                 orderRepository.save(order);
@@ -532,12 +537,12 @@ public class OrderService {
     public boolean processRefund(Integer orderId, String refundReason) {
         return orderRepository.findById(orderId).map(order -> {
             // Validate if order can be refunded
-            if (order.getPaymentStatus() != PaymentStatus.PAID) {
+            if (order.getCustomerOrder() == null || order.getCustomerOrder().getPaymentStatus() != PaymentStatus.PAID) {
                 return false;
             }
-            
+
             // Set payment status to REFUNDED
-            order.setPaymentStatus(PaymentStatus.REFUNDED);
+            order.getCustomerOrder().setPaymentStatus(PaymentStatus.REFUNDED);
             
             // Set order status to CANCELLED if not already
             if (order.getOrderStatus() != OrderStatus.CANCELLED) {
@@ -562,9 +567,9 @@ public class OrderService {
             // Save the order
             orderRepository.save(order);
             
-            // Update group order status if needed
-            if (order.getGroupOrder() != null) {
-                groupOrderService.updateGroupOrderStatus(order.getGroupOrder());
+            // Update customer order status if needed
+            if (order.getCustomerOrder() != null) {
+                customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
             }
             
             return true;

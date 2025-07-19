@@ -38,19 +38,19 @@
                         <div class="account-container">
                             <h5><i class="fas fa-shipping-fast me-2"></i>Shipping Information</h5>
                             <hr>
-                            <div class="detail-row"><span class="label">Recipient Name:</span> <span class="value" th:text="*{recipientName}"></span></div>
-                            <div class="detail-row"><span class="label">Phone:</span> <span class="value" th:text="*{recipientPhone}"></span></div>
-                            <div class="detail-row"><span class="label">Address:</span> <span class="value text-end" th:text="*{shippingAddressDetail + ', ' + shippingWard + ', ' + shippingDistrict + ', ' + shippingProvince}"></span></div>
-                            <div class="detail-row"><span class="label">Address Type:</span> <span class="value" th:text="*{shippingAddressType == 0 ? 'Home' : 'Company'}"></span></div>
-                            <div class="detail-row"><span class="label">Shipping Company:</span> <span class="value" th:text="*{shippingCompany}"></span></div>
+                            <div class="detail-row" th:if="*{customerOrder}"><span class="label">Recipient Name:</span> <span class="value" th:text="*{customerOrder.recipientName}"></span></div>
+                            <div class="detail-row" th:if="*{customerOrder}"><span class="label">Phone:</span> <span class="value" th:text="*{customerOrder.recipientPhone}"></span></div>
+                            <div class="detail-row" th:if="*{customerOrder}"><span class="label">Address:</span> <span class="value text-end" th:text="*{customerOrder.shippingAddressDetail + ', ' + customerOrder.shippingWard + ', ' + customerOrder.shippingDistrict + ', ' + customerOrder.shippingProvince}"></span></div>
+                            <div class="detail-row" th:if="*{customerOrder}"><span class="label">Address Type:</span> <span class="value" th:text="*{customerOrder.shippingAddressType == 0 ? 'Home' : 'Company'}"></span></div>
+                            <div class="detail-row" th:if="*{customerOrder}"><span class="label">Shipping Company:</span> <span class="value" th:text="*{customerOrder.shippingCompany}"></span></div>
                             <div class="detail-row" th:if="*{notes}"><span class="label">Notes:</span> <span class="value" th:text="*{notes}"></span></div>
                         </div>
 
                         <div class="account-container">
                             <h5><i class="fas fa-credit-card me-2"></i>Payment Details</h5>
                             <hr>
-                            <div class="detail-row"><span class="label">Payment Method:</span> <span class="value" th:text="*{paymentMethod}"></span></div>
-                            <div class="detail-row"><span class="label">Payment Status:</span> <span class="value" th:text="*{paymentStatus}"></span></div>
+                            <div class="detail-row" th:if="*{customerOrder}"><span class="label">Payment Method:</span> <span class="value" th:text="*{customerOrder.paymentMethod}"></span></div>
+                            <div class="detail-row" th:if="*{customerOrder}"><span class="label">Payment Status:</span> <span class="value" th:text="*{customerOrder.paymentStatus}"></span></div>
                         </div>
                     </div>
 

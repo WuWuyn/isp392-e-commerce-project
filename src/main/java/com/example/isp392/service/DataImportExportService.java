@@ -211,15 +211,21 @@ public class DataImportExportService {
                 .setHeader("orderId", "userId", "orderDate", "totalAmount", "status", "deliveryAddress")
                 .build())) {
             for (Order order : orders) {
-                // SỬA LỖI 6: Nối các thành phần địa chỉ thành một chuỗi
-                String deliveryAddress = String.join(", ",
-                        order.getShippingAddressDetail(),
-                        order.getShippingWard(),
-                        order.getShippingDistrict(),
-                        order.getShippingProvince());
+                // Build delivery address from customer order
+                String deliveryAddress = "N/A";
+                if (order.getCustomerOrder() != null) {
+                    deliveryAddress = String.join(", ",
+                            order.getCustomerOrder().getShippingAddressDetail() != null ? order.getCustomerOrder().getShippingAddressDetail() : "",
+                            order.getCustomerOrder().getShippingWard() != null ? order.getCustomerOrder().getShippingWard() : "",
+                            order.getCustomerOrder().getShippingDistrict() != null ? order.getCustomerOrder().getShippingDistrict() : "",
+                            order.getCustomerOrder().getShippingProvince() != null ? order.getCustomerOrder().getShippingProvince() : "");
+                }
 
-                // SỬA LỖI 7: Sửa tên phương thức getStatus -> getOrderStatus
-                csvPrinter.printRecord(order.getOrderId(), order.getUser().getUserId(), order.getOrderDate(), order.getTotalAmount(), order.getOrderStatus(), deliveryAddress);
+                // Get user ID from customer order
+                Integer userId = order.getCustomerOrder() != null && order.getCustomerOrder().getUser() != null ?
+                               order.getCustomerOrder().getUser().getUserId() : null;
+
+                csvPrinter.printRecord(order.getOrderId(), userId, order.getOrderDate(), order.getTotalAmount(), order.getOrderStatus(), deliveryAddress);
             }
         }
     }

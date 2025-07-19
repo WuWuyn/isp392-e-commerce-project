@@ -1,9 +1,9 @@
 package com.example.isp392.controller;
 
-import com.example.isp392.model.GroupOrder;
+import com.example.isp392.model.CustomerOrder;
 import com.example.isp392.model.OrderStatus;
 import com.example.isp392.model.User;
-import com.example.isp392.service.GroupOrderService;
+import com.example.isp392.service.CustomerOrderService;
 import com.example.isp392.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,19 +21,19 @@ import java.util.Map;
 import java.util.Optional;
 
 @Controller
-@RequestMapping("/buyer/group-orders")
-public class GroupOrderController {
+@RequestMapping("/buyer/customer-orders")
+public class CustomerOrderController {
 
-    private final GroupOrderService groupOrderService;
+    private final CustomerOrderService customerOrderService;
     private final UserService userService;
 
-    public GroupOrderController(GroupOrderService groupOrderService, UserService userService) {
-        this.groupOrderService = groupOrderService;
+    public CustomerOrderController(CustomerOrderService customerOrderService, UserService userService) {
+        this.customerOrderService = customerOrderService;
         this.userService = userService;
     }
 
     @GetMapping
-    public String getGroupOrders(
+    public String getCustomerOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) LocalDate dateFrom,
@@ -44,54 +44,54 @@ public class GroupOrderController {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Get group orders with status filter
-        Page<GroupOrder> groupOrderPage = groupOrderService.findGroupOrders(
+        // Get customer orders with status filter
+        Page<CustomerOrder> customerOrderPage = customerOrderService.findCustomerOrders(
             user, status, dateFrom, dateTo, PageRequest.of(page, 10)
         );
 
-        model.addAttribute("groupOrders", groupOrderPage.getContent());
+        model.addAttribute("customerOrders", customerOrderPage.getContent());
         model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", groupOrderPage.getTotalPages());
+        model.addAttribute("totalPages", customerOrderPage.getTotalPages());
         
         // Preserve filter parameters for pagination links
         model.addAttribute("paramStatus", status);
         model.addAttribute("paramDateFrom", dateFrom);
         model.addAttribute("paramDateTo", dateTo);
         
-        return "buyer/group-orders";
+        return "buyer/customer-orders";
     }
 
-    @GetMapping("/{groupOrderId}")
-    public String getGroupOrderDetail(@PathVariable Integer groupOrderId, Model model, Authentication authentication) {
+    @GetMapping("/{customerOrderId}")
+    public String getCustomerOrderDetail(@PathVariable Integer customerOrderId, Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
                 
-        Optional<GroupOrder> groupOrderOpt = groupOrderService.findByIdAndUser(groupOrderId, user);
-        if (groupOrderOpt.isEmpty()) {
-            return "redirect:/buyer/group-orders";
+        Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
+        if (customerOrderOpt.isEmpty()) {
+            return "redirect:/buyer/customer-orders";
         }
         
-        model.addAttribute("groupOrder", groupOrderOpt.get());
-        return "buyer/group-order-detail";
+        model.addAttribute("customerOrder", customerOrderOpt.get());
+        return "buyer/customer-order-detail";
     }
     
-    @PostMapping("/{groupOrderId}/cancel")
+    @PostMapping("/{customerOrderId}/cancel")
     @ResponseBody
-    public ResponseEntity<?> cancelGroupOrder(@PathVariable Integer groupOrderId, Authentication authentication) {
+    public ResponseEntity<?> cancelCustomerOrder(@PathVariable Integer customerOrderId, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
                 
-        Optional<GroupOrder> groupOrderOpt = groupOrderService.findByIdAndUser(groupOrderId, user);
-        if (groupOrderOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("Đơn hàng nhóm không tồn tại");
+        Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
+        if (customerOrderOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Đơn hàng không tồn tại");
         }
         
-        GroupOrder groupOrder = groupOrderOpt.get();
-        if (!groupOrder.canCancel()) {
-            return ResponseEntity.badRequest().body("Không thể hủy đơn hàng nhóm ở trạng thái hiện tại");
+        CustomerOrder customerOrder = customerOrderOpt.get();
+        if (!customerOrder.canCancel()) {
+            return ResponseEntity.badRequest().body("Không thể hủy đơn hàng ở trạng thái hiện tại");
         }
         
-        groupOrderService.cancelGroupOrder(groupOrderId);
+        customerOrderService.cancelCustomerOrder(customerOrderId, user, "Hủy bởi khách hàng");
         
         Map<String, String> response = new HashMap<>();
         response.put("status", "success");
@@ -101,30 +101,30 @@ public class GroupOrderController {
     }
     
     @GetMapping("/payment-success")
-    public String paymentSuccess(@RequestParam Integer groupOrderId, Model model, Authentication authentication) {
+    public String paymentSuccess(@RequestParam Integer customerOrderId, Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Optional<GroupOrder> groupOrderOpt = groupOrderService.findByIdAndUser(groupOrderId, user);
-        if (groupOrderOpt.isEmpty()) {
-            return "redirect:/buyer/group-orders";
+        Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
+        if (customerOrderOpt.isEmpty()) {
+            return "redirect:/buyer/customer-orders";
         }
 
-        model.addAttribute("groupOrder", groupOrderOpt.get());
+        model.addAttribute("customerOrder", customerOrderOpt.get());
         return "buyer/payment-success";
     }
     
     @GetMapping("/payment-failed")
-    public String paymentFailed(@RequestParam Integer groupOrderId, Model model, Authentication authentication) {
+    public String paymentFailed(@RequestParam Integer customerOrderId, Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Optional<GroupOrder> groupOrderOpt = groupOrderService.findByIdAndUser(groupOrderId, user);
-        if (groupOrderOpt.isEmpty()) {
-            return "redirect:/buyer/group-orders";
+        Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
+        if (customerOrderOpt.isEmpty()) {
+            return "redirect:/buyer/customer-orders";
         }
 
-        model.addAttribute("groupOrder", groupOrderOpt.get());
+        model.addAttribute("customerOrder", customerOrderOpt.get());
         return "buyer/payment-failed";
     }
-} 
+}

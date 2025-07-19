@@ -22,42 +22,12 @@ public class Order {
     private Integer orderId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "customer_order_id", nullable = false)
+    private CustomerOrder customerOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shop_id", nullable = true)
+    @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_order_id", nullable = true)
-    private GroupOrder groupOrder;
-
-    // Thông tin người nhận hàng
-    @Column(name = "recipient_name", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String recipientName;
-
-    @Column(name = "recipient_phone", length = 20, nullable = false)
-    private String recipientPhone;
-
-    @Column(name = "shipping_province", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String shippingProvince;
-
-    @Column(name = "shipping_district", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String shippingDistrict;
-
-    @Column(name = "shipping_ward", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String shippingWard;
-
-    @Column(name = "shipping_address_detail", columnDefinition = "NVARCHAR(500)", nullable = false)
-    private String shippingAddressDetail;
-
-    @Column(name = "shipping_company", columnDefinition = "NVARCHAR(255)")
-    private String shippingCompany;
-
-    @Column(name = "shipping_address_type")
-    private Integer shippingAddressType;
-    //0: Nha rieng, 1: company
 
     //Tổng tiền của tất cả sản phẩm
     @Column(name = "sub_total", nullable = false, precision = 18, scale = 0)
@@ -78,14 +48,6 @@ public class Order {
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status", length = 50, nullable = false)
     private OrderStatus orderStatus;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_method")
-    private PaymentMethod paymentMethod;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", length = 50)
-    private PaymentStatus paymentStatus;
 
     @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)")
     private String notes;
@@ -141,13 +103,7 @@ public class Order {
         return orderItems;
     }
     
-    /**
-     * Set the user
-     * @param user the user to set
-     */
-    public void setUser(User user) {
-        this.user = user;
-    }
+
     
     /**
      * Set the shop
@@ -158,76 +114,16 @@ public class Order {
     }
     
     /**
-     * Set the group order
-     * @param groupOrder the group order to set
+     * Set the customer order
+     * @param customerOrder the customer order to set
      */
-    public void setGroupOrder(GroupOrder groupOrder) {
-        this.groupOrder = groupOrder;
+    public void setCustomerOrder(CustomerOrder customerOrder) {
+        this.customerOrder = customerOrder;
     }
     
-    /**
-     * Set the recipient name
-     * @param recipientName the recipient name to set
-     */
-    public void setRecipientName(String recipientName) {
-        this.recipientName = recipientName;
-    }
+
     
-    /**
-     * Set the recipient phone
-     * @param recipientPhone the recipient phone to set
-     */
-    public void setRecipientPhone(String recipientPhone) {
-        this.recipientPhone = recipientPhone;
-    }
-    
-    /**
-     * Set the shipping province
-     * @param shippingProvince the shipping province to set
-     */
-    public void setShippingProvince(String shippingProvince) {
-        this.shippingProvince = shippingProvince;
-    }
-    
-    /**
-     * Set the shipping district
-     * @param shippingDistrict the shipping district to set
-     */
-    public void setShippingDistrict(String shippingDistrict) {
-        this.shippingDistrict = shippingDistrict;
-    }
-    
-    /**
-     * Set the shipping ward
-     * @param shippingWard the shipping ward to set
-     */
-    public void setShippingWard(String shippingWard) {
-        this.shippingWard = shippingWard;
-    }
-    
-    /**
-     * Set the shipping address detail
-     * @param shippingAddressDetail the shipping address detail to set
-     */
-    public void setShippingAddressDetail(String shippingAddressDetail) {
-        this.shippingAddressDetail = shippingAddressDetail;
-    }
-    
-    /**
-     * Set the shipping company
-     * @param shippingCompany the shipping company to set
-     */
-    public void setShippingCompany(String shippingCompany) {
-        this.shippingCompany = shippingCompany;
-    }
-    
-    /**
-     * Set the shipping address type
-     * @param shippingAddressType the shipping address type to set
-     */
-    public void setShippingAddressType(Integer shippingAddressType) {
-        this.shippingAddressType = shippingAddressType;
-    }
+
     
     /**
      * Set the sub total
@@ -269,21 +165,7 @@ public class Order {
         this.orderStatus = orderStatus;
     }
     
-    /**
-     * Set the payment method
-     * @param paymentMethod the payment method to set
-     */
-    public void setPaymentMethod(PaymentMethod paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
-    
-    /**
-     * Set the payment status
-     * @param paymentStatus the payment status to set
-     */
-    public void setPaymentStatus(PaymentStatus paymentStatus) {
-        this.paymentStatus = paymentStatus;
-    }
+
     
     /**
      * Set the notes
