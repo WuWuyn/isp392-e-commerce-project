@@ -899,7 +899,7 @@ public class SellerController {
     public String showProductsPage(
             Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "9") int size,
             @RequestParam(required = false) String searchQuery,
             @RequestParam(defaultValue = "dateAdded") String sortField,
             @RequestParam(defaultValue = "desc") String sortDir) {
