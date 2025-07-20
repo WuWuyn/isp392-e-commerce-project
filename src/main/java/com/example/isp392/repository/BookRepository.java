@@ -5,10 +5,12 @@ import com.example.isp392.model.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -19,6 +21,14 @@ import java.util.Optional;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecificationExecutor<Book> {
+
+    /**
+     * Find book by ID with pessimistic lock to prevent race conditions
+     * This is used for inventory management to ensure atomic updates
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Book b WHERE b.bookId = :bookId")
+    Optional<Book> findByIdForUpdate(@Param("bookId") Integer bookId);
     Page<Book> findByShop_ShopIdAndIsActiveTrue(Integer shopId, Pageable pageable);
     // Tìm sách theo tiêu đề (phân trang)
     Page<Book> findByTitleContainingIgnoreCase(String title, Pageable pageable);
@@ -219,7 +229,7 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
      * @param shopId the shop ID
      * @return list of Object[]: [bookId, title, viewsCount]
      */
-    @Query("SELECT b.book_id, b.title, b.viewsCount FROM Book b WHERE b.shop.shopId = :shopId")
+    @Query(value = "SELECT b.book_id, b.title, b.views_count FROM books b WHERE b.shop_id = :shopId", nativeQuery = true)
     List<Object[]> getViewsByProductInShop(@Param("shopId") Integer shopId);
 
     /**
@@ -227,7 +237,7 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
      * @param bookId the book ID
      */
     @Modifying
-    @Query("UPDATE Book b SET b.viewsCount = b.viewsCount + 1 WHERE b.id = :bookId")
+    @Query("UPDATE Book b SET b.viewsCount = b.viewsCount + 1 WHERE b.bookId = :bookId")
     void incrementViewsCount(@Param("bookId") int bookId);
 
     /**

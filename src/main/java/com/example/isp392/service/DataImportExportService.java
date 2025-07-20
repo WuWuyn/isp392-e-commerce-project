@@ -171,7 +171,9 @@ public class DataImportExportService {
 
     public void exportUsersToCsv(PrintWriter writer) throws IOException {
         List<User> users = userRepository.findAll();
-        try (CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader("userId", "email", "fullName", "phoneNumber", "address", "isActive", "roles"))) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.builder()
+                .setHeader("userId", "email", "fullName", "phoneNumber", "address", "isActive", "roles")
+                .build())) {
             for (User user : users) {
                 String roles = user.getUserRoles().stream()
                         .map(ur -> ur.getRole().getRoleName().replace("ROLE_", ""))
@@ -190,31 +192,40 @@ public class DataImportExportService {
 
     public void exportBooksToCsv(PrintWriter writer) throws IOException {
         List<Book> books = bookRepository.findAll();
-        try (CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader("bookId", "title", "authors", "description", "stockQuantity", "sellingPrice", "originalPrice", "coverImgUrl", "dateAdded", "shopId", "publisherName", "categories"))) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.builder()
+                .setHeader("bookId", "title", "authors", "description", "stockQuantity", "sellingPrice", "originalPrice", "coverImgUrl", "dateAdded", "shopId", "publisherName", "categories")
+                .build())) {
             for (Book book : books) {
                 String publisherName = book.getPublisher() != null ? book.getPublisher().getPublisherName() : "";
                 String categories = book.getCategories().stream()
                         .map(Category::getCategoryName)
                         .collect(Collectors.joining(","));
-                // SỬA LỖI 5: Lời gọi getBookId() sẽ hoạt động sau khi sửa file Book.java
-                csvPrinter.printRecord(book.getBook_id(), book.getTitle(), book.getAuthors(), book.getDescription(), book.getStockQuantity(), book.getSellingPrice(), book.getOriginalPrice(), book.getCoverImgUrl(), book.getDateAdded(), book.getShop() != null ? book.getShop().getShopId() : null, publisherName, categories);
+                csvPrinter.printRecord(book.getBookId(), book.getTitle(), book.getAuthors(), book.getDescription(), book.getStockQuantity(), book.getSellingPrice(), book.getOriginalPrice(), book.getCoverImgUrl(), book.getDateAdded(), book.getShop() != null ? book.getShop().getShopId() : null, publisherName, categories);
             }
         }
     }
 
     public void exportOrdersToCsv(PrintWriter writer) throws IOException {
         List<Order> orders = orderRepository.findAll();
-        try (CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader("orderId", "userId", "orderDate", "totalAmount", "status", "deliveryAddress"))) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.builder()
+                .setHeader("orderId", "userId", "orderDate", "totalAmount", "status", "deliveryAddress")
+                .build())) {
             for (Order order : orders) {
-                // SỬA LỖI 6: Nối các thành phần địa chỉ thành một chuỗi
-                String deliveryAddress = String.join(", ",
-                        order.getShippingAddressDetail(),
-                        order.getShippingWard(),
-                        order.getShippingDistrict(),
-                        order.getShippingProvince());
+                // Build delivery address from customer order
+                String deliveryAddress = "N/A";
+                if (order.getCustomerOrder() != null) {
+                    deliveryAddress = String.join(", ",
+                            order.getCustomerOrder().getShippingAddressDetail() != null ? order.getCustomerOrder().getShippingAddressDetail() : "",
+                            order.getCustomerOrder().getShippingWard() != null ? order.getCustomerOrder().getShippingWard() : "",
+                            order.getCustomerOrder().getShippingDistrict() != null ? order.getCustomerOrder().getShippingDistrict() : "",
+                            order.getCustomerOrder().getShippingProvince() != null ? order.getCustomerOrder().getShippingProvince() : "");
+                }
 
-                // SỬA LỖI 7: Sửa tên phương thức getStatus -> getOrderStatus
-                csvPrinter.printRecord(order.getOrderId(), order.getUser().getUserId(), order.getOrderDate(), order.getTotalAmount(), order.getOrderStatus(), deliveryAddress);
+                // Get user ID from customer order
+                Integer userId = order.getCustomerOrder() != null && order.getCustomerOrder().getUser() != null ?
+                               order.getCustomerOrder().getUser().getUserId() : null;
+
+                csvPrinter.printRecord(order.getOrderId(), userId, order.getOrderDate(), order.getTotalAmount(), order.getOrderStatus(), deliveryAddress);
             }
         }
     }

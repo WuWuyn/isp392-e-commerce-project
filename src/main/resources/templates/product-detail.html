@@ -186,7 +186,7 @@
                 <!-- Review Filters -->
                 <div class="review-filters d-flex justify-content-end mb-4 gap-2">
                     <form id="reviewFilterForm" th:action="@{/product-detail}" method="get" class="d-flex gap-2">
-                        <input type="hidden" name="book_id" th:value="${book.book_id}">
+                        <input type="hidden" name="book_id" th:value="${book.bookId}">
                         <input type="hidden" name="page" value="0">
                         <input type="hidden" name="size" th:value="${param.size != null ? param.size : 5}">
                         <input type="hidden" name="sort" th:value="${sortField}" id="sortField">
@@ -257,14 +257,14 @@
                     <ul class="pagination">
                         <!-- Previous page -->
                         <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
-                            <a class="page-link" th:href="@{/product-detail(book_id=${book.book_id}, page=${currentPage - 1}, size=${param.size}, sort=${sortField}, direction=${sortDirection}, minRating=${minRating})}" tabindex="-1" th:aria-disabled="${currentPage == 0}">
+                            <a class="page-link" th:href="@{/product-detail(book_id=${book.bookId}, page=${currentPage - 1}, size=${param.size}, sort=${sortField}, direction=${sortDirection}, minRating=${minRating})}" tabindex="-1" th:aria-disabled="${currentPage == 0}">
                                 <i class="fas fa-chevron-left"></i>
                             </a>
                         </li>
                         
                         <!-- Page numbers -->
                         <li class="page-item" th:each="i: ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${i == currentPage ? 'active' : ''}">
-                            <a class="page-link" th:href="@{/product-detail(book_id=${book.book_id}, page=${i}, size=${param.size}, sort=${sortField}, direction=${sortDirection}, minRating=${minRating})}" th:text="${i + 1}">1</a>
+                            <a class="page-link" th:href="@{/product-detail(book_id=${book.bookId}, page=${i}, size=${param.size}, sort=${sortField}, direction=${sortDirection}, minRating=${minRating})}" th:text="${i + 1}">1</a>
                         </li>
                         
                         <!-- Next page -->
@@ -415,7 +415,7 @@
 <!-- Product Detail JavaScript -->
 <script th:inline="javascript">
     // Lấy thông tin sách từ Thymeleaf
-    const bookId = /*[[${book.book_id}]]*/ 0;
+    const bookId = /*[[${book.bookId}]]*/ 0;
     const isAuthenticated = /*[[${isAuthenticated}]]*/ false;
     const headerCartCountBadge = window.parent.document.getElementById('headerCartCountBadge');
     

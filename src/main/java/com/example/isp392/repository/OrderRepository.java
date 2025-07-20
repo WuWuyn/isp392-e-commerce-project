@@ -30,7 +30,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param userId the user ID
      * @return list of orders belonging to the user
      */
-    List<Order> findByUserUserIdOrderByOrderDateDesc(Integer userId);
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user.userId = :userId ORDER BY o.orderDate DESC")
+    List<Order> findByUserUserIdOrderByOrderDateDesc(@Param("userId") Integer userId);
     
     /**
      * Find a specific order by ID and user ID (for security)
@@ -38,14 +39,16 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param userId the user ID
      * @return the order if found and belongs to the user
      */
-    Optional<Order> findByOrderIdAndUserUserId(Integer orderId, Integer userId);
+    @Query("SELECT o FROM Order o WHERE o.orderId = :orderId AND o.customerOrder.user.userId = :userId")
+    Optional<Order> findByOrderIdAndUserUserId(@Param("orderId") Integer orderId, @Param("userId") Integer userId);
     
     /**
      * Count the number of orders for a user
      * @param userId the user ID
      * @return count of orders for the user
      */
-    long countByUserUserId(Integer userId);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.customerOrder.user.userId = :userId")
+    long countByUserUserId(@Param("userId") Integer userId);
     
     /**
      * Find recent orders for a user, limited to a specific count
@@ -53,7 +56,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param limit the maximum number of orders to return
      * @return list of recent orders for the user
      */
-    @Query("SELECT o FROM Order o WHERE o.user.userId = :userId ORDER BY o.orderDate DESC")
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user.userId = :userId ORDER BY o.orderDate DESC")
     List<Order> findRecentOrdersByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
 
     /**
@@ -72,17 +75,36 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.orderId = :orderId")
     Optional<Order> findByIdWithItems(@Param("orderId") Integer orderId);
 
-    Page<Order> findByUserOrderByOrderDateDesc(User user, Pageable pageable);
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user = :user ORDER BY o.orderDate DESC")
+    Page<Order> findByUserOrderByOrderDateDesc(@Param("user") User user, Pageable pageable);
 
-    Page<Order> findByUserAndOrderStatusOrderByOrderDateDesc(User user, OrderStatus status, Pageable pageable);
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user = :user AND o.orderStatus = :status ORDER BY o.orderDate DESC")
+    Page<Order> findByUserAndOrderStatusOrderByOrderDateDesc(@Param("user") User user, @Param("status") OrderStatus status, Pageable pageable);
 
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user = :user AND o.orderDate BETWEEN :startDate AND :endDate ORDER BY o.orderDate DESC")
     Page<Order> findByUserAndOrderDateBetweenOrderByOrderDateDesc(
-            User user, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+            @Param("user") User user, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
+    @Query("SELECT o FROM Order o WHERE o.customerOrder.user = :user AND o.orderStatus = :status AND o.orderDate BETWEEN :startDate AND :endDate ORDER BY o.orderDate DESC")
     Page<Order> findByUserAndOrderStatusAndOrderDateBetweenOrderByOrderDateDesc(
-            User user, OrderStatus status, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+            @Param("user") User user, @Param("status") OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
-    Optional<Order> findByOrderIdAndUser(Integer orderId, User user);
+    @Query("SELECT o FROM Order o WHERE o.orderId = :orderId AND o.customerOrder.user = :user")
+    Optional<Order> findByOrderIdAndUser(@Param("orderId") Integer orderId, @Param("user") User user);
+    
+    // New methods for shop-specific orders
+    List<Order> findByShopShopId(Integer shopId);
+    
+    List<Order> findByShopShopIdOrderByOrderDateDesc(Integer shopId, Pageable pageable);
+    
+    int countByShopShopIdAndOrderDateAfter(Integer shopId, LocalDateTime startDate);
+    
+    Long countByShopShopIdAndOrderDateBetween(Integer shopId, LocalDateTime startDate, LocalDateTime endDate);
+    
+    List<Order> findByShopShopIdAndOrderDateBetweenAndOrderStatus(
+            Integer shopId, LocalDateTime startDate, LocalDateTime endDate, OrderStatus status);
+    
+    Optional<Order> findByOrderIdAndShopUserUserId(Integer orderId, Integer userId);
 
     /**
      * Get today's revenue for a shop
@@ -93,6 +115,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      */
     @Query(value = "SELECT COALESCE(sum(o.sub_total), 0) " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
@@ -109,6 +132,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      */
     @Query(value = "SELECT COUNT(DISTINCT o.order_id) " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
@@ -124,6 +148,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query(value = "SELECT CONVERT(varchar, CONVERT(date, o.order_date), 120) AS order_date, " +
            "COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS daily_revenue " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
@@ -237,9 +262,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "u.full_name AS customer_name, " +
            "(SELECT SUM(oi2.unit_price * oi2.quantity) FROM order_items oi2 WHERE oi2.order_id = o.order_id) AS total_amount " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
-           "JOIN users u ON o.user_id = u.user_id " +
+           "JOIN users u ON co.user_id = u.user_id " +
            "WHERE b.shop_id = :shopId " +
            "ORDER BY o.order_date DESC", nativeQuery = true)
     List<Map<String, Object>> getRecentOrders(@Param("shopId") Integer shopId, @Param("limit") int limit);
@@ -248,17 +274,18 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * Get geographic distribution of orders
      * 
      * @param shopId ID of the shop
-     * @return List of order counts by region
+     * @return List of regions with order counts
      */
     @Query(value = "SELECT " +
-           "COALESCE(o.shipping_province, 'Unknown') AS region, " +
+           "COALESCE(co.shipping_province, 'Unknown') AS region, " +
            "COUNT(DISTINCT o.order_id) AS order_count " +
            "FROM orders o " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN order_items oi ON o.order_id = oi.order_id " +
            "JOIN books b ON oi.book_id = b.book_id " +
            "WHERE b.shop_id = :shopId " +
            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "GROUP BY o.shipping_province " +
+           "GROUP BY co.shipping_province " +
            "ORDER BY COUNT(DISTINCT o.order_id) DESC", nativeQuery = true)
     List<Map<String, Object>> getGeographicDistribution(@Param("shopId") Integer shopId);
 
@@ -284,6 +311,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE o.orderId = :orderId AND b.shop.user.userId = :sellerId")
     Optional<Order> findOrderByIdForSeller(@Param("orderId") Integer orderId, @Param("sellerId") Integer sellerId);
 
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.customerOrder LEFT JOIN FETCH o.orderItems oi LEFT JOIN FETCH oi.book WHERE o.orderId = :orderId")
+    Optional<Order> findByIdWithCustomerOrder(@Param("orderId") Integer orderId);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.customerOrder JOIN FETCH o.orderItems oi JOIN FETCH oi.book b WHERE o.orderId = :orderId AND b.shop.user.userId = :sellerId")
+    Optional<Order> findOrderByIdForSellerWithCustomerOrder(@Param("orderId") Integer orderId, @Param("sellerId") Integer sellerId);
+
     @Query(value = "SELECT COUNT(DISTINCT o.order_id) " +
             "FROM orders o " +
             "JOIN order_items oi ON o.order_id = oi.order_id " +
@@ -293,7 +326,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             nativeQuery = true)
     Long getTotalOrders(@Param("shopId") Integer shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.user.userId = :userId AND o.orderStatus IN ('PENDING', 'PROCESSING', 'SHIPPED')")
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.customerOrder.user.userId = :userId AND o.orderStatus IN ('PENDING', 'PROCESSING', 'SHIPPED')")
     long countActiveOrdersByUserId(@Param("userId") Integer userId);
 
     @Query("SELECT COUNT(o) FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE b.shop.shopId = :shopId AND o.orderStatus IN ('PENDING', 'PROCESSING', 'SHIPPED')")
@@ -305,8 +338,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * 
      * @return Total order value
      */
-    @Query(value = "SELECT COALESCE(SUM(total_amount), 0) FROM orders " +
-           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED')", 
+    @Query(value = "SELECT COALESCE(SUM(total_amount), 0) FROM customer_orders " +
+           "WHERE status NOT IN ('CANCELLED', 'REFUNDED')",
            nativeQuery = true)
     BigDecimal calculateTotalOrderValue();
     
@@ -342,6 +375,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "FROM books b " +
            "JOIN order_items oi ON b.book_id = oi.book_id " +
            "JOIN orders o ON oi.order_id = o.order_id " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "JOIN shops s ON b.shop_id = s.shop_id " +
            "WHERE o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
            "GROUP BY b.book_id, b.title, s.shop_name " +
@@ -363,6 +397,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "JOIN users u ON s.user_id = u.user_id " +
            "JOIN order_items oi ON b.book_id = oi.book_id " +
            "JOIN orders o ON oi.order_id = o.order_id " +
+           "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
            "WHERE o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
            "GROUP BY s.shop_id, s.shop_name, u.full_name " +
            "ORDER BY SUM(oi.unit_price * oi.quantity) DESC",
@@ -375,11 +410,11 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param limit Maximum number of orders to return
      * @return List of recent orders
      */
-    @Query(value = "SELECT TOP(:limit) o.order_id, o.order_date, o.order_status, " +
-           "o.total_amount, u.full_name AS customer_name " +
-           "FROM orders o " +
-           "JOIN users u ON o.user_id = u.user_id " +
-           "ORDER BY o.order_date DESC",
+    @Query(value = "SELECT TOP(:limit) co.customer_order_id AS order_id, co.created_at AS order_date, co.status, " +
+           "co.total_amount, u.full_name AS customer_name " +
+           "FROM customer_orders co " +
+           "JOIN users u ON co.user_id = u.user_id " +
+           "ORDER BY co.created_at DESC",
            nativeQuery = true)
     List<Map<String, Object>> getRecentPlatformOrders(@Param("limit") int limit);
     
@@ -403,9 +438,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @return Total platform revenue
      */
     @Query(value = "SELECT COALESCE(SUM(total_amount * :commissionRate), 0) " +
-           "FROM orders " +
-           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "AND CAST(order_date AS DATE) BETWEEN :startDate AND :endDate",
+           "FROM customer_orders " +
+           "WHERE status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "AND CAST(created_at AS DATE) BETWEEN :startDate AND :endDate",
            nativeQuery = true)
     BigDecimal calculatePlatformRevenue(
             @Param("startDate") LocalDate startDate,
@@ -416,7 +451,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * Count total orders across the platform.
      * @return Total count of orders.
      */
-    @Query(value = "SELECT COUNT(*) FROM orders", nativeQuery = true)
+    @Query(value = "SELECT COUNT(*) FROM customer_orders", nativeQuery = true)
     long countAllOrders();
 
     /**
@@ -428,13 +463,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @return List of daily revenue data
      */
     @Query(value = "SELECT " +
-           "CAST(order_date AS DATE) AS order_date, " +
-           "COALESCE(SUM(sub_total * :commissionRate), 0) AS daily_revenue " +
-           "FROM orders " +
-           "WHERE order_status NOT IN ('CANCELLED', 'REFUNDED') " +
-           "AND CAST(order_date AS DATE) BETWEEN :startDate AND :endDate " +
-           "GROUP BY CAST(order_date AS DATE) " +
-           "ORDER BY CAST(order_date AS DATE)",
+           "CAST(created_at AS DATE) AS order_date, " +
+           "COALESCE(SUM(total_amount * :commissionRate), 0) AS daily_revenue " +
+           "FROM customer_orders " +
+           "WHERE status NOT IN ('CANCELLED', 'REFUNDED') " +
+           "AND CAST(created_at AS DATE) BETWEEN :startDate AND :endDate " +
+           "GROUP BY CAST(created_at AS DATE) " +
+           "ORDER BY CAST(created_at AS DATE)",
            nativeQuery = true)
     List<Map<String, Object>> getDailyPlatformRevenue(
             @Param("startDate") LocalDate startDate,

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Edit Promotion' : 'Create Promotion'} + ' - ReadHub Admin'">Create Promotion - ReadHub Admin</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8F5F0;
+            color: #333;
+        }
+        .navbar-brand {
+            font-family: 'Lora', serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: #2C3E50;
+        }
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2C3E50;
+            border-bottom: 2px solid #2C3E50;
+            padding-bottom: 0.5rem;
+        }
+        .btn-primary {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-primary:hover {
+            background-color: #1e2b37;
+            border-color: #1e2b37;
+        }
+        .btn-outline-primary {
+            color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .btn-outline-primary:hover {
+            background-color: #2C3E50;
+            border-color: #2C3E50;
+        }
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+        }
+        .form-section {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .form-section-title {
+            color: #2C3E50;
+            font-weight: 600;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 8px;
+        }
+        .scope-selection {
+            display: none;
+        }
+        .scope-selection.active {
+            display: block;
+        }
+        .select2-container {
+            width: 100% !important;
+        }
+        .profile-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .default-profile {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #E9ECEF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #6c757d;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Topbar -->
+    <div th:replace="~{fragments/admin-topbar :: admin-topbar}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Include Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div th:replace="~{fragments/admin-sidebar :: admin-sidebar}"></div>
+            </div>
+
+            <div class="col-lg-9">
+                <main class="py-4">
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="section-title" th:text="${isEdit ? 'Edit Promotion' : 'Create New Promotion'}">Create New Promotion</h3>
+                        <a href="/admin/promotions" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+
+        <!-- Form -->
+        <form th:action="${isEdit ? '/admin/promotions/' + promotion.promotionId + '/edit' : '/admin/promotions/create'}" 
+              method="post" th:object="${promotionForm}" novalidate>
+            
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-info-circle"></i> Basic Information
+                        </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Promotion Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}" 
+                                   th:class="${#fields.hasErrors('name')} ? 'form-control is-invalid' : 'form-control'"
+                                   placeholder="Enter promotion name">
+                            <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback" th:errors="*{name}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="code" class="form-label">Promotion Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="code" th:field="*{code}" 
+                                   th:class="${#fields.hasErrors('code')} ? 'form-control is-invalid' : 'form-control'"
+                                   placeholder="SAVE20" style="text-transform: uppercase;">
+                            <div class="form-text">3-50 characters, uppercase letters, numbers, underscore, or dash only</div>
+                            <div th:if="${#fields.hasErrors('code')}" class="invalid-feedback" th:errors="*{code}"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" th:field="*{description}" rows="3"
+                                      th:class="${#fields.hasErrors('description')} ? 'form-control is-invalid' : 'form-control'"
+                                      placeholder="Describe the promotion details"></textarea>
+                            <div th:if="${#fields.hasErrors('description')}" class="invalid-feedback" th:errors="*{description}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- Discount Configuration -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-percentage"></i> Discount Configuration
+                        </h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="promotionType" class="form-label">Promotion Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="promotionType" th:field="*{promotionType}"
+                                    th:class="${#fields.hasErrors('promotionType')} ? 'form-select is-invalid' : 'form-select'">
+                                <option value="">Select type</option>
+                                <option th:each="type : ${promotionTypes}" 
+                                        th:value="${type}" 
+                                        th:text="${type.displayName}">Type</option>
+                            </select>
+                            <div th:if="${#fields.hasErrors('promotionType')}" class="invalid-feedback" th:errors="*{promotionType}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="discountValue" class="form-label">Discount Value <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="discountValue" th:field="*{discountValue}" 
+                                       th:class="${#fields.hasErrors('discountValue')} ? 'form-control is-invalid' : 'form-control'"
+                                       step="0.01" min="0.01" placeholder="10">
+                                <span class="input-group-text" id="discount-unit">%</span>
+                            </div>
+                            <div th:if="${#fields.hasErrors('discountValue')}" class="invalid-feedback" th:errors="*{discountValue}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="maxDiscountAmount" class="form-label">Max Discount Amount</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="maxDiscountAmount" th:field="*{maxDiscountAmount}"
+                                       th:class="${#fields.hasErrors('maxDiscountAmount')} ? 'form-control is-invalid' : 'form-control'"
+                                       step="1" min="1" placeholder="100000">
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                            <div class="form-text">Số tiền giảm giá tối đa cho khuyến mãi theo phần trăm</div>
+                            <div th:if="${#fields.hasErrors('maxDiscountAmount')}" class="invalid-feedback" th:errors="*{maxDiscountAmount}"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="minOrderValue" class="form-label">Minimum Order Value</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="minOrderValue" th:field="*{minOrderValue}"
+                                       th:class="${#fields.hasErrors('minOrderValue')} ? 'form-control is-invalid' : 'form-control'"
+                                       step="1" min="1" placeholder="50000">
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                            <div class="form-text">Giá trị đơn hàng tối thiểu để sử dụng khuyến mãi này</div>
+                            <div th:if="${#fields.hasErrors('minOrderValue')}" class="invalid-feedback" th:errors="*{minOrderValue}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- Scope Configuration -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-target"></i> Scope Configuration
+                        </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="scopeType" class="form-label">Scope Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="scopeType" th:field="*{scopeType}"
+                                    th:class="${#fields.hasErrors('scopeType')} ? 'form-select is-invalid' : 'form-select'">
+                                <option value="">Select scope</option>
+                                <option th:each="scope : ${scopeTypes}" 
+                                        th:value="${scope}" 
+                                        th:text="${scope.displayName}">Scope</option>
+                            </select>
+                            <div th:if="${#fields.hasErrors('scopeType')}" class="invalid-feedback" th:errors="*{scopeType}"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Selection -->
+                <div id="categoryScope" class="scope-selection">
+                    <div class="mb-3">
+                        <label for="categoryIds" class="form-label">Select Categories</label>
+                        <select class="form-select" id="categoryIds" th:field="*{categoryIds}" multiple>
+                            <option th:each="category : ${categories}" 
+                                    th:value="${category.categoryId}" 
+                                    th:text="${category.categoryName}">Category</option>
+                        </select>
+                        <div class="form-text">Select one or more categories for this promotion</div>
+                    </div>
+                </div>
+
+                <!-- Shop Selection -->
+                <div id="shopScope" class="scope-selection">
+                    <div class="mb-3">
+                        <label for="shopIds" class="form-label">Select Shops</label>
+                        <select class="form-select" id="shopIds" th:field="*{shopIds}" multiple>
+                            <option th:each="shop : ${shops}" 
+                                    th:value="${shop.shopId}" 
+                                    th:text="${shop.shopName}">Shop</option>
+                        </select>
+                        <div class="form-text">Select one or more shops for this promotion</div>
+                    </div>
+                </div>
+
+                <!-- Product Selection -->
+                <div id="productScope" class="scope-selection">
+                    <div class="mb-3">
+                        <label for="bookIds" class="form-label">Select Products</label>
+                        <select class="form-select" id="bookIds" th:field="*{bookIds}" multiple>
+                            <!-- Products will be loaded via AJAX -->
+                        </select>
+                        <div class="form-text">Search and select specific products for this promotion</div>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- Time Configuration -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-calendar"></i> Time Configuration
+                        </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="startDate" class="form-label">Start Date & Time <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="startDate" th:field="*{startDate}"
+                                   th:class="${#fields.hasErrors('startDate')} ? 'form-control is-invalid' : 'form-control'">
+                            <div th:if="${#fields.hasErrors('startDate')}" class="invalid-feedback" th:errors="*{startDate}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="endDate" class="form-label">End Date & Time <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="endDate" th:field="*{endDate}"
+                                   th:class="${#fields.hasErrors('endDate')} ? 'form-control is-invalid' : 'form-control'">
+                            <div th:if="${#fields.hasErrors('endDate')}" class="invalid-feedback" th:errors="*{endDate}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- Usage Limits -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-chart-bar"></i> Usage Limits
+                        </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="usageLimitPerUser" class="form-label">Usage Limit Per User</label>
+                            <input type="number" class="form-control" id="usageLimitPerUser" th:field="*{usageLimitPerUser}"
+                                   th:class="${#fields.hasErrors('usageLimitPerUser')} ? 'form-control is-invalid' : 'form-control'"
+                                   min="1" placeholder="1">
+                            <div class="form-text">Maximum times a single user can use this promotion</div>
+                            <div th:if="${#fields.hasErrors('usageLimitPerUser')}" class="invalid-feedback" th:errors="*{usageLimitPerUser}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="totalUsageLimit" class="form-label">Total Usage Limit</label>
+                            <input type="number" class="form-control" id="totalUsageLimit" th:field="*{totalUsageLimit}"
+                                   th:class="${#fields.hasErrors('totalUsageLimit')} ? 'form-control is-invalid' : 'form-control'"
+                                   min="1" placeholder="100">
+                            <div class="form-text">Maximum total uses across all users</div>
+                            <div th:if="${#fields.hasErrors('totalUsageLimit')}" class="invalid-feedback" th:errors="*{totalUsageLimit}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- Status Configuration -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-toggle-on"></i> Status Configuration
+                        </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                            <select class="form-select" id="status" th:field="*{status}"
+                                    th:class="${#fields.hasErrors('status')} ? 'form-select is-invalid' : 'form-select'">
+                                <option th:each="statusOption : ${statusOptions}" 
+                                        th:value="${statusOption}" 
+                                        th:text="${statusOption.displayName}">Status</option>
+                            </select>
+                            <div th:if="${#fields.hasErrors('status')}" class="invalid-feedback" th:errors="*{status}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isActive" th:field="*{isActive}">
+                                <label class="form-check-label" for="isActive">
+                                    Active
+                                </label>
+                            </div>
+                            <div class="form-text">Enable or disable this promotion</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-section">
+                        <div class="d-flex justify-content-between">
+                            <a href="/admin/promotions" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    <span th:text="${isEdit ? 'Update Promotion' : 'Create Promotion'}">Create Promotion</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2 for multi-select fields
+            $('#categoryIds, #shopIds, #bookIds').select2({
+                placeholder: 'Select items...',
+                allowClear: true
+            });
+
+            // Handle scope type changes
+            $('#scopeType').change(function() {
+                const scopeType = $(this).val();
+                $('.scope-selection').removeClass('active');
+                
+                switch(scopeType) {
+                    case 'CATEGORY':
+                        $('#categoryScope').addClass('active');
+                        break;
+                    case 'SHOP':
+                        $('#shopScope').addClass('active');
+                        break;
+                    case 'PRODUCT':
+                        $('#productScope').addClass('active');
+                        loadProducts();
+                        break;
+                }
+            });
+
+            // Handle promotion type changes
+            $('#promotionType').change(function() {
+                const promotionType = $(this).val();
+                const discountUnit = $('#discount-unit');
+
+                if (promotionType === 'PERCENTAGE_DISCOUNT') {
+                    discountUnit.text('%');
+                    $('#discountValue').attr('max', '100');
+                    $('#discountValue').attr('step', '0.01');
+                } else {
+                    discountUnit.text('VNĐ');
+                    $('#discountValue').removeAttr('max');
+                    $('#discountValue').attr('step', '1');
+                }
+            });
+
+            // Convert code to uppercase
+            $('#code').on('input', function() {
+                $(this).val($(this).val().toUpperCase());
+            });
+
+            // Initialize scope selection based on current value
+            const currentScopeType = $('#scopeType').val();
+            if (currentScopeType) {
+                $('#scopeType').trigger('change');
+            }
+
+            // Initialize promotion type unit
+            const currentPromotionType = $('#promotionType').val();
+            if (currentPromotionType) {
+                $('#promotionType').trigger('change');
+            }
+
+            // Load products via AJAX
+            function loadProducts() {
+                $('#bookIds').html('<option value="">Loading products...</option>');
+
+                // In a real implementation, you would make an AJAX call to load products
+                // $.ajax({
+                //     url: '/admin/api/books/search',
+                //     method: 'GET',
+                //     success: function(data) {
+                //         let options = '<option value="">Select products...</option>';
+                //         data.forEach(function(book) {
+                //             options += `<option value="${book.bookId}">${book.title}</option>`;
+                //         });
+                //         $('#bookIds').html(options);
+                //     }
+                // });
+
+                // For now, show placeholder
+                setTimeout(function() {
+                    $('#bookIds').html('<option value="">Search for products...</option>');
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

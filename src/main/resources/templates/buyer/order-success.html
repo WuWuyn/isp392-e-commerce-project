@@ -14,18 +14,18 @@
             <p class="lead">Cảm ơn bạn đã mua sắm tại BookStore</p>
             <div class="card mt-4">
                 <div class="card-body">
-                    <h5 class="card-title">Thông tin đơn hàng #<span th:text="${order.orderId}"></span></h5>
+                    <h5 class="card-title">Thông tin đơn hàng #<span th:text="${customerOrder.customerOrderId}"></span></h5>
                     <div class="row mt-3">
                         <div class="col-md-6 text-start">
-                            <p><strong>Ngày đặt hàng:</strong> <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></p>
-                            <p><strong>Phương thức thanh toán:</strong> <span th:text="${order.paymentMethod}"></span></p>
-                            <p><strong>Trạng thái thanh toán:</strong> <span th:text="${order.paymentStatus}"></span></p>
+                            <p><strong>Ngày đặt hàng:</strong> <span th:text="${#temporals.format(customerOrder.createdAt, 'dd/MM/yyyy HH:mm')}"></span></p>
+                            <p><strong>Phương thức thanh toán:</strong> <span th:text="${customerOrder.paymentMethod}"></span></p>
+                            <p><strong>Trạng thái thanh toán:</strong> <span th:text="${customerOrder.paymentStatus}"></span></p>
                         </div>
                         <div class="col-md-6 text-start">
-                            <p><strong>Tổng tiền hàng:</strong> <span th:text="${#numbers.formatDecimal(order.subTotal, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
-                            <p><strong>Phí vận chuyển:</strong> <span th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
-                            <p><strong>Giảm giá:</strong> <span th:text="${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
-                            <p><strong>Tổng thanh toán:</strong> <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                            <p><strong>Tổng tiền hàng:</strong> <span th:text="${#numbers.formatDecimal(customerOrder.totalAmount - customerOrder.shippingFee + customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                            <p><strong>Phí vận chuyển:</strong> <span th:text="${#numbers.formatDecimal(customerOrder.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                            <p><strong>Giảm giá:</strong> <span th:text="${#numbers.formatDecimal(customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                            <p><strong>Tổng thanh toán:</strong> <span th:text="${#numbers.formatDecimal(customerOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
                         </div>
                     </div>
                 </div>

@@ -136,6 +136,18 @@
         .shop-name i {
             color: #2c7be5;
         }
+        .shop-header-row {
+            background-color: #f8f9fa;
+            border-top: 2px solid #2c7be5;
+        }
+        .shop-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 0.95rem;
+        }
+        .shop-header .badge {
+            font-size: 0.75rem;
+        }
         .price-value {
             font-weight: 600;
             color: #333;
@@ -214,63 +226,73 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr th:each="item : ${cart.items}" th:data-book-id="${item.book.book_id}" class="cart-item">
-                                            <td>
-                                                <input type="checkbox" name="selected" th:value="${item.book.book_id}" 
-                                                       class="item-checkbox form-check-input"
-                                                       th:disabled="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity}"
-                                                       th:title="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity ? 'Sản phẩm không đủ số lượng trong kho' : ''}"
-                                                       th:data-stock="${item.book.stockQuantity}">
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <a th:href="@{/product-detail(book_id=${item.book.book_id})}">
-                                                        <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}" 
-                                                             alt="Cover" class="img-thumbnail rounded" style="width: 60px;height:90px;object-fit:cover;">
-                                                    </a>
-                                                    <div>
-                                                        <a th:href="@{/product-detail(book_id=${item.book.book_id})}" class="book-title" th:text="${item.book.title}">Book Title</a>
-                                                        <p class="shop-name mb-0" th:if="${item.book.publisher != null}">
-                                                            <i class="fas fa-store-alt me-1"></i> 
-                                                            <span th:text="${item.book.publisher.publisherName}">Publisher Name</span>
-                                                        </p>
-                                                        <p class="mb-0 small" th:if="${item.book.stockQuantity != null}">
-                                                            <span th:class="${item.book.stockQuantity < item.quantity ? 'text-danger' : 'text-success'}">
-                                                                <i class="fas" th:class="${item.book.stockQuantity < item.quantity ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
-                                                                <span th:if="${item.book.stockQuantity < item.quantity}">
-                                                                    Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho
-                                                                </span>
-                                                                <span th:unless="${item.book.stockQuantity < item.quantity}">
-                                                                    Còn [[${item.book.stockQuantity}]] sản phẩm trong kho
-                                                                </span>
-                                                            </span>
-                                                        </p>
-                                                        <p class="mb-0 small text-danger" th:unless="${item.book.stockQuantity != null}">
-                                                            <i class="fas fa-exclamation-circle"></i> Sản phẩm đã hết hàng
-                                                        </p>
+                                        <!-- Group items by shop -->
+                                        <th:block th:each="shopEntry : ${cartItemsByShop}">
+                                            <!-- Shop header row -->
+                                            <tr class="shop-header-row">
+                                                <td colspan="6" class="shop-header">
+                                                    <div class="d-flex align-items-center py-2">
+                                                        <i class="fas fa-store text-primary me-2"></i>
+                                                        <strong th:text="${shopEntry.key}" class="text-primary">Shop Name</strong>
+                                                        <span class="badge bg-light text-dark ms-2" th:text="${shopEntry.value.size()} + ' item' + (${shopEntry.value.size()} > 1 ? 's' : '')">2 items</span>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-center price-value" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT')}">0</td>
-                                            <td class="text-center">
-                                                <div class="input-group input-group-sm justify-content-center qty-input-group">
-                                                    <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="decrease">
-                                                        <i class="fas fa-minus"></i>
+                                                </td>
+                                            </tr>
+                                            <!-- Items for this shop -->
+                                            <tr th:each="item : ${shopEntry.value}" th:data-book-id="${item.book.bookId}" class="cart-item">
+                                                <td>
+                                                    <input type="checkbox" name="selected" th:value="${item.book.bookId}"
+                                                           class="item-checkbox form-check-input"
+                                                           th:disabled="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity}"
+                                                           th:title="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity ? 'Sản phẩm không đủ số lượng trong kho' : ''}"
+                                                           th:data-stock="${item.book.stockQuantity}">
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <a th:href="@{/product-detail(book_id=${item.book.bookId})}">
+                                                            <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}"
+                                                                 alt="Cover" class="img-thumbnail rounded" style="width: 60px;height:90px;object-fit:cover;">
+                                                        </a>
+                                                        <div>
+                                                            <a th:href="@{/product-detail(book_id=${item.book.bookId})}" class="book-title" th:text="${item.book.title}">Book Title</a>
+                                                            <p class="mb-0 small" th:if="${item.book.stockQuantity != null}">
+                                                                <span th:class="${item.book.stockQuantity < item.quantity ? 'text-danger' : 'text-success'}">
+                                                                    <i class="fas" th:class="${item.book.stockQuantity < item.quantity ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+                                                                    <span th:if="${item.book.stockQuantity < item.quantity}">
+                                                                        Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho
+                                                                    </span>
+                                                                    <span th:unless="${item.book.stockQuantity < item.quantity}">
+                                                                        Còn [[${item.book.stockQuantity}]] sản phẩm trong kho
+                                                                    </span>
+                                                                </span>
+                                                            </p>
+                                                            <p class="mb-0 small text-danger" th:unless="${item.book.stockQuantity != null}">
+                                                                <i class="fas fa-exclamation-circle"></i> Sản phẩm đã hết hàng
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center price-value" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT')}">0</td>
+                                                <td class="text-center">
+                                                    <div class="input-group input-group-sm justify-content-center qty-input-group">
+                                                        <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="decrease">
+                                                            <i class="fas fa-minus"></i>
+                                                        </button>
+                                                        <input type="text" name="quantity" class="form-control text-center" th:value="${item.quantity}" readonly
+                                                               th:data-price="${item.book.sellingPrice}">
+                                                        <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="increase">
+                                                            <i class="fas fa-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td class="text-end item-total" th:text="${#numbers.formatDecimal(item.book.sellingPrice * item.quantity, 0, 'COMMA', 0, 'POINT')}">0</td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-sm btn-danger remove-item-btn remove-item">
+                                                        <i class="fas fa-trash"></i>
                                                     </button>
-                                                    <input type="text" name="quantity" class="form-control text-center" th:value="${item.quantity}" readonly 
-                                                           th:data-price="${item.book.sellingPrice}">
-                                                    <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="increase">
-                                                        <i class="fas fa-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td class="text-end item-total" th:text="${#numbers.formatDecimal(item.book.sellingPrice * item.quantity, 0, 'COMMA', 0, 'POINT')}">0</td>
-                                            <td class="text-center">
-                                                <button type="button" class="btn btn-sm btn-danger remove-item-btn remove-item">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
+                                                </td>
+                                            </tr>
+                                        </th:block>
                                     </tbody>
                                 </table>
                             </div>
@@ -376,14 +398,14 @@
         }
 
         function updateItemTotal(row) {
-            const priceText = row.querySelector('td:nth-child(3)').textContent.trim();
+            const priceText = row.querySelector('.price-value').textContent.trim();
             const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
             const qty = parseInt(row.querySelector('input[name="quantity"]').value) || 0;
-            const totalCell = row.querySelector('td:nth-child(5)');
-            
+            const totalCell = row.querySelector('.item-total');
+
             if (!isNaN(price) && !isNaN(qty)) {
                 const itemTotal = price * qty;
-                totalCell.textContent = formatCurrency(itemTotal);
+                totalCell.textContent = new Intl.NumberFormat('en-US').format(itemTotal);
             }
         }
         
@@ -415,17 +437,18 @@
         function updateCartSummary() {
             let subtotal = 0;
             let selectedSubtotal = 0;
-            
-            document.querySelectorAll('tbody tr').forEach(row => {
-                const priceText = row.querySelector('td:nth-child(3)').textContent.trim();
+
+            // Only select cart item rows, not shop header rows
+            document.querySelectorAll('tbody tr.cart-item').forEach(row => {
+                const priceText = row.querySelector('.price-value').textContent.trim();
                 const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
                 const qty = parseInt(row.querySelector('input[name="quantity"]').value) || 0;
                 const isSelected = row.querySelector('.item-checkbox').checked;
-                
+
                 if (!isNaN(price)) {
                     const itemTotal = price * qty;
                     subtotal += itemTotal;
-                    
+
                     if (isSelected) {
                         selectedSubtotal += itemTotal;
                     }
@@ -597,6 +620,9 @@
             if (e.target.classList.contains('item-checkbox')) {
                 // Checkbox item changed
                 const cb = e.target;
+
+                // Prevent immediate deselection by stopping event propagation
+                e.stopPropagation();
                 
                 // Update "select all" checkbox state - chỉ tính những sản phẩm có thể chọn
                 if (selectAll) {
@@ -663,8 +689,10 @@
             */
         }
 
-        qtyButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
+        // Use event delegation for quantity buttons
+        document.querySelector('table').addEventListener('click', function(e) {
+            if (e.target.classList.contains('qty-btn')) {
+                const btn = e.target;
                 const row = btn.closest('tr');
                 const bookId = row.dataset.bookId;
                 const input = row.querySelector('input[name="quantity"]');
@@ -675,7 +703,7 @@
                 } else if (btn.dataset.action === 'decrease' && qty > 1) {
                     qty--;
                 }
-                
+
                 if (qty !== parseInt(input.value)) {
                     fetch('/buyer/cart/update-qty', {
                         method: 'POST',
@@ -706,14 +734,16 @@
                         showToast('error', 'Có lỗi xảy ra khi cập nhật số lượng.');
                     });
                 }
-            });
+            }
         });
 
-        removeButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
+        // Use event delegation for remove buttons
+        document.querySelector('table').addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item-btn')) {
+                const btn = e.target.closest('.remove-item-btn') || e.target;
                 const row = btn.closest('tr');
                 const bookId = row.dataset.bookId;
-                
+
                 if (confirm('Are you sure you want to remove this item?')) {
                     fetch(`/buyer/cart/remove/${bookId}`, {
                         method: 'POST',
@@ -725,8 +755,8 @@
                             setTimeout(() => {
                                 row.remove();
                                 
-                                // If no items left, reload to show empty cart
-                                if (document.querySelectorAll('tbody tr').length === 0) {
+                                // If no cart items left, reload to show empty cart
+                                if (document.querySelectorAll('tbody tr.cart-item').length === 0) {
                                     location.reload();
                                 } else {
                                     updateCartSummary();
@@ -741,7 +771,7 @@
                         alert('An error occurred while removing the item.');
                     });
                 }
-            });
+            }
         });
 
         // Update checkout button state

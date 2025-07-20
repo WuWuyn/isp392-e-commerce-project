@@ -1,10 +1,14 @@
 package com.example.isp392.service;
 
 import com.example.isp392.model.*;
-import com.example.isp392.repository.OrderItemRepository;
 import com.example.isp392.repository.OrderRepository;
+import com.example.isp392.repository.CustomerOrderRepository;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Isolation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,116 +18,128 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 @Transactional
 public class OrderService {
 
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+
     private final OrderRepository orderRepository;
+    private final CustomerOrderRepository customerOrderRepository;
     private final PromotionService promotionService;
     private final BookService bookService;
-    private final OrderItemRepository orderItemRepository;
+    private final CustomerOrderService customerOrderService;
+    private final Lock orderStatusLock = new ReentrantLock();
 
-    public OrderService(OrderRepository orderRepository, PromotionService promotionService, BookService bookService, OrderItemRepository orderItemRepository){
+    public OrderService(OrderRepository orderRepository,
+                       CustomerOrderRepository customerOrderRepository,
+                       PromotionService promotionService,
+                       BookService bookService,
+                       CustomerOrderService customerOrderService) {
         this.orderRepository = orderRepository;
+        this.customerOrderRepository = customerOrderRepository;
         this.promotionService = promotionService;
         this.bookService = bookService;
-        this.orderItemRepository = orderItemRepository;
+        this.customerOrderService = customerOrderService;
     }
 
-    /**
-     * Lấy danh sách đơn hàng cho một người bán cụ thể.
-     * @param sellerId ID của người bán.
-     * @return Danh sách đơn hàng.
-     */
     public List<Order> getOrdersForSeller(Integer sellerId) {
-        return orderRepository.findOrdersBySellerId(sellerId);
+        return orderRepository.findByShopShopId(sellerId);
     }
 
-    /**
-     * Cập nhật trạng thái của một đơn hàng.
-     * @param orderId ID của đơn hàng.
-     * @param newStatus Trạng thái mới.
-     * @return true nếu cập nhật thành công, false nếu thất bại.
-     */
     @Transactional
     public boolean updateOrderStatus(Integer orderId, OrderStatus newStatus) {
-        return orderRepository.findById(orderId).map(order -> {
-            OrderStatus oldStatus = order.getOrderStatus();
-            order.setOrderStatus(newStatus);
-
-            // Xử lý số lượng sách dựa trên thay đổi trạng thái
-            if (oldStatus != newStatus) {
-                if (newStatus == OrderStatus.CANCELLED) {
-                    // Nếu đơn hàng bị hủy, hoàn lại số lượng sách vào kho
-                    for (OrderItem item : order.getOrderItems()) {
-                        bookService.increaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
-                    }
-                } else if (oldStatus == OrderStatus.CANCELLED &&
-                         (newStatus == OrderStatus.PENDING || newStatus == OrderStatus.PROCESSING)) {
-                    // Nếu đơn hàng từ trạng thái hủy chuyển sang pending/confirmed, giảm lại số lượng sách
-                    for (OrderItem item : order.getOrderItems()) {
-                        bookService.decreaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
-                    }
+        try {
+            orderStatusLock.lock();
+            return orderRepository.findById(orderId).map(order -> {
+                // Validate status transition
+                if (!isValidStatusTransition(order.getOrderStatus(), newStatus)) {
+                    throw new IllegalStateException("Không thể chuyển từ trạng thái " + 
+                        order.getOrderStatus() + " sang " + newStatus);
                 }
-            }
+                
+                // Check if order is part of a customer order
+                if (order.getCustomerOrder() != null) {
+                    validateCustomerOrderStatus(order.getCustomerOrder(), newStatus);
+                }
+                
+                OrderStatus oldStatus = order.getOrderStatus();
+                order.setOrderStatus(newStatus);
 
-            orderRepository.save(order);
-            return true;
-        }).orElse(false);
+                if (oldStatus != newStatus) {
+                    handleInventoryForStatusChange(order, oldStatus, newStatus);
+                }
+
+                orderRepository.save(order);
+                
+                // Update customer order status if needed
+                if (order.getCustomerOrder() != null) {
+                    customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
+                }
+                
+                return true;
+            }).orElse(false);
+        } finally {
+            orderStatusLock.unlock();
+        }
+    }
+
+    private boolean isValidStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {
+        switch (currentStatus) {
+            case PROCESSING:
+                return newStatus == OrderStatus.SHIPPED ||
+                       newStatus == OrderStatus.CANCELLED;
+            case SHIPPED:
+                return newStatus == OrderStatus.DELIVERED ||
+                       newStatus == OrderStatus.CANCELLED;
+            case DELIVERED:
+                return false; // Cannot change from delivered
+            case CANCELLED:
+                return false; // Cannot change from cancelled
+            default:
+                return false;
+        }
+    }
+
+    private void validateCustomerOrderStatus(CustomerOrder customerOrder, OrderStatus newStatus) {
+        // Check if any order in the customer order is in an incompatible state
+        for (Order order : customerOrder.getOrders()) {
+            if (order.getOrderStatus() == OrderStatus.CANCELLED && newStatus != OrderStatus.CANCELLED) {
+                throw new IllegalStateException("Không thể cập nhật trạng thái khi có đơn hàng đã hủy trong nhóm");
+            }
+        }
     }
 
     public Optional<Order> findOrderById(Integer orderId) {
-        return orderRepository.findByIdWithItems(orderId);
+        return orderRepository.findByIdWithCustomerOrder(orderId);
     }
 
     public Page<Order> findOrders(User user, String status, LocalDate dateFrom, LocalDate dateTo, Pageable pageable) {
-        OrderStatus orderStatus = null;
-        if (status != null && !status.isEmpty()) {
-            orderStatus = OrderStatus.valueOf(status);
-        }
+        return orderRepository.findAll((Specification<Order>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-        LocalDateTime startDateTime = null;
-        if (dateFrom != null) {
-            startDateTime = dateFrom.atStartOfDay();
-        }
-
-        LocalDateTime endDateTime = null;
-        if (dateTo != null) {
-            endDateTime = dateTo.plusDays(1).atStartOfDay().minusNanos(1);
-        }
-
-        if (orderStatus != null && startDateTime != null && endDateTime != null) {
-            return orderRepository.findByUserAndOrderStatusAndOrderDateBetweenOrderByOrderDateDesc(
-                    user, orderStatus, startDateTime, endDateTime, pageable);
-        } else if (orderStatus != null) {
-            return orderRepository.findByUserAndOrderStatusOrderByOrderDateDesc(user, orderStatus, pageable);
-        } else if (startDateTime != null && endDateTime != null) {
-            return orderRepository.findByUserAndOrderDateBetweenOrderByOrderDateDesc(
-                    user, startDateTime, endDateTime, pageable);
-        } else {
-            return orderRepository.findByUserOrderByOrderDateDesc(user, pageable);
-        }
-    }
-
-    public Page<Order> findByUser(User user, Pageable pageable) {
-        return orderRepository.findByUserOrderByOrderDateDesc(user, pageable);
-    }
-
-    public Page<Order> findByUserAndStatus(User user, OrderStatus status, Pageable pageable) {
-        return orderRepository.findByUserAndOrderStatusOrderByOrderDateDesc(user, status, pageable);
-    }
-
-    public Page<Order> findByUserAndDate(User user, LocalDate date, Pageable pageable) {
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-        return orderRepository.findByUserAndOrderDateBetweenOrderByOrderDateDesc(
-                user, startOfDay, endOfDay, pageable);
+            predicates.add(cb.equal(root.get("customerOrder").get("user"), user));
+            
+            if (status != null && !status.isEmpty()) {
+                predicates.add(cb.equal(root.get("orderStatus"), OrderStatus.valueOf(status)));
+            }
+            
+            if (dateFrom != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("orderDate"), dateFrom.atStartOfDay()));
+            }
+            
+            if (dateTo != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("orderDate"), dateTo.plusDays(1).atStartOfDay()));
+            }
+            
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable);
     }
 
     public Optional<Order> findByIdAndUser(Integer orderId, User user) {
@@ -138,7 +154,6 @@ public class OrderService {
 
         Promotion promotion = promotionOpt.get();
         
-        // Validate promotion
         if (!promotion.getIsActive()) {
             throw new RuntimeException("Mã giảm giá đã hết hạn");
         }
@@ -153,7 +168,6 @@ public class OrderService {
             throw new RuntimeException("Giá trị đơn hàng chưa đạt mức tối thiểu");
         }
 
-        // Calculate discount
         BigDecimal discountAmount;
         if ("PERCENTAGE".equals(promotion.getDiscountType())) {
             discountAmount = order.getSubTotal()
@@ -171,381 +185,415 @@ public class OrderService {
         }
 
         order.setDiscountAmount(discountAmount);
-        
-        // Record promotion usage
-        promotionService.updatePromotionUsage(promotionCode, order.getUser().getUserId());
+        promotionService.updatePromotionUsage(promotionCode, order.getCustomerOrder().getUser().getUserId());
     }
 
+    private void handleInventoryForStatusChange(Order order, OrderStatus oldStatus, OrderStatus newStatus) {
+        if (newStatus == OrderStatus.CANCELLED) {
+            // Return items to inventory when order is cancelled
+            for (OrderItem item : order.getOrderItems()) {
+                bookService.increaseStockQuantity(item.getBook().getBookId(), item.getQuantity());
+            }
+        } else if (oldStatus == OrderStatus.CANCELLED &&
+                  newStatus == OrderStatus.PROCESSING) {
+            // Remove items from inventory when cancelled order is reactivated
+            for (OrderItem item : order.getOrderItems()) {
+                bookService.decreaseStockQuantity(item.getBook().getBookId(), item.getQuantity());
+            }
+        }
+    }
+    
     /**
-     * Lưu đơn hàng và cập nhật số lượng sách trong kho
+     * Lưu đơn hàng vào cơ sở dữ liệu
      * @param order Đơn hàng cần lưu
      * @return Đơn hàng đã được lưu
      */
-    @Transactional
+    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.SERIALIZABLE)
     public Order save(Order order) {
-        // Lưu đơn hàng
-        Order savedOrder = orderRepository.save(order);
+        logger.info("Saving order with {} items for user: {}",
+                   order.getOrderItems().size(),
+                   order.getCustomerOrder() != null && order.getCustomerOrder().getUser() != null ?
+                   order.getCustomerOrder().getUser().getEmail() : "Unknown");
 
-        // Cập nhật số lượng sách trong kho
-        if (order.getOrderStatus() == OrderStatus.PENDING || order.getOrderStatus() == OrderStatus.PROCESSING) {
-            for (OrderItem item : order.getOrderItems()) {
-                try {
-                    bookService.decreaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
-                } catch (IllegalArgumentException e) {
-                    // Nếu có lỗi khi cập nhật số lượng, rollback giao dịch
-                    throw new RuntimeException("Không thể cập nhật số lượng sách: " + e.getMessage());
-                }
+        // Validate order data
+        validateOrderData(order);
+
+        // Validate order items first
+        for (OrderItem item : order.getOrderItems()) {
+            // Validate pricing
+            if (item.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new RuntimeException("Giá sản phẩm không hợp lệ: " + item.getBook().getTitle());
+            }
+
+            // Validate quantity
+            if (item.getQuantity() <= 0) {
+                throw new RuntimeException("Số lượng sản phẩm không hợp lệ: " + item.getBook().getTitle());
             }
         }
 
+        // Atomically reserve inventory for all items to prevent race conditions
+        try {
+            logger.info("Reserving inventory for order with {} items", order.getOrderItems().size());
+            bookService.reserveInventoryForOrder(order.getOrderItems());
+            logger.info("Successfully reserved inventory for all order items");
+        } catch (IllegalArgumentException e) {
+            logger.error("Failed to reserve inventory: {}", e.getMessage());
+            throw new RuntimeException("Đặt hàng thất bại: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during inventory reservation: {}", e.getMessage(), e);
+            throw new RuntimeException("Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.");
+        }
+
+        Order savedOrder = orderRepository.save(order);
+        logger.info("Order saved successfully with ID: {} for user: {}",
+                   savedOrder.getOrderId(),
+                   savedOrder.getCustomerOrder() != null && savedOrder.getCustomerOrder().getUser() != null ?
+                   savedOrder.getCustomerOrder().getUser().getEmail() : "Unknown");
         return savedOrder;
     }
 
-    /**
-     * Get today's revenue for a shop
-     *
-     * @param shopId ID of the shop
-     * @return Today's revenue
-     */
-    public BigDecimal getTodayRevenue(Integer shopId) {
-        LocalDate today = LocalDate.now();
-        BigDecimal revenue = orderRepository.getTodayRevenue(shopId, today);
-        return revenue != null ? revenue : BigDecimal.ZERO;
-    }
-
-    /**
-     * Get new orders count for a shop within the last N days
-     *
-     * @param shopId ID of the shop
-     * @param daysAgo Number of days to look back
-     * @return Count of new orders
-     */
-    public int getNewOrdersCount(Integer shopId, int daysAgo) {
-        return orderRepository.getNewOrdersCount(shopId, daysAgo);
-    }
-
-    /**
-     * Get weekly revenue data for a shop
-     *
-     * @param shopId ID of the shop
-     * @return List of BigDecimal values representing daily revenue for the last 7 days
-     */
-    public List<BigDecimal> getWeeklyRevenue(Integer shopId) {
-        List<Map<String, Object>> results = orderRepository.getWeeklyRevenue(shopId);
-
-        // Create a map to store revenue by date
-        Map<String, BigDecimal> revenueByDate = new HashMap<>();
-
-        // Fill the map with results from the query
-        for (Map<String, Object> result : results) {
-            String date = (String) result.get("order_date");
-            BigDecimal revenue = (BigDecimal) result.get("daily_revenue");
-            revenueByDate.put(date, revenue);
+    private void validateOrderData(Order order) {
+        if (order.getCustomerOrder() == null || order.getCustomerOrder().getUser() == null) {
+            throw new RuntimeException("Thông tin người dùng không hợp lệ");
         }
 
-        // Create a list of the last 7 days
-        List<String> last7Days = new ArrayList<>();
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            throw new RuntimeException("Đơn hàng phải có ít nhất một sản phẩm");
+        }
+
+        if (order.getTotalAmount() == null || order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Tổng tiền đơn hàng không hợp lệ");
+        }
+
+        CustomerOrder customerOrder = order.getCustomerOrder();
+        if (customerOrder.getRecipientName() == null || customerOrder.getRecipientName().trim().isEmpty()) {
+            throw new RuntimeException("Tên người nhận không được để trống");
+        }
+
+        if (customerOrder.getRecipientPhone() == null || customerOrder.getRecipientPhone().trim().isEmpty()) {
+            throw new RuntimeException("Số điện thoại người nhận không được để trống");
+        }
+
+        if (customerOrder.getShippingAddressDetail() == null || customerOrder.getShippingAddressDetail().trim().isEmpty()) {
+            throw new RuntimeException("Địa chỉ giao hàng không được để trống");
+        }
+
+        logger.info("Order validation passed for user: {}", customerOrder.getUser().getEmail());
+    }
+    
+    // Seller-specific methods
+    
+    public List<Map<String, Object>> getRecentOrders(Integer shopId, int limit) {
+        return orderRepository.getRecentOrders(shopId, limit);
+    }
+    
+    public int getNewOrdersCount(Integer shopId, int daysAgo) {
+        LocalDateTime startDate = LocalDateTime.now().minusDays(daysAgo);
+        return orderRepository.countByShopShopIdAndOrderDateAfter(shopId, startDate);
+    }
+    
+    public BigDecimal getTodayRevenue(Integer shopId) {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().plusDays(1).atStartOfDay();
+        
+        List<Order> orders = orderRepository.findByShopShopIdAndOrderDateBetweenAndOrderStatus(
+            shopId, startOfDay, endOfDay, OrderStatus.SHIPPED);
+            
+        return orders.stream()
+            .map(Order::getTotalAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
+    public BigDecimal getTotalRevenue(Integer shopId, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = endDate.plusDays(1).atStartOfDay();
+        
+        List<Order> orders = orderRepository.findByShopShopIdAndOrderDateBetweenAndOrderStatus(
+            shopId, start, end, OrderStatus.SHIPPED);
+            
+        return orders.stream()
+            .map(Order::getTotalAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
+    public Long getTotalOrders(Integer shopId, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = endDate.plusDays(1).atStartOfDay();
+        
+        return orderRepository.countByShopShopIdAndOrderDateBetween(shopId, start, end);
+    }
+    
+    public List<BigDecimal> getWeeklyRevenue(Integer shopId) {
+        LocalDateTime startDate = LocalDate.now().minusDays(6).atStartOfDay();
+        LocalDateTime endDate = LocalDate.now().plusDays(1).atStartOfDay();
+        
+        List<Order> orders = orderRepository.findByShopShopIdAndOrderDateBetweenAndOrderStatus(
+            shopId, startDate, endDate, OrderStatus.SHIPPED);
+            
+        Map<LocalDate, BigDecimal> revenueByDate = orders.stream()
+            .collect(Collectors.groupingBy(
+                order -> order.getOrderDate().toLocalDate(),
+                Collectors.mapping(
+                    Order::getTotalAmount,
+                    Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+                )
+            ));
+            
+        List<BigDecimal> weeklyRevenue = new ArrayList<>();
         for (int i = 6; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
-            last7Days.add(date.toString());
+            weeklyRevenue.add(revenueByDate.getOrDefault(date, BigDecimal.ZERO));
         }
-
-        // Create the final revenue list with 0 for days without data
-        List<BigDecimal> weeklyRevenue = new ArrayList<>();
-        for (String date : last7Days) {
-            BigDecimal revenue = revenueByDate.getOrDefault(date, BigDecimal.ZERO);
-            weeklyRevenue.add(revenue);
-        }
-
+        
         return weeklyRevenue;
     }
-
-    /**
-     * Get bestselling books by quantity sold
-     *
-     * @param shopId ID of the shop
-     * @param limit Maximum number of books to return
-     * @return List of maps with book data
-     */
-    public List<Map<String, Object>> getBestsellingBooks(Integer shopId, int limit) {
-        return orderRepository.getBestsellingBooksByQuantity(shopId, limit);
+    
+    public Optional<Order> findOrderByIdForSeller(Integer orderId, Integer sellerId) {
+        return orderRepository.findOrderByIdForSellerWithCustomerOrder(orderId, sellerId);
+    }
+    
+    public Page<Order> searchOrdersForSeller(Integer sellerId, String keyword, OrderStatus status, 
+                                           String startDateStr, String endDateStr, Pageable pageable) {
+        return orderRepository.findAll((Specification<Order>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            
+            predicates.add(cb.equal(root.get("shop").get("user").get("userId"), sellerId));
+            
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                String searchTerm = "%" + keyword.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("customerOrder").get("recipientName")), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("recipientPhone")), searchTerm),
+                    cb.like(cb.lower(root.get("orderId").as(String.class)), searchTerm)
+                ));
+            }
+            
+            if (status != null) {
+                predicates.add(cb.equal(root.get("orderStatus"), status));
+            }
+            
+            if (startDateStr != null && !startDateStr.isEmpty()) {
+                LocalDate startDate = LocalDate.parse(startDateStr);
+                predicates.add(cb.greaterThanOrEqualTo(root.get("orderDate"), startDate.atStartOfDay()));
+            }
+            
+            if (endDateStr != null && !endDateStr.isEmpty()) {
+                LocalDate endDate = LocalDate.parse(endDateStr);
+                predicates.add(cb.lessThanOrEqualTo(root.get("orderDate"), endDate.plusDays(1).atStartOfDay()));
+            }
+            
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable);
     }
 
     /**
-     * Get revenue data for a period (daily, weekly, monthly)
-     *
-     * @param shopId ID of the shop
-     * @param startDate Start date of the period
-     * @param endDate End date of the period
-     * @param period Period type (daily, weekly, monthly)
-     * @return List of maps with revenue data
+     * Lấy dữ liệu doanh thu theo khoảng thời gian
+     * @param shopId ID của shop
+     * @param startDate Ngày bắt đầu
+     * @param endDate Ngày kết thúc
+     * @param period Kỳ (daily, weekly, monthly)
+     * @return Danh sách dữ liệu doanh thu
      */
     public List<Map<String, Object>> getRevenueByPeriod(Integer shopId, LocalDate startDate, LocalDate endDate, String period) {
-        switch (period) {
+        switch (period.toLowerCase()) {
             case "daily":
                 return orderRepository.getRevenueByDay(shopId, startDate, endDate);
             case "weekly":
                 return orderRepository.getRevenueByWeek(shopId, startDate, endDate);
             case "monthly":
-            default:
                 return orderRepository.getRevenueByMonth(shopId, startDate, endDate);
+            default:
+                throw new IllegalArgumentException("Invalid period: " + period);
         }
     }
-
+    
     /**
-     * Get recent orders for a shop
-     *
-     * @param shopId ID of the shop
-     * @param limit Maximum number of orders to return
-     * @return List of maps with order data
+     * Lấy danh sách sách bán chạy nhất
+     * @param shopId ID của shop
+     * @param limit Số lượng tối đa
+     * @return Danh sách sách bán chạy
      */
-    public List<Map<String, Object>> getRecentOrders(Integer shopId, int limit) {
-        return orderRepository.getRecentOrders(shopId, limit);
+    public List<Map<String, Object>> getBestsellingBooks(Integer shopId, int limit) {
+        return orderRepository.getBestsellingBooksByQuantity(shopId, limit);
     }
-
+    
     /**
-     * Get geographic distribution of orders
-     *
-     * @param shopId ID of the shop
-     * @return List of maps with region and order count
+     * Lấy phân bố địa lý của đơn hàng
+     * @param shopId ID của shop
+     * @return Phân bố địa lý
      */
     public List<Map<String, Object>> getGeographicDistribution(Integer shopId) {
         return orderRepository.getGeographicDistribution(shopId);
     }
-    public Page<Order> searchOrdersForSeller(Integer sellerId, String keyword, OrderStatus status, String startDate, String endDate, Pageable pageable) {
-        Specification<Order> spec = (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // 1. Predicate bắt buộc: Lọc theo ID người bán
-            // Join qua các bảng để lấy được thông tin seller từ order
-            predicates.add(criteriaBuilder.equal(root.join("orderItems").join("book").join("shop").get("user").get("userId"), sellerId));
-
-            // ===== START: BỔ SUNG LOGIC LỌC CÒN THIẾU =====
-
-            // 2. Lọc theo từ khóa (keyword)
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                String likePattern = "%" + keyword.toLowerCase() + "%";
-                Predicate keywordPredicate = criteriaBuilder.or(
-                        // Tìm theo tên người nhận
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("recipientName")), likePattern),
-                        // Tìm theo mã đơn hàng (orderId)
-                        criteriaBuilder.like(root.get("orderId").as(String.class), likePattern)
-                );
-                predicates.add(keywordPredicate);
-            }
-
-            // 3. Lọc theo trạng thái (status) - ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT
-            if (status != null) {
-                predicates.add(criteriaBuilder.equal(root.get("orderStatus"), status));
-            }
-
-            // 4. Lọc theo ngày bắt đầu (From Date)
-            if (startDate != null && !startDate.isEmpty()) {
-                try {
-                    LocalDate start = LocalDate.parse(startDate);
-                    predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("orderDate"), start.atStartOfDay()));
-                } catch (Exception e) {
-                    // Bỏ qua nếu định dạng ngày không hợp lệ
-                }
-            }
-
-            // 5. Lọc theo ngày kết thúc (To Date)
-            if (endDate != null && !endDate.isEmpty()) {
-                try {
-                    LocalDate end = LocalDate.parse(endDate);
-                    predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("orderDate"), end.atTime(LocalTime.MAX)));
-                } catch (Exception e) {
-                    // Bỏ qua nếu định dạng ngày không hợp lệ
-                }
-            }
-
-            // ===== END: BỔ SUNG LOGIC LỌC CÒN THIẾU =====
-
-            query.distinct(true); // Đảm bảo không có đơn hàng trùng lặp
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-
-        return orderRepository.findAll(spec, pageable);
-    }
-    public Optional<Order> findOrderByIdForSeller(Integer orderId, Integer sellerId) {
-        return orderRepository.findOrderByIdForSeller(orderId, sellerId);
-    }
-    public BigDecimal getTotalRevenue(Integer shopId, LocalDate startDate, LocalDate endDate) {
-        BigDecimal total = orderRepository.getTotalRevenue(shopId, startDate, endDate);
-        return total != null ? total : BigDecimal.ZERO;
-    }
-
-    public Long getTotalOrders(Integer shopId, LocalDate startDate, LocalDate endDate) {
-        Long total = orderRepository.getTotalOrders(shopId, startDate, endDate);
-        return total != null ? total : 0L;
-    }
-
+    
     /**
-     * Find orders for admin with search, filtering and pagination
-     *
-     * @param search Search term for order ID or customer name
-     * @param status Filter by order status
-     * @param fromDate Filter by start date
-     * @param toDate Filter by end date
-     * @param pageable Pagination and sorting information
-     * @return Page of filtered orders
+     * Tìm đơn hàng cho quản trị viên với các bộ lọc
+     * @param search Từ khóa tìm kiếm
+     * @param orderStatus Trạng thái đơn hàng
+     * @param fromDate Ngày bắt đầu
+     * @param toDate Ngày kết thúc
+     * @param pageable Phân trang
+     * @return Danh sách đơn hàng phù hợp với bộ lọc
      */
-    public Page<Order> findOrdersForAdmin(String search, OrderStatus status, LocalDate fromDate, LocalDate toDate, Pageable pageable) {
-        Specification<Order> spec = (root, query, criteriaBuilder) -> {
+    public Page<Order> findOrdersForAdmin(String search, OrderStatus orderStatus, LocalDate fromDate, LocalDate toDate, Pageable pageable) {
+        return orderRepository.findAll((Specification<Order>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Search by order ID or customer name
+            // Add JOIN FETCH for customerOrder to avoid lazy loading issues
+            if (query.getResultType().equals(Order.class)) {
+                root.fetch("customerOrder", JoinType.LEFT);
+            }
+
+            // Search by keyword
             if (search != null && !search.trim().isEmpty()) {
-                String likePattern = "%" + search.toLowerCase() + "%";
-                Predicate searchPredicate = criteriaBuilder.or(
-                    criteriaBuilder.like(criteriaBuilder.lower(root.get("recipientName")), likePattern),
-                    criteriaBuilder.like(root.get("orderId").as(String.class), likePattern)
-                );
-                predicates.add(searchPredicate);
+                String searchTerm = "%" + search.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("customerOrder").get("recipientName")), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("recipientPhone")), searchTerm),
+                    cb.like(cb.lower(root.get("orderId").as(String.class)), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("user").get("email")), searchTerm),
+                    cb.like(cb.lower(root.get("customerOrder").get("user").get("fullName")), searchTerm)
+                ));
             }
-
+            
             // Filter by status
-            if (status != null) {
-                predicates.add(criteriaBuilder.equal(root.get("orderStatus"), status));
+            if (orderStatus != null) {
+                predicates.add(cb.equal(root.get("orderStatus"), orderStatus));
             }
-
+            
             // Filter by date range
             if (fromDate != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                    root.get("orderDate"), fromDate.atStartOfDay()));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("orderDate"), fromDate.atStartOfDay()));
             }
-
+            
             if (toDate != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(
-                    root.get("orderDate"), toDate.plusDays(1).atStartOfDay().minusNanos(1)));
+                predicates.add(cb.lessThanOrEqualTo(root.get("orderDate"), toDate.atTime(LocalTime.MAX)));
             }
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-
-        return orderRepository.findAll(spec, pageable);
+            
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable);
     }
-
+    
     /**
-     * Update order status by admin
-     *
-     * @param orderId ID of the order to update
-     * @param newStatus New status to set
-     * @param adminNotes Notes added by admin
-     * @return true if update was successful
+     * Cập nhật trạng thái đơn hàng bởi quản trị viên
+     * @param orderId ID đơn hàng
+     * @param newStatus Trạng thái mới
+     * @param adminNotes Ghi chú của quản trị viên
+     * @return true nếu cập nhật thành công, false nếu thất bại
      */
     @Transactional
     public boolean updateOrderStatusByAdmin(Integer orderId, OrderStatus newStatus, String adminNotes) {
-        return orderRepository.findById(orderId).map(order -> {
-            OrderStatus oldStatus = order.getOrderStatus();
-            order.setOrderStatus(newStatus);
-            order.setUpdatedAt(LocalDateTime.now());
-
-            // Add admin notes if provided
-            if (adminNotes != null && !adminNotes.trim().isEmpty()) {
-                // If the order already has notes, append the new note
-                if (order.getNotes() != null && !order.getNotes().isEmpty()) {
-                    order.setNotes(order.getNotes() + "\n\nADMIN (" + LocalDateTime.now() + "): " + adminNotes);
-                } else {
-                    order.setNotes("ADMIN (" + LocalDateTime.now() + "): " + adminNotes);
+        try {
+            orderStatusLock.lock();
+            return orderRepository.findById(orderId).map(order -> {
+                OrderStatus oldStatus = order.getOrderStatus();
+                order.setOrderStatus(newStatus);
+                
+                // Add admin notes if provided
+                if (adminNotes != null && !adminNotes.trim().isEmpty()) {
+                    String existingNotes = order.getNotes();
+                    String timestamp = LocalDateTime.now().toString();
+                    String newNote = "[ADMIN " + timestamp + "]: " + adminNotes;
+                    
+                    if (existingNotes != null && !existingNotes.isEmpty()) {
+                        order.setNotes(existingNotes + "\n" + newNote);
+                    } else {
+                        order.setNotes(newNote);
+                    }
                 }
-            }
-
-            // Handle inventory based on status change
-            handleInventoryForStatusChange(order, oldStatus, newStatus);
-
-            orderRepository.save(order);
-            return true;
-        }).orElse(false);
+                
+                // Handle inventory changes if status changed
+                if (oldStatus != newStatus) {
+                    handleInventoryForStatusChange(order, oldStatus, newStatus);
+                }
+                
+                // Update customer order status if needed
+                if (order.getCustomerOrder() != null) {
+                    customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
+                }
+                
+                orderRepository.save(order);
+                return true;
+            }).orElse(false);
+        } finally {
+            orderStatusLock.unlock();
+        }
     }
-
+    
     /**
-     * Process a refund for an order
-     *
-     * @param orderId ID of the order to refund
-     * @param refundReason Reason for the refund
-     * @return true if refund was successful
+     * Xử lý hoàn tiền cho đơn hàng
+     * @param orderId ID đơn hàng
+     * @param refundReason Lý do hoàn tiền
+     * @return true nếu xử lý thành công, false nếu thất bại
      */
     @Transactional
     public boolean processRefund(Integer orderId, String refundReason) {
         return orderRepository.findById(orderId).map(order -> {
-            // Only process refund if order is not already cancelled or refunded
-            if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            // Validate if order can be refunded
+            if (order.getCustomerOrder() == null || order.getCustomerOrder().getPaymentStatus() != PaymentStatus.PAID) {
                 return false;
             }
 
-            // Set status to CANCELLED
-            order.setOrderStatus(OrderStatus.CANCELLED);
-            order.setCancelledAt(LocalDateTime.now());
-            order.setCancellationReason("ADMIN REFUND: " + (refundReason != null ? refundReason : "No reason provided"));
-
-            // Return items to inventory
-            for (OrderItem item : order.getOrderItems()) {
-                bookService.increaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
+            // Set payment status to REFUNDED
+            order.getCustomerOrder().setPaymentStatus(PaymentStatus.REFUNDED);
+            
+            // Set order status to CANCELLED if not already
+            if (order.getOrderStatus() != OrderStatus.CANCELLED) {
+                OrderStatus oldStatus = order.getOrderStatus();
+                order.setOrderStatus(OrderStatus.CANCELLED);
+                handleInventoryForStatusChange(order, oldStatus, OrderStatus.CANCELLED);
             }
-
-            // Set payment status to refunded
-            order.setPaymentStatus(PaymentStatus.REFUNDED);
-
+            
+            // Add refund reason to notes
+            if (refundReason != null && !refundReason.trim().isEmpty()) {
+                String existingNotes = order.getNotes();
+                String timestamp = LocalDateTime.now().toString();
+                String refundNote = "[REFUND " + timestamp + "]: " + refundReason;
+                
+                if (existingNotes != null && !existingNotes.isEmpty()) {
+                    order.setNotes(existingNotes + "\n" + refundNote);
+                } else {
+                    order.setNotes(refundNote);
+                }
+            }
+            
+            // Save the order
             orderRepository.save(order);
+            
+            // Update customer order status if needed
+            if (order.getCustomerOrder() != null) {
+                customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
+            }
+            
             return true;
         }).orElse(false);
     }
-
+    
     /**
-     * Add admin note to an order
-     *
-     * @param orderId ID of the order
-     * @param adminNote Note to add
-     * @return true if successful
+     * Thêm ghi chú của quản trị viên vào đơn hàng
+     * @param orderId ID đơn hàng
+     * @param adminNote Ghi chú của quản trị viên
+     * @return true nếu thêm thành công, false nếu thất bại
      */
     @Transactional
     public boolean addAdminNote(Integer orderId, String adminNote) {
         if (adminNote == null || adminNote.trim().isEmpty()) {
             return false;
         }
-
+        
         return orderRepository.findById(orderId).map(order -> {
-            // Format the note with timestamp and admin prefix
-            String formattedNote = "ADMIN (" + LocalDateTime.now() + "): " + adminNote;
-
-            // Append to existing notes or create new note
-            if (order.getNotes() != null && !order.getNotes().isEmpty()) {
-                order.setNotes(order.getNotes() + "\n\n" + formattedNote);
+            String existingNotes = order.getNotes();
+            String timestamp = LocalDateTime.now().toString();
+            String newNote = "[ADMIN " + timestamp + "]: " + adminNote;
+            
+            if (existingNotes != null && !existingNotes.isEmpty()) {
+                order.setNotes(existingNotes + "\n" + newNote);
             } else {
-                order.setNotes(formattedNote);
+                order.setNotes(newNote);
             }
-
+            
             orderRepository.save(order);
             return true;
         }).orElse(false);
-    }
-
-    /**
-     * Handle inventory updates based on order status changes
-     *
-     * @param order The order being updated
-     * @param oldStatus Previous order status
-     * @param newStatus New order status
-     */
-    private void handleInventoryForStatusChange(Order order, OrderStatus oldStatus, OrderStatus newStatus) {
-        // If order is cancelled, return items to inventory
-        if (newStatus == OrderStatus.CANCELLED && oldStatus != OrderStatus.CANCELLED) {
-            for (OrderItem item : order.getOrderItems()) {
-                bookService.increaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
-            }
-        }
-
-        // If order was cancelled but is now being reactivated, remove items from inventory again
-        if (oldStatus == OrderStatus.CANCELLED &&
-            (newStatus == OrderStatus.PENDING || newStatus == OrderStatus.PROCESSING || newStatus == OrderStatus.SHIPPED)) {
-            for (OrderItem item : order.getOrderItems()) {
-                bookService.decreaseStockQuantity(item.getBook().getBook_id(), item.getQuantity());
-            }
-        }
-    }
-
-    public Optional<OrderItem> findOrderItemById(Integer orderItemId) {
-        return orderItemRepository.findById(orderItemId);
     }
 }

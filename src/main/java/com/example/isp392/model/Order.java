@@ -22,34 +22,12 @@ public class Order {
     private Integer orderId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false) // An order must belong to a user
-    private User user;
+    @JoinColumn(name = "customer_order_id", nullable = false)
+    private CustomerOrder customerOrder;
 
-    // Thông tin người nhận hàng
-    @Column(name = "recipient_name", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String recipientName;
-
-    @Column(name = "recipient_phone", length = 20, nullable = false)
-    private String recipientPhone;
-
-    @Column(name = "shipping_province", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String shippingProvince;
-
-    @Column(name = "shipping_district", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String shippingDistrict;
-
-    @Column(name = "shipping_ward", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String shippingWard;
-
-    @Column(name = "shipping_address_detail", columnDefinition = "NVARCHAR(500)", nullable = false)
-    private String shippingAddressDetail;
-
-    @Column(name = "shipping_company", columnDefinition = "NVARCHAR(255)")
-    private String shippingCompany;
-
-    @Column(name = "shipping_address_type")
-    private Integer shippingAddressType;
-    //0: Nha rieng, 1: company
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id", nullable = false)
+    private Shop shop;
 
     //Tổng tiền của tất cả sản phẩm
     @Column(name = "sub_total", nullable = false, precision = 18, scale = 0)
@@ -64,34 +42,19 @@ public class Order {
     private BigDecimal discountAmount;
 
     //sub_total + shipping_fee - discount_amount
-    @Column(name = "total_amount", nullable = false, precision = 18, scale = 0) // Example: 12345678.90
+    @Column(name = "total_amount", nullable = false, precision = 18, scale = 0)
     private BigDecimal totalAmount;
 
-
-    // Lưu ý món này
-    @Enumerated(EnumType.STRING) // Store enum name as string, or ORDINAL for integer
+    @Enumerated(EnumType.STRING)
     @Column(name = "order_status", length = 50, nullable = false)
-    private OrderStatus orderStatus;
+    private OrderStatus orderStatus = OrderStatus.PROCESSING;
 
-    // Billing Information (could be same as shipping, or separate)
-    // For simplicity, you might omit these if billing always matches shipping,
-    // or add similar fields: billing_address_line1, etc.
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_method")
-    private PaymentMethod paymentMethod; // e.g., "Credit Card", "PayPal", "COD"
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", length = 50)
-    private PaymentStatus paymentStatus; // e.g., PENDING, PAID, FAILED
-
-    @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)") // For longer customer notes
+    @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)")
     private String notes;
 
     @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate;
 
-    // One Order has Many OrderItems
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();
 
@@ -103,5 +66,129 @@ public class Order {
 
     @Column(name = "cancellation_reason", columnDefinition = "NVARCHAR(MAX)")
     private String cancellationReason;
+
+    @PrePersist
+    protected void onCreate() {
+        orderDate = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+    
+    /**
+     * Kiểm tra xem đơn hàng có thể hủy không
+     * @return true nếu có thể hủy, false nếu không
+     */
+    public boolean canCancel() {
+        // Chỉ có thể hủy nếu đơn hàng đang ở trạng thái PROCESSING (chưa ship)
+        return orderStatus == OrderStatus.PROCESSING;
+    }
+    
+    /**
+     * Get the total amount
+     * @return the total amount
+     */
+    public BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+    
+    /**
+     * Get the order items
+     * @return the order items
+     */
+    public List<OrderItem> getOrderItems() {
+        return orderItems;
+    }
+    
+
+    
+    /**
+     * Set the shop
+     * @param shop the shop to set
+     */
+    public void setShop(Shop shop) {
+        this.shop = shop;
+    }
+    
+    /**
+     * Set the customer order
+     * @param customerOrder the customer order to set
+     */
+    public void setCustomerOrder(CustomerOrder customerOrder) {
+        this.customerOrder = customerOrder;
+    }
+    
+
+    
+
+    
+    /**
+     * Set the sub total
+     * @param subTotal the sub total to set
+     */
+    public void setSubTotal(BigDecimal subTotal) {
+        this.subTotal = subTotal;
+    }
+    
+    /**
+     * Set the shipping fee
+     * @param shippingFee the shipping fee to set
+     */
+    public void setShippingFee(BigDecimal shippingFee) {
+        this.shippingFee = shippingFee;
+    }
+    
+    /**
+     * Set the discount amount
+     * @param discountAmount the discount amount to set
+     */
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+    
+    /**
+     * Set the total amount
+     * @param totalAmount the total amount to set
+     */
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+    
+    /**
+     * Set the order status
+     * @param orderStatus the order status to set
+     */
+    public void setOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+    
+
+    
+    /**
+     * Set the notes
+     * @param notes the notes to set
+     */
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+    
+    /**
+     * Set the order date
+     * @param orderDate the order date to set
+     */
+    public void setOrderDate(LocalDateTime orderDate) {
+        this.orderDate = orderDate;
+    }
+    
+    /**
+     * Set the order items
+     * @param orderItems the order items to set
+     */
+    public void setOrderItems(List<OrderItem> orderItems) {
+        this.orderItems = orderItems;
+    }
 }
 

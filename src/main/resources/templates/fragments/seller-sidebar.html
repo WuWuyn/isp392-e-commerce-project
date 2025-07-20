@@ -33,7 +33,7 @@
             <a th:href="@{/seller/products/add}" class="list-group-item list-group-item-action">
                 <i class="fas fa-plus"></i> Add New Product
             </a>
-            <a th:href="@{/seller/products/inventory}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/products}" class="list-group-item list-group-item-action">
                 <i class="fas fa-boxes"></i> Inventory
             </a>
             
@@ -41,13 +41,13 @@
             <a th:href="@{/seller/orders}" class="list-group-item list-group-item-action">
                 <i class="fas fa-shopping-cart"></i> All Orders
             </a>
-            <a th:href="@{/seller/orders/new}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/orders(status=PROCESSING)}" class="list-group-item list-group-item-action">
                 <i class="fas fa-bell"></i> New Orders
             </a>
-            <a th:href="@{/seller/orders/shipping}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/orders(status=SHIPPED)}" class="list-group-item list-group-item-action">
                 <i class="fas fa-truck"></i> In Shipping
             </a>
-            <a th:href="@{/seller/orders/completed}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/orders(status=DELIVERED)}" class="list-group-item list-group-item-action">
                 <i class="fas fa-check-circle"></i> Completed
             </a>
             <a th:href="@{/seller/orders/returns}" class="list-group-item list-group-item-action">

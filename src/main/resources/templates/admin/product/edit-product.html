@@ -28,7 +28,7 @@
             <main class="py-4">
                 <h3 class="section-title mb-4">Edit Book</h3>
 
-                <form th:action="@{'/admin/products/edit/' + ${book.book_id}}" th:object="${book}" method="post" enctype="multipart/form-data">
+                <form th:action="@{'/admin/products/edit/' + ${book.bookId}}" th:object="${book}" method="post" enctype="multipart/form-data">
                     <div class="card shadow-sm">
                         <div class="card-body p-4">
                             <div class="row g-4">

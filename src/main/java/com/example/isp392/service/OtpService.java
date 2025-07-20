@@ -100,6 +100,44 @@ public class OtpService {
     }
     
     /**
+     * Generate OTP for a specific purpose with custom expiration time
+     * @param email User's email
+     * @param tokenTypeStr String representation of token type
+     * @param expirationHours Expiration time in hours
+     * @return Generated OTP token
+     */
+    @Transactional
+    public String generateOtp(String email, String tokenTypeStr, int expirationHours) {
+        // Find user by email
+        User user = userService.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+        
+        // Convert string to TokenType enum
+        TokenType tokenType;
+        try {
+            tokenType = TokenType.valueOf(tokenTypeStr);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid token type: " + tokenTypeStr);
+        }
+        
+        // Invalidate any existing tokens of the same type for this user
+        otpTokenRepository.findByUserAndTokenType(user, tokenType)
+                .ifPresent(otpTokenRepository::delete);
+        
+        // Generate token
+        String token = generateUuidToken();
+        
+        // Create new token with custom expiration
+        OtpToken newToken = new OtpToken(token, user, tokenType);
+        newToken.setExpiryDate(LocalDateTime.now().plusHours(expirationHours));
+        
+        // Save token
+        otpTokenRepository.save(newToken);
+        
+        return token;
+    }
+    
+    /**
      * Verify OTP and reset password if valid
      * @param otp OTP code
      * @param newPassword New password

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Order Details</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar -->
+            <div th:replace="fragments/buyer-account-sidebar :: sidebar('orders')"></div>
+            
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <div class="card rounded-4 shadow-sm">
+                    <div class="card-header bg-white border-0 pt-4">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                                <li class="breadcrumb-item"><a th:href="@{/buyer/customer-orders}">Customer Orders</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Customer Order #<span th:text="${customerOrder.customerOrderId}"></span></li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-7">
+                                <div class="account-container rounded-4 p-4">
+                                    <h5 class="mb-3"><i class="fas fa-shipping-fast me-2"></i>Shipping Information</h5>
+                                    <hr class="my-3">
+                                    <div class="detail-row mb-2"><span class="label">Recipient:</span> <span class="value" th:text="${customerOrder.recipientName}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Phone Number:</span> <span class="value" th:text="${customerOrder.recipientPhone}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Address:</span> <span class="value text-end" th:text="${customerOrder.shippingAddressDetail + ', ' + customerOrder.shippingWard + ', ' + customerOrder.shippingDistrict + ', ' + customerOrder.shippingProvince}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Address Type:</span> <span class="value" th:text="${customerOrder.shippingAddressType == 0 ? 'Home' : 'Company'}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Shipping Company:</span> <span class="value" th:text="${customerOrder.shippingCompany}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${customerOrder.notes}"><span class="label">Notes:</span> <span class="value" th:text="${customerOrder.notes}"></span></div>
+                                </div>
+
+                                <div class="account-container rounded-4 p-4 mt-4">
+                                    <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Information</h5>
+                                    <hr class="my-3">
+                                    <div class="detail-row mb-2"><span class="label">Payment Method:</span> <span class="value" th:text="${customerOrder.paymentMethod}"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Payment Status:</span> <span class="value" th:text="${customerOrder.paymentStatus}"></span></div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <div class="account-container rounded-4 p-4">
+                                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Customer Order Information</h5>
+                                    <hr class="my-3">
+                                    <div class="detail-row mb-2"><span class="label">Order Date:</span> <span class="value" th:text="${#temporals.format(customerOrder.createdAt, 'dd/MM/yyyy HH:mm')}"></span></div>
+                                    <div class="detail-row mb-2">
+                                        <span class="label">Status:</span> 
+                                        <span th:class="'order-status status-' + ${#strings.toLowerCase(customerOrder.status)}"
+                                              th:text="${customerOrder.status}">
+                                        </span>
+                                    </div>
+                                    <div class="detail-row mb-2" th:if="${customerOrder.updatedAt}"><span class="label">Last Updated:</span> <span class="value" th:text="${#temporals.format(customerOrder.updatedAt, 'dd/MM/yyyy HH:mm')}"></span></div>
+                                </div>
+
+                                <div class="account-container rounded-4 p-4 mt-4">
+                                    <h5 class="mb-3"><i class="fas fa-dollar-sign me-2"></i>Cost Summary</h5>
+                                    <hr class="my-3">
+                                    <div class="detail-row mb-2"><span class="label">Subtotal:</span> <span class="value" th:text="${#numbers.formatDecimal(customerOrder.totalAmount - customerOrder.shippingFee + customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Shipping Fee:</span> <span class="value" th:text="${#numbers.formatDecimal(customerOrder.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></div>
+                                    <div class="detail-row mb-2"><span class="label">Discount:</span> <span class="value text-danger" th:text="${'-' + #numbers.formatDecimal(customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></div>
+                                    <hr class="my-2">
+                                    <div class="detail-row fs-5"><span class="label">Total Payment:</span> <span class="value text-primary" th:text="${#numbers.formatDecimal(customerOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Individual Orders -->
+                        <div class="account-container rounded-4 p-4 mt-4">
+                            <h5 class="section-title mb-3">Orders by Shop</h5>
+                            <div th:each="order : ${customerOrder.orders}" class="shop-order mb-4">
+                                <div class="card border">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-store text-primary me-2"></i>
+                                                <span th:text="${order.shop.shopName}">Shop Name</span>
+                                            </h6>
+                                            <span th:class="'badge ' + (${order.orderStatus.name() == 'PENDING'} ? 'bg-warning' : 
+                                                                      ${order.orderStatus.name() == 'PROCESSING'} ? 'bg-info' : 
+                                                                      ${order.orderStatus.name() == 'SHIPPED'} ? 'bg-primary' : 
+                                                                      ${order.orderStatus.name() == 'DELIVERED'} ? 'bg-success' : 'bg-danger')"
+                                                  th:text="${order.orderStatus}">
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="border-top-0">Product</th>
+                                                        <th class="border-top-0">Price</th>
+                                                        <th class="border-top-0">Quantity</th>
+                                                        <th class="text-end border-top-0">Subtotal</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr th:each="item : ${order.orderItems}">
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <img th:src="${item.book.imageUrl}" alt="Book Image" class="me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                                                <div>
+                                                                    <h6 class="mb-1" th:text="${item.book.title}">Book Title</h6>
+                                                                    <small class="text-muted" th:text="${item.book.author}">Author</small>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td class="align-middle" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'">Price</td>
+                                                        <td class="align-middle" th:text="${item.quantity}">Quantity</td>
+                                                        <td class="text-end align-middle fw-bold" th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' VND'">Subtotal</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="text-end mt-3">
+                                            <h6 class="text-primary">Order Total: <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a th:href="@{/buyer/customer-orders}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Customer Orders
+                            </a>
+                            <div>
+                                <button th:if="${customerOrder.canCancel()}" 
+                                        class="btn btn-outline-danger"
+                                        th:onclick="'cancelCustomerOrder(' + ${customerOrder.customerOrderId} + ')'">
+                                    <i class="fas fa-times me-2"></i>Cancel Customer Order
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function cancelCustomerOrder(customerOrderId) {
+        if (confirm('Are you sure you want to cancel this customer order? This will cancel all individual orders within it.')) {
+            fetch(`/buyer/customer-orders/${customerOrderId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while cancelling the customer order.');
+            });
+        }
+    }
+</script>
+
+<style>
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .detail-row .label {
+        font-weight: 600;
+        color: #6c757d;
+        min-width: 120px;
+    }
+    
+    .detail-row .value {
+        text-align: right;
+        flex-grow: 1;
+    }
+    
+    .order-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-pending { background-color: #fff3cd; color: #856404; }
+    .status-processing { background-color: #d1ecf1; color: #0c5460; }
+    .status-shipped { background-color: #d4edda; color: #155724; }
+    .status-delivered { background-color: #d4edda; color: #155724; }
+    .status-cancelled { background-color: #f8d7da; color: #721c24; }
+</style>
+</body>
+</html>

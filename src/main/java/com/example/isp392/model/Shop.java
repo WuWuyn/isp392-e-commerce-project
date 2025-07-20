@@ -75,7 +75,7 @@ public class Shop {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "approval_status", nullable = false)
-    private ApprovalStatus approval_status;
+    private ApprovalStatus approvalStatus;
 
     @Column(name = "reason_for_status", columnDefinition = "NVARCHAR(MAX)")
     private String reasonForStatus;

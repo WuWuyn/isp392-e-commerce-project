@@ -241,23 +241,23 @@
                                         <span class="label">Order Date:</span>
                                         <span class="value" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">01/01/2023 12:34</span>
                                     </div>
-                                    <div class="detail-row">
+                                    <div class="detail-row" th:if="${order.customerOrder}">
                                         <span class="label">Payment Method:</span>
-                                        <span class="value" th:text="${order.paymentMethod}">Credit Card</span>
+                                        <span class="value" th:text="${order.customerOrder.paymentMethod}">Credit Card</span>
                                     </div>
-                                    <div class="detail-row">
+                                    <div class="detail-row" th:if="${order.customerOrder}">
                                         <span class="label">Payment Status:</span>
-                                        <span class="value" th:text="${order.paymentStatus}">Paid</span>
+                                        <span class="value" th:text="${order.customerOrder.paymentStatus}">Paid</span>
                                     </div>
                                 </div>
                                 <div class="col-md-7">
-                                    <div class="detail-row">
+                                    <div class="detail-row" th:if="${order.customerOrder}">
                                         <span class="label">Customer:</span>
-                                        <span class="value" th:text="${order.user.fullName}">John Doe</span>
+                                        <span class="value" th:text="${order.customerOrder.user.fullName}">John Doe</span>
                                     </div>
-                                    <div class="detail-row">
+                                    <div class="detail-row" th:if="${order.customerOrder}">
                                         <span class="label">Customer Email:</span>
-                                        <span class="value" th:text="${order.user.email}">john@example.com</span>
+                                        <span class="value" th:text="${order.customerOrder.user.email}">john@example.com</span>
                                     </div>
                                     <div class="detail-row" th:if="${order.updatedAt != null}">
                                         <span class="label">Last Updated:</span>
@@ -274,26 +274,26 @@
                             <h5 class="section-title mt-4">Shipping Information</h5>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="detail-row">
+                                    <div class="detail-row" th:if="${order.customerOrder}">
                                         <span class="label">Recipient:</span>
-                                        <span class="value" th:text="${order.recipientName}">John Doe</span>
+                                        <span class="value" th:text="${order.customerOrder.recipientName}">John Doe</span>
                                     </div>
-                                    <div class="detail-row">
+                                    <div class="detail-row" th:if="${order.customerOrder}">
                                         <span class="label">Phone:</span>
-                                        <span class="value" th:text="${order.recipientPhone}">123-456-7890</span>
+                                        <span class="value" th:text="${order.customerOrder.recipientPhone}">123-456-7890</span>
                                     </div>
                                 </div>
                                 <div class="col-md-12">
-                                    <div class="detail-row">
+                                    <div class="detail-row" th:if="${order.customerOrder}">
                                         <span class="label">Address:</span>
                                         <span class="value">
-                                            <span th:text="${order.shippingAddressDetail}">123 Main St</span><br>
-                                            <span th:text="${order.shippingWard + ', ' + order.shippingDistrict + ', ' + order.shippingProvince}">Ward, District, Province</span>
+                                            <span th:text="${order.customerOrder.shippingAddressDetail}">123 Main St</span><br>
+                                            <span th:text="${order.customerOrder.shippingWard + ', ' + order.customerOrder.shippingDistrict + ', ' + order.customerOrder.shippingProvince}">Ward, District, Province</span>
                                         </span>
                                     </div>
-                                    <div class="detail-row" th:if="${order.shippingCompany != null}">
+                                    <div class="detail-row" th:if="${order.customerOrder != null and order.customerOrder.shippingCompany != null}">
                                         <span class="label">Shipping Company:</span>
-                                        <span class="value" th:text="${order.shippingCompany}">Express Shipping</span>
+                                        <span class="value" th:text="${order.customerOrder.shippingCompany}">Express Shipping</span>
                                     </div>
                                 </div>
                             </div>

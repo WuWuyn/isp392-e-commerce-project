@@ -436,6 +436,7 @@ public class BuyerController {
                 model.addAttribute("user", user);
                 model.addAttribute("roles", userService.getUserRoles(user));
                 model.addAttribute("cart", cartService.getCartForUser(user));
+                model.addAttribute("cartItemsByShop", cartService.getCartItemsGroupedByShop(user));
 
                 return "buyer/cart";
             } else {
@@ -465,14 +466,14 @@ public class BuyerController {
 
             // SỬA LỖI TẠI ĐÂY:
             // 1. Dùng Shop.ApprovalStatus thay vì ApprovalStatus
-            // 2. Dùng getApproval_status() thay vì getApprovalStatus()
-            if (shop.getApproval_status() == Shop.ApprovalStatus.PENDING) {
+            // 2. Dùng getApprovalStatus() thay vì getApproval_status()
+            if (shop.getApprovalStatus() == Shop.ApprovalStatus.PENDING) {
                 redirectAttributes.addFlashAttribute("infoMessage", "Yêu cầu đăng ký cửa hàng của bạn đang được xử lý. Vui lòng đợi.");
                 return "redirect:/buyer/account-info";
-            } else if (shop.getApproval_status() == Shop.ApprovalStatus.APPROVED) {
+            } else if (shop.getApprovalStatus() == Shop.ApprovalStatus.APPROVED) {
                 redirectAttributes.addFlashAttribute("infoMessage", "Bạn đã là người bán hàng!");
                 return "redirect:/buyer/account-info";
-            } else if (shop.getApproval_status() == Shop.ApprovalStatus.REJECTED) {
+            } else if (shop.getApprovalStatus() == Shop.ApprovalStatus.REJECTED) {
                 // Logic để người dùng đăng ký lại đã đúng
                 model.addAttribute("shop", shop);
                 model.addAttribute("rejectionReason", shop.getReasonForStatus());

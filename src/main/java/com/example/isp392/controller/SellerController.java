@@ -843,11 +843,13 @@ public class SellerController {
 
 
 
-        String baseUrl = UriComponentsBuilder.fromHttpUrl(request.getRequestURL().toString())
-                .replacePath(null)
-                .build().toUriString();
+        // Generate token and build URL
+        String token = otpService.generateOtp(currentUser.getEmail(), "SHOP_DELETE", 24);
+        String requestUrl = request.getRequestURL().toString();
+        String baseUrl = requestUrl.substring(0, requestUrl.lastIndexOf("/"));
+        String confirmUrl = baseUrl + "/shop-delete-confirm?token=" + token;
 
-        boolean emailSent = shopService.requestShopDeletion(shop, currentUser, baseUrl);
+        boolean emailSent = shopService.requestShopDeletion(shop, currentUser, confirmUrl);
 
         if (emailSent) {
             redirectAttributes.addFlashAttribute("success", "A confirmation email has been sent to your email address. Please click the link in the email to complete the shop deletion.");
@@ -1047,6 +1049,12 @@ public class SellerController {
                 );
             }
 
+            // Check if selling price is greater than original price
+            if (bookForm.getSellingPrice() != null && bookForm.getOriginalPrice() != null && 
+                bookForm.getSellingPrice().compareTo(bookForm.getOriginalPrice()) > 0) {
+                bindingResult.rejectValue("sellingPrice", "invalidPrice", "Giá bán không được lớn hơn giá gốc");
+            }
+
             // Validation failed, return to form with errors
             if (bindingResult.hasErrors()) {
                 // Add necessary attributes for the form
@@ -1113,6 +1121,10 @@ public class SellerController {
             redirectAttributes.addFlashAttribute("successMessage", "Product added successfully!");
             return "redirect:/seller/products";
 
+        } catch (IllegalArgumentException e) {
+            log.error("Validation error: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/seller/products/add";
         } catch (Exception e) {
             log.error("Error adding product: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", "Error adding product: " + e.getMessage());
@@ -1225,6 +1237,12 @@ public class SellerController {
             if (user == null) {
                 return "redirect:/seller/login";
             }
+            
+            // Check if selling price is greater than original price
+            if (bookForm.getSellingPrice() != null && bookForm.getOriginalPrice() != null && 
+                bookForm.getSellingPrice().compareTo(bookForm.getOriginalPrice()) > 0) {
+                bindingResult.rejectValue("sellingPrice", "invalidPrice", "Giá bán không được lớn hơn giá gốc");
+            }
 
             // Validation failed, return to form with errors
             if (bindingResult.hasErrors()) {
@@ -1248,7 +1266,7 @@ public class SellerController {
                 return "redirect:/seller/dashboard";
             }
 
-            // Get the book by ID
+            // Get the book to edit
             Optional<Book> bookOpt = bookService.getBookById(id);
             if (bookOpt.isEmpty()) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Product not found.");
@@ -1263,27 +1281,49 @@ public class SellerController {
                 return "redirect:/seller/products";
             }
 
-            // Handle cover image upload if a new one is provided
-            String coverImageUrl = book.getCoverImgUrl(); // Keep existing image by default
+            // Check for unique ISBN (but allow the book to keep its own ISBN)
+            if (!book.getIsbn().equals(bookForm.getIsbn()) && 
+                bookService.isbnExists(bookForm.getIsbn().trim(), shop.getShopId())) {
+                bindingResult.rejectValue("isbn", "duplicateIsbn", "A book with this ISBN already exists in your shop.");
+                model.addAttribute("user", user);
+                model.addAttribute("roles", userService.getUserRoles(user));
+                model.addAttribute("categories", categoryService.findAllActive());
+                model.addAttribute("publishers", publisherService.findAll());
+                model.addAttribute("book", book);
+                return "seller/seller-edit-product";
+            }
+
+            // Handle cover image upload if provided
+            String coverImageUrl = null;
             if (bookForm.getCoverImageFile() != null && !bookForm.getCoverImageFile().isEmpty()) {
                 try {
                     coverImageUrl = handleFileUpload(bookForm.getCoverImageFile(), "book-covers");
+                    log.debug("Cover image uploaded successfully: {}", coverImageUrl);
                 } catch (IOException e) {
                     log.error("Error uploading cover image: {}", e.getMessage());
-                    redirectAttributes.addFlashAttribute("errorMessage", "Error uploading cover image: " + e.getMessage());
-                    return "redirect:/seller/products/" + id + "/edit";
+                    model.addAttribute("errorMessage", "Error uploading cover image: " + e.getMessage());
+                    model.addAttribute("user", user);
+                    model.addAttribute("roles", userService.getUserRoles(user));
+                    model.addAttribute("categories", categoryService.findAllActive());
+                    model.addAttribute("publishers", publisherService.findAll());
+                    model.addAttribute("book", book);
+                    return "seller/seller-edit-product";
                 }
             }
 
-            // Update and save the book
-            Book updatedBook = bookService.updateBook(id, bookForm, coverImageUrl);
+            // Update the book
+            bookService.updateBook(id, bookForm, coverImageUrl);
 
             // Add success message
             redirectAttributes.addFlashAttribute("successMessage", "Product updated successfully!");
             return "redirect:/seller/products";
 
+        } catch (IllegalArgumentException e) {
+            log.error("Validation error: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/seller/products/" + id + "/edit";
         } catch (Exception e) {
-            log.error("Error updating product: {}", e.getMessage());
+            log.error("Error updating product: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", "Error updating product: " + e.getMessage());
             return "redirect:/seller/products/" + id + "/edit";
         }

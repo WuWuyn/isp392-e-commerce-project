@@ -98,6 +98,20 @@
             color: #333;
             margin-bottom: 5px;
         }
+        .shop-group {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fff;
+        }
+        .shop-header-checkout {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .shop-items .book-item:last-child {
+            border-bottom: none;
+        }
         .book-price {
             color: #2c7be5;
             font-weight: 600;
@@ -346,20 +360,29 @@
             </h2>
             
             <div class="order-items">
-                <div th:each="item : ${selectedItems}" class="book-item">
-                    <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}" 
-                         alt="Book Cover" class="book-image">
-                    <div class="book-details">
-                        <h5 class="book-title" th:text="${item.book.title}">Book Title</h5>
-                        <p class="mb-1" th:if="${item.book.publisher != null}">
-                            <small class="text-muted">
-                                <i class="fas fa-store-alt me-1"></i>
-                                <span th:text="${item.book.publisher.publisherName}">Publisher Name</span>
-                            </small>
-                        </p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="book-price" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
-                            <span class="quantity-badge" th:text="'Quantity: ' + ${item.quantity}">Quantity: 1</span>
+                <!-- Group items by shop -->
+                <div th:each="shopEntry : ${itemsByShop}" class="shop-group mb-4">
+                    <!-- Shop header -->
+                    <div class="shop-header-checkout">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-store text-primary me-2"></i>
+                            <h6 class="mb-0 text-primary fw-bold" th:text="${shopEntry.key}">Shop Name</h6>
+                            <span class="badge bg-light text-dark ms-2" th:text="${shopEntry.value.size()} + ' item' + (${shopEntry.value.size()} > 1 ? 's' : '')">2 items</span>
+                        </div>
+                    </div>
+
+                    <!-- Items for this shop -->
+                    <div class="shop-items">
+                        <div th:each="item : ${shopEntry.value}" class="book-item">
+                            <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}"
+                                 alt="Book Cover" class="book-image">
+                            <div class="book-details">
+                                <h5 class="book-title" th:text="${item.book.title}">Book Title</h5>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="book-price" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                    <span class="quantity-badge" th:text="'Quantity: ' + ${item.quantity}">Quantity: 1</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -686,10 +709,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // If using existing address, ensure its ID is passed
                 if (!isNewAddress) {
                     // Make sure the existing address ID is included in the form submission
-                    const existingAddressIdField = document.querySelector('select[name="addressSelect"]');
+                    const addressSelect = document.querySelector('select[name="addressSelect"]');
                     const hiddenAddressId = document.getElementById('existingAddressId');
-                    if (existingAddressIdField && hiddenAddressId) {
-                        existingAddressIdField.value = hiddenAddressId.value;
+                    if (addressSelect && hiddenAddressId) {
+                        hiddenAddressId.value = addressSelect.value;
                     }
                 }
                 

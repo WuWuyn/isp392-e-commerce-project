@@ -42,19 +42,19 @@
                                 <div class="account-container rounded-4 p-4">
                                     <h5 class="mb-3"><i class="fas fa-shipping-fast me-2"></i>Shipping Information</h5>
                                     <hr class="my-3">
-                                    <div class="detail-row mb-2"><span class="label">Recipient:</span> <span class="value" th:text="${order.recipientName}"></span></div>
-                                    <div class="detail-row mb-2"><span class="label">Phone Number:</span> <span class="value" th:text="${order.recipientPhone}"></span></div>
-                                    <div class="detail-row mb-2"><span class="label">Address:</span> <span class="value text-end" th:text="${order.shippingAddressDetail + ', ' + order.shippingWard + ', ' + order.shippingDistrict + ', ' + order.shippingProvince}"></span></div>
-                                    <div class="detail-row mb-2"><span class="label">Address Type:</span> <span class="value" th:text="${order.shippingAddressType == 0 ? 'Home' : 'Company'}"></span></div>
-                                    <div class="detail-row mb-2"><span class="label">Shipping Company:</span> <span class="value" th:text="${order.shippingCompany}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.customerOrder}"><span class="label">Recipient:</span> <span class="value" th:text="${order.customerOrder.recipientName}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.customerOrder}"><span class="label">Phone Number:</span> <span class="value" th:text="${order.customerOrder.recipientPhone}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.customerOrder}"><span class="label">Address:</span> <span class="value text-end" th:text="${order.customerOrder.shippingAddressDetail + ', ' + order.customerOrder.shippingWard + ', ' + order.customerOrder.shippingDistrict + ', ' + order.customerOrder.shippingProvince}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.customerOrder}"><span class="label">Address Type:</span> <span class="value" th:text="${order.customerOrder.shippingAddressType == 0 ? 'Home' : 'Company'}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.customerOrder}"><span class="label">Shipping Company:</span> <span class="value" th:text="${order.customerOrder.shippingCompany}"></span></div>
                                     <div class="detail-row mb-2" th:if="${order.notes}"><span class="label">Notes:</span> <span class="value" th:text="${order.notes}"></span></div>
                                 </div>
 
                                 <div class="account-container rounded-4 p-4 mt-4">
                                     <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Information</h5>
                                     <hr class="my-3">
-                                    <div class="detail-row mb-2"><span class="label">Payment Method:</span> <span class="value" th:text="${order.paymentMethod}"></span></div>
-                                    <div class="detail-row mb-2"><span class="label">Payment Status:</span> <span class="value" th:text="${order.paymentStatus}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.customerOrder}"><span class="label">Payment Method:</span> <span class="value" th:text="${order.customerOrder.paymentMethod}"></span></div>
+                                    <div class="detail-row mb-2" th:if="${order.customerOrder}"><span class="label">Payment Status:</span> <span class="value" th:text="${order.customerOrder.paymentStatus}"></span></div>
                                 </div>
                             </div>
 
@@ -115,7 +115,7 @@
                                                 <span th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
                                                 <!-- Rebuy button for individual item -->
                                                 <div class="mt-2" th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}">
-                                                    <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.book_id} + '/rebuy'}"
+                                                    <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.bookId} + '/rebuy'}"
                                                           method="post" class="d-inline-block">
                                                         <input type="hidden" name="quantity" th:value="${item.quantity}"/>
                                                         <button type="submit" class="btn btn-sm btn-outline-success rounded-3">

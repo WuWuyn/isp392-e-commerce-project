@@ -493,15 +493,15 @@
                             
                             <!-- Hover actions -->
                             <div class="product-actions">
-                                <a th:href="@{'/seller/products/' + ${book.book_id}}" class="action-btn" title="View details">
+                                <a th:href="@{'/seller/products/' + ${book.bookId}}" class="action-btn" title="View details">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a th:href="@{'/seller/products/' + ${book.book_id} + '/edit'}" class="action-btn" title="Edit product">
+                                <a th:href="@{'/seller/products/' + ${book.bookId} + '/edit'}" class="action-btn" title="Edit product">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <button type="button" class="action-btn" title="Delete product" 
+                                <button type="button" class="action-btn" title="Delete product"
                                         data-bs-toggle="modal" data-bs-target="#deleteProductModal"
-                                        th:data-book-id="${book.book_id}" th:data-book-title="${book.title}">
+                                        th:data-book-id="${book.bookId}" th:data-book-title="${book.title}">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -558,15 +558,15 @@
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <a th:href="@{'/seller/products/' + ${book.book_id}}" class="btn btn-sm btn-outline-secondary">
+                                            <a th:href="@{'/seller/products/' + ${book.bookId}}" class="btn btn-sm btn-outline-secondary">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a th:href="@{'/seller/products/' + ${book.book_id} + '/edit'}" class="btn btn-sm btn-outline-secondary">
+                                            <a th:href="@{'/seller/products/' + ${book.bookId} + '/edit'}" class="btn btn-sm btn-outline-secondary">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
                                                     data-bs-toggle="modal" data-bs-target="#deleteProductModal"
-                                                    th:data-book-id="${book.book_id}" th:data-book-title="${book.title}">
+                                                    th:data-book-id="${book.bookId}" th:data-book-title="${book.title}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>

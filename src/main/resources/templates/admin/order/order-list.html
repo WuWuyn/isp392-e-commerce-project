@@ -112,10 +112,7 @@
             font-weight: 600;
             font-size: 0.8rem;
         }
-        .status-pending {
-            background-color: #ffe0b2;
-            color: #e65100;
-        }
+
         .status-processing {
             background-color: #b3e5fc;
             color: #01579b;
@@ -263,8 +260,8 @@
                                 <td th:text="${'#' + order.orderId}">Order ID</td>
                                 <td>
                                     <div class="d-flex flex-column">
-                                        <span th:text="${order.recipientName}">Customer Name</span>
-                                        <small class="text-muted" th:text="${order.recipientPhone}">Phone</small>
+                                        <span th:text="${order.customerOrder != null ? order.customerOrder.recipientName : 'N/A'}">Customer Name</span>
+                                        <small class="text-muted" th:text="${order.customerOrder != null ? order.customerOrder.recipientPhone : 'N/A'}">Phone</small>
                                     </div>
                                 </td>
                                 <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">Order Date</td>

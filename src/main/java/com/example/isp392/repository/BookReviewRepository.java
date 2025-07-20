@@ -15,19 +15,19 @@ import java.util.List;
 public interface BookReviewRepository extends JpaRepository<BookReview, Integer>, JpaSpecificationExecutor<BookReview> {
     
     // Tìm đánh giá cho một quyển sách cụ thể
-    @Query("SELECT br FROM BookReview br WHERE br.orderItem.book.book_id = :bookId")
+    @Query("SELECT br FROM BookReview br WHERE br.orderItem.book.bookId = :bookId")
     List<BookReview> findByBookId(int bookId);
-    
+
     // Tìm đánh giá với phân trang
-    @Query("SELECT br FROM BookReview br WHERE br.orderItem.book.book_id = :bookId")
+    @Query("SELECT br FROM BookReview br WHERE br.orderItem.book.bookId = :bookId")
     Page<BookReview> findByBookId(int bookId, Pageable pageable);
-    
+
     // Đếm số lượng đánh giá cho một quyển sách
-    @Query("SELECT COUNT(br) FROM BookReview br WHERE br.orderItem.book.book_id = :bookId")
+    @Query("SELECT COUNT(br) FROM BookReview br WHERE br.orderItem.book.bookId = :bookId")
     long countByBookId(int bookId);
-    
+
     // Tìm đánh giá theo sao
-    @Query("SELECT br FROM BookReview br WHERE br.orderItem.book.book_id = :bookId AND br.rating >= :minRating")
+    @Query("SELECT br FROM BookReview br WHERE br.orderItem.book.bookId = :bookId AND br.rating >= :minRating")
     Page<BookReview> findByBookIdAndRatingGreaterThanEqual(int bookId, int minRating, Pageable pageable);
 
     Page<BookReview> findAllByIsApproved(boolean isApproved, Pageable pageable);

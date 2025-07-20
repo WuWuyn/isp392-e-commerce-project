@@ -28,6 +28,14 @@ public class CategoryService {
     }
 
     /**
+     * Get all categories (alias for findAll for consistency)
+     * @return List of all categories
+     */
+    public List<Category> getAllCategories() {
+        return findAll();
+    }
+
+    /**
      * Find all categories with pagination
      * @param pageable Pagination information
      * @return Page of categories
