@@ -61,7 +61,7 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, In
     long countByUser(User user);
     
     /**
-     * Find customer orders with pending payment
+     * Find customer orders with pending payment (for cleanup/monitoring)
      * @return list of customer orders with pending payment
      */
     @Query("SELECT co FROM CustomerOrder co WHERE co.paymentStatus = 'PENDING' AND co.status != 'CANCELLED'")

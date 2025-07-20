@@ -74,10 +74,10 @@ public class CustomerOrder {
     @Column(name = "discount_amount", nullable = false, precision = 18, scale = 0)
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    // Overall status
+    // Overall status (aggregated from individual orders)
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private OrderStatus status = OrderStatus.PENDING;
+    private OrderStatus status = OrderStatus.PROCESSING;
 
     // Notes for the entire customer order
     @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)")
@@ -105,8 +105,8 @@ public class CustomerOrder {
      * @return true if can be cancelled, false otherwise
      */
     public boolean canCancel() {
-        // Can only cancel if status is PENDING or PROCESSING
-        return status == OrderStatus.PENDING || status == OrderStatus.PROCESSING;
+        // Can only cancel if status is PROCESSING (before shipping)
+        return status == OrderStatus.PROCESSING;
     }
     
     /**
@@ -128,27 +128,30 @@ public class CustomerOrder {
     /**
      * Update status based on individual order statuses
      */
+    /**
+     * Update overall status based on individual order statuses
+     * Business logic: CustomerOrder status reflects the "least advanced" individual order status
+     */
     public void updateStatusFromOrders() {
         if (orders == null || orders.isEmpty()) {
-            this.status = OrderStatus.PENDING;
+            this.status = OrderStatus.PROCESSING;
             return;
         }
-        
+
         boolean allCancelled = orders.stream().allMatch(order -> order.getOrderStatus() == OrderStatus.CANCELLED);
         boolean allCompleted = orders.stream().allMatch(order -> order.getOrderStatus() == OrderStatus.DELIVERED);
         boolean anyShipped = orders.stream().anyMatch(order -> order.getOrderStatus() == OrderStatus.SHIPPED);
         boolean anyProcessing = orders.stream().anyMatch(order -> order.getOrderStatus() == OrderStatus.PROCESSING);
-        
+
         if (allCancelled) {
             this.status = OrderStatus.CANCELLED;
         } else if (allCompleted) {
             this.status = OrderStatus.DELIVERED;
         } else if (anyShipped) {
             this.status = OrderStatus.SHIPPED;
-        } else if (anyProcessing) {
-            this.status = OrderStatus.PROCESSING;
         } else {
-            this.status = OrderStatus.PENDING;
+            // Default to PROCESSING (orders are paid and ready for preparation)
+            this.status = OrderStatus.PROCESSING;
         }
     }
     

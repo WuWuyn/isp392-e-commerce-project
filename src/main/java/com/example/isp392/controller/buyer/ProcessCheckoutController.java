@@ -110,7 +110,7 @@ public class ProcessCheckoutController {
             CustomerOrder customerOrder = new CustomerOrder();
             customerOrder.setUser(user);
             customerOrder.setCreatedAt(LocalDateTime.now());
-            customerOrder.setStatus(OrderStatus.PENDING);
+            customerOrder.setStatus(OrderStatus.PROCESSING);
 
             // Set payment information
             PaymentMethod paymentMethod = PaymentMethod.valueOf(orderDTO.getPaymentMethod());
@@ -211,7 +211,7 @@ public class ProcessCheckoutController {
                 // Create order for this shop
                 Order order = new Order();
                 order.setOrderDate(LocalDateTime.now());
-                order.setOrderStatus(OrderStatus.PENDING);
+                order.setOrderStatus(OrderStatus.PROCESSING);
                 order.setNotes(orderDTO.getNotes());
 
                 // Set shop for the order

@@ -88,7 +88,7 @@ public class CheckoutService {
             customerOrder.setTotalAmount(BigDecimal.ZERO);
             customerOrder.setShippingFee(BigDecimal.ZERO);
             customerOrder.setDiscountAmount(BigDecimal.ZERO);
-            customerOrder.setStatus(OrderStatus.PENDING);
+            customerOrder.setStatus(OrderStatus.PROCESSING);
             customerOrder.setNotes(checkoutDTO.getNotes());
             customerOrder.setCreatedAt(LocalDateTime.now());
             customerOrder = customerOrderRepository.save(customerOrder);
@@ -123,7 +123,7 @@ public class CheckoutService {
                 order.setShippingFee(PaymentConfig.DEFAULT_SHIPPING_FEE);
                 order.setDiscountAmount(BigDecimal.ZERO);
                 order.setTotalAmount(subTotal.add(PaymentConfig.DEFAULT_SHIPPING_FEE));
-                order.setOrderStatus(OrderStatus.PENDING);
+                order.setOrderStatus(OrderStatus.PROCESSING);
                 order.setNotes(shopOrderDTO.getShopNotes());
                 order.setOrderDate(LocalDateTime.now());
 

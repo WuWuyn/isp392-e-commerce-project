@@ -47,7 +47,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status", length = 50, nullable = false)
-    private OrderStatus orderStatus;
+    private OrderStatus orderStatus = OrderStatus.PROCESSING;
 
     @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)")
     private String notes;
@@ -83,8 +83,8 @@ public class Order {
      * @return true nếu có thể hủy, false nếu không
      */
     public boolean canCancel() {
-        // Chỉ có thể hủy nếu đơn hàng đang ở trạng thái PENDING hoặc PROCESSING
-        return orderStatus == OrderStatus.PENDING || orderStatus == OrderStatus.PROCESSING;
+        // Chỉ có thể hủy nếu đơn hàng đang ở trạng thái PROCESSING (chưa ship)
+        return orderStatus == OrderStatus.PROCESSING;
     }
     
     /**

@@ -92,14 +92,14 @@ public class OrderService {
 
     private boolean isValidStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {
         switch (currentStatus) {
-            case PENDING:
-                return newStatus == OrderStatus.PROCESSING || 
-                       newStatus == OrderStatus.CANCELLED;
             case PROCESSING:
-                return newStatus == OrderStatus.SHIPPED || 
+                return newStatus == OrderStatus.SHIPPED ||
                        newStatus == OrderStatus.CANCELLED;
             case SHIPPED:
-                return newStatus == OrderStatus.CANCELLED;
+                return newStatus == OrderStatus.DELIVERED ||
+                       newStatus == OrderStatus.CANCELLED;
+            case DELIVERED:
+                return false; // Cannot change from delivered
             case CANCELLED:
                 return false; // Cannot change from cancelled
             default:
@@ -194,8 +194,8 @@ public class OrderService {
             for (OrderItem item : order.getOrderItems()) {
                 bookService.increaseStockQuantity(item.getBook().getBookId(), item.getQuantity());
             }
-        } else if (oldStatus == OrderStatus.CANCELLED && 
-                  (newStatus == OrderStatus.PENDING || newStatus == OrderStatus.PROCESSING)) {
+        } else if (oldStatus == OrderStatus.CANCELLED &&
+                  newStatus == OrderStatus.PROCESSING) {
             // Remove items from inventory when cancelled order is reactivated
             for (OrderItem item : order.getOrderItems()) {
                 bookService.decreaseStockQuantity(item.getBook().getBookId(), item.getQuantity());
