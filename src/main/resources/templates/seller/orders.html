@@ -39,7 +39,9 @@
 
         <div class="col-lg-9">
             <main>
-                <h3 class="section-title">Orders Management</h3>
+                <h3 class="section-title">
+                    Orders Management <span class="badge bg-secondary align-middle" th:text="${orderPage.totalElements}"></span>
+                </h3>
 
                 <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center" role="alert">
                     <i class="fas fa-check-circle me-2"></i>
@@ -97,10 +99,25 @@
                         <table class="table table-hover">
                             <thead>
                             <tr>
-                                <th>Order</th>
-                                <th>Date</th>
+                                <th>
+                                    <a th:href="@{/seller/orders(sortField='orderId', sortDir=${sortField == 'orderId' ? reverseSortDir : 'asc'}, keyword=${keyword}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate})}">
+                                        Order
+                                        <i th:if="${sortField == 'orderId'}" th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a th:href="@{/seller/orders(sortField='orderDate', sortDir=${sortField == 'orderDate' ? reverseSortDir : 'asc'}, keyword=${keyword}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate})}">
+                                        Date
+                                        <i th:if="${sortField == 'orderDate'}" th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"></i>
+                                    </a>
+                                </th>
                                 <th>Buyer</th>
-                                <th>Total</th>
+                                <th>
+                                    <a th:href="@{/seller/orders(sortField='totalAmount', sortDir=${sortField == 'totalAmount' ? reverseSortDir : 'asc'}, keyword=${keyword}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate})}">
+                                        Total
+                                        <i th:if="${sortField == 'totalAmount'}" th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"></i>
+                                    </a>
+                                </th>
                                 <th>Status</th>
                                 <th class="text-center">Actions</th>
                             </tr>
