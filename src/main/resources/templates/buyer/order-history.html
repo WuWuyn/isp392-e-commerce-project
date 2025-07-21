@@ -4,18 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order History</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 
-<!-- Header -->
 <div th:replace="~{fragments/header :: header-content}"></div>
 
 <main class="account-page py-5 bg-light">
@@ -27,17 +22,14 @@
             </ol>
         </nav>
         <div class="row">
-            <!-- Sidebar -->
             <div th:replace="fragments/buyer-account-sidebar :: sidebar('orders')"></div>
-            
-            <!-- Main Content -->
+
             <div class="col-lg-9">
                 <div class="card rounded-4 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pt-4 pb-0">
                         <h4 class="mb-0">Order History</h4>
                     </div>
                     <div class="card-body">
-                        <!-- Filters -->
                         <div class="row g-3 mb-4">
                             <div class="col-md-3">
                                 <label for="statusFilter" class="form-label small text-muted">Status</label>
@@ -46,19 +38,19 @@
                                     <option th:each="status : ${T(com.example.isp392.model.OrderStatus).values()}"
                                             th:value="${status}"
                                             th:text="${status.toString()}"
-                                            th:selected="${param.status != null && param.status[0] == status.toString()}">
+                                            th:selected="${paramStatus != null && paramStatus == status.toString()}">
                                     </option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="dateFrom" class="form-label small text-muted">From Date</label>
-                                <input type="date" class="form-control rounded-3" id="dateFrom" 
-                                       th:value="${param.dateFrom}" max="9999-12-31">
+                                <input type="date" class="form-control rounded-3" id="dateFrom"
+                                       th:value="${paramDateFrom}" max="9999-12-31">
                             </div>
                             <div class="col-md-3">
                                 <label for="dateTo" class="form-label small text-muted">To Date</label>
-                                <input type="date" class="form-control rounded-3" id="dateTo" 
-                                       th:value="${param.dateTo}" max="9999-12-31">
+                                <input type="date" class="form-control rounded-3" id="dateTo"
+                                       th:value="${paramDateTo}" max="9999-12-31">
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
                                 <div class="d-flex gap-2 w-100">
@@ -72,18 +64,16 @@
                             </div>
                         </div>
 
-                        <!-- Alerts -->
                         <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert" th:if="${success != null}">
                             <span th:text="${success}"></span>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                        
+
                         <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert" th:if="${error != null}">
                             <span th:text="${error}"></span>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
 
-                        <!-- Empty State -->
                         <div class="text-center py-5" th:if="${#lists.isEmpty(orders)}">
                             <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
                             <h5>No Orders Yet</h5>
@@ -91,84 +81,82 @@
                             <a th:href="@{/}" class="btn btn-primary rounded-3">Start Shopping</a>
                         </div>
 
-                        <!-- Order List -->
                         <div th:unless="${#lists.isEmpty(orders)}">
                             <div class="card mb-3 rounded-4 shadow-sm border" th:each="order : ${orders}">
-                                <div class="card-header bg-white py-3 border-bottom">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <div class="d-flex align-items-center mb-1">
-                                                <span class="fw-bold">Order #</span>
-                                                <span th:text="${order.orderId}"></span>
-                                                <span class="ms-3 text-muted" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                                    <div>
+                                        <span class="fw-bold">Order #</span>
+                                        <span th:text="${order.orderId}"></span>
+                                        <span class="ms-3 text-muted" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                    </div>
+                                    <span th:class="'order-status status-' + ${#strings.toLowerCase(order.orderStatus)}"
+                                          th:text="${order.orderStatus}">
+                                    </span>
+                                </div>
+
+                                <div class="card-body p-0">
+                                    <div th:each="item, itemStat : ${order.orderItems}" class="p-3" th:classappend="${!itemStat.last} ? 'border-bottom'">
+                                        <div class="row align-items-center">
+                                            <div class="col-2 col-md-1">
+                                                <img th:src="${item.book.coverImgUrl}" class="img-fluid rounded-3" alt="Book cover" style="width: 60px;">
                                             </div>
-                                            <div class="d-flex align-items-center">
-                                                <i class="fas fa-store text-primary me-2"></i>
-                                                <span class="text-muted small" th:text="${order.shop.shopName}">Shop Name</span>
+                                            <div class="col-10 col-md-6">
+                                                <h6 class="mb-1" th:text="${item.book.title}"></h6>
+                                                <p class="mb-0 text-muted small">
+                                                    <span th:text="${item.quantity}"></span> x
+                                                    <span th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                                                </p>
+                                            </div>
+                                            <div class="col-md-5 mt-3 mt-md-0 text-md-end">
+                                                <div th:if="${order.orderStatus.name() == 'DELIVERED'}">
+                                                    <a th:if="${reviewedItemIds != null and !reviewedItemIds.contains(item.orderItemId)}"
+                                                       th:href="@{'/buyer/orders/review/' + ${item.orderItemId}}"
+                                                       class="btn btn-warning btn-sm rounded-3">
+                                                        <i class="fas fa-star"></i> Write a Review
+                                                    </a>
+                                                    <a th:if="${reviewedItemIds != null and reviewedItemIds.contains(item.orderItemId)}"
+                                                       th:href="@{'/buyer/orders/review/' + ${item.orderItemId}}"
+                                                       class="btn btn-outline-secondary btn-sm rounded-3">
+                                                        <i class="fas fa-eye"></i> View Your Review
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
-                                        <span th:class="'order-status status-' + ${#strings.toLowerCase(order.orderStatus)}"
-                                            th:text="${order.orderStatus}">
-                                        </span>
                                     </div>
                                 </div>
-                                <div class="card-body">
-                                    <!-- Show only first item with count -->
-                                    <div class="row align-items-center" th:if="${!order.orderItems.isEmpty()}">
-                                        <div class="col-2 col-md-1">
-                                            <img th:src="${order.orderItems[0].book.coverImgUrl}" 
-                                                class="img-fluid rounded-3" 
-                                                alt="Book cover"
-                                                style="width: 60px;">
-                                        </div>
-                                        <div class="col-10 col-md-7">
-                                            <h6 class="mb-1" th:text="${order.orderItems[0].book.title}"></h6>
-                                            <p class="mb-0 text-muted small">
-                                                <span th:text="${order.orderItems[0].quantity}"></span> x 
-                                                <span th:text="${#numbers.formatDecimal(order.orderItems[0].unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
-                                                <span th:if="${order.orderItems.size() > 1}" class="ms-2 text-primary">
-                                                    (and <span th:text="${order.orderItems.size() - 1}"></span> other items)
-                                                </span>
-                                            </p>
-                                        </div>
-                                        <div class="col-md-4 mt-3 mt-md-0 text-md-end">
-                                            <p class="mb-2">
-                                                <span class="text-muted">Total payment:</span><br/>
-                                                <span class="text-primary fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
-                                            </p>
-                                            <div class="d-flex gap-2 justify-content-md-end">
-                                                <a th:href="@{'/buyer/orders/' + ${order.orderId}}" class="btn btn-outline-primary btn-sm rounded-3">
-                                                    <i class="fas fa-eye"></i> Details
-                                                </a>
-                                                <form th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}" 
-                                                      th:action="@{'/buyer/orders/' + ${order.orderId} + '/rebuy'}" 
-                                                      method="post"
-                                                      class="d-inline">
-                                                    <button type="submit" class="btn btn-primary btn-sm rounded-3">
-                                                        <i class="fas fa-sync-alt"></i> Rebuy
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
+
+                                <div class="card-footer bg-light d-flex justify-content-between align-items-center py-3">
+                                    <div>
+                                        <span class="text-muted">Total payment:</span>
+                                        <span class="text-primary fw-bold fs-5 ms-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a th:href="@{'/buyer/orders/' + ${order.orderId}}" class="btn btn-outline-primary btn-sm rounded-3">
+                                            <i class="fas fa-info-circle"></i> Details
+                                        </a>
+                                        <form th:if="${order.orderStatus.name() == 'DELIVERED'}" th:action="@{'/buyer/orders/' + ${order.orderId} + '/rebuy'}" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-primary btn-sm rounded-3">
+                                                <i class="fas fa-sync-alt"></i> Rebuy
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Pagination -->
                             <nav th:if="${totalPages > 1}" class="mt-4">
                                 <ul class="pagination justify-content-center">
                                     <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                                        <a class="page-link rounded-start-3" th:href="@{/buyer/orders(page=${currentPage - 1}, status=${param.status}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}">
+                                        <a class="page-link rounded-start-3" th:href="@{/buyer/orders(page=${currentPage - 1}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}">
                                             <i class="fas fa-chevron-left small"></i>
                                         </a>
                                     </li>
                                     <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
                                         th:classappend="${currentPage == i} ? 'active'">
-                                        <a class="page-link" th:href="@{/buyer/orders(page=${i}, status=${param.status}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}" 
+                                        <a class="page-link" th:href="@{/buyer/orders(page=${i}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}"
                                            th:text="${i + 1}"></a>
                                     </li>
                                     <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                                        <a class="page-link rounded-end-3" th:href="@{/buyer/orders(page=${currentPage + 1}, status=${param.status}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}">
+                                        <a class="page-link rounded-end-3" th:href="@{/buyer/orders(page=${currentPage + 1}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}">
                                             <i class="fas fa-chevron-right small"></i>
                                         </a>
                                     </li>
@@ -182,12 +170,9 @@
     </div>
 </main>
 
-<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer-content}"></div>
 
-<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Custom JS -->
 <script th:src="@{/js/script.js}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -224,17 +209,17 @@
         const status = document.getElementById('statusFilter').value;
         const dateFrom = document.getElementById('dateFrom').value;
         const dateTo = document.getElementById('dateTo').value;
-        
+
         let url = '/buyer/orders?';
         if (status) url += `status=${status}&`;
         if (dateFrom) url += `dateFrom=${dateFrom}&`;
         if (dateTo) url += `dateTo=${dateTo}&`;
-        
+
         // Remove trailing & if any
         if (url.endsWith('&')) {
             url = url.slice(0, -1);
         }
-        
+
         window.location.href = url;
     }
 
@@ -246,4 +231,4 @@
     }
 </script>
 </body>
-</html> 
+</html>

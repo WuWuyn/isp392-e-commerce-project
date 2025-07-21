@@ -2,6 +2,7 @@ package com.example.isp392.service;
 
 import com.example.isp392.model.*;
 import com.example.isp392.repository.OrderRepository;
+import com.example.isp392.repository.OrderItemRepository;
 import com.example.isp392.repository.CustomerOrderRepository;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -36,17 +37,19 @@ public class OrderService {
     private final BookService bookService;
     private final CustomerOrderService customerOrderService;
     private final Lock orderStatusLock = new ReentrantLock();
+    private final OrderItemRepository orderItemRepository;
 
     public OrderService(OrderRepository orderRepository,
                        CustomerOrderRepository customerOrderRepository,
                        PromotionService promotionService,
                        BookService bookService,
-                       CustomerOrderService customerOrderService) {
+                       CustomerOrderService customerOrderService, OrderItemRepository orderItemRepository) {
         this.orderRepository = orderRepository;
         this.customerOrderRepository = customerOrderRepository;
         this.promotionService = promotionService;
         this.bookService = bookService;
         this.customerOrderService = customerOrderService;
+        this.orderItemRepository = orderItemRepository;
     }
 
     public List<Order> getOrdersForSeller(Integer sellerId) {
@@ -60,8 +63,8 @@ public class OrderService {
             return orderRepository.findById(orderId).map(order -> {
                 // Validate status transition
                 if (!isValidStatusTransition(order.getOrderStatus(), newStatus)) {
-                    throw new IllegalStateException("Không thể chuyển từ trạng thái " + 
-                        order.getOrderStatus() + " sang " + newStatus);
+                    throw new IllegalStateException("Cannot change status from " +
+                            order.getOrderStatus() + " to " + newStatus);
                 }
                 
                 // Check if order is part of a customer order
@@ -595,5 +598,8 @@ public class OrderService {
             orderRepository.save(order);
             return true;
         }).orElse(false);
+    }
+    public Optional<OrderItem> findOrderItemById(Integer orderItemId) {
+        return orderItemRepository.findById(orderItemId);
     }
 }

@@ -53,13 +53,13 @@ public class BookReviewService {
     }
 
     // Lấy danh sách ID của các OrderItem đã được người dùng đánh giá
+
     public Set<Integer> getReviewedItemIdsForUser(User user) {
         return bookReviewRepository.findByUser(user).stream()
                 .filter(review -> review.getOrderItem() != null)
                 .map(review -> review.getOrderItem().getOrderItemId())
                 .collect(Collectors.toSet());
     }
-
     public boolean deleteReview(Integer reviewId, User currentUser) {
         Optional<BookReview> reviewOpt = bookReviewRepository.findById(reviewId);
 
