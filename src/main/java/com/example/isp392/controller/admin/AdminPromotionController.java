@@ -18,8 +18,15 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.beans.propertyeditors.CustomNumberEditor;
 
 @Controller
 @RequestMapping("/admin/promotions")
@@ -113,7 +120,14 @@ public class AdminPromotionController {
     public String createPromotionForm(Model model) {
         logger.info("Displaying create promotion form");
 
-        model.addAttribute("promotionForm", new PromotionFormDTO());
+        // Create DTO with sensible defaults for simplified system
+        PromotionFormDTO promotionForm = new PromotionFormDTO();
+        promotionForm.setStatus(Promotion.PromotionStatus.ACTIVE);
+        promotionForm.setIsActive(true);
+        promotionForm.setScopeType(Promotion.ScopeType.SITE_WIDE); // Default to site-wide
+        promotionForm.setPromotionType(Promotion.PromotionType.PERCENTAGE_DISCOUNT); // Default to percentage
+
+        model.addAttribute("promotionForm", promotionForm);
         model.addAttribute("isEdit", false);
         model.addAttribute("activeMenu", "promotions");
         addFormAttributes(model);
@@ -131,9 +145,18 @@ public class AdminPromotionController {
                                  RedirectAttributes redirectAttributes) {
 
         logger.info("Creating promotion with code: {}", promotionForm.getCode());
+        logger.info("Received form data - maxDiscountAmount: {}, minOrderValue: {}",
+                   promotionForm.getMaxDiscountAmount(), promotionForm.getMinOrderValue());
+
+        // Only do custom validation if basic validation passes
+        if (!bindingResult.hasErrors()) {
+            validatePromotionFields(promotionForm, bindingResult);
+        }
 
         if (bindingResult.hasErrors()) {
             logger.warn("Validation errors in promotion form: {}", bindingResult.getAllErrors());
+            bindingResult.getAllErrors().forEach(error ->
+                logger.warn("Validation error: {}", error.getDefaultMessage()));
             model.addAttribute("isEdit", false);
             model.addAttribute("activeMenu", "promotions");
             addFormAttributes(model);
@@ -144,6 +167,14 @@ public class AdminPromotionController {
             User currentUser = userService.getUserByUsername(authentication.getName());
             if (currentUser == null) {
                 throw new RuntimeException("Current user not found");
+            }
+
+            // Set defaults for simplified promotion system
+            if (promotionForm.getStatus() == null) {
+                promotionForm.setStatus(Promotion.PromotionStatus.ACTIVE);
+            }
+            if (promotionForm.getIsActive() == null) {
+                promotionForm.setIsActive(true);
             }
 
             Promotion promotion = promotionService.createPromotion(promotionForm, currentUser);
@@ -203,6 +234,11 @@ public class AdminPromotionController {
                                  RedirectAttributes redirectAttributes) {
 
         logger.info("Updating promotion with ID: {}", id);
+
+        // Only do custom validation if basic validation passes
+        if (!bindingResult.hasErrors()) {
+            validatePromotionFields(promotionForm, bindingResult);
+        }
 
         if (bindingResult.hasErrors()) {
             logger.warn("Validation errors in promotion form: {}", bindingResult.getAllErrors());
@@ -310,17 +346,15 @@ public class AdminPromotionController {
     // ==================== Helper Methods ====================
 
     /**
-     * Add common form attributes to model
+     * Add common form attributes to model - simplified for essential fields only
      */
     private void addFormAttributes(Model model) {
         model.addAttribute("promotionTypes", Promotion.PromotionType.values());
         model.addAttribute("scopeTypes", Promotion.ScopeType.values());
         model.addAttribute("statusOptions", Promotion.PromotionStatus.values());
-        
-        // Add data for scope selection
+
+        // Add data for scope selection - only categories in simplified system
         model.addAttribute("categories", categoryService.getAllCategories());
-        model.addAttribute("shops", shopService.getAllShops());
-        // Note: Books list might be too large, consider loading via AJAX
     }
 
     /**
@@ -344,20 +378,108 @@ public class AdminPromotionController {
         dto.setUsageLimitPerUser(promotion.getUsageLimitPerUser());
         dto.setTotalUsageLimit(promotion.getTotalUsageLimit());
         
-        // Map scope-specific relationships
+        // Map scope-specific relationships - only categories in simplified system
         if (!promotion.getApplicableCategories().isEmpty()) {
             dto.setCategoryIds(promotion.getApplicableCategories().stream()
                 .map(Category::getCategoryId).toList());
         }
-        if (!promotion.getApplicableBooks().isEmpty()) {
-            dto.setBookIds(promotion.getApplicableBooks().stream()
-                .map(Book::getBookId).toList());
-        }
-        if (!promotion.getApplicableShops().isEmpty()) {
-            dto.setShopIds(promotion.getApplicableShops().stream()
-                .map(Shop::getShopId).toList());
-        }
         
         return dto;
+    }
+
+    /**
+     * Get promotion edit status information (AJAX endpoint)
+     */
+    @GetMapping("/{id}/edit-status")
+    @ResponseBody
+    public Map<String, Object> getPromotionEditStatus(@PathVariable Integer id) {
+        logger.info("Getting edit status for promotion ID: {}", id);
+        return promotionService.getPromotionEditStatus(id);
+    }
+
+    /**
+     * Toggle promotion active status (AJAX endpoint)
+     */
+    @PostMapping("/{id}/toggle-active")
+    @ResponseBody
+    public Map<String, Object> togglePromotionActive(@PathVariable Integer id, Authentication authentication) {
+        logger.info("Toggling active status for promotion ID: {}", id);
+
+        Map<String, Object> result = Map.of("success", false);
+
+        try {
+            User currentUser = userService.findByEmail(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            Optional<Promotion> optionalPromotion = promotionService.findById(id);
+            if (optionalPromotion.isPresent()) {
+                Promotion promotion = optionalPromotion.get();
+
+                // Toggle active status
+                promotion.setIsActive(!promotion.getIsActive());
+                promotion.setUpdatedBy(currentUser);
+
+                promotionService.save(promotion);
+
+                result = Map.of(
+                    "success", true,
+                    "id", promotion.getPromotionId(),
+                    "isActive", promotion.getIsActive(),
+                    "message", "Promotion " + (promotion.getIsActive() ? "activated" : "deactivated") + " successfully"
+                );
+            }
+        } catch (Exception e) {
+            logger.error("Error toggling promotion active status: {}", e.getMessage(), e);
+            result = Map.of(
+                "success", false,
+                "error", e.getMessage()
+            );
+        }
+
+        return result;
+    }
+
+    /**
+     * Custom validation for promotion fields
+     */
+    private void validatePromotionFields(PromotionFormDTO promotionForm, BindingResult bindingResult) {
+        // Validate percentage discount constraints
+        if (promotionForm.getPromotionType() == Promotion.PromotionType.PERCENTAGE_DISCOUNT) {
+            // For percentage discounts, discount value should be between 0.01 and 100
+            if (promotionForm.getDiscountValue() != null &&
+                promotionForm.getDiscountValue().compareTo(new BigDecimal("100")) > 0) {
+                bindingResult.rejectValue("discountValue", "error.discountValue",
+                    "Percentage discount cannot exceed 100%");
+            }
+        }
+
+        // Validate that max discount amount makes sense for percentage discounts
+        if (promotionForm.getPromotionType() == Promotion.PromotionType.PERCENTAGE_DISCOUNT &&
+            promotionForm.getMaxDiscountAmount() != null &&
+            promotionForm.getMinOrderValue() != null &&
+            promotionForm.getDiscountValue() != null) {
+
+            // Calculate what the discount would be at minimum order value
+            BigDecimal percentageAsDecimal = promotionForm.getDiscountValue().divide(new BigDecimal("100"));
+            BigDecimal discountAtMinOrder = promotionForm.getMinOrderValue().multiply(percentageAsDecimal);
+
+            // If max discount is less than what would be applied at min order, it's probably wrong
+            if (promotionForm.getMaxDiscountAmount().compareTo(discountAtMinOrder) < 0) {
+                bindingResult.rejectValue("maxDiscountAmount", "error.maxDiscountAmount",
+                    "Max discount amount seems too low compared to minimum order value and discount percentage");
+            }
+        }
+
+        // Validate fixed amount discount constraints
+        if (promotionForm.getPromotionType() == Promotion.PromotionType.FIXED_AMOUNT_DISCOUNT &&
+            promotionForm.getMinOrderValue() != null &&
+            promotionForm.getDiscountValue() != null) {
+
+            // Fixed discount shouldn't exceed minimum order value
+            if (promotionForm.getDiscountValue().compareTo(promotionForm.getMinOrderValue()) >= 0) {
+                bindingResult.rejectValue("discountValue", "error.discountValue",
+                    "Fixed discount amount should be less than minimum order value");
+            }
+        }
     }
 }

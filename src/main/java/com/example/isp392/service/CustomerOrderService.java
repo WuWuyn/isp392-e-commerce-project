@@ -82,8 +82,18 @@ public class CustomerOrderService {
      * @return saved customer order
      */
     public CustomerOrder save(CustomerOrder customerOrder) {
-        // Calculate total amount before saving
-        customerOrder.setTotalAmount(customerOrder.calculateTotalAmount());
+        // Calculate final total amount before saving
+        customerOrder.setFinalTotalAmount(customerOrder.calculateFinalTotalAmount());
+        return customerOrderRepository.save(customerOrder);
+    }
+
+    /**
+     * Save customer order without recalculating total amount
+     * Use this when total amount is already correctly set (e.g., from payment reservation)
+     * @param customerOrder the customer order to save
+     * @return saved customer order
+     */
+    public CustomerOrder saveWithoutRecalculation(CustomerOrder customerOrder) {
         return customerOrderRepository.save(customerOrder);
     }
     

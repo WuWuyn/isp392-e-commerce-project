@@ -1,5 +1,6 @@
 package com.example.isp392.controller.buyer;
 
+import com.example.isp392.dto.CheckoutDiscountBreakdown;
 import com.example.isp392.model.CartItem;
 import com.example.isp392.model.User;
 import com.example.isp392.model.UserAddress;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +100,27 @@ public class CheckoutController {
                     .mapToDouble(item -> item.getBook().getSellingPrice().doubleValue() * item.getQuantity())
                     .sum();
 
+            // Group selected items by shop to calculate shipping
+            Map<String, List<CartItem>> itemsByShop = cartService.groupCartItemsByShop(selectedCartItems);
+
+            // Calculate shipping fee (30,000 VND per shop)
+            double shippingFee = itemsByShop.size() * 30000.0;
+
+            // Get discount information from session (applied in cart)
+            CheckoutDiscountBreakdown appliedPromotion = (CheckoutDiscountBreakdown) session.getAttribute("appliedPromotion");
+
+            // Calculate final total amount (like final_total_amount logic)
+            double discountAmount = 0.0;
+            if (appliedPromotion != null && appliedPromotion.isSuccess()) {
+                discountAmount = appliedPromotion.getTotalDiscount().doubleValue();
+            }
+
+            double originalTotalAmount = subtotal + shippingFee;
+            double finalTotalAmount = originalTotalAmount - discountAmount;
+
+            logger.info("Checkout totals - Subtotal: {}, Shipping: {}, Discount: {}, Original: {}, Final: {}",
+                       subtotal, shippingFee, discountAmount, originalTotalAmount, finalTotalAmount);
+
             // Get user's addresses
             List<UserAddress> userAddresses = userAddressService.findByUser(user);
             UserAddress defaultAddress = userAddresses.stream()
@@ -105,16 +128,22 @@ public class CheckoutController {
                     .findFirst()
                     .orElse(null);
 
-            // Group selected items by shop
-            Map<String, List<CartItem>> itemsByShop = cartService.groupCartItemsByShop(selectedCartItems);
-
             // Add to model
             model.addAttribute("selectedItems", selectedCartItems);
             model.addAttribute("itemsByShop", itemsByShop);
             model.addAttribute("subtotal", subtotal);
+            model.addAttribute("shippingFee", shippingFee);
+            model.addAttribute("originalTotalAmount", originalTotalAmount);
+            model.addAttribute("totalAmount", finalTotalAmount); // This is the final amount user pays
             model.addAttribute("userAddresses", userAddresses);
             model.addAttribute("defaultAddress", defaultAddress);
             model.addAttribute("user", user);
+
+            // Add discount information to model
+            if (appliedPromotion != null && appliedPromotion.isSuccess()) {
+                model.addAttribute("appliedPromotion", appliedPromotion);
+                logger.info("Applied promotion from session: {} - {}", appliedPromotion.getPromoCode(), appliedPromotion.getTotalDiscount());
+            }
 
             // Store selected items in session for order processing
             session.setAttribute("checkoutItems", selectedCartItems);
@@ -172,6 +201,11 @@ public class CheckoutController {
             // Group items by shop (for Buy Now, there should be only one shop)
             Map<String, List<CartItem>> itemsByShop = cartService.groupCartItemsByShop(buyNowItems);
 
+            // Get discount information from session (applied in cart)
+            String discountCode = (String) session.getAttribute("appliedDiscountCode");
+            BigDecimal discountAmount = (BigDecimal) session.getAttribute("appliedDiscountAmount");
+            String discountDescription = (String) session.getAttribute("appliedDiscountDescription");
+
             // Add to model
             model.addAttribute("selectedItems", buyNowItems);
             model.addAttribute("itemsByShop", itemsByShop);
@@ -180,6 +214,14 @@ public class CheckoutController {
             model.addAttribute("defaultAddress", defaultAddress);
             model.addAttribute("user", user);
             model.addAttribute("isBuyNow", true);
+
+            // Add discount information to model
+            if (discountCode != null && discountAmount != null) {
+                model.addAttribute("discountCode", discountCode);
+                model.addAttribute("discountAmount", discountAmount);
+                model.addAttribute("discountDescription", discountDescription);
+                logger.info("Applied discount from session for Buy Now: {} - {}", discountCode, discountAmount);
+            }
 
             // Store Buy Now items in session for order processing
             session.setAttribute("checkoutItems", buyNowItems);

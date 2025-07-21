@@ -318,23 +318,7 @@
                         </div>
                     </div>
 
-                    <!-- Product Scope -->
-                    <div th:if="${promotion.scopeType != null and promotion.scopeType.name() == 'PRODUCT' and promotion.applicableBooks != null and !promotion.applicableBooks.empty}">
-                        <label class="form-label text-muted">Applicable Products</label>
-                        <div>
-                            <span th:each="book : ${promotion.applicableBooks}"
-                                  class="scope-item" th:text="${book.title ?: 'Unknown Product'}">Product</span>
-                        </div>
-                    </div>
-
-                    <!-- Shop Scope -->
-                    <div th:if="${promotion.scopeType != null and promotion.scopeType.name() == 'SHOP' and promotion.applicableShops != null and !promotion.applicableShops.empty}">
-                        <label class="form-label text-muted">Applicable Shops</label>
-                        <div>
-                            <span th:each="shop : ${promotion.applicableShops}"
-                                  class="scope-item" th:text="${shop.shopName ?: 'Unknown Shop'}">Shop</span>
-                        </div>
-                    </div>
+                    <!-- Product and Shop scopes removed in simplified system -->
                 </div>
 
                     <!-- Time Configuration -->

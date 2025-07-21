@@ -33,20 +33,26 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CustomerOrderRepository customerOrderRepository;
     private final PromotionService promotionService;
+    private final PromotionCalculationService promotionCalculationService;
     private final BookService bookService;
     private final CustomerOrderService customerOrderService;
+    private final CartService cartService;
     private final Lock orderStatusLock = new ReentrantLock();
 
     public OrderService(OrderRepository orderRepository,
                        CustomerOrderRepository customerOrderRepository,
                        PromotionService promotionService,
+                       PromotionCalculationService promotionCalculationService,
                        BookService bookService,
-                       CustomerOrderService customerOrderService) {
+                       CustomerOrderService customerOrderService,
+                       CartService cartService) {
         this.orderRepository = orderRepository;
         this.customerOrderRepository = customerOrderRepository;
         this.promotionService = promotionService;
+        this.promotionCalculationService = promotionCalculationService;
         this.bookService = bookService;
         this.customerOrderService = customerOrderService;
+        this.cartService = cartService;
     }
 
     public List<Order> getOrdersForSeller(Integer sellerId) {
@@ -107,6 +113,72 @@ public class OrderService {
         }
     }
 
+    /**
+     * Check if an order can be cancelled by the customer
+     */
+    public boolean canBeCancelled(Order order) {
+        return order.getOrderStatus() == OrderStatus.PROCESSING ||
+               order.getOrderStatus() == OrderStatus.SHIPPED;
+    }
+
+    /**
+     * Cancel an order with reason (for customer cancellation)
+     */
+    @Transactional
+    public boolean cancelOrder(Integer orderId, String cancellationReason, User user) {
+        try {
+            orderStatusLock.lock();
+
+            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            if (orderOpt.isEmpty()) {
+                logger.warn("Order not found: {}", orderId);
+                return false;
+            }
+
+            Order order = orderOpt.get();
+
+            // Verify order belongs to user
+            if (!order.getCustomerOrder().getUser().getUserId().equals(user.getUserId())) {
+                logger.warn("User {} attempted to cancel order {} that doesn't belong to them",
+                           user.getEmail(), orderId);
+                return false;
+            }
+
+            // Check if order can be cancelled
+            if (!canBeCancelled(order)) {
+                logger.warn("Order {} cannot be cancelled. Current status: {}",
+                           orderId, order.getOrderStatus());
+                return false;
+            }
+
+            // Cancel the order
+            OrderStatus oldStatus = order.getOrderStatus();
+            order.setOrderStatus(OrderStatus.CANCELLED);
+            order.setCancellationReason(cancellationReason);
+            order.setCancelledAt(LocalDateTime.now());
+
+            // Handle inventory restoration
+            handleInventoryForStatusChange(order, oldStatus, OrderStatus.CANCELLED);
+
+            // Save order
+            orderRepository.save(order);
+
+            // Update customer order status
+            if (order.getCustomerOrder() != null) {
+                customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
+            }
+
+            logger.info("Order {} cancelled successfully by user {}", orderId, user.getEmail());
+            return true;
+
+        } catch (Exception e) {
+            logger.error("Error cancelling order {}: {}", orderId, e.getMessage(), e);
+            return false;
+        } finally {
+            orderStatusLock.unlock();
+        }
+    }
+
     private void validateCustomerOrderStatus(CustomerOrder customerOrder, OrderStatus newStatus) {
         // Check if any order in the customer order is in an incompatible state
         for (Order order : customerOrder.getOrders()) {
@@ -147,45 +219,26 @@ public class OrderService {
     }
 
     public void applyPromotion(Order order, String promotionCode) {
-        Optional<Promotion> promotionOpt = promotionService.findByCode(promotionCode);
-        if (promotionOpt.isEmpty()) {
-            throw new RuntimeException("Mã giảm giá không tồn tại");
+        logger.info("Applying promotion {} to order with subtotal: {}", promotionCode, order.getSubTotal());
+
+        // Use centralized promotion service for validation and calculation
+        PromotionCalculationService.PromotionApplicationResult result =
+            promotionCalculationService.applyPromotion(promotionCode, order.getCustomerOrder().getUser(), order.getSubTotal());
+
+        if (!result.isSuccess()) {
+            logger.error("Promotion application failed: {}", result.getErrorMessage());
+            throw new RuntimeException(result.getErrorMessage());
         }
 
-        Promotion promotion = promotionOpt.get();
-        
-        if (!promotion.getIsActive()) {
-            throw new RuntimeException("Mã giảm giá đã hết hạn");
-        }
+        logger.info("Promotion application successful. Discount amount: {}, Final total: {}",
+                   result.getDiscountAmount(), result.getFinalTotal());
 
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(promotion.getStartDate()) || now.isAfter(promotion.getEndDate())) {
-            throw new RuntimeException("Mã giảm giá không trong thời gian sử dụng");
-        }
+        order.setDiscountAmount(result.getDiscountAmount());
+        order.setDiscountCode(promotionCode);
+        promotionCalculationService.recordPromotionUsage(promotionCode, order.getCustomerOrder().getUser().getUserId());
 
-        if (promotion.getMinOrderValue() != null && 
-            order.getSubTotal().compareTo(promotion.getMinOrderValue()) < 0) {
-            throw new RuntimeException("Giá trị đơn hàng chưa đạt mức tối thiểu");
-        }
-
-        BigDecimal discountAmount;
-        if ("PERCENTAGE".equals(promotion.getDiscountType())) {
-            discountAmount = order.getSubTotal()
-                    .multiply(promotion.getDiscountValue().divide(new BigDecimal(100)));
-            
-            if (promotion.getMaxDiscountAmount() != null && 
-                discountAmount.compareTo(promotion.getMaxDiscountAmount()) > 0) {
-                discountAmount = promotion.getMaxDiscountAmount();
-            }
-        } else {
-            discountAmount = promotion.getDiscountValue();
-            if (discountAmount.compareTo(order.getSubTotal()) > 0) {
-                discountAmount = order.getSubTotal();
-            }
-        }
-
-        order.setDiscountAmount(discountAmount);
-        promotionService.updatePromotionUsage(promotionCode, order.getCustomerOrder().getUser().getUserId());
+        logger.info("Order discount amount set to: {}, discount code set to: {}",
+                   order.getDiscountAmount(), order.getDiscountCode());
     }
 
     private void handleInventoryForStatusChange(Order order, OrderStatus oldStatus, OrderStatus newStatus) {
@@ -595,5 +648,132 @@ public class OrderService {
             orderRepository.save(order);
             return true;
         }).orElse(false);
+    }
+
+    /**
+     * Check if an order can be reordered (rebuy)
+     * Allow rebuy for both DELIVERED and CANCELLED orders
+     */
+    public boolean canBeReordered(Order order) {
+        return order.getOrderStatus() == OrderStatus.DELIVERED ||
+               order.getOrderStatus() == OrderStatus.CANCELLED;
+    }
+
+    /**
+     * Rebuy all items from a delivered order by adding them to cart
+     */
+    @Transactional
+    public boolean rebuyOrder(Integer orderId, User user) {
+        try {
+            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            if (orderOpt.isEmpty()) {
+                logger.warn("Order not found for rebuy: {}", orderId);
+                return false;
+            }
+
+            Order order = orderOpt.get();
+
+            // Verify order belongs to user
+            if (!order.getCustomerOrder().getUser().getUserId().equals(user.getUserId())) {
+                logger.warn("User {} attempted to rebuy order {} that doesn't belong to them",
+                           user.getEmail(), orderId);
+                return false;
+            }
+
+            // Check if order can be reordered
+            if (!canBeReordered(order)) {
+                logger.warn("Order {} cannot be reordered. Current status: {}",
+                           orderId, order.getOrderStatus());
+                return false;
+            }
+
+            // Add all order items to cart
+            int itemsAdded = 0;
+            for (OrderItem orderItem : order.getOrderItems()) {
+                Book book = orderItem.getBook();
+
+                // Check if book is still active and has stock
+                if (!book.isActive()) {
+                    logger.warn("Book {} is no longer active, skipping rebuy", book.getBookId());
+                    continue;
+                }
+
+                if (book.getStockQuantity() <= 0) {
+                    logger.warn("Book {} is out of stock, skipping rebuy", book.getBookId());
+                    continue;
+                }
+
+                // Determine quantity to add (limited by current stock)
+                int quantityToAdd = Math.min(orderItem.getQuantity(), book.getStockQuantity());
+
+                try {
+                    // Add to cart using CartService
+                    cartService.addBookToCart(user, book.getBookId(), quantityToAdd);
+                    itemsAdded++;
+                    logger.info("Added {} x {} to cart for rebuy", quantityToAdd, book.getTitle());
+                } catch (Exception e) {
+                    logger.error("Failed to add book {} to cart for rebuy: {}",
+                               book.getBookId(), e.getMessage());
+                }
+            }
+
+            if (itemsAdded > 0) {
+                logger.info("Successfully added {} items to cart for rebuy of order {}",
+                           itemsAdded, orderId);
+                return true;
+            } else {
+                logger.warn("No items could be added to cart for rebuy of order {}", orderId);
+                return false;
+            }
+
+        } catch (Exception e) {
+            logger.error("Error during rebuy of order {}: {}", orderId, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Process and format cancellation reason from UI
+     * @param reason Raw reason from UI (could be predefined or custom)
+     * @return Formatted cancellation reason
+     */
+    private String processCancellationReason(String reason) {
+        if (reason == null || reason.trim().isEmpty()) {
+            return "Không có lý do cụ thể";
+        }
+
+        // Check if it's a predefined reason from CancellationReason enum
+        try {
+            CancellationReason cancellationReason = CancellationReason.fromDisplayName(reason.trim());
+            if (cancellationReason != CancellationReason.OTHER) {
+                return cancellationReason.getDisplayName();
+            }
+        } catch (Exception e) {
+            // If not a predefined reason, treat as custom reason
+            logger.debug("Custom cancellation reason provided: {}", reason);
+        }
+
+        // For custom reasons, ensure it's properly formatted
+        String processedReason = reason.trim();
+        if (processedReason.length() > 500) {
+            processedReason = processedReason.substring(0, 497) + "...";
+        }
+
+        return processedReason;
+    }
+
+    /**
+     * Enhanced cancel order method with better reason processing
+     * @param orderId Order ID to cancel
+     * @param cancellationReason Raw cancellation reason from UI
+     * @param user User performing the cancellation
+     * @return true if cancellation successful, false otherwise
+     */
+    @Transactional
+    public boolean cancelOrderWithReason(Integer orderId, String cancellationReason, User user) {
+        String processedReason = processCancellationReason(cancellationReason);
+        logger.info("Cancelling order {} with processed reason: {}", orderId, processedReason);
+
+        return cancelOrder(orderId, processedReason, user);
     }
 }

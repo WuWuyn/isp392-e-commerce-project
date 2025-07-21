@@ -132,6 +132,12 @@
                                             </p>
                                         </div>
                                         <div class="col-md-4 mt-3 mt-md-0 text-md-end">
+                                            <div th:if="${order.discountAmount != null && order.discountAmount > 0}" class="mb-1">
+                                                <small class="text-success">
+                                                    <i class="fas fa-tag"></i> Discount<span th:if="${order.discountCode}" th:text="' (' + ${order.discountCode} + ')'"></span>:
+                                                    -<span th:text="${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                                                </small>
+                                            </div>
                                             <p class="mb-2">
                                                 <span class="text-muted">Total payment:</span><br/>
                                                 <span class="text-primary fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
@@ -140,14 +146,23 @@
                                                 <a th:href="@{'/buyer/orders/' + ${order.orderId}}" class="btn btn-outline-primary btn-sm rounded-3">
                                                     <i class="fas fa-eye"></i> Details
                                                 </a>
-                                                <form th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}" 
-                                                      th:action="@{'/buyer/orders/' + ${order.orderId} + '/rebuy'}" 
-                                                      method="post"
-                                                      class="d-inline">
-                                                    <button type="submit" class="btn btn-primary btn-sm rounded-3">
-                                                        <i class="fas fa-sync-alt"></i> Rebuy
-                                                    </button>
-                                                </form>
+
+                                                <!-- Cancel button for PROCESSING and SHIPPED orders -->
+                                                <button th:if="${order.orderStatus != null && (order.orderStatus.name() == 'PROCESSING' || order.orderStatus.name() == 'SHIPPED')}"
+                                                        type="button"
+                                                        class="btn btn-outline-danger btn-sm rounded-3 cancel-order-btn"
+                                                        th:data-order-id="${order.orderId}"
+                                                        th:data-order-title="${order.orderItems[0].book.title + (order.orderItems.size() > 1 ? ' và ' + (order.orderItems.size() - 1) + ' sản phẩm khác' : '')}">
+                                                    <i class="fas fa-times"></i> Hủy đơn
+                                                </button>
+
+                                                <!-- Rebuy button for DELIVERED and CANCELLED orders -->
+                                                <button th:if="${order.orderStatus != null && (order.orderStatus.name() == 'DELIVERED' || order.orderStatus.name() == 'CANCELLED')}"
+                                                        type="button"
+                                                        class="btn btn-primary btn-sm rounded-3 rebuy-order-btn"
+                                                        th:data-order-id="${order.orderId}">
+                                                    <i class="fas fa-sync-alt"></i> Mua lại
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -244,6 +259,206 @@
         document.getElementById('dateTo').value = '';
         window.location.href = '/buyer/orders';
     }
+
+    // Handle Cancel Order
+    document.addEventListener('DOMContentLoaded', function() {
+        let currentOrderId = null;
+
+        // Cancel order functionality
+        document.querySelectorAll('.cancel-order-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                currentOrderId = this.getAttribute('data-order-id');
+                const orderTitle = this.getAttribute('data-order-title');
+
+                // Set order title in modal
+                document.getElementById('cancelOrderTitle').textContent = orderTitle;
+
+                // Reset form
+                document.getElementById('cancellationReason').value = '';
+                document.getElementById('customReason').value = '';
+                document.getElementById('customReasonDiv').style.display = 'none';
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+                modal.show();
+            });
+        });
+
+        // Handle reason dropdown change
+        document.getElementById('cancellationReason').addEventListener('change', function() {
+            const customReasonDiv = document.getElementById('customReasonDiv');
+            if (this.value === 'Khác') {
+                customReasonDiv.style.display = 'block';
+                document.getElementById('customReason').required = true;
+            } else {
+                customReasonDiv.style.display = 'none';
+                document.getElementById('customReason').required = false;
+            }
+        });
+
+        // Handle confirm cancel button
+        document.getElementById('confirmCancelOrder').addEventListener('click', function() {
+            const reasonSelect = document.getElementById('cancellationReason');
+            const customReason = document.getElementById('customReason');
+
+            if (!reasonSelect.value) {
+                alert('Vui lòng chọn lý do hủy đơn hàng');
+                return;
+            }
+
+            let finalReason = reasonSelect.value;
+            if (reasonSelect.value === 'Khác') {
+                if (!customReason.value.trim()) {
+                    alert('Vui lòng nhập chi tiết lý do hủy đơn hàng');
+                    return;
+                }
+                finalReason = customReason.value.trim();
+            }
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal'));
+            modal.hide();
+
+            // Cancel order
+            cancelOrder(currentOrderId, finalReason);
+        });
+
+        // Rebuy order functionality
+        document.querySelectorAll('.rebuy-order-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                rebuyOrder(orderId);
+            });
+        });
+    });
+
+    function cancelOrder(orderId, reason) {
+        // Show loading state
+        const button = document.querySelector(`[data-order-id="${orderId}"].cancel-order-btn`);
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang hủy...';
+        button.disabled = true;
+
+        fetch('/buyer/cancel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `orderId=${orderId}&reason=${encodeURIComponent(reason)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Đơn hàng đã được hủy thành công!');
+                location.reload(); // Refresh page to show updated status
+            } else {
+                alert('Lỗi: ' + data.message);
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi hủy đơn hàng');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+
+    function rebuyOrder(orderId) {
+        // Show loading state
+        const button = document.querySelector(`[data-order-id="${orderId}"].rebuy-order-btn`);
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+        button.disabled = true;
+
+        fetch('/buyer/rebuy', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `orderId=${orderId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Sản phẩm đã được thêm vào giỏ hàng!');
+                if (data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
+                }
+            } else {
+                alert('Lỗi: ' + data.message);
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi mua lại đơn hàng');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
 </script>
+
+<!-- Cancel Order Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelOrderModalLabel">
+                    <i class="fas fa-times-circle text-danger me-2"></i>Hủy đơn hàng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Lưu ý:</strong> Sau khi hủy đơn hàng, số lượng sản phẩm sẽ được hoàn lại vào kho và bạn không thể hoàn tác thao tác này.
+                </div>
+
+                <div class="mb-3">
+                    <strong>Đơn hàng:</strong> <span id="cancelOrderTitle"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="cancellationReason" class="form-label">
+                        <i class="fas fa-list me-1"></i>Lý do hủy đơn hàng <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="cancellationReason" required>
+                        <option value="">-- Chọn lý do hủy đơn hàng --</option>
+                        <option value="Đặt sai sản phẩm">Đặt sai sản phẩm</option>
+                        <option value="Muốn áp dụng mã giảm giá">Muốn áp dụng mã giảm giá</option>
+                        <option value="Không còn nhu cầu">Không còn nhu cầu</option>
+                        <option value="Sai địa chỉ giao hàng">Sai địa chỉ giao hàng</option>
+                        <option value="Tìm được giá tốt hơn">Tìm được giá tốt hơn</option>
+                        <option value="Thay đổi ý định">Thay đổi ý định</option>
+                        <option value="Đặt trùng đơn hàng">Đặt trùng đơn hàng</option>
+                        <option value="Khác">Khác (vui lòng ghi rõ)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3" id="customReasonDiv" style="display: none;">
+                    <label for="customReason" class="form-label">
+                        <i class="fas fa-edit me-1"></i>Chi tiết lý do
+                    </label>
+                    <textarea class="form-control" id="customReason" rows="3"
+                              placeholder="Vui lòng nhập chi tiết lý do hủy đơn hàng..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Hủy bỏ
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmCancelOrder">
+                    <i class="fas fa-check me-1"></i>Xác nhận hủy đơn
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
-</html> 
+</html>

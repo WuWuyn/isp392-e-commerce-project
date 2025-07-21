@@ -1,6 +1,7 @@
 package com.example.isp392.controller.buyer;
 
 import com.example.isp392.dto.CartItemDTO;
+import com.example.isp392.dto.CheckoutDiscountBreakdown;
 import com.example.isp392.dto.OrderDTO;
 import com.example.isp392.model.*;
 import com.example.isp392.service.*;
@@ -25,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/buyer")
@@ -43,6 +43,8 @@ public class ProcessCheckoutController {
     private final BookService bookService;
     private final InventoryReservationService inventoryReservationService;
     private final PaymentReservationService paymentReservationService;
+    private final DiscountDistributionService discountDistributionService;
+    private final PromotionCalculationService promotionCalculationService;
 
     public ProcessCheckoutController(UserService userService,
                                      UserAddressService userAddressService,
@@ -53,7 +55,9 @@ public class ProcessCheckoutController {
                                      VNPayService vnPayService,
                                      BookService bookService,
                                      InventoryReservationService inventoryReservationService,
-                                     PaymentReservationService paymentReservationService) {
+                                     PaymentReservationService paymentReservationService,
+                                     DiscountDistributionService discountDistributionService,
+                                     PromotionCalculationService promotionCalculationService) {
         this.userService = userService;
         this.userAddressService = userAddressService;
         this.orderService = orderService;
@@ -64,6 +68,8 @@ public class ProcessCheckoutController {
         this.bookService = bookService;
         this.inventoryReservationService = inventoryReservationService;
         this.paymentReservationService = paymentReservationService;
+        this.discountDistributionService = discountDistributionService;
+        this.promotionCalculationService = promotionCalculationService;
     }
 
     @PostMapping("/process-checkout")
@@ -92,6 +98,9 @@ public class ProcessCheckoutController {
             List<CartItem> selectedItems = (List<CartItem>) session.getAttribute("checkoutItems");
 
             logger.info("COD: Session checkout items: {}", selectedItems != null ? selectedItems.size() : "null");
+            logger.info("COD: Session ID: {}", session.getId());
+            logger.info("COD: All session attributes: {}", java.util.Collections.list(session.getAttributeNames()));
+
             if (selectedItems != null) {
                 for (CartItem item : selectedItems) {
                     logger.info("COD: Cart item - Book: {}, Shop: {}, Quantity: {}",
@@ -102,8 +111,24 @@ public class ProcessCheckoutController {
             }
 
             if (selectedItems == null || selectedItems.isEmpty()) {
-                logger.warn("No selected items found in session, redirecting to cart");
-                return "redirect:/buyer/cart?error=no_items";
+                logger.warn("No selected items found in session, trying to get from user's cart");
+
+                // Fallback: try to get all cart items for the user
+                try {
+                    Cart userCart = cartService.getCartForUser(user);
+                    if (userCart != null && userCart.getItems() != null && !userCart.getItems().isEmpty()) {
+                        selectedItems = new ArrayList<>(userCart.getItems());
+                        logger.info("COD: Fallback - Using {} items from user's cart", selectedItems.size());
+                    } else {
+                        logger.warn("No cart items found for user, redirecting to cart");
+                        redirectAttributes.addFlashAttribute("error", "No items in cart. Please add items first.");
+                        return "redirect:/buyer/cart?error=no_items";
+                    }
+                } catch (Exception e) {
+                    logger.error("Error getting cart items for fallback: {}", e.getMessage(), e);
+                    redirectAttributes.addFlashAttribute("error", "Error processing order. Please try again.");
+                    return "redirect:/buyer/cart?error=processing_error";
+                }
             }
 
             // Create new customer order
@@ -257,24 +282,16 @@ public class ProcessCheckoutController {
                 BigDecimal shippingFee = new BigDecimal(30000);
                 order.setShippingFee(shippingFee);
 
-                // Apply discount if applicable (only to first shop for simplicity)
-                BigDecimal discountAmount = BigDecimal.ZERO;
-                if (orders.isEmpty() && orderDTO.getDiscountCode() != null && !orderDTO.getDiscountCode().isEmpty()) {
-                    try {
-                        orderService.applyPromotion(order, orderDTO.getDiscountCode());
-                        discountAmount = order.getDiscountAmount();
-                    } catch (Exception e) {
-                        logger.warn("Failed to apply promotion: {}", e.getMessage());
-                        // Continue without applying promotion
-                        order.setDiscountAmount(BigDecimal.ZERO);
-                    }
-                } else {
-                    order.setDiscountAmount(BigDecimal.ZERO);
-                }
+                // Initialize discount to zero - will be set later during distribution
+                order.setDiscountAmount(BigDecimal.ZERO);
+                order.setDiscountCode(null);
 
-                // Calculate total amount for this order
-                BigDecimal orderTotal = subtotal.add(shippingFee).subtract(order.getDiscountAmount());
+                // Calculate initial total amount (will be recalculated after discount distribution)
+                BigDecimal orderTotal = subtotal.add(shippingFee);
                 order.setTotalAmount(orderTotal);
+
+                logger.info("Order total calculation: Subtotal: {}, Shipping: {}, Discount: {}, Final Total: {}",
+                           subtotal, shippingFee, order.getDiscountAmount(), orderTotal);
 
                 // Add order to customer order using helper method that maintains bidirectional relationship
                 customerOrder.addOrder(order);
@@ -290,12 +307,108 @@ public class ProcessCheckoutController {
                 totalDiscountAmount = totalDiscountAmount.add(order.getDiscountAmount());
             }
 
+            // Apply discount distribution if promotion exists in session
+            CheckoutDiscountBreakdown appliedPromotion = (CheckoutDiscountBreakdown) session.getAttribute("appliedPromotion");
+            if (appliedPromotion != null && appliedPromotion.isSuccess() && !orders.isEmpty()) {
+                logger.info("Applying discount distribution for promotion code: {} across {} orders", appliedPromotion.getPromoCode(), orders.size());
+
+                try {
+                    // Calculate total subtotal across all orders for promotion validation
+                    BigDecimal totalSubtotal = orders.stream()
+                            .map(Order::getSubTotal)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    // Use the discount amount from the applied promotion
+                    totalDiscountAmount = appliedPromotion.getTotalDiscount();
+
+                    // Get the promotion for enhanced distribution
+                    Promotion promotion = promotionService.findByCode(appliedPromotion.getPromoCode()).orElse(null);
+
+                    if (promotion != null) {
+                        // Calculate total order value (subtotal + shipping) for proper discount calculation
+                        BigDecimal totalOrderValue = totalSubtotal;
+                        // Add shipping fees to total order value
+                        for (Order order : orders) {
+                            if (order.getShippingFee() != null) {
+                                totalOrderValue = totalOrderValue.add(order.getShippingFee());
+                            }
+                        }
+
+                        logger.info("Applying promotion to orders - Total subtotal: {}, Total with shipping: {}",
+                                   totalSubtotal, totalOrderValue);
+
+                        // Use enhanced distribution service with total order value (subtotal + shipping)
+                        DiscountDistributionService.DiscountDistributionResult distributionResult =
+                                discountDistributionService.applyPromotionToOrdersEnhanced(orders, promotion, totalOrderValue);
+
+                        // Update customer order with promotion code and total discount
+                        customerOrder.setPromotionCode(appliedPromotion.getPromoCode());
+                        customerOrder.setDiscountAmount(distributionResult.getTotalDiscountAmount());
+
+                        // Save updated orders with distributed discounts
+                        for (Order order : distributionResult.getOrdersWithDiscounts()) {
+                            orderService.save(order);
+                        }
+
+                        logger.info("Successfully distributed discount of {} across {} orders using promotion: {}",
+                                   distributionResult.getTotalDiscountAmount(), orders.size(), appliedPromotion.getPromoCode());
+                    } else {
+                        logger.warn("Promotion not found during order processing: {}", appliedPromotion.getPromoCode());
+                        // Continue without discount
+                        customerOrder.setPromotionCode(null);
+                        customerOrder.setDiscountAmount(BigDecimal.ZERO);
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to apply discount distribution: {}", e.getMessage(), e);
+                    // Continue without discount
+                    customerOrder.setPromotionCode(null);
+                    customerOrder.setDiscountAmount(BigDecimal.ZERO);
+                }
+            } else {
+                logger.info("No promotion code in session or no orders to apply discount to");
+                customerOrder.setPromotionCode(null);
+                customerOrder.setDiscountAmount(BigDecimal.ZERO);
+            }
+
+            // Recalculate totals after discount distribution
+            BigDecimal finalTotalAmount = orders.stream().map(Order::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            totalShippingFee = orders.stream().map(Order::getShippingFee).reduce(BigDecimal.ZERO, BigDecimal::add);
+            totalDiscountAmount = orders.stream().map(Order::getDiscountAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+
             // Update customer order totals with sum of all shop orders
-            customerOrder.setTotalAmount(totalAmount);
             customerOrder.setShippingFee(totalShippingFee);
             customerOrder.setDiscountAmount(totalDiscountAmount);
+
+            // Calculate and set tracking fields for COD orders
+            BigDecimal originalTotal = finalTotalAmount.add(totalDiscountAmount); // Add back discount to get original
+
+            customerOrder.setOriginalTotalAmount(originalTotal);
+            customerOrder.setFinalTotalAmount(finalTotalAmount);
+            customerOrder.setTotalAmount(finalTotalAmount); // Ensure totalAmount is set for database
+
+            logger.info("COD: Set CustomerOrder totals - Original: {}, Final: {}, Total: {}, Shipping: {}, Discount: {}",
+                       originalTotal, finalTotalAmount, finalTotalAmount, totalShippingFee, totalDiscountAmount);
             // Don't call setOrders() - orders are already added to the collection above
             customerOrder = customerOrderService.save(customerOrder);
+
+            // Record promotion usage if a promotion was applied
+            if (customerOrder.getPromotionCode() != null && !customerOrder.getPromotionCode().isEmpty()) {
+                try {
+                    promotionCalculationService.recordPromotionUsage(
+                        customerOrder.getPromotionCode(),
+                        user.getUserId(),
+                        customerOrder.getCustomerOrderId(),
+                        customerOrder.getDiscountAmount()
+                    );
+                    logger.info("Successfully recorded promotion usage for code: {} by user: {} with customer order: {} and discount: {}",
+                               customerOrder.getPromotionCode(), user.getUserId(),
+                               customerOrder.getCustomerOrderId(), customerOrder.getDiscountAmount());
+                } catch (Exception e) {
+                    logger.error("Failed to record promotion usage for code: {} by user: {}: {}",
+                               customerOrder.getPromotionCode(), user.getUserId(), e.getMessage());
+                    // Don't fail the order if usage tracking fails
+                }
+            }
 
             // Remove items from cart only if not a Buy Now order
             Boolean isBuyNow = (Boolean) session.getAttribute("isBuyNow");
@@ -317,11 +430,13 @@ public class ProcessCheckoutController {
             session.removeAttribute("checkoutItems");
             session.removeAttribute("buyNowSession");
             session.removeAttribute("isBuyNow");
-            session.removeAttribute("discountCode");
-            session.removeAttribute("discountAmount");
+            // Clear discount session data
+            session.removeAttribute("appliedDiscountCode");
+            session.removeAttribute("appliedDiscountAmount");
+            session.removeAttribute("appliedDiscountDescription");
 
-            // Redirect to success page using the first order ID
-            return "redirect:/buyer/individual-order-success?orderId=" + orders.get(0).getOrderId();
+            // Redirect to unified success page using the customer order ID
+            return "redirect:/buyer/order-success?customerOrderId=" + customerOrder.getCustomerOrderId();
 
         } catch (Exception e) {
             logger.error("Error processing checkout: {}", e.getMessage(), e);
@@ -388,23 +503,51 @@ public class ProcessCheckoutController {
             // Set selected items in OrderDTO for serialization
             orderDTO.setSelectedItems(cartItemDTOs);
 
+            // Get promotion code from session if available
+            CheckoutDiscountBreakdown appliedPromotion = (CheckoutDiscountBreakdown) session.getAttribute("appliedPromotion");
+            if (appliedPromotion != null && appliedPromotion.isSuccess()) {
+                orderDTO.setPromotionCode(appliedPromotion.getPromoCode());
+                orderDTO.setDiscountCode(appliedPromotion.getPromoCode()); // For backward compatibility
+                logger.info("VNPay: Set promotion code in OrderDTO: {}", appliedPromotion.getPromoCode());
+            }
+
             // Calculate totals for payment reservation
-            BigDecimal totalAmount = BigDecimal.ZERO;
+            BigDecimal subtotalAmount = BigDecimal.ZERO;
             BigDecimal totalShippingFee = BigDecimal.ZERO;
             BigDecimal totalDiscountAmount = BigDecimal.ZERO;
 
-            // Calculate totals from selected items
+            // Group items by shop to calculate shipping fee correctly
+            Map<Integer, List<CartItem>> itemsByShop = selectedItems.stream()
+                .collect(Collectors.groupingBy(item -> item.getShop().getShopId()));
+
+            // Calculate subtotal from all items
             for (CartItem item : selectedItems) {
                 BigDecimal itemTotal = item.getBook().getSellingPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-                totalAmount = totalAmount.add(itemTotal);
-
-                // Add shipping fee (simplified - 30,000 VND per shop)
-                totalShippingFee = totalShippingFee.add(new BigDecimal("30000"));
+                subtotalAmount = subtotalAmount.add(itemTotal);
             }
+
+            // Calculate shipping fee (30,000 VND per shop, not per item)
+            totalShippingFee = new BigDecimal("30000").multiply(BigDecimal.valueOf(itemsByShop.size()));
+
+            logger.info("VNPay: Calculated subtotal: {}, shipping fee: {} (for {} shops)",
+                       subtotalAmount, totalShippingFee, itemsByShop.size());
+
+            // Get discount amount from applied promotion if available
+            if (appliedPromotion != null && appliedPromotion.isSuccess()) {
+                totalDiscountAmount = appliedPromotion.getTotalDiscount();
+                orderDTO.setDiscountAmount(totalDiscountAmount);
+                logger.info("VNPay: Set discount amount in OrderDTO: {}", totalDiscountAmount);
+            }
+
+            // Calculate final total amount: subtotal + shipping - discount
+            BigDecimal finalTotalAmount = subtotalAmount.add(totalShippingFee).subtract(totalDiscountAmount);
+
+            logger.info("VNPay: Final calculation - Subtotal: {}, Shipping: {}, Discount: {}, Final Total: {}",
+                       subtotalAmount, totalShippingFee, totalDiscountAmount, finalTotalAmount);
 
             // Create payment reservation instead of order
             PaymentReservation paymentReservation = paymentReservationService.createVNPayReservation(
-                user, orderDTO, totalAmount, totalShippingFee, totalDiscountAmount);
+                user, orderDTO, finalTotalAmount, totalShippingFee, totalDiscountAmount);
 
             logger.info("VNPay: Created payment reservation with ID: {}, TxnRef: {}",
                        paymentReservation.getReservationId(), paymentReservation.getVnpayTxnRef());
@@ -533,45 +676,7 @@ public class ProcessCheckoutController {
         customerOrder.setShippingAddressType(orderDTO.getAddressType());
     }
 
-    @GetMapping("/individual-order-success")
-    public String individualOrderSuccessPage(@RequestParam Integer orderId, Model model, Authentication authentication) {
-        logger.info("Order success page requested for orderId: {}", orderId);
-
-        if (authentication == null) {
-            return "redirect:/login";
-        }
-
-        try {
-            // Get current user
-            String email = authentication.getName();
-            User user = userService.findByEmail(email).orElseThrow(() ->
-                    new IllegalArgumentException("User not found"));
-
-            // Get order by ID and verify it belongs to the user
-            Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
-            if (orderOpt.isEmpty()) {
-                logger.warn("Order not found or doesn't belong to user: orderId={}, userEmail={}", orderId, email);
-                return "redirect:/buyer/orders";
-            }
-
-            Order order = orderOpt.get();
-
-            // Get the customer order that contains this order
-            CustomerOrder customerOrder = order.getCustomerOrder();
-            if (customerOrder == null) {
-                logger.warn("Order has no associated customer order: orderId={}", orderId);
-                return "redirect:/buyer/orders";
-            }
-
-            model.addAttribute("customerOrder", customerOrder);
-            logger.info("Order success page loaded successfully for orderId: {}, customerOrderId: {}", orderId, customerOrder.getCustomerOrderId());
-            return "buyer/order-success";
-
-        } catch (Exception e) {
-            logger.error("Error loading order success page: {}", e.getMessage(), e);
-            return "redirect:/buyer/orders";
-        }
-    }
+    // Removed individual-order-success endpoint - now handled by unified /buyer/order-success endpoint
 
     @GetMapping("/vnpay-return")
     public String handleVNPayReturn(@RequestParam Map<String, String> queryParams,
@@ -623,7 +728,7 @@ public class ProcessCheckoutController {
 
                 try {
                     // Create CustomerOrder and Orders from PaymentReservation
-                    CustomerOrder customerOrder = createOrderFromReservation(paymentReservation);
+                    CustomerOrder customerOrder = createOrderFromReservation(paymentReservation, queryParams);
 
                     // Confirm inventory reservation (permanently deduct inventory)
                     inventoryReservationService.confirmReservationByTxnRef(vnpayTxnRef);
@@ -653,7 +758,7 @@ public class ProcessCheckoutController {
                     session.removeAttribute("pendingVnpayTxnRef");
 
                     redirectAttributes.addFlashAttribute("successMessage", "Payment successful!");
-                    return "redirect:/buyer/order-success/" + customerOrder.getCustomerOrderId();
+                    return "redirect:/buyer/order-success?customerOrderId=" + customerOrder.getCustomerOrderId();
 
                 } catch (Exception e) {
                     logger.error("VNPay: Failed to create order from reservation after successful payment for TxnRef: {}", vnpayTxnRef, e);
@@ -699,7 +804,7 @@ public class ProcessCheckoutController {
     /**
      * Create CustomerOrder and Orders from PaymentReservation after successful payment
      */
-    private CustomerOrder createOrderFromReservation(PaymentReservation paymentReservation) {
+    private CustomerOrder createOrderFromReservation(PaymentReservation paymentReservation, Map<String, String> vnpayResponse) {
         try {
             // Get OrderDTO from reservation data
             OrderDTO orderDTO = paymentReservationService.getOrderDTOFromReservation(paymentReservation);
@@ -773,12 +878,65 @@ public class ProcessCheckoutController {
             }
 
             // Set totals from reservation
-            customerOrder.setTotalAmount(paymentReservation.getTotalAmount());
             customerOrder.setShippingFee(paymentReservation.getShippingFee());
             customerOrder.setDiscountAmount(paymentReservation.getDiscountAmount());
 
-            // Save customer order first
-            customerOrder = customerOrderService.save(customerOrder);
+            // Calculate and set tracking fields
+            BigDecimal originalTotal = paymentReservation.getTotalAmount().add(paymentReservation.getDiscountAmount());
+            BigDecimal finalTotal = paymentReservation.getTotalAmount(); // This is already after discount
+
+            customerOrder.setOriginalTotalAmount(originalTotal);
+            customerOrder.setFinalTotalAmount(finalTotal);
+            customerOrder.setTotalAmount(finalTotal); // Ensure totalAmount is set for database
+
+            logger.info("Set CustomerOrder totals from reservation - Original: {}, Final: {}, Total: {}, Shipping: {}, Discount: {}",
+                       originalTotal, finalTotal, finalTotal, paymentReservation.getShippingFee(), paymentReservation.getDiscountAmount());
+
+            // Store VNPAY transaction ID for traceability
+            String vnpayTransactionNo = vnpayResponse.get("vnp_TransactionNo");
+            String vnpayBankTranNo = vnpayResponse.get("vnp_BankTranNo");
+            if (vnpayTransactionNo != null && !vnpayTransactionNo.isEmpty()) {
+                customerOrder.setVnpayTransactionId(vnpayTransactionNo);
+                logger.info("Stored VNPAY transaction ID: {} for customer order", vnpayTransactionNo);
+            } else if (vnpayBankTranNo != null && !vnpayBankTranNo.isEmpty()) {
+                customerOrder.setVnpayTransactionId(vnpayBankTranNo);
+                logger.info("Stored VNPAY bank transaction ID: {} for customer order", vnpayBankTranNo);
+            }
+
+            // Set promotion code from OrderDTO (more reliable than JSON parsing)
+            String promotionCode = orderDTO.getPromotionCode();
+            if (promotionCode == null || promotionCode.trim().isEmpty()) {
+                // Fallback to discountCode field for backward compatibility
+                promotionCode = orderDTO.getDiscountCode();
+            }
+
+            if (promotionCode == null || promotionCode.trim().isEmpty()) {
+                // Last resort: try to extract from reservation data JSON
+                try {
+                    if (paymentReservation.getReservationData() != null &&
+                        paymentReservation.getReservationData().contains("promotionCode")) {
+                        String reservationData = paymentReservation.getReservationData();
+                        int startIndex = reservationData.indexOf("\"promotionCode\":\"");
+                        if (startIndex != -1) {
+                            startIndex += 16; // Length of "promotionCode":"
+                            int endIndex = reservationData.indexOf("\"", startIndex);
+                            if (endIndex != -1) {
+                                promotionCode = reservationData.substring(startIndex, endIndex);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to extract promotion code from reservation data: {}", e.getMessage());
+                }
+            }
+
+            customerOrder.setPromotionCode(promotionCode);
+            if (promotionCode != null && !promotionCode.trim().isEmpty()) {
+                logger.info("Set promotion code for customer order: {}", promotionCode);
+            }
+
+            // Save customer order first (without recalculating total - already set from reservation)
+            customerOrder = customerOrderService.saveWithoutRecalculation(customerOrder);
 
             // Group cart items by shop and create orders
             Map<Integer, List<CartItemDTO>> itemsByShop = orderDTO.getSelectedItems().stream()
@@ -829,9 +987,12 @@ public class ProcessCheckoutController {
                 // Set shipping fee (30,000 VND per shop)
                 BigDecimal shippingFee = new BigDecimal("30000");
                 order.setShippingFee(shippingFee);
-                order.setDiscountAmount(BigDecimal.ZERO); // Discount applied at customer order level
 
-                // Calculate total amount for this order
+                // Initialize discount to zero - will be set during distribution if applicable
+                order.setDiscountAmount(BigDecimal.ZERO);
+                order.setDiscountCode(null);
+
+                // Calculate initial total amount (will be recalculated after discount distribution)
                 BigDecimal orderTotal = subtotal.add(shippingFee);
                 order.setTotalAmount(orderTotal);
 
@@ -841,6 +1002,59 @@ public class ProcessCheckoutController {
                 // Save order
                 Order savedOrder = orderService.save(order);
                 logger.info("Created order ID: {} for shop: {}", savedOrder.getOrderId(), firstBook.getShop().getShopName());
+            }
+
+            // Apply discount distribution if promotion code exists and discount amount > 0
+            if (customerOrder.getPromotionCode() != null && !customerOrder.getPromotionCode().isEmpty() &&
+                customerOrder.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+
+                logger.info("Applying discount distribution for VNPay order with promotion code: {} and discount: {}",
+                           customerOrder.getPromotionCode(), customerOrder.getDiscountAmount());
+
+                try {
+                    // Get all orders for distribution
+                    List<Order> orders = new ArrayList<>(customerOrder.getOrders());
+
+                    // For VNPAY orders, discount amount is already calculated and stored in reservation
+                    // We just need to distribute this pre-calculated discount across orders
+                    // DO NOT recalculate discount as it was already done during reservation creation
+
+                    logger.info("VNPay: Distributing pre-calculated discount of {} across {} orders",
+                               customerOrder.getDiscountAmount(), orders.size());
+
+                    // Use simple distribution method with the discount amount from reservation
+                    DiscountDistributionService.DiscountDistributionResult distributionResult =
+                        discountDistributionService.distributeDiscount(orders, customerOrder.getDiscountAmount(), customerOrder.getPromotionCode());
+
+                    // Save updated orders with distributed discounts
+                    for (Order order : distributionResult.getOrdersWithDiscounts()) {
+                        orderService.save(order);
+                    }
+
+                    logger.info("Successfully distributed VNPay discount of {} across {} orders using promotion: {}",
+                               distributionResult.getTotalDiscountAmount(), orders.size(), customerOrder.getPromotionCode());
+
+                    // Record promotion usage for VNPay orders
+                    try {
+                        promotionCalculationService.recordPromotionUsage(
+                            customerOrder.getPromotionCode(),
+                            customerOrder.getUser().getUserId(),
+                            customerOrder.getCustomerOrderId(),
+                            customerOrder.getDiscountAmount()
+                        );
+                        logger.info("Successfully recorded VNPay promotion usage for code: {} by user: {} with customer order: {} and discount: {}",
+                                   customerOrder.getPromotionCode(), customerOrder.getUser().getUserId(),
+                                   customerOrder.getCustomerOrderId(), customerOrder.getDiscountAmount());
+                    } catch (Exception e) {
+                        logger.error("Failed to record VNPay promotion usage for code: {} by user: {}: {}",
+                                   customerOrder.getPromotionCode(), customerOrder.getUser().getUserId(), e.getMessage());
+                        // Don't fail the order if usage tracking fails
+                    }
+
+                } catch (Exception e) {
+                    logger.error("Failed to apply VNPay discount distribution: {}", e.getMessage(), e);
+                    // Continue without failing the order
+                }
             }
 
             // Update customer order with final totals

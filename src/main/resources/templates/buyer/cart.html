@@ -161,6 +161,20 @@
             border-radius: 8px;
             padding: 20px;
         }
+        .promotion-section {
+            border-top: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+            padding: 15px 0;
+        }
+        .promotion-message {
+            font-size: 0.875rem;
+        }
+        .promotion-message.success {
+            color: #198754;
+        }
+        .promotion-message.error {
+            color: #dc3545;
+        }
         .summary-item {
             display: flex;
             justify-content: space-between;
@@ -324,21 +338,22 @@
                                 <span>Selected Items Total</span>
                                 <span id="subtotalValue" class="fw-bold">0</span>
                             </div>
-                            <!-- Discount code input section -->
-                            <div class="mt-3 mb-3">
-                                <label for="discountCode" class="form-label">Discount Code</label>
+
+                            <!-- Promotion Code Section -->
+                            <div class="promotion-section mt-3 mb-3">
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="discountCode" placeholder="Enter discount code">
-                                    <button class="btn btn-outline-secondary" type="button" id="applyDiscountBtn">Apply</button>
+                                    <input type="text" id="promotionCodeInput" class="form-control" placeholder="Enter promotion code">
+                                    <button type="button" id="applyPromotionBtn" class="btn btn-outline-primary">Apply</button>
                                 </div>
-                                <div id="discountMessage" class="form-text text-success mt-1" style="display: none;"></div>
-                                <div id="discountError" class="form-text text-danger mt-1" style="display: none;"></div>
+                                <div id="promotionMessage" class="mt-2" style="display: none;"></div>
                             </div>
-                            <!-- Discount amount -->
-                            <div class="summary-item" id="discountSection" style="display: none;">
-                                <span>Discount</span>
-                                <span id="discountValue" class="text-danger">0</span>
+
+                            <!-- Discount Display -->
+                            <div id="discountRow" class="summary-item text-success" style="display: none;">
+                                <span>Discount (<span id="appliedPromoCode"></span>)</span>
+                                <span id="discountValue">-0</span>
                             </div>
+
                             <div class="summary-item summary-total">
                                 <span>Total Amount</span>
                                 <span id="totalValue">0</span>
@@ -361,6 +376,8 @@
 
 <!-- Bootstrap JS Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- VND Formatter -->
+<script th:src="@{/js/vnd-formatter.js}"></script>
 <!-- Custom JavaScript -->
 <script th:src="@{/js/scripts.js}"></script>
 
@@ -372,23 +389,22 @@
         const qtyButtons = document.querySelectorAll('.qty-btn');
         const removeButtons = document.querySelectorAll('.remove-item');
         const subtotalSpan = document.getElementById('subtotalValue');
-        const discountSpan = document.getElementById('discountValue');
         const totalSpan = document.getElementById('totalValue');
-        const discountCodeInput = document.getElementById('discountCode');
-        const applyDiscountBtn = document.getElementById('applyDiscountBtn');
-        const discountSection = document.getElementById('discountSection');
-        const discountMessage = document.getElementById('discountMessage');
-        const discountError = document.getElementById('discountError');
+        const discountLabel = document.getElementById('discountLabel');
         const cartItemCountBadge = document.getElementById('cartItemCountBadge');
         const checkoutBtn = document.querySelector('.checkout-btn');
         const headerCartCountBadge = window.parent.document.getElementById('headerCartCountBadge'); // Access header badge from parent window
-        
-        let currentDiscount = 0;
+
         let subtotalAmount = 0;
         let selectedItemsTotal = 0;
+        let appliedPromotion = null; // Store applied promotion info
         
-        // Format currency
+        // Format currency using VND formatter
         function formatCurrency(amount) {
+            if (window.VNDFormatter) {
+                return VNDFormatter.format(amount) + ' VND';
+            }
+            // Fallback to Intl if VNDFormatter not available
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'VND',
@@ -454,26 +470,44 @@
                     }
                 }
             });
-            
+
             subtotalAmount = selectedSubtotal;
-            
-            // Calculate final total (subtotal - discount)
-            const total = Math.max(0, selectedSubtotal - currentDiscount);
-            
+
+            // Update subtotal display
             if (subtotalSpan) subtotalSpan.textContent = formatCurrency(selectedSubtotal);
-            if (totalSpan) totalSpan.textContent = formatCurrency(total);
-            
-            // Show discount section if there is a discount
-            if (currentDiscount > 0) {
-                discountSection.style.display = 'flex';
-                discountSpan.textContent = '-' + formatCurrency(currentDiscount);
+
+            // Calculate final total with discount
+            let finalTotal = selectedSubtotal;
+            let discountAmount = 0;
+
+            if (appliedPromotion && appliedPromotion.success) {
+                discountAmount = appliedPromotion.totalDiscount || 0;
+                finalTotal = selectedSubtotal - discountAmount;
+
+                // Show discount row
+                const discountRow = document.getElementById('discountRow');
+                const discountValue = document.getElementById('discountValue');
+                const appliedPromoCode = document.getElementById('appliedPromoCode');
+
+                if (discountRow && discountValue && appliedPromoCode) {
+                    discountRow.style.display = 'flex';
+                    discountValue.textContent = '-' + formatCurrency(discountAmount);
+                    appliedPromoCode.textContent = appliedPromotion.promoCode;
+                }
             } else {
-                discountSection.style.display = 'none';
+                // Hide discount row
+                const discountRow = document.getElementById('discountRow');
+                if (discountRow) {
+                    discountRow.style.display = 'none';
+                }
             }
-            
+
+            // Update total display
+            if (totalSpan) totalSpan.textContent = formatCurrency(finalTotal);
+
             // Update checkout button state
             updateCheckoutButtonState();
-            
+
             updateAllQuantityBadges();
         }
 
@@ -489,111 +523,7 @@
             }
         }
 
-        // Apply discount code
-        if (applyDiscountBtn) {
-            applyDiscountBtn.addEventListener('click', () => {
-                const code = discountCodeInput.value.trim();
-                
-                if (!code) {
-                    showDiscountError('Please enter a discount code');
-                    return;
-                }
-                
-                // Check if any items are selected
-                const hasSelectedItems = Array.from(getItemCheckboxes()).some(cb => cb.checked);
-                if (!hasSelectedItems) {
-                    showDiscountError('Please select at least one product to apply the discount code');
-                    return;
-                }
-                
-                // Hide any previous messages
-                hideDiscountMessages();
-                
-                // Show loading state
-                applyDiscountBtn.disabled = true;
-                applyDiscountBtn.innerHTML = '<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span> Processing...';
-                
-                // Call API to validate discount code
-                fetch('/buyer/cart/apply-discount', {
-                    method: 'POST',
-                    headers: withCsrf({'Content-Type': 'application/json'}),
-                    body: JSON.stringify({ code: code })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('API endpoint not available');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    applyDiscountBtn.disabled = false;
-                    applyDiscountBtn.textContent = 'Apply';
-                    
-                    if (data.success) {
-                        // Apply discount
-                        currentDiscount = data.discountAmount || 0;
-                        showDiscountSuccess(data.message || 'Discount code applied successfully!');
-                        updateCartSummary();
-                    } else {
-                        // Show error
-                        showDiscountError(data.message || 'Invalid discount code');
-                        currentDiscount = 0;
-                        updateCartSummary();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    applyDiscountBtn.disabled = false;
-                    applyDiscountBtn.textContent = 'Apply';
-                    
-                    // Temporary mock implementation until API is fully implemented
-                    if (error.message === 'API endpoint not available') {
-                        // Check for some test discount codes
-                        if (code === 'TEST10') {
-                            currentDiscount = subtotalAmount * 0.1; // 10% discount
-                            showDiscountSuccess('Discount code applied successfully: 10% off');
-                        } else if (code === 'TEST20') {
-                            currentDiscount = subtotalAmount * 0.2; // 20% discount
-                            showDiscountSuccess('Discount code applied successfully: 20% off');
-                        } else if (code === 'FREE100') {
-                            currentDiscount = 100000; // Fixed 100,000 VND discount
-                            if (currentDiscount > subtotalAmount) {
-                                currentDiscount = subtotalAmount;
-                            }
-                            showDiscountSuccess('Discount code applied successfully: 100,000 VND off');
-                        } else {
-                            showDiscountError('Invalid discount code');
-                            currentDiscount = 0;
-                        }
-                        updateCartSummary();
-                    } else {
-                        showDiscountError('An error occurred while applying the discount code');
-                    }
-                });
-            });
-        }
-        
-        function showDiscountSuccess(message) {
-            discountMessage.textContent = message;
-            discountMessage.style.display = 'block';
-            discountError.style.display = 'none';
-            discountCodeInput.classList.add('is-valid');
-            discountCodeInput.classList.remove('is-invalid');
-        }
-        
-        function showDiscountError(message) {
-            discountError.textContent = message;
-            discountError.style.display = 'block';
-            discountMessage.style.display = 'none';
-            discountCodeInput.classList.add('is-invalid');
-            discountCodeInput.classList.remove('is-valid');
-        }
-        
-        function hideDiscountMessages() {
-            discountMessage.style.display = 'none';
-            discountError.style.display = 'none';
-            discountCodeInput.classList.remove('is-valid', 'is-invalid');
-        }
+        // Discount codes can be applied during checkout
 
         if (selectAll) {
             selectAll.addEventListener('change', () => {
@@ -796,6 +726,94 @@
             }
         }
 
+        // Apply promotion function
+        function applyPromotion() {
+            const promoCode = document.getElementById('promotionCodeInput').value.trim();
+            const messageDiv = document.getElementById('promotionMessage');
+            const applyBtn = document.getElementById('applyPromotionBtn');
+
+            if (!promoCode) {
+                showPromotionMessage('Please enter a promotion code', 'error');
+                return;
+            }
+
+            // Get selected items for promotion calculation
+            const selectedItems = [];
+            document.querySelectorAll('tbody tr.cart-item').forEach(row => {
+                const checkbox = row.querySelector('.item-checkbox');
+                if (checkbox && checkbox.checked) {
+                    const bookId = parseInt(checkbox.value);
+                    const qty = parseInt(row.querySelector('input[name="quantity"]').value) || 0;
+                    const priceText = row.querySelector('.price-value').textContent.trim();
+                    const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
+
+                    selectedItems.push({
+                        bookId: bookId,
+                        quantity: qty,
+                        price: price,
+                        subtotal: price * qty
+                    });
+                }
+            });
+
+            if (selectedItems.length === 0) {
+                showPromotionMessage('Please select items to apply promotion', 'error');
+                return;
+            }
+
+            // Disable button during request
+            applyBtn.disabled = true;
+            applyBtn.textContent = 'Applying...';
+
+            // Call promotion API
+            fetch('/buyer/cart/apply-promotion', {
+                method: 'POST',
+                headers: withCsrf({
+                    'Content-Type': 'application/json'
+                }),
+                body: JSON.stringify({
+                    promotionCode: promoCode,
+                    selectedItems: selectedItems
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    appliedPromotion = data;
+                    showPromotionMessage(`Promotion applied! Discount: ${formatCurrency(data.totalDiscount)}`, 'success');
+                    updateCartSummary();
+                } else {
+                    appliedPromotion = null;
+                    showPromotionMessage(data.message || 'Failed to apply promotion', 'error');
+                    updateCartSummary();
+                }
+            })
+            .catch(error => {
+                console.error('Error applying promotion:', error);
+                appliedPromotion = null;
+                showPromotionMessage('Error applying promotion. Please try again.', 'error');
+                updateCartSummary();
+            })
+            .finally(() => {
+                applyBtn.disabled = false;
+                applyBtn.textContent = 'Apply';
+            });
+        }
+
+        function showPromotionMessage(message, type) {
+            const messageDiv = document.getElementById('promotionMessage');
+            if (messageDiv) {
+                messageDiv.textContent = message;
+                messageDiv.className = `mt-2 promotion-message ${type}`;
+                messageDiv.style.display = 'block';
+
+                // Hide message after 5 seconds
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
         // Proceed to checkout function
         window.proceedToCheckout = function() {
             console.group("Checkout Process");
@@ -815,16 +833,29 @@
             }
 
             try {
-                // Create checkout URL with fixed path
-                const checkoutUrl = new URL('/buyer/checkout', window.location.origin);
-                // Add items parameter to URL
-                checkoutUrl.searchParams.append('items', selectedIds.join(','));
-                
-                console.log("Redirecting to:", checkoutUrl.toString());
-                console.groupEnd();
-                
-                // Redirect to checkout page
-                window.location.href = checkoutUrl.toString();
+                // Store promotion info in session before checkout
+                if (appliedPromotion && appliedPromotion.success) {
+                    // Send promotion info to server to store in session
+                    fetch('/buyer/cart/store-promotion', {
+                        method: 'POST',
+                        headers: withCsrf({
+                            'Content-Type': 'application/json'
+                        }),
+                        body: JSON.stringify(appliedPromotion)
+                    })
+                    .then(() => {
+                        // Proceed to checkout after storing promotion
+                        proceedToCheckoutWithItems(selectedIds);
+                    })
+                    .catch(error => {
+                        console.error('Error storing promotion:', error);
+                        // Proceed anyway without promotion
+                        proceedToCheckoutWithItems(selectedIds);
+                    });
+                } else {
+                    // No promotion, proceed directly
+                    proceedToCheckoutWithItems(selectedIds);
+                }
             } catch (error) {
                 console.error("Error during checkout:", error);
                 console.groupEnd();
@@ -832,8 +863,37 @@
             }
         };
 
+        function proceedToCheckoutWithItems(selectedIds) {
+            // Create checkout URL with fixed path
+            const checkoutUrl = new URL('/buyer/checkout', window.location.origin);
+            // Add items parameter to URL
+            checkoutUrl.searchParams.append('items', selectedIds.join(','));
+
+            console.log("Redirecting to:", checkoutUrl.toString());
+            console.groupEnd();
+
+            // Redirect to checkout page
+            window.location.href = checkoutUrl.toString();
+        };
+
         // Initialize checkout button state
         updateCheckoutButtonState();
+
+        // Add event listeners for promotion
+        const applyPromotionBtn = document.getElementById('applyPromotionBtn');
+        const promotionCodeInput = document.getElementById('promotionCodeInput');
+
+        if (applyPromotionBtn) {
+            applyPromotionBtn.addEventListener('click', applyPromotion);
+        }
+
+        if (promotionCodeInput) {
+            promotionCodeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    applyPromotion();
+                }
+            });
+        }
 
         // Debug function to check the state of important elements
         function debugCartState() {

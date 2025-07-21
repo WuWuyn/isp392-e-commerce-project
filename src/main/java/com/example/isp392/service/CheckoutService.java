@@ -169,7 +169,30 @@ public class CheckoutService {
 
             customerOrder.setShippingFee(totalShippingFee);
             customerOrder.setDiscountAmount(totalDiscountAmount);
-            customerOrder.setTotalAmount(groupTotal);
+
+            // Calculate and set tracking fields
+            BigDecimal originalTotal = groupTotal.add(totalDiscountAmount); // Add back discount to get original
+            BigDecimal finalTotal = groupTotal; // This is already after discount
+
+            customerOrder.setOriginalTotalAmount(originalTotal);
+            customerOrder.setFinalTotalAmount(finalTotal);
+
+            logger.info("CheckoutService: Set CustomerOrder totals - Original: {}, Final: {}, Shipping: {}, Discount: {}",
+                       originalTotal, finalTotal, totalShippingFee, totalDiscountAmount);
+
+            // Set promotion code if any discount was applied
+            if (totalDiscountAmount.compareTo(BigDecimal.ZERO) > 0) {
+                // Try to get promotion code from the first order that has a discount code
+                String promotionCode = orders.stream()
+                    .filter(order -> order.getDiscountCode() != null && !order.getDiscountCode().isEmpty())
+                    .map(Order::getDiscountCode)
+                    .findFirst()
+                    .orElse(null);
+                customerOrder.setPromotionCode(promotionCode);
+            } else {
+                customerOrder.setPromotionCode(null);
+            }
+
             customerOrder.setOrders(orders);
             customerOrder = customerOrderRepository.save(customerOrder);
 
@@ -194,6 +217,8 @@ public class CheckoutService {
 
         String orderId = vnpayResponse.get("vnp_TxnRef");
         String vnpayResponseCode = vnpayResponse.get("vnp_ResponseCode");
+        String vnpayTransactionNo = vnpayResponse.get("vnp_TransactionNo"); // VNPAY transaction ID
+        String vnpayBankTranNo = vnpayResponse.get("vnp_BankTranNo"); // Bank transaction ID
 
         // Double check transaction status with VNPay
         Map<String, String> transactionStatus = vnPayService.queryTransactionStatus(orderId);
@@ -208,6 +233,16 @@ public class CheckoutService {
             if ("00".equals(vnpayResponseCode) && "00".equals(apiResponseCode)) {
                 // Payment successful
                 customerOrder.setPaymentStatus(PaymentStatus.PAID);
+
+                // Store VNPAY transaction ID for traceability
+                if (vnpayTransactionNo != null && !vnpayTransactionNo.isEmpty()) {
+                    customerOrder.setVnpayTransactionId(vnpayTransactionNo);
+                    logger.info("Stored VNPAY transaction ID: {} for order: {}", vnpayTransactionNo, orderId);
+                } else if (vnpayBankTranNo != null && !vnpayBankTranNo.isEmpty()) {
+                    customerOrder.setVnpayTransactionId(vnpayBankTranNo);
+                    logger.info("Stored VNPAY bank transaction ID: {} for order: {}", vnpayBankTranNo, orderId);
+                }
+
                 for (Order order : customerOrder.getOrders()) {
                     orderRepository.save(order);
                 }

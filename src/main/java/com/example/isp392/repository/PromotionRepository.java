@@ -103,17 +103,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer>, 
     @Query("SELECT p FROM Promotion p WHERE p.isActive = true AND p.scopeType = 'SITE_WIDE'")
     List<Promotion> findSiteWidePromotions();
 
-    /**
-     * Find promotions applicable to a specific book
-     */
-    @Query("SELECT p FROM Promotion p JOIN p.applicableBooks ab WHERE p.isActive = true AND p.scopeType = 'PRODUCT' AND ab.bookId = :bookId")
-    List<Promotion> findBookPromotions(@Param("bookId") Integer bookId);
-
-    /**
-     * Find promotions applicable to a specific shop
-     */
-    @Query("SELECT p FROM Promotion p JOIN p.applicableShops ash WHERE p.isActive = true AND p.scopeType = 'SHOP' AND ash.shopId = :shopId")
-    List<Promotion> findShopPromotions(@Param("shopId") Integer shopId);
+    // Removed findBookPromotions and findShopPromotions as these scopes are no longer supported in simplified system
 
     /**
      * Find promotions applicable to book categories

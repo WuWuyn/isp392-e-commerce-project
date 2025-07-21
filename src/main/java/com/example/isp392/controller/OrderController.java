@@ -13,6 +13,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -23,6 +25,8 @@ import java.util.Optional;
 @Controller
 @RequestMapping("/buyer")
 public class OrderController {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
 
     private final OrderService orderService;
     private final CartService cartService;
@@ -152,16 +156,118 @@ public class OrderController {
     }
 
     @GetMapping("/order-success")
-    public String orderSuccessPage(@RequestParam Integer customerOrderId, Model model, Authentication authentication) {
+    public String orderSuccessPage(@RequestParam(required = false) Integer customerOrderId,
+                                 @RequestParam(required = false) Integer orderId,
+                                 Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
-        if (customerOrderOpt.isEmpty()) {
+        CustomerOrder customerOrder = null;
+
+        // Handle both customerOrderId and orderId parameters
+        if (customerOrderId != null) {
+            // Direct customer order lookup
+            Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
+            if (customerOrderOpt.isEmpty()) {
+                return "redirect:/buyer/orders";
+            }
+            customerOrder = customerOrderOpt.get();
+        } else if (orderId != null) {
+            // Lookup via individual order
+            Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
+            if (orderOpt.isEmpty()) {
+                return "redirect:/buyer/orders";
+            }
+            customerOrder = orderOpt.get().getCustomerOrder();
+            if (customerOrder == null) {
+                return "redirect:/buyer/orders";
+            }
+        } else {
+            // No valid parameters provided
             return "redirect:/buyer/orders";
         }
 
-        model.addAttribute("customerOrder", customerOrderOpt.get());
+        model.addAttribute("customerOrder", customerOrder);
         return "buyer/order-success";
     }
-} 
+
+    /**
+     * Cancel an order
+     */
+    @PostMapping("/cancel")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> cancelOrder(@RequestParam Integer orderId,
+                                                          @RequestParam String reason,
+                                                          Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (authentication == null) {
+            response.put("success", false);
+            response.put("message", "Bạn cần đăng nhập để thực hiện chức năng này");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            boolean success = orderService.cancelOrderWithReason(orderId, reason, user);
+
+            if (success) {
+                response.put("success", true);
+                response.put("message", "Đơn hàng đã được hủy thành công");
+            } else {
+                response.put("success", false);
+                response.put("message", "Không thể hủy đơn hàng này");
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error cancelling order: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi hủy đơn hàng");
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * Rebuy items from a delivered order
+     */
+    @PostMapping("/rebuy")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> rebuyOrder(@RequestParam Integer orderId,
+                                                         Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (authentication == null) {
+            response.put("success", false);
+            response.put("message", "Bạn cần đăng nhập để thực hiện chức năng này");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            boolean success = orderService.rebuyOrder(orderId, user);
+
+            if (success) {
+                response.put("success", true);
+                response.put("message", "Sản phẩm đã được thêm vào giỏ hàng");
+                response.put("redirectUrl", "/buyer/cart");
+            } else {
+                response.put("success", false);
+                response.put("message", "Không thể mua lại đơn hàng này");
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error rebuying order: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi mua lại đơn hàng");
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+}
