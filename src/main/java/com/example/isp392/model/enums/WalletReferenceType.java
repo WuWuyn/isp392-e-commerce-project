@@ -9,5 +9,6 @@ public enum WalletReferenceType {
     PURCHASE_DEDUCTION,     // Deduction for purchase
     SYSTEM_ADJUSTMENT,      // System adjustment
     PROMOTION_CREDIT,       // Credit from promotions
-    WITHDRAWAL              // Withdrawal to external account
+    WITHDRAWAL,             // Withdrawal to external account
+    ORDER_PAYMENT           // Payment to seller for delivered order
 }

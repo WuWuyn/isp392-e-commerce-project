@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Customer Order Details</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -95,9 +97,8 @@
                                                 <i class="fas fa-store text-primary me-2"></i>
                                                 <span th:text="${order.shop.shopName}">Shop Name</span>
                                             </h6>
-                                            <span th:class="'badge ' + (${order.orderStatus.name() == 'PENDING'} ? 'bg-warning' : 
-                                                                      ${order.orderStatus.name() == 'PROCESSING'} ? 'bg-info' : 
-                                                                      ${order.orderStatus.name() == 'SHIPPED'} ? 'bg-primary' : 
+                                            <span th:class="'badge ' + (${order.orderStatus.name() == 'PROCESSING'} ? 'bg-info' :
+                                                                      ${order.orderStatus.name() == 'SHIPPED'} ? 'bg-primary' :
                                                                       ${order.orderStatus.name() == 'DELIVERED'} ? 'bg-success' : 'bg-danger')"
                                                   th:text="${order.orderStatus}">
                                             </span>
@@ -134,6 +135,16 @@
                                         </div>
                                         <div class="text-end mt-3">
                                             <h6 class="text-primary">Order Total: <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></h6>
+
+                                            <!-- Confirm Delivery Button for SHIPPED orders -->
+                                            <div th:if="${order.orderStatus != null && order.orderStatus == T(com.example.isp392.model.OrderStatus).SHIPPED}" class="mt-2">
+                                                <button type="button"
+                                                        class="btn btn-success btn-sm confirm-delivery-btn"
+                                                        th:data-order-id="${order.orderId}"
+                                                        th:data-shop-name="${order.shop.shopName}">
+                                                    <i class="fas fa-check me-1"></i>Đã nhận hàng
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -224,5 +235,61 @@
     .status-delivered { background-color: #d4edda; color: #155724; }
     .status-cancelled { background-color: #f8d7da; color: #721c24; }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle confirm delivery button clicks
+    const deliveryButtons = document.querySelectorAll('.confirm-delivery-btn');
+    console.log('Found', deliveryButtons.length, 'delivery buttons');
+
+    deliveryButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const shopName = this.getAttribute('data-shop-name');
+
+            console.log('Confirm delivery clicked for order:', orderId, 'shop:', shopName);
+
+            if (confirm(`Bạn có chắc chắn đã nhận được đơn hàng từ ${shopName}?`)) {
+                confirmDelivery(orderId);
+            }
+        });
+    });
+});
+
+function confirmDelivery(orderId) {
+    const token = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const header = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    headers[header] = token;
+
+    console.log('Sending confirm delivery request for order:', orderId);
+
+    fetch(`/buyer/orders/${orderId}/confirm-delivery`, {
+        method: 'POST',
+        headers: headers
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            alert('Đã xác nhận nhận hàng thành công!');
+            location.reload(); // Reload to update the UI
+        } else {
+            alert('Có lỗi xảy ra: ' + (data.message || 'Không thể xác nhận nhận hàng'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi xác nhận nhận hàng');
+    });
+}
+</script>
 </body>
 </html>

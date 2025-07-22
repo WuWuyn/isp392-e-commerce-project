@@ -131,7 +131,7 @@ public class BookService {
         }
 
         // Get all books
-        List<Book> allBooks = bookRepository.findAll();
+        List<Book> allBooks = bookRepository.findByIsActiveTrue();
 
         // Chuyển query về chữ thường để so sánh nhất quán
         final String lowerCaseQuery = title.toLowerCase();
@@ -385,9 +385,8 @@ public class BookService {
      */
     @Transactional
     public void deleteBook(Integer bookId) {
-        log.debug("Deleting book with ID: {}", bookId);
-        bookRepository.deleteById(bookId);
-        log.info("Book deleted successfully with ID: {}", bookId);
+        log.debug("Deactivating book with ID: {} via deleteBook method", bookId);
+        this.deactivateBook(bookId);
     }
 
     /**
@@ -504,7 +503,8 @@ public class BookService {
             int page,
             int size,
             String sortField,
-            String sortDirection) {
+            String sortDirection,
+            boolean filterByActiveStatus) {
 
         // If we only have a search query with no other filters, use the fuzzy search
         if (searchQuery != null && !searchQuery.trim().isEmpty() &&
@@ -523,6 +523,9 @@ public class BookService {
 
         // Create a list to hold all predicates
         List<Predicate> predicates = new ArrayList<>();
+        if (filterByActiveStatus) {
+            predicates.add(cb.isTrue(book.get("isActive")));
+        }
 
         // Add title search predicate if search query is provided
         if (searchQuery != null && !searchQuery.trim().isEmpty()) {
@@ -744,5 +747,14 @@ public class BookService {
             // Nếu không, trả về tất cả sách của shop
             return bookRepository.findByShop_ShopIdAndIsActiveTrue(shopId, pageable);
         }
+    }
+    @Transactional
+    public void deactivateBook(Integer bookId) {
+        log.debug("Deactivating book with ID: {}", bookId);
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Book not found with ID: " + bookId));
+        book.setActive(false); // Đặt trạng thái isActive thành false
+        bookRepository.save(book);
+        log.info("Book with ID {} has been successfully deactivated (hidden).", bookId);
     }
 }

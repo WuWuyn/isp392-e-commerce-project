@@ -1,11 +1,12 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.dto.UserRegistrationDTO;
-import com.example.isp392.model.Shop;
-import com.example.isp392.model.User;
-import com.example.isp392.service.CartService;
-import com.example.isp392.service.ShopService;
-import com.example.isp392.service.UserService;
+import com.example.isp392.model.*;
+import com.example.isp392.service.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -24,8 +25,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
+import java.util.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +45,9 @@ public class BuyerController {
     private final UserService userService;
     private final CartService cartService;
     private final ShopService shopService;
+    private final OrderService orderService;
+    private final BookReviewService bookReviewService;
+
     /**
      * Constructor with explicit dependency injection
      * This is preferred over field injection with @Autowired as it makes dependencies clear,
@@ -49,11 +55,17 @@ public class BuyerController {
      *
      * @param userService Service for user-related operations
      * @param cartService Service for cart-related operations
+     * @param shopService Service for shop-related operations
+     * @param orderService Service for order-related operations
+     * @param bookReviewService Service for review-related operations
      */
-    public BuyerController(UserService userService, CartService cartService, ShopService shopService) {
+    public BuyerController(UserService userService, CartService cartService, ShopService shopService,
+                          OrderService orderService, BookReviewService bookReviewService) {
         this.userService = userService;
         this.cartService = cartService;
         this.shopService = shopService;
+        this.orderService = orderService;
+        this.bookReviewService = bookReviewService;
     }
 
     /**
@@ -633,6 +645,308 @@ public class BuyerController {
             redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while deactivating your account. Please try again.");
             return "redirect:/buyer/account-info";
         }
+    }
+
+    /**
+     * Display review management page
+     * Shows reviews organized by order items with reviewed and pending sections
+     */
+    @GetMapping("/reviews")
+    public String showReviewManagement(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "reviewed") String tab,
+            Model model,
+            Authentication authentication) {
+
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Get all delivered order items for this user
+            List<OrderItem> deliveredOrderItems = orderService.getDeliveredOrderItemsForUser(user);
+
+            // Separate into reviewed and pending
+            List<OrderItem> reviewedItems = new ArrayList<>();
+            List<OrderItem> pendingItems = new ArrayList<>();
+
+            for (OrderItem item : deliveredOrderItems) {
+                if (bookReviewService.isExistingReview(user, item.getOrderItemId())) {
+                    reviewedItems.add(item);
+                } else {
+                    pendingItems.add(item);
+                }
+            }
+
+            // Apply pagination based on selected tab
+            List<OrderItem> itemsToShow = "pending".equals(tab) ? pendingItems : reviewedItems;
+
+            // Manual pagination
+            int start = page * size;
+            int end = Math.min(start + size, itemsToShow.size());
+            List<OrderItem> paginatedItems = start < itemsToShow.size() ?
+                itemsToShow.subList(start, end) : new ArrayList<>();
+
+            int totalPages = (int) Math.ceil((double) itemsToShow.size() / size);
+
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            model.addAttribute("orderItems", paginatedItems);
+            model.addAttribute("currentPage", page);
+            model.addAttribute("totalPages", totalPages);
+            model.addAttribute("activeTab", tab);
+            model.addAttribute("reviewedCount", reviewedItems.size());
+            model.addAttribute("pendingCount", pendingItems.size());
+
+            return "buyer/review-management";
+
+        } catch (Exception e) {
+            log.error("Error loading review management: {}", e.getMessage(), e);
+            model.addAttribute("error", "Có lỗi xảy ra khi tải trang quản lý đánh giá");
+            return "buyer/review-management";
+        }
+    }
+
+    /**
+     * Show review form for writing a new review
+     */
+    @GetMapping("/reviews/write/{orderItemId}")
+    public String showWriteReviewForm(@PathVariable Integer orderItemId, Model model, Authentication authentication) {
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Get the order item and validate user can review it
+            OrderItem orderItem = orderService.getOrderItemById(orderItemId);
+            if (orderItem == null || !orderItem.getOrder().getCustomerOrder().getUser().equals(user)
+                || !orderItem.getOrder().getOrderStatus().equals(OrderStatus.DELIVERED)) {
+                model.addAttribute("error", "Không thể đánh giá sản phẩm này");
+                return "redirect:/buyer/reviews";
+            }
+
+            // Check if review already exists
+            if (bookReviewService.isExistingReview(user, orderItemId)) {
+                return "redirect:/buyer/reviews/edit/" + orderItemId;
+            }
+
+            BookReview review = new BookReview();
+            model.addAttribute("review", review);
+            model.addAttribute("orderItem", orderItem);
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            model.addAttribute("isEdit", false);
+
+            return "buyer/review-form";
+
+        } catch (Exception e) {
+            log.error("Error showing write review form: {}", e.getMessage(), e);
+            model.addAttribute("error", "Có lỗi xảy ra khi tải form đánh giá");
+            return "redirect:/buyer/reviews";
+        }
+    }
+
+    /**
+     * Show review form for editing an existing review
+     */
+    @GetMapping("/reviews/edit/{orderItemId}")
+    public String showEditReviewForm(@PathVariable Integer orderItemId, Model model, Authentication authentication) {
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            OrderItem orderItem = orderService.getOrderItemById(orderItemId);
+            if (orderItem == null || !orderItem.getOrder().getCustomerOrder().getUser().equals(user)) {
+                model.addAttribute("error", "Không thể chỉnh sửa đánh giá này");
+                return "redirect:/buyer/reviews";
+            }
+
+            BookReview review = bookReviewService.getOrCreateReview(user, orderItemId);
+            if (review.getReviewId() == null) {
+                return "redirect:/buyer/reviews/write/" + orderItemId;
+            }
+
+            model.addAttribute("review", review);
+            model.addAttribute("orderItem", orderItem);
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            model.addAttribute("isEdit", true);
+
+            return "buyer/review-form";
+
+        } catch (Exception e) {
+            log.error("Error showing edit review form: {}", e.getMessage(), e);
+            model.addAttribute("error", "Có lỗi xảy ra khi tải form chỉnh sửa đánh giá");
+            return "redirect:/buyer/reviews";
+        }
+    }
+
+    /**
+     * Submit a new review
+     */
+    @PostMapping("/reviews/submit/{orderItemId}")
+    public String submitReview(@PathVariable Integer orderItemId,
+                              @ModelAttribute BookReview review,
+                              @RequestParam(value = "image1", required = false) MultipartFile image1,
+                              @RequestParam(value = "image2", required = false) MultipartFile image2,
+                              @RequestParam(value = "image3", required = false) MultipartFile image3,
+                              RedirectAttributes redirectAttributes,
+                              Authentication authentication) {
+
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Validate order item
+            OrderItem orderItem = orderService.getOrderItemById(orderItemId);
+            if (orderItem == null || !orderItem.getOrder().getCustomerOrder().getUser().equals(user)
+                || !orderItem.getOrder().getOrderStatus().equals(OrderStatus.DELIVERED)) {
+                redirectAttributes.addFlashAttribute("error", "Không thể đánh giá sản phẩm này");
+                return "redirect:/buyer/reviews";
+            }
+
+            // Check if review already exists
+            if (bookReviewService.isExistingReview(user, orderItemId)) {
+                redirectAttributes.addFlashAttribute("error", "Bạn đã đánh giá sản phẩm này rồi");
+                return "redirect:/buyer/reviews";
+            }
+
+            // Set review properties
+            review.setUser(user);
+            review.setOrderItem(orderItem);
+            review.setCreatedDate(LocalDateTime.now());
+            review.setApproved(true); // Auto-approve for now
+
+            // Handle image uploads
+            handleImageUploads(review, image1, image2, image3);
+
+            // Save review
+            bookReviewService.saveReview(review);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Đánh giá của bạn đã được gửi thành công!");
+            return "redirect:/buyer/reviews";
+
+        } catch (Exception e) {
+            log.error("Error submitting review: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi gửi đánh giá");
+            return "redirect:/buyer/reviews/write/" + orderItemId;
+        }
+    }
+
+    /**
+     * Update an existing review
+     */
+    @PostMapping("/reviews/update/{orderItemId}")
+    public String updateReview(@PathVariable Integer orderItemId,
+                              @ModelAttribute BookReview review,
+                              @RequestParam(value = "image1", required = false) MultipartFile image1,
+                              @RequestParam(value = "image2", required = false) MultipartFile image2,
+                              @RequestParam(value = "image3", required = false) MultipartFile image3,
+                              RedirectAttributes redirectAttributes,
+                              Authentication authentication) {
+
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Get existing review
+            BookReview existingReview = bookReviewService.getOrCreateReview(user, orderItemId);
+            if (existingReview.getReviewId() == null) {
+                redirectAttributes.addFlashAttribute("error", "Không tìm thấy đánh giá để cập nhật");
+                return "redirect:/buyer/reviews";
+            }
+
+            // Update review properties
+            existingReview.setRating(review.getRating());
+            existingReview.setTitle(review.getTitle());
+            existingReview.setContent(review.getContent());
+
+            // Handle image uploads
+            handleImageUploads(existingReview, image1, image2, image3);
+
+            // Save updated review
+            bookReviewService.saveReview(existingReview);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Đánh giá của bạn đã được cập nhật thành công!");
+            return "redirect:/buyer/reviews";
+
+        } catch (Exception e) {
+            log.error("Error updating review: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi cập nhật đánh giá");
+            return "redirect:/buyer/reviews/edit/" + orderItemId;
+        }
+    }
+
+    /**
+     * Handle image uploads for reviews
+     */
+    private void handleImageUploads(BookReview review, MultipartFile image1, MultipartFile image2, MultipartFile image3) {
+        try {
+            if (image1 != null && !image1.isEmpty()) {
+                String imageUrl1 = saveUploadedFile(image1, "reviews");
+                review.setImgUrl1(imageUrl1);
+            }
+
+            if (image2 != null && !image2.isEmpty()) {
+                String imageUrl2 = saveUploadedFile(image2, "reviews");
+                review.setImgUrl2(imageUrl2);
+            }
+
+            if (image3 != null && !image3.isEmpty()) {
+                String imageUrl3 = saveUploadedFile(image3, "reviews");
+                review.setImgUrl3(imageUrl3);
+            }
+        } catch (Exception e) {
+            log.error("Error handling image uploads: {}", e.getMessage(), e);
+            // Continue without images if upload fails
+        }
+    }
+
+    /**
+     * Save uploaded file and return URL
+     */
+    private String saveUploadedFile(MultipartFile file, String folder) throws IOException {
+        if (file.isEmpty()) {
+            return null;
+        }
+
+        // Create upload directory if it doesn't exist
+        String uploadDir = "uploads/" + folder + "/";
+        File directory = new File(uploadDir);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        // Generate unique filename
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
+        String filename = System.currentTimeMillis() + "_" + UUID.randomUUID().toString() + extension;
+
+        // Save file
+        File destinationFile = new File(directory, filename);
+        file.transferTo(destinationFile);
+
+        // Return relative URL
+        return "/" + uploadDir + filename;
     }
 
 

@@ -8,6 +8,8 @@ import com.example.isp392.repository.CustomerOrderRepository;
 import com.example.isp392.repository.OrderRepository;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,6 +27,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @Service
 @Transactional
 public class CustomerOrderService {
+    private static final Logger logger = LoggerFactory.getLogger(CustomerOrderService.class);
+
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderRepository orderRepository;
     private final BookService bookService;
@@ -107,25 +111,35 @@ public class CustomerOrderService {
      * @return page of customer orders
      */
     public Page<CustomerOrder> findCustomerOrders(User user, String status, LocalDate dateFrom, LocalDate dateTo, Pageable pageable) {
-        return customerOrderRepository.findAll((Specification<CustomerOrder>) (root, query, cb) -> {
+        logger.debug("Finding customer orders for user: {}, status: {}, dateFrom: {}, dateTo: {}",
+                    user.getEmail(), status, dateFrom, dateTo);
+
+        Page<CustomerOrder> result = customerOrderRepository.findAll((Specification<CustomerOrder>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            
+
             predicates.add(cb.equal(root.get("user"), user));
-            
+
             if (status != null && !status.isEmpty()) {
                 predicates.add(cb.equal(root.get("status"), OrderStatus.valueOf(status)));
             }
-            
+
             if (dateFrom != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), dateFrom.atStartOfDay()));
             }
-            
+
             if (dateTo != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), dateTo.plusDays(1).atStartOfDay()));
             }
-            
+
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable);
+
+        logger.debug("Found {} customer orders for user: {}", result.getTotalElements(), user.getEmail());
+        result.getContent().forEach(order ->
+            logger.debug("CustomerOrder ID: {}, Status: {}, CreatedAt: {}",
+                        order.getCustomerOrderId(), order.getStatus(), order.getCreatedAt()));
+
+        return result;
     }
     
     /**

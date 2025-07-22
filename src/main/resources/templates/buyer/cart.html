@@ -213,8 +213,8 @@
                 <div class="card card-cart h-100">
                     <div class="card-header card-header-cart d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Your Shopping Cart</h4>
-                        <span id="cartItemCountBadge" class="badge bg-primary rounded-pill" th:if="${cart != null && cart.items != null && !cart.items.isEmpty()}" 
-                              th:text="${#aggregates.sum(cart.items.![quantity]) + ' items'}">0 items</span>
+                        <span id="cartItemCountBadge" class="badge bg-primary rounded-pill" th:if="${cart != null && cart.items != null && !cart.items.isEmpty()}"
+                              th:text="${cart.items.size()} + ' items'">0 items</span>
                     </div>
                     <div class="card-body p-4" th:if="${cart == null || cart.items == null || cart.items.isEmpty()}">
                         <!-- Empty Cart -->
@@ -425,28 +425,25 @@
             }
         }
         
-        function calculateTotalQuantity() {
-            let totalQty = 0;
-            document.querySelectorAll('input[name="quantity"]').forEach(input => {
-                totalQty += parseInt(input.value) || 0;
-            });
-            return totalQty;
+        function calculateUniqueItemCount() {
+            // Count unique items instead of total quantity
+            return document.querySelectorAll('input[name="quantity"]').length;
         }
-        
+
         function updateAllQuantityBadges() {
-            const totalQty = calculateTotalQuantity();
+            const itemCount = calculateUniqueItemCount();
             if (cartItemCountBadge) {
-                cartItemCountBadge.textContent = totalQty + ' items';
+                cartItemCountBadge.textContent = itemCount + ' items';
             }
             if (headerCartCountBadge) {
-                headerCartCountBadge.textContent = totalQty;
+                headerCartCountBadge.textContent = itemCount;
             }
-            // If totalQty is 0, hide the badge as per existing logic
+            // If itemCount is 0, hide the badge as per existing logic
             if (cartItemCountBadge) {
-                cartItemCountBadge.style.display = totalQty > 0 ? '' : 'none';
+                cartItemCountBadge.style.display = itemCount > 0 ? '' : 'none';
             }
             if (headerCartCountBadge) {
-                headerCartCountBadge.style.display = totalQty > 0 ? '' : 'none';
+                headerCartCountBadge.style.display = itemCount > 0 ? '' : 'none';
             }
         }
 

@@ -152,25 +152,14 @@
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li><a class="dropdown-item" th:href="@{/seller/orders/{id}(id=*{orderId})}"><i class="fas fa-eye me-2"></i>View Details</a></li>
 
-                                            <li th:if="*{orderStatus != null and orderStatus.name() == 'PENDING'}">
-                                                <form th:action="@{/seller/orders/update-status/{orderId}(orderId=*{orderId})}" method="post" class="d-inline">
-                                                    <input type="hidden" name="newStatus" th:value="${T(com.example.isp392.model.OrderStatus).PROCESSING}"/>
-                                                    <button type="submit" class="dropdown-item"><i class="fas fa-check me-2"></i>Confirm Order</button>
-                                                </form>
-                                            </li>
-
                                             <li th:if="*{orderStatus != null and orderStatus.name() == 'PROCESSING'}">
                                                 <a class="dropdown-item" th:href="@{/seller/orders/print-label/{id}(id=*{orderId})}"><i class="fas fa-print me-2"></i>Print Label</a>
                                             </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li class="px-2">
-                                                <form th:action="@{/seller/orders/update-status/{orderId}(orderId=*{orderId})}" method="post" class="d-inline-block w-100">
-                                                    <div class="input-group input-group-sm">
-                                                        <select name="newStatus" class="form-select">
-                                                            <option th:each="s : ${T(com.example.isp392.model.OrderStatus).values()}" th:value="${s}" th:text="${s}" th:selected="${s == order.orderStatus}"></option>
-                                                        </select>
-                                                        <button type="submit" class="btn btn-outline-primary">Set</button>
-                                                    </div>
+
+                                            <li th:if="*{orderStatus != null and orderStatus.name() == 'PROCESSING'}">
+                                                <form th:action="@{/seller/orders/update-status/{orderId}(orderId=*{orderId})}" method="post" class="d-inline">
+                                                    <input type="hidden" name="newStatus" th:value="${T(com.example.isp392.model.OrderStatus).SHIPPED}"/>
+                                                    <button type="submit" class="dropdown-item"><i class="fas fa-shipping-fast me-2"></i>Ship Order</button>
                                                 </form>
                                             </li>
                                         </ul>

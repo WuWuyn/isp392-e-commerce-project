@@ -87,13 +87,11 @@ public class CartController {
 
         User user = userOptional.get();
         try {
-            // Use the cartService to get the total quantity
-            int totalQuantity = cartService.getCartForUser(user).getItems().stream()
-                                    .mapToInt(item -> item.getQuantity() != null ? item.getQuantity() : 0)
-                                    .sum();
+            // Count unique items instead of total quantity
+            int uniqueItemCount = cartService.getCartForUser(user).getItems().size();
 
             response.put("success", true);
-            response.put("totalQuantity", totalQuantity);
+            response.put("totalQuantity", uniqueItemCount);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error getting cart total quantity: {}", e.getMessage());

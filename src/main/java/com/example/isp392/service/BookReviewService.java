@@ -52,6 +52,11 @@ public class BookReviewService {
         }
     }
 
+    // Save review
+    public BookReview saveReview(BookReview review) {
+        return bookReviewRepository.save(review);
+    }
+
     // Lấy danh sách ID của các OrderItem đã được người dùng đánh giá
 
     public Set<Integer> getReviewedItemIdsForUser(User user) {

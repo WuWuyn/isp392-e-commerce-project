@@ -22,13 +22,24 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Value;
+import com.example.isp392.model.enums.WalletReferenceType;
 
 @Service
 @Transactional
 public class OrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+
+    @Value("${platform.commission.rate:0.10}")
+    private BigDecimal platformCommissionRate; // Default to 10% if not specified
 
     private final OrderRepository orderRepository;
     private final CustomerOrderRepository customerOrderRepository;
@@ -86,12 +97,23 @@ public class OrderService {
                 }
 
                 orderRepository.save(order);
-                
+
+                // Process seller payment if order is delivered
+                if (newStatus == OrderStatus.DELIVERED && oldStatus != OrderStatus.DELIVERED) {
+                    try {
+                        processSellerPayment(order);
+                        logger.info("Processed seller payment for order {}", orderId);
+                    } catch (Exception e) {
+                        logger.error("Failed to process seller payment for order {}: {}", orderId, e.getMessage(), e);
+                        // Don't fail the status update if payment processing fails
+                    }
+                }
+
                 // Update customer order status if needed
                 if (order.getCustomerOrder() != null) {
                     customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
                 }
-                
+
                 return true;
             }).orElse(false);
         } finally {
@@ -716,7 +738,7 @@ public class OrderService {
                 Book book = orderItem.getBook();
 
                 // Check if book is still active and has stock
-                if (!book.isActive()) {
+                if (!book.getActive()) {
                     logger.warn("Book {} is no longer active, skipping rebuy", book.getBookId());
                     continue;
                 }
@@ -786,6 +808,118 @@ public class OrderService {
     }
 
     /**
+     * Find orders with search functionality
+     */
+    public Page<Order> findOrdersWithSearch(User user, String status, LocalDate dateFrom, LocalDate dateTo, String search, Pageable pageable) {
+        return orderRepository.findAll((Specification<Order>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Join with CustomerOrder to access User
+            Join<Order, CustomerOrder> customerOrderJoin = root.join("customerOrder", JoinType.INNER);
+            predicates.add(cb.equal(customerOrderJoin.get("user"), user));
+
+            if (status != null && !status.isEmpty()) {
+                predicates.add(cb.equal(root.get("orderStatus"), OrderStatus.valueOf(status)));
+            }
+
+            if (dateFrom != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("orderDate"), dateFrom));
+            }
+
+            if (dateTo != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("orderDate"), dateTo.plusDays(1)));
+            }
+
+            // Search functionality
+            if (search != null && !search.trim().isEmpty()) {
+                String searchPattern = "%" + search.trim().toLowerCase() + "%";
+
+                // Search by order ID or book title
+                Predicate orderIdPredicate = cb.like(cb.lower(cb.toString(root.get("orderId"))), searchPattern);
+
+                // Search by book title in order items
+                Join<Order, OrderItem> orderItemJoin = root.join("orderItems", JoinType.LEFT);
+                Join<OrderItem, Book> bookJoin = orderItemJoin.join("book", JoinType.LEFT);
+                Predicate bookTitlePredicate = cb.like(cb.lower(bookJoin.get("title")), searchPattern);
+
+                predicates.add(cb.or(orderIdPredicate, bookTitlePredicate));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable);
+    }
+
+    /**
+     * Get order statistics for a user
+     */
+    public Map<String, Object> getOrderStatistics(User user) {
+        Map<String, Object> statistics = new HashMap<>();
+
+        // Total orders count
+        Long totalOrders = orderRepository.countByCustomerOrderUser(user);
+        statistics.put("totalOrders", totalOrders);
+
+        // Total amount spent (only for DELIVERED orders)
+        BigDecimal totalSpent = orderRepository.findByCustomerOrderUserAndOrderStatus(user, OrderStatus.DELIVERED)
+                .stream()
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        statistics.put("totalSpent", totalSpent);
+
+        // Orders by status
+        Map<String, Long> ordersByStatus = new HashMap<>();
+        for (OrderStatus status : OrderStatus.values()) {
+            Long count = orderRepository.countByCustomerOrderUserAndOrderStatus(user, status);
+            ordersByStatus.put(status.name(), count);
+        }
+        statistics.put("ordersByStatus", ordersByStatus);
+
+        return statistics;
+    }
+
+    /**
+     * Process payment to seller when order is delivered
+     * @param order The delivered order
+     */
+    private void processSellerPayment(Order order) {
+        if (order.getShop() == null || order.getShop().getUser() == null) {
+            logger.error("Cannot process seller payment: shop or seller user not found for order {}", order.getOrderId());
+            return;
+        }
+
+        User seller = order.getShop().getUser();
+        BigDecimal orderTotal = order.getTotalAmount();
+
+        // Calculate platform commission
+        BigDecimal commission = orderTotal.multiply(platformCommissionRate);
+        BigDecimal sellerAmount = orderTotal.subtract(commission);
+
+        logger.info("Processing seller payment for order {}: Total={}, Commission={}, Seller Amount={}",
+                   order.getOrderId(), orderTotal, commission, sellerAmount);
+
+        // Add funds to seller's wallet
+        String description = String.format("Payment for delivered order #%d (Total: %s VND, Commission: %s VND)",
+                                         order.getOrderId(), orderTotal, commission);
+
+        try {
+            walletService.addFunds(
+                seller,
+                sellerAmount,
+                description,
+                WalletReferenceType.ORDER_PAYMENT,
+                order.getOrderId(),
+                seller.getUserId()
+            );
+
+            logger.info("Successfully processed seller payment of {} VND for order {} to seller {}",
+                       sellerAmount, order.getOrderId(), seller.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to add funds to seller wallet for order {}: {}", order.getOrderId(), e.getMessage(), e);
+            throw new RuntimeException("Failed to process seller payment: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Enhanced cancel order method with better reason processing
      * @param orderId Order ID to cancel
      * @param cancellationReason Raw cancellation reason from UI
@@ -798,5 +932,43 @@ public class OrderService {
         logger.info("Cancelling order {} with processed reason: {}", orderId, processedReason);
 
         return cancelOrder(orderId, processedReason, user);
+    }
+
+    /**
+     * Get all delivered order items for a user (for review management)
+     * @param user The user to get order items for
+     * @return List of delivered order items
+     */
+    public List<OrderItem> getDeliveredOrderItemsForUser(User user) {
+        List<Order> deliveredOrders = orderRepository.findByCustomerOrderUserAndOrderStatus(user, OrderStatus.DELIVERED);
+
+        List<OrderItem> allOrderItems = new ArrayList<>();
+        for (Order order : deliveredOrders) {
+            allOrderItems.addAll(order.getOrderItems());
+        }
+
+        // Sort by order date (newest first)
+        allOrderItems.sort((a, b) -> b.getOrder().getOrderDate().compareTo(a.getOrder().getOrderDate()));
+
+        return allOrderItems;
+    }
+
+    /**
+     * Get order item by ID
+     * @param orderItemId The order item ID
+     * @return OrderItem or null if not found
+     */
+    public OrderItem getOrderItemById(Integer orderItemId) {
+        // You'll need to add this method to your OrderItemRepository
+        // For now, let's implement it by searching through orders
+        List<Order> allOrders = orderRepository.findAll();
+        for (Order order : allOrders) {
+            for (OrderItem item : order.getOrderItems()) {
+                if (item.getOrderItemId().equals(orderItemId)) {
+                    return item;
+                }
+            }
+        }
+        return null;
     }
 }

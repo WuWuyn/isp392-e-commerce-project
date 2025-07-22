@@ -475,4 +475,19 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             @Param("commissionRate") BigDecimal commissionRate);
-} 
+
+    /**
+     * Count total orders for a user
+     */
+    Long countByCustomerOrderUser(User user);
+
+    /**
+     * Count orders by user and status
+     */
+    Long countByCustomerOrderUserAndOrderStatus(User user, OrderStatus orderStatus);
+
+    /**
+     * Find orders by user and status
+     */
+    List<Order> findByCustomerOrderUserAndOrderStatus(User user, OrderStatus orderStatus);
+}

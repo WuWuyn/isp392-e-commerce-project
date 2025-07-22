@@ -43,7 +43,14 @@ Parameters:
                     <i class="fas fa-list-alt fa-fw me-2"></i> Order History
                 </a>
             </li>
-            
+
+            <!-- My Reviews -->
+            <li class="list-group-item" th:classappend="${activeTab == 'reviews'} ? 'active' : ''">
+                <a th:href="@{/buyer/reviews}" class="d-flex align-items-center text-decoration-none">
+                    <i class="fas fa-star fa-fw me-2"></i> My Reviews
+                </a>
+            </li>
+
             <!-- Address Book -->
             <li class="list-group-item" th:classappend="${activeTab == 'address'} ? 'active' : ''">
                 <a th:href="@{/buyer/addresses}" class="d-flex align-items-center text-decoration-none">

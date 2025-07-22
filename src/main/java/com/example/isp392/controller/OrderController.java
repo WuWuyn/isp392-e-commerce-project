@@ -7,6 +7,7 @@ import com.example.isp392.service.OrderService;
 import com.example.isp392.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -46,26 +47,33 @@ public class OrderController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) LocalDate dateFrom,
             @RequestParam(required = false) LocalDate dateTo,
+            @RequestParam(required = false) String search,
             Model model,
             Authentication authentication) {
-        
+
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Get individual orders with filters (display individual orders, not grouped by CustomerOrder)
-        Page<Order> orderPage = orderService.findOrders(
-            user, status, dateFrom, dateTo, PageRequest.of(page, 10)
+        // Get individual orders with filters (display individual orders, not grouped by CustomerOrder), sorted by newest first
+        Sort sort = Sort.by(Sort.Direction.DESC, "orderDate");
+        Page<Order> orderPage = orderService.findOrdersWithSearch(
+            user, status, dateFrom, dateTo, search, PageRequest.of(page, 10, sort)
         );
+
+        // Calculate statistics
+        Map<String, Object> statistics = orderService.getOrderStatistics(user);
 
         model.addAttribute("orders", orderPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", orderPage.getTotalPages());
-        
+        model.addAttribute("statistics", statistics);
+
         // Preserve filter parameters for pagination links
         model.addAttribute("paramStatus", status);
         model.addAttribute("paramDateFrom", dateFrom);
         model.addAttribute("paramDateTo", dateTo);
-        
+        model.addAttribute("paramSearch", search);
+
         return "buyer/order-history";
     }
 
@@ -267,6 +275,63 @@ public class OrderController {
             logger.error("Error rebuying order: {}", e.getMessage(), e);
             response.put("success", false);
             response.put("message", "Có lỗi xảy ra khi mua lại đơn hàng");
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * Confirm delivery of an order (buyer confirms they received the order)
+     */
+    @PostMapping("/orders/{orderId}/confirm-delivery")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> confirmDelivery(@PathVariable Integer orderId,
+                                                              Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (authentication == null) {
+            response.put("success", false);
+            response.put("message", "Bạn cần đăng nhập để thực hiện chức năng này");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
+            if (orderOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Đơn hàng không tồn tại hoặc không thuộc về bạn");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            Order order = orderOpt.get();
+
+            // Check if order is in SHIPPED status
+            if (order.getOrderStatus() != OrderStatus.SHIPPED) {
+                response.put("success", false);
+                response.put("message", "Chỉ có thể xác nhận nhận hàng cho đơn hàng đã được giao");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Update order status to DELIVERED
+            boolean success = orderService.updateOrderStatus(orderId, OrderStatus.DELIVERED);
+
+            if (success) {
+                response.put("success", true);
+                response.put("message", "Đã xác nhận nhận hàng thành công");
+                logger.info("User {} confirmed delivery for order {}", user.getEmail(), orderId);
+            } else {
+                response.put("success", false);
+                response.put("message", "Không thể cập nhật trạng thái đơn hàng");
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error confirming delivery for order {}: {}", orderId, e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi xác nhận nhận hàng");
             return ResponseEntity.status(500).body(response);
         }
     }
