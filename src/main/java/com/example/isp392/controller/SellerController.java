@@ -1558,46 +1558,44 @@ public class SellerController {
             @RequestParam(name = "status", required = false) OrderStatus status,
             @RequestParam(name = "startDate", required = false) String startDate,
             @RequestParam(name = "endDate", required = false) String endDate,
+            // ===== THÊM 2 THAM SỐ SẮP XẾP MỚI =====
+            @RequestParam(name = "sortField", defaultValue = "orderDate") String sortField,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir,
             Model model,
             Authentication authentication
     ) {
-        // 1. Lấy thông tin người bán đang đăng nhập
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         User seller = userService.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Seller not found"));
         Integer sellerId = seller.getUserId();
 
-        // 2. Tạo Pageable
-        Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
+        // ===== TẠO ĐỐI TƯỢNG SORT ĐỘNG =====
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortField);
+        Pageable pageable = PageRequest.of(page, size, sort);
 
-        // 3. Lấy danh sách Order gốc từ Service (vẫn có thể chứa sản phẩm của người khác)
         Page<Order> originalOrderPage = orderService.searchOrdersForSeller(sellerId, keyword, status, startDate, endDate, pageable);
 
-        // ===== START: PHẦN SỬA LỖI QUAN TRỌNG =====
-        // 4. Lọc lại danh sách orderItems bên trong mỗi Order
         originalOrderPage.getContent().forEach(order -> {
-            // Lọc danh sách orderItems, chỉ giữ lại những item thuộc về người bán này
             List<OrderItem> sellerItems = order.getOrderItems().stream()
-                    .filter(item -> {
-                        // Kiểm tra xem item này có thuộc về người bán đang đăng nhập không
-                        // Cẩn thận NullPointerException nếu có dữ liệu không nhất quán
-                        return item.getBook() != null &&
-                                item.getBook().getShop() != null &&
-                                item.getBook().getShop().getUser() != null &&
-                                item.getBook().getShop().getUser().getUserId().equals(sellerId);
-                    })
+                    .filter(item -> item.getBook() != null &&
+                            item.getBook().getShop() != null &&
+                            item.getBook().getShop().getUser() != null &&
+                            item.getBook().getShop().getUser().getUserId().equals(sellerId))
                     .toList();
-
-            // Cập nhật lại danh sách items của đơn hàng bằng danh sách đã được lọc
             order.setOrderItems(sellerItems);
         });
 
-        // 5. Gửi dữ liệu đã được xử lý an toàn tới view
         model.addAttribute("orderPage", originalOrderPage);
         model.addAttribute("selectedStatus", status);
         model.addAttribute("keyword", keyword);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
+
+        // ===== GỬI THÔNG TIN SẮP XẾP TỚI VIEW =====
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", sortDir.equalsIgnoreCase("asc") ? "desc" : "asc");
+
 
         return "seller/orders";
     }
@@ -1624,24 +1622,27 @@ public class SellerController {
                                     Authentication authentication,
                                     RedirectAttributes redirectAttributes) {
 
-        // Lấy thông tin người bán để kiểm tra quyền sở hữu
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         User seller = userService.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Seller not found"));
 
-        // Kiểm tra xem đơn hàng có thuộc về người bán này không trước khi cập nhật
         Optional<Order> orderOptional = orderService.findOrderByIdForSeller(orderId, seller.getUserId());
 
         if (orderOptional.isPresent()) {
-            // Nếu có, thực hiện cập nhật
-            boolean isSuccess = orderService.updateOrderStatus(orderId, newStatus);
-            if (isSuccess) {
-                redirectAttributes.addFlashAttribute("successMessage", "Order #" + orderId + " status updated to " + newStatus.name());
-            } else {
-                redirectAttributes.addFlashAttribute("errorMessage", "Failed to update order status.");
+            try {
+                // Đưa logic cập nhật vào trong khối try
+                boolean isSuccess = orderService.updateOrderStatus(orderId, newStatus);
+                if (isSuccess) {
+                    redirectAttributes.addFlashAttribute("successMessage", "Order #" + orderId + " status updated to " + newStatus.name());
+                } else {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Failed to update order status for an unknown reason.");
+                }
+            } catch (IllegalStateException e) {
+                // Bắt lấy lỗi trạng thái không hợp lệ
+                // Gửi thông báo lỗi từ service (bằng tiếng Anh) về view
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             }
         } else {
-            // Nếu không, báo lỗi không có quyền
             redirectAttributes.addFlashAttribute("errorMessage", "Order not found or you do not have permission to modify it.");
         }
 
