@@ -37,6 +37,7 @@ public class OrderService {
     private final BookService bookService;
     private final CustomerOrderService customerOrderService;
     private final CartService cartService;
+    private final WalletService walletService;
     private final Lock orderStatusLock = new ReentrantLock();
 
     public OrderService(OrderRepository orderRepository,
@@ -45,7 +46,8 @@ public class OrderService {
                        PromotionCalculationService promotionCalculationService,
                        BookService bookService,
                        CustomerOrderService customerOrderService,
-                       CartService cartService) {
+                       CartService cartService,
+                       WalletService walletService) {
         this.orderRepository = orderRepository;
         this.customerOrderRepository = customerOrderRepository;
         this.promotionService = promotionService;
@@ -53,6 +55,7 @@ public class OrderService {
         this.bookService = bookService;
         this.customerOrderService = customerOrderService;
         this.cartService = cartService;
+        this.walletService = walletService;
     }
 
     public List<Order> getOrdersForSeller(Integer sellerId) {
@@ -162,6 +165,26 @@ public class OrderService {
 
             // Save order
             orderRepository.save(order);
+
+            // Process wallet refund if applicable
+            if (order.getCustomerOrder() != null) {
+                try {
+                    // Check if this is the last order in the customer order to be cancelled
+                    CustomerOrder customerOrder = order.getCustomerOrder();
+                    boolean allOrdersCancelled = customerOrder.getOrders().stream()
+                            .allMatch(o -> o.getOrderStatus() == OrderStatus.CANCELLED);
+
+                    if (allOrdersCancelled) {
+                        // Process refund to wallet for the entire customer order
+                        walletService.processRefund(customerOrder);
+                        logger.info("Processed wallet refund for customer order {} after cancelling order {}",
+                                   customerOrder.getCustomerOrderId(), orderId);
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to process wallet refund for order {}: {}", orderId, e.getMessage(), e);
+                    // Don't fail the cancellation if refund fails, but log the error
+                }
+            }
 
             // Update customer order status
             if (order.getCustomerOrder() != null) {

@@ -40,6 +40,7 @@ public class UserService implements UserDetailsService {
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final OrderRepository orderRepository;
+    private final WalletService walletService;
 
     /**
      * Constructor with explicit dependency injection
@@ -51,16 +52,18 @@ public class UserService implements UserDetailsService {
      * @param userRoleRepository Repository for user-role relationship data access
      * @param passwordEncoder Password encoder for securely storing passwords
      */
-    public UserService(UserRepository userRepository, 
+    public UserService(UserRepository userRepository,
                       RoleRepository roleRepository,
                       UserRoleRepository userRoleRepository,
                       PasswordEncoder passwordEncoder,
-                      OrderRepository orderRepository) {
+                      OrderRepository orderRepository,
+                      WalletService walletService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
         this.orderRepository = orderRepository;
+        this.walletService = walletService;
     }
 
     /**
@@ -141,7 +144,29 @@ public class UserService implements UserDetailsService {
         UserRole userRole = new UserRole(savedUser, buyerRole);
         userRoleRepository.save(userRole);
 
+        // Create wallet for the new user
+        try {
+            walletService.createWalletForUser(savedUser);
+            log.info("Created wallet for new user: {}", savedUser.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to create wallet for user {}: {}", savedUser.getEmail(), e.getMessage(), e);
+            // Don't fail registration if wallet creation fails, but log the error
+        }
+
         return savedUser;
+    }
+
+    /**
+     * Ensure user has a wallet (create if doesn't exist)
+     * @param user the user
+     */
+    @Transactional
+    public void ensureUserHasWallet(User user) {
+        try {
+            walletService.ensureWalletExists(user);
+        } catch (Exception e) {
+            log.error("Failed to ensure wallet exists for user {}: {}", user.getEmail(), e.getMessage(), e);
+        }
     }
 
     /**
@@ -410,6 +435,10 @@ public class UserService implements UserDetailsService {
     public User findUserById(Integer userId) {
         return userRepository.findByIdWithAddresses(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    }
+
+    public Optional<User> findById(Integer userId) {
+        return userRepository.findById(userId);
     }
     public List<Role> getAllRoles() {
         // Lấy tất cả trừ role "ADMIN" để tránh việc gán nhầm
