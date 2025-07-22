@@ -44,7 +44,19 @@
                                  th:src="${shop.coverImageUrl}" class="card-img-top" alt="Shop Cover Image"
                                  style="height: 200px; object-fit: cover;">
 
-                            <div class="card-header border-0"><h4>Shop Information</h4></div>
+                            <div class="card-header border-0 d-flex align-items-center">
+                                <img th:if="${shop.logoUrl != null and !shop.logoUrl.isEmpty()}"
+                                     th:src="${shop.logoUrl}" alt="Shop Logo"
+                                     class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+
+                                <div th:if="${shop.logoUrl == null or shop.logoUrl.isEmpty()}"
+                                     class="rounded me-3 d-flex align-items-center justify-content-center bg-light"
+                                     style="width: 60px; height: 60px;">
+                                    <i class="fas fa-store text-muted fs-2"></i>
+                                </div>
+
+                                <h4 class="mb-0">Shop Information</h4>
+                            </div>
                             <div class="card-body pt-0">
                                 <dl class="row">
                                     <dt class="col-sm-3 detail-label">Shop Name</dt>
@@ -76,14 +88,14 @@
                             <div class="card-header"><h4>Owner Information</h4></div>
                             <div class="card-body">
                                 <div class="text-center mb-3">
-                                    <img th:if="${shop.logoUrl != null and !shop.logoUrl.isEmpty()}"
-                                         th:src="${shop.logoUrl}" alt="Shop Logo"
+                                    <img th:if="${shop.user.profilePicUrl != null and !shop.user.profilePicUrl.isEmpty()}"
+                                         th:src="${shop.user.profilePicUrl}" alt="Owner Profile Picture"
                                          class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #eee;">
 
-                                    <div th:if="${shop.logoUrl == null or shop.logoUrl.isEmpty()}"
+                                    <div th:if="${shop.user.profilePicUrl == null or shop.user.profilePicUrl.isEmpty()}"
                                          class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle"
                                          style="width: 100px; height: 100px;">
-                                        <i class="fas fa-store text-muted fs-2"></i>
+                                        <i class="fas fa-user text-muted fs-2"></i>
                                     </div>
                                 </div>
                                 <dl>
@@ -95,6 +107,7 @@
                                     <dd th:text="${shop.contactPhone}"></dd>
                                 </dl>
                             </div>
+                           </div>
                         </div>
 
                         <div class="card">
