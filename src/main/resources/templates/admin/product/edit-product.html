@@ -37,15 +37,33 @@
                                     <div class="mb-3"><label class="form-label">Authors</label><input type="text" class="form-control" th:field="*{authors}"></div>
                                     <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" th:field="*{description}" rows="10"></textarea></div>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3"><label class="form-label">Selling Price <span class="text-danger">*</span></label><input type="number" class="form-control" th:field="*{sellingPrice}" required></div>
-                                    <div class="mb-3"><label class="form-label">Original Price</label><input type="number" class="form-control" th:field="*{originalPrice}"></div>
-                                    <div class="mb-3"><label class="form-label">Stock Quantity <span class="text-danger">*</span></label><input type="number" class="form-control" th:field="*{stockQuantity}" required></div>
+                                <div class="mb-3">
+                                    <label class="form-label">Selling Price <span class="text-danger">*</span></label>
+                                    <input type="number" step="any" class="form-control" th:field="*{sellingPrice}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Original Price <span class="text-danger">*</span></label>
+                                    <input type="number" step="any" class="form-control" th:field="*{originalPrice}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Stock Quantity <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" th:field="*{stockQuantity}" required>
+                                </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Product Status</label>
+                                        <div class="form-check form-switch ps-5 pt-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="productStatusSwitch" th:field="*{active}">
+                                            <label class="form-check-label" for="productStatusSwitch" th:text="*{active} ? 'Visible (Active)' : 'Hidden (Inactive)'"></label>
+                                        </div>
+                                        <div th:if="!*{active}" class="form-text text-warning mt-1">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            This product is currently hidden from customers.
+                                        </div>
+                                    </div>
                                     <div class="mb-3">
                                         <label class="form-label">Publisher</label>
                                         <select class="form-select" th:field="*{publisher}">
-                                            <option value="">-- Select Publisher --</option>
-                                            <option th:each="pub : ${publishers}" th:value="${pub.publisherId}" th:text="${pub.publisherName}"></option>
                                         </select>
                                     </div>
                                     <div class="mb-3">

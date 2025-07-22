@@ -101,7 +101,8 @@ public class ProductController {
                 page, 
                 size, 
                 sortField, 
-                sortDirection);
+                sortDirection,
+                true);
         
         // Fetch active categories and all publishers for filter options
         List<Category> allCategories = categoryRepository.findByIsActiveTrue();

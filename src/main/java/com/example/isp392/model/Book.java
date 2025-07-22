@@ -131,6 +131,14 @@ public class Book {
         BigDecimal percentage = discount.multiply(new BigDecimal(100)).divide(originalPrice, 0, RoundingMode.HALF_UP);
         return percentage.intValue();
     }
+
+    public boolean getActive() {
+        return this.isActive;
+    }
+
+    public void setActive(boolean active) {
+        this.isActive = active;
+    }
     
     /**
      * Phương thức tương thích ngược để đảm bảo code cũ vẫn hoạt động
