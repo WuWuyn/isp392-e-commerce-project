@@ -483,7 +483,7 @@ public class AdminController {
         }
 
         // Gọi phương thức findBooks hợp nhất, truyền categoryIds vào
-        Page<Book> bookPage = bookService.findBooks(keyword, categoryIds, null, null, null, null, page, size, sortField, sortDir);
+        Page<Book> bookPage = bookService.findBooks(keyword, categoryIds, null, null, null, null, page, size, sortField, sortDir, false); // <<< THÊM 'false'
 
         model.addAttribute("bookPage", bookPage);
         model.addAttribute("activeMenu", "product");
@@ -565,6 +565,9 @@ public class AdminController {
             existingBook.setOriginalPrice(bookFromForm.getOriginalPrice());
             existingBook.setPublisher(bookFromForm.getPublisher());
             existingBook.setCategories(bookFromForm.getCategories());
+            existingBook.setActive(bookFromForm.getActive());
+            existingBook.setSellingPrice(bookFromForm.getSellingPrice());
+            existingBook.setOriginalPrice(bookFromForm.getOriginalPrice());
 
             // Xử lý upload ảnh mới nếu có
             if (coverImageFile != null && !coverImageFile.isEmpty()) {
@@ -619,6 +622,20 @@ public class AdminController {
         return "redirect:/admin/products";
     }
 
+    @PostMapping("/products/delete/{id}")
+    public String deleteProduct(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            // Get current authenticated user to check ownership if needed (optional but good practice)
+            // For now, we will just perform the action
+            bookService.deleteBook(id); // This now deactivates the book
+            redirectAttributes.addFlashAttribute("successMessage", "Product has been hidden successfully!");
+        } catch (Exception e) {
+            log.error("Error hiding product: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error hiding product: " + e.getMessage());
+        }
+        return "redirect:/admin/products";
+    }
+
     // đăng kí seller
     @GetMapping("/seller-approvals")
     public String showSellerApprovalQueue(Model model) {
@@ -642,6 +659,7 @@ public class AdminController {
         model.addAttribute("activeMenu", "seller");
         return "admin/shop-detail";
     }
+
 
     // === CÁC PHƯƠNG THỨC CẦN SỬA ĐỔI ===
 

@@ -21,7 +21,7 @@ import java.util.Optional;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecificationExecutor<Book> {
-
+    List<Book> findByIsActiveTrue();
     /**
      * Find book by ID with pessimistic lock to prevent race conditions
      * This is used for inventory management to ensure atomic updates
@@ -34,19 +34,21 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     Page<Book> findByTitleContainingIgnoreCase(String title, Pageable pageable);
     
     // Tìm sách theo danh mục (phân trang)
-    @Query("SELECT b FROM Book b JOIN b.categories c WHERE c = ?1")
+    @Query("SELECT b FROM Book b JOIN b.categories c WHERE c = ?1 AND b.isActive = true")
     Page<Book> findByCategory(Category category, Pageable pageable);
     
     // Lấy những sách có đánh giá cao nhất
-    @Query("SELECT b FROM Book b ORDER BY b.averageRating DESC")
+    // Thêm "WHERE b.active = true"
+    @Query("SELECT b FROM Book b WHERE b.isActive = true ORDER BY b.averageRating DESC")
     List<Book> findTopRatedBooks(Pageable pageable);
     
     // Lấy những sách mới thêm vào
-    @Query("SELECT b FROM Book b ORDER BY b.dateAdded DESC")
+    @Query("SELECT b FROM Book b WHERE b.isActive = true ORDER BY b.dateAdded DESC")
     List<Book> findNewAdditions(Pageable pageable);
     
     // Tìm những sách có giảm giá (selling_price < original_price)
-    @Query("SELECT b FROM Book b WHERE b.sellingPrice < b.originalPrice")
+    // Thêm "AND b.active = true"
+    @Query("SELECT b FROM Book b WHERE b.sellingPrice < b.originalPrice AND b.isActive = true")
     List<Book> findDiscountedBooks(Pageable pageable);
     
     /**

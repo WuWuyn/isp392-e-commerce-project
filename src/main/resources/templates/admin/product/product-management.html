@@ -124,9 +124,14 @@
                                     </td>
 
                                     <td>
-                                        <span class="badge"
-                                              th:classappend="${book.stockQuantity > 0 ? 'bg-success' : 'bg-danger'}"
-                                              th:text="${book.stockQuantity > 0 ? 'In Stock' : 'Out of Stock'}"></span>
+                                        <div th:switch="${book.active}">
+                                            <span th:case="false" class="badge bg-secondary">Hidden</span>
+                                            <div th:case="*">
+            <span class="badge"
+                  th:classappend="${book.stockQuantity > 0 ? 'bg-success' : 'bg-danger'}"
+                  th:text="${book.stockQuantity > 0 ? 'In Stock' : 'Out of Stock'}"></span>
+                                            </div>
+                                        </div>
                                     </td>
 
                                     <td>
@@ -138,8 +143,8 @@
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <form th:action="@{'/admin/products/delete/' + ${book.bookId}}" method="post" class="d-inline"
-                                                  onsubmit="return confirm('Are you sure you want to delete this book? This action cannot be undone.');">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                  onsubmit="return confirm('Are you sure you want to hide this product? It will not be visible to customers.');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hide Product">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             </form>
