@@ -267,9 +267,9 @@ class DiscountPreviewSystem {
      */
     formatVND(amount) {
         if (window.VNDFormatter) {
-            return VNDFormatter.format(amount);
+            return VNDFormatter.format(amount) + ' đ';
         }
-        return new Intl.NumberFormat('en-US').format(amount);
+        return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
     }
 
     /**

@@ -669,7 +669,8 @@
                     </div>
                 </div>
             </div>
-        </div>
+    </div>
+
     </form>
 </div>
 </main>
@@ -730,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateShippingFeeDisplay() {
         const totalShipping = calculateTotalShippingFee();
         document.getElementById('summaryShipping').textContent =
-            new Intl.NumberFormat('vi-VN').format(totalShipping) + ' VND';
+            new Intl.NumberFormat('vi-VN').format(totalShipping) + ' đ';
         document.getElementById('shippingFeeInput').value = totalShipping;
         return totalShipping;
     }
@@ -748,7 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (discountRow && discountAmount && promoCodeSummary) {
                 discountRow.style.display = 'flex';
-                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' VND';
+                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' đ';
                 promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
             }
         } else {
@@ -788,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (discountRow && discountAmount && promoCodeSummary) {
                 discountRow.style.display = 'flex';
-                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' VND';
+                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' đ';
                 promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
             }
 
@@ -812,7 +813,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // IMPORTANT: Ensure server-calculated total is preserved
             const summaryTotalElement = document.getElementById('summaryTotal');
             if (summaryTotalElement && serverCalculatedTotal) {
-                summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(serverCalculatedTotal) + ' VND';
+                summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(serverCalculatedTotal) + ' đ';
                 console.log('Preserved server-calculated total:', serverCalculatedTotal);
             }
 

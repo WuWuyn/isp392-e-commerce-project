@@ -402,15 +402,14 @@
         // Format currency using VND formatter
         function formatCurrency(amount) {
             if (window.VNDFormatter) {
-                return VNDFormatter.format(amount) + ' VND';
+                return VNDFormatter.format(amount) + ' đ';
             }
             // Fallback to Intl if VNDFormatter not available
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'VND',
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'decimal',
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
-            }).format(amount);
+            }).format(amount) + ' đ';
         }
 
         function updateItemTotal(row) {

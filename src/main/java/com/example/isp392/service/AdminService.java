@@ -1,6 +1,7 @@
 package com.example.isp392.service;
 
 import com.example.isp392.model.Book;
+import com.example.isp392.model.Shop;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
@@ -37,6 +40,8 @@ public class AdminService {
     private final BookRepository bookRepository;
     private final OrderRepository orderRepository;
     private final ShopRepository shopRepository;
+    private final BlogRepository blogRepository;
+    private final BlogCommentRepository blogCommentRepository;
 
     /**
      * Constructor with explicit dependency injection
@@ -49,13 +54,17 @@ public class AdminService {
                         UserRoleRepository userRoleRepository,
                         BookRepository bookRepository,
                         OrderRepository orderRepository,
-                        ShopRepository shopRepository) {
+                        ShopRepository shopRepository,
+                        BlogRepository blogRepository,
+                        BlogCommentRepository blogCommentRepository) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.userRoleRepository = userRoleRepository;
         this.bookRepository = bookRepository;
         this.orderRepository = orderRepository;
         this.shopRepository = shopRepository;
+        this.blogRepository = blogRepository;
+        this.blogCommentRepository = blogCommentRepository;
     }
     
     /**
@@ -229,7 +238,7 @@ public class AdminService {
             Object userRegistrationDateObject = user.getRegistrationDate();
             if (userRegistrationDateObject instanceof java.sql.Timestamp) {
                 activity.put("timestamp", ((java.sql.Timestamp) userRegistrationDateObject).toLocalDateTime());
-            } else if (userRegistrationDateObject instanceof java.time.LocalDateTime) {
+            } else if (userRegistrationDateObject instanceof LocalDateTime) {
                 activity.put("timestamp", userRegistrationDateObject);
             } else {
                 activity.put("timestamp", null); // Handle other types or null gracefully
@@ -248,7 +257,7 @@ public class AdminService {
             Object orderDateObject = order.get("order_date");
             if (orderDateObject instanceof java.sql.Timestamp) {
                 activity.put("timestamp", ((java.sql.Timestamp) orderDateObject).toLocalDateTime());
-            } else if (orderDateObject instanceof java.time.LocalDateTime) {
+            } else if (orderDateObject instanceof LocalDateTime) {
                 activity.put("timestamp", orderDateObject);
             } else {
                 activity.put("timestamp", null); // Handle other types or null gracefully
@@ -286,8 +295,8 @@ public class AdminService {
         if (obj instanceof java.sql.Timestamp) {
             return ((java.sql.Timestamp) obj).toLocalDateTime();
         }
-        if (obj instanceof java.time.LocalDateTime) {
-            return (java.time.LocalDateTime) obj;
+        if (obj instanceof LocalDateTime) {
+            return (LocalDateTime) obj;
         }
         // Handle other cases or log a warning if an unexpected type is encountered
         return null;
@@ -466,5 +475,594 @@ public class AdminService {
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(6); // Last 7 days including today
         return orderRepository.calculatePlatformRevenue(startDate, endDate, platformCommissionRate);
+    }
+
+    /**
+     * Get comprehensive revenue analytics data for reports
+     *
+     * @param startDate Start date for the period
+     * @param endDate End date for the period
+     * @param period Period grouping (daily, weekly, monthly, yearly)
+     * @param sellerId Optional seller ID to filter by
+     * @param compareMode Comparison mode (previous, year)
+     * @return Map containing all revenue analytics data
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRevenueAnalytics(LocalDate startDate, LocalDate endDate, String period, Integer sellerId, String compareMode) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            // 1. Calculate total revenue for the period
+            BigDecimal totalRevenue = orderRepository.calculatePlatformRevenue(startDate, endDate, platformCommissionRate);
+            result.put("totalRevenue", totalRevenue);
+
+            // 2. Calculate comparison period revenue and growth
+            LocalDate comparisonStartDate, comparisonEndDate;
+            long daysDifference = ChronoUnit.DAYS.between(startDate, endDate);
+
+            if ("year".equals(compareMode)) {
+                comparisonStartDate = startDate.minusYears(1);
+                comparisonEndDate = endDate.minusYears(1);
+            } else { // previous period
+                comparisonStartDate = startDate.minusDays(daysDifference + 1);
+                comparisonEndDate = startDate.minusDays(1);
+            }
+
+            BigDecimal comparisonRevenue = orderRepository.calculatePlatformRevenue(comparisonStartDate, comparisonEndDate, platformCommissionRate);
+            double revenueGrowth = 0.0;
+            if (comparisonRevenue.compareTo(BigDecimal.ZERO) > 0) {
+                revenueGrowth = totalRevenue.subtract(comparisonRevenue)
+                    .divide(comparisonRevenue, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .doubleValue();
+            }
+            result.put("comparisonRevenue", comparisonRevenue);
+            result.put("revenueGrowth", revenueGrowth);
+
+            // 3. Get revenue trend data based on period
+            List<Map<String, Object>> revenueData = getRevenueTrendData(startDate, endDate, period);
+            List<String> chartLabels = new ArrayList<>();
+            List<BigDecimal> chartData = new ArrayList<>();
+
+            for (Map<String, Object> data : revenueData) {
+                chartLabels.add((String) data.get("label"));
+                chartData.add((BigDecimal) data.get("revenue"));
+            }
+
+            result.put("revenueChartLabels", convertToJsonArray(chartLabels));
+            result.put("revenueChartData", convertToJsonArray(chartData));
+            result.put("revenueTrendData", revenueData);
+
+            // 4. Get top sellers data (filtered by sellerId if provided)
+            List<Map<String, Object>> topSellers;
+            if (sellerId != null) {
+                topSellers = getSellerRevenueDetails(sellerId, startDate, endDate);
+            } else {
+                topSellers = getTopSellersByRevenue(startDate, endDate, 10);
+            }
+            result.put("topSellers", topSellers);
+
+            // 5. Calculate additional metrics
+            long totalOrders = orderRepository.countOrdersByDateRange(startDate, endDate);
+            result.put("totalOrders", totalOrders);
+
+            BigDecimal averageOrderValue = totalOrders > 0 ?
+                orderRepository.calculateTotalOrderValueByDateRange(startDate, endDate)
+                    .divide(BigDecimal.valueOf(totalOrders), 2, RoundingMode.HALF_UP) :
+                BigDecimal.ZERO;
+            result.put("averageOrderValue", averageOrderValue);
+
+            // 6. Get seller count for the period
+            long activeSellers = orderRepository.countActiveSellersByDateRange(startDate, endDate);
+            result.put("activeSellers", activeSellers);
+
+        } catch (Exception e) {
+            log.error("Error calculating revenue analytics: {}", e.getMessage(), e);
+            // Return default values on error
+            result.put("totalRevenue", BigDecimal.ZERO);
+            result.put("comparisonRevenue", BigDecimal.ZERO);
+            result.put("revenueGrowth", 0.0);
+            result.put("revenueChartLabels", "[]");
+            result.put("revenueChartData", "[]");
+            result.put("topSellers", new ArrayList<>());
+            result.put("totalOrders", 0L);
+            result.put("averageOrderValue", BigDecimal.ZERO);
+            result.put("activeSellers", 0L);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get revenue trend data based on period grouping
+     *
+     * @param startDate Start date
+     * @param endDate End date
+     * @param period Period grouping (daily, weekly, monthly, yearly)
+     * @return List of revenue trend data
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getRevenueTrendData(LocalDate startDate, LocalDate endDate, String period) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        try {
+            switch (period.toLowerCase()) {
+                case "daily":
+                    return getDailyRevenueTrend(startDate, endDate);
+                case "weekly":
+                    return getWeeklyRevenueTrend(startDate, endDate);
+                case "yearly":
+                    return getYearlyRevenueTrend(startDate, endDate);
+                default: // monthly
+                    return getMonthlyRevenueTrend(startDate, endDate);
+            }
+        } catch (Exception e) {
+            log.error("Error getting revenue trend data: {}", e.getMessage(), e);
+            return result;
+        }
+    }
+
+    /**
+     * Get daily revenue trend
+     */
+    private List<Map<String, Object>> getDailyRevenueTrend(LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            LocalDate nextDate = date.plusDays(1);
+            BigDecimal revenue = orderRepository.calculatePlatformRevenue(date, nextDate.minusDays(1), platformCommissionRate);
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("label", date.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM")));
+            item.put("revenue", revenue);
+            item.put("date", date);
+            result.add(item);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get weekly revenue trend
+     */
+    private List<Map<String, Object>> getWeeklyRevenueTrend(LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        LocalDate weekStart = startDate.with(java.time.DayOfWeek.MONDAY);
+        while (!weekStart.isAfter(endDate)) {
+            LocalDate weekEnd = weekStart.plusDays(6);
+            if (weekEnd.isAfter(endDate)) {
+                weekEnd = endDate;
+            }
+
+            BigDecimal revenue = orderRepository.calculatePlatformRevenue(weekStart, weekEnd, platformCommissionRate);
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("label", weekStart.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM")));
+            item.put("revenue", revenue);
+            item.put("date", weekStart);
+            result.add(item);
+
+            weekStart = weekStart.plusWeeks(1);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get monthly revenue trend
+     */
+    private List<Map<String, Object>> getMonthlyRevenueTrend(LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        LocalDate monthStart = startDate.withDayOfMonth(1);
+        while (!monthStart.isAfter(endDate)) {
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+            if (monthEnd.isAfter(endDate)) {
+                monthEnd = endDate;
+            }
+
+            BigDecimal revenue = orderRepository.calculatePlatformRevenue(monthStart, monthEnd, platformCommissionRate);
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("label", monthStart.format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")));
+            item.put("revenue", revenue);
+            item.put("date", monthStart);
+            result.add(item);
+
+            monthStart = monthStart.plusMonths(1);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get yearly revenue trend
+     */
+    private List<Map<String, Object>> getYearlyRevenueTrend(LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        LocalDate yearStart = startDate.withDayOfYear(1);
+        while (!yearStart.isAfter(endDate)) {
+            LocalDate yearEnd = yearStart.withDayOfYear(yearStart.lengthOfYear());
+            if (yearEnd.isAfter(endDate)) {
+                yearEnd = endDate;
+            }
+
+            BigDecimal revenue = orderRepository.calculatePlatformRevenue(yearStart, yearEnd, platformCommissionRate);
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("label", String.valueOf(yearStart.getYear()));
+            item.put("revenue", revenue);
+            item.put("date", yearStart);
+            result.add(item);
+
+            yearStart = yearStart.plusYears(1);
+        }
+
+        return result;
+    }
+
+    /**
+     * Convert list to JSON array string
+     */
+    private String convertToJsonArray(List<?> list) {
+        if (list == null || list.isEmpty()) {
+            return "[]";
+        }
+
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < list.size(); i++) {
+            if (i > 0) {
+                json.append(",");
+            }
+            Object item = list.get(i);
+            if (item instanceof String) {
+                json.append("\"").append(item.toString().replace("\"", "\\\"")).append("\"");
+            } else {
+                json.append(item.toString());
+            }
+        }
+        json.append("]");
+        return json.toString();
+    }
+
+    /**
+     * Get top sellers by revenue for a specific period
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getTopSellersByRevenue(LocalDate startDate, LocalDate endDate, int limit) {
+        try {
+            return orderRepository.getTopSellersByRevenue(startDate, endDate, platformCommissionRate, limit);
+        } catch (Exception e) {
+            log.error("Error getting top sellers by revenue: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get detailed revenue information for a specific seller
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getSellerRevenueDetails(Integer sellerId, LocalDate startDate, LocalDate endDate) {
+        try {
+            return orderRepository.getSellerRevenueDetails(sellerId, startDate, endDate, platformCommissionRate);
+        } catch (Exception e) {
+            log.error("Error getting seller revenue details: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get comprehensive consolidated reports data
+     *
+     * @param startDate Start date for the period
+     * @param endDate End date for the period
+     * @param period Period grouping (daily, weekly, monthly, yearly)
+     * @return Map containing all consolidated reports data
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getConsolidatedReports(LocalDate startDate, LocalDate endDate, String period) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            LocalDateTime startDateTime = startDate.atStartOfDay();
+            LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+
+            // 1. Orders Analytics
+            Map<String, Object> ordersData = getOrdersAnalytics(startDate, endDate, period);
+            result.put("orders", ordersData);
+
+            // 2. User Registration Analytics
+            Map<String, Object> usersData = getUserRegistrationAnalytics(startDateTime, endDateTime, period);
+            result.put("users", usersData);
+
+            // 3. Product Listings Analytics
+            Map<String, Object> productsData = getProductListingAnalytics(startDate, endDate, period);
+            result.put("products", productsData);
+
+            // 4. Forum Activity Analytics
+            Map<String, Object> forumData = getForumActivityAnalytics(startDateTime, endDateTime, period);
+            result.put("forum", forumData);
+
+            // 5. Revenue Analytics
+            Map<String, Object> revenueData = getRevenueAnalytics(startDate, endDate, period, null, "previous");
+            result.put("revenue", revenueData);
+
+            // 6. Overall Platform Statistics
+            Map<String, Object> platformStats = getPlatformStatistics(startDate, endDate);
+            result.put("platform", platformStats);
+
+        } catch (Exception e) {
+            log.error("Error generating consolidated reports: {}", e.getMessage(), e);
+            // Return empty data structure on error
+            result.put("orders", new HashMap<>());
+            result.put("users", new HashMap<>());
+            result.put("products", new HashMap<>());
+            result.put("forum", new HashMap<>());
+            result.put("revenue", new HashMap<>());
+            result.put("platform", new HashMap<>());
+        }
+
+        return result;
+    }
+
+    /**
+     * Get orders analytics data
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getOrdersAnalytics(LocalDate startDate, LocalDate endDate, String period) {
+        Map<String, Object> result = new HashMap<>();
+
+        // Total orders in period
+        long totalOrders = orderRepository.countOrdersByDateRange(startDate, endDate);
+        result.put("totalOrders", totalOrders);
+
+        // Average order value
+        BigDecimal totalOrderValue = orderRepository.calculateTotalOrderValueByDateRange(startDate, endDate);
+        BigDecimal averageOrderValue = totalOrders > 0 ?
+            totalOrderValue.divide(BigDecimal.valueOf(totalOrders), 2, RoundingMode.HALF_UP) :
+            BigDecimal.ZERO;
+        result.put("averageOrderValue", averageOrderValue);
+        result.put("totalOrderValue", totalOrderValue);
+
+        // Orders trend data
+        List<Map<String, Object>> ordersTrend = getOrdersTrendData(startDate, endDate, period);
+        result.put("trend", ordersTrend);
+        result.put("trendLabels", convertToJsonArray(ordersTrend.stream().map(m -> m.get("label")).toList()));
+        result.put("trendData", convertToJsonArray(ordersTrend.stream().map(m -> m.get("count")).toList()));
+
+        return result;
+    }
+
+    /**
+     * Get user registration analytics data
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getUserRegistrationAnalytics(LocalDateTime startDate, LocalDateTime endDate, String period) {
+        Map<String, Object> result = new HashMap<>();
+
+        // Total new users in period
+        long newUsers = userRepository.countByRegistrationDateBetween(startDate, endDate);
+        result.put("newUsers", newUsers);
+
+        // User registration trend
+        List<Map<String, Object>> userTrend = userRepository.getUserRegistrationTrend(startDate, endDate);
+        result.put("trend", userTrend);
+        result.put("trendLabels", convertToJsonArray(userTrend.stream().map(m -> m.get("registration_date")).toList()));
+        result.put("trendData", convertToJsonArray(userTrend.stream().map(m -> m.get("count")).toList()));
+
+        // User role distribution
+        long totalBuyers = countUsersByRole("BUYER");
+        long totalSellers = countUsersByRole("SELLER");
+        result.put("totalBuyers", totalBuyers);
+        result.put("totalSellers", totalSellers);
+
+        return result;
+    }
+
+    /**
+     * Get product listing analytics data
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getProductListingAnalytics(LocalDate startDate, LocalDate endDate, String period) {
+        Map<String, Object> result = new HashMap<>();
+
+        // Total new products in period
+        long newProducts = bookRepository.countByDateAddedBetween(startDate, endDate);
+        result.put("newProducts", newProducts);
+
+        // Total active products
+        long totalProducts = bookRepository.countByIsActiveTrue();
+        result.put("totalProducts", totalProducts);
+
+        // Product listing trend
+        List<Map<String, Object>> productTrend = bookRepository.getProductListingTrend(startDate, endDate);
+        result.put("trend", productTrend);
+        result.put("trendLabels", convertToJsonArray(productTrend.stream().map(m -> m.get("date_added")).toList()));
+        result.put("trendData", convertToJsonArray(productTrend.stream().map(m -> m.get("count")).toList()));
+
+        // Product statistics by category
+        List<Map<String, Object>> categoryStats = bookRepository.getProductStatsByCategory();
+        result.put("categoryStats", categoryStats);
+
+        return result;
+    }
+
+    /**
+     * Get forum activity analytics data
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getForumActivityAnalytics(LocalDateTime startDate, LocalDateTime endDate, String period) {
+        Map<String, Object> result = new HashMap<>();
+
+        // Blog posts in period
+        long newPosts = blogRepository.countByCreatedDateBetween(startDate, endDate);
+        result.put("newPosts", newPosts);
+
+        // Comments in period
+        long newComments = blogCommentRepository.countByCreatedDateBetween(startDate, endDate);
+        result.put("newComments", newComments);
+
+        // Forum activity statistics
+        Map<String, Object> forumStats = blogRepository.getForumActivityStats(startDate, endDate);
+        result.putAll(forumStats);
+
+        // Blog creation trend
+        List<Map<String, Object>> blogTrend = blogRepository.getBlogCreationTrend(startDate, endDate);
+        result.put("blogTrend", blogTrend);
+        result.put("blogTrendLabels", convertToJsonArray(blogTrend.stream().map(m -> m.get("creation_date")).toList()));
+        result.put("blogTrendData", convertToJsonArray(blogTrend.stream().map(m -> m.get("count")).toList()));
+
+        // Comment creation trend
+        List<Map<String, Object>> commentTrend = blogCommentRepository.getCommentCreationTrend(startDate, endDate);
+        result.put("commentTrend", commentTrend);
+        result.put("commentTrendLabels", convertToJsonArray(commentTrend.stream().map(m -> m.get("creation_date")).toList()));
+        result.put("commentTrendData", convertToJsonArray(commentTrend.stream().map(m -> m.get("count")).toList()));
+
+        return result;
+    }
+
+    /**
+     * Get platform statistics
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getPlatformStatistics(LocalDate startDate, LocalDate endDate) {
+        Map<String, Object> result = new HashMap<>();
+
+        // Overall platform metrics
+        result.put("totalUsers", userRepository.count());
+        result.put("totalProducts", bookRepository.count());
+        result.put("totalShops", shopRepository.count());
+        result.put("activeShops", shopRepository.countByApprovalStatus(Shop.ApprovalStatus.APPROVED));
+        result.put("totalBlogs", blogRepository.count());
+        result.put("totalBlogViews", blogRepository.getTotalBlogViews());
+
+        return result;
+    }
+
+    /**
+     * Get orders trend data based on period grouping
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getOrdersTrendData(LocalDate startDate, LocalDate endDate, String period) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        try {
+            switch (period.toLowerCase()) {
+                case "daily":
+                    return getDailyOrdersTrend(startDate, endDate);
+                case "weekly":
+                    return getWeeklyOrdersTrend(startDate, endDate);
+                case "yearly":
+                    return getYearlyOrdersTrend(startDate, endDate);
+                default: // monthly
+                    return getMonthlyOrdersTrend(startDate, endDate);
+            }
+        } catch (Exception e) {
+            log.error("Error getting orders trend data: {}", e.getMessage(), e);
+            return result;
+        }
+    }
+
+    /**
+     * Get daily orders trend
+     */
+    private List<Map<String, Object>> getDailyOrdersTrend(LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            LocalDate nextDate = date.plusDays(1);
+            long count = orderRepository.countOrdersByDateRange(date, nextDate.minusDays(1));
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("label", date.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM")));
+            item.put("count", count);
+            item.put("date", date);
+            result.add(item);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get weekly orders trend
+     */
+    private List<Map<String, Object>> getWeeklyOrdersTrend(LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        LocalDate weekStart = startDate.with(java.time.DayOfWeek.MONDAY);
+        while (!weekStart.isAfter(endDate)) {
+            LocalDate weekEnd = weekStart.plusDays(6);
+            if (weekEnd.isAfter(endDate)) {
+                weekEnd = endDate;
+            }
+
+            long count = orderRepository.countOrdersByDateRange(weekStart, weekEnd);
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("label", weekStart.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM")));
+            item.put("count", count);
+            item.put("date", weekStart);
+            result.add(item);
+
+            weekStart = weekStart.plusWeeks(1);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get monthly orders trend
+     */
+    private List<Map<String, Object>> getMonthlyOrdersTrend(LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        LocalDate monthStart = startDate.withDayOfMonth(1);
+        while (!monthStart.isAfter(endDate)) {
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+            if (monthEnd.isAfter(endDate)) {
+                monthEnd = endDate;
+            }
+
+            long count = orderRepository.countOrdersByDateRange(monthStart, monthEnd);
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("label", monthStart.format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")));
+            item.put("count", count);
+            item.put("date", monthStart);
+            result.add(item);
+
+            monthStart = monthStart.plusMonths(1);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get yearly orders trend
+     */
+    private List<Map<String, Object>> getYearlyOrdersTrend(LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        LocalDate yearStart = startDate.withDayOfYear(1);
+        while (!yearStart.isAfter(endDate)) {
+            LocalDate yearEnd = yearStart.withDayOfYear(yearStart.lengthOfYear());
+            if (yearEnd.isAfter(endDate)) {
+                yearEnd = endDate;
+            }
+
+            long count = orderRepository.countOrdersByDateRange(yearStart, yearEnd);
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("label", String.valueOf(yearStart.getYear()));
+            item.put("count", count);
+            item.put("date", yearStart);
+            result.add(item);
+
+            yearStart = yearStart.plusYears(1);
+        }
+
+        return result;
     }
 }

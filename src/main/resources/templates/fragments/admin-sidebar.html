@@ -71,7 +71,12 @@
             
             <!-- Reports -->
             <a th:href="@{/admin/reports}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'reports' ? 'active' : ''}">
-                <i class="fas fa-chart-bar"></i> Reports & Analytics
+                <i class="fas fa-chart-line"></i> Revenue Reports
+            </a>
+
+            <!-- Consolidated Reports -->
+            <a th:href="@{/admin/consolidated-reports}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'consolidated-reports' ? 'active' : ''}">
+                <i class="fas fa-chart-bar"></i> Consolidated Reports
             </a>
             
             <!-- Settings -->

@@ -305,12 +305,12 @@
                     <div class="col-md-3">
                         <div class="stat-card position-relative">
                             <h4>Platform Revenue</h4>
-                            <p th:text="${totalRevenue != null ? #numbers.formatCurrency(totalRevenue) : '$0'}">$0</p>
+                            <p th:text="${totalRevenue != null ? (#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT') + ' đ') : '0 đ'}">0 đ</p>
                             <div class="trend">
                                 <i class="fas fa-chart-line"></i>
                                 <span>Commission</span>
                             </div>
-                            <i class="fas fa-dollar-sign"></i>
+                            <i class="fas fa-coins"></i>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -349,9 +349,9 @@
                     <div class="col-md-3">
                         <div class="stat-card position-relative">
                             <h4>Average Order Value</h4>
-                            <p th:text="${averageOrderValue != null ? #numbers.formatCurrency(averageOrderValue) : '$0'}">$0</p>
+                            <p th:text="${averageOrderValue != null ? (#numbers.formatDecimal(averageOrderValue, 0, 'COMMA', 0, 'POINT') + ' đ') : '0 đ'}">0 đ</p>
                             <div class="trend">
-                                <i class="fas fa-dollar-sign"></i>
+                                <i class="fas fa-coins"></i>
                                 <span>Platform-wide</span>
                             </div>
                             <i class="fas fa-calculator"></i>
@@ -408,7 +408,7 @@
                                 <canvas id="revenueChart"></canvas>
                             </div>
                             <div class="text-end mt-3">
-                                <h5>Total Revenue (Last 7 Days): <span th:text="${#numbers.formatCurrency(totalRevenueLast7Days)}">0</span></h5>
+                                <h5>Total Revenue (Last 7 Days): <span th:text="${totalRevenueLast7Days != null ? (#numbers.formatDecimal(totalRevenueLast7Days, 0, 'COMMA', 0, 'POINT') + ' đ') : '0 đ'}">0 đ</span></h5>
                             </div>
                         </div>
                     </div>
@@ -447,7 +447,7 @@
                                             <td th:text="${product.title}">Book Title</td>
                                             <td th:text="${product.shop_name}">Shop Name</td>
                                             <td th:text="${product.total_quantity}">123</td>
-                                            <td th:text="${#numbers.formatCurrency(product.total_revenue)}">$1,234</td>
+                                            <td th:text="${#numbers.formatDecimal(product.total_revenue, 0, 'COMMA', 0, 'POINT')} + ' đ'">1,234 đ</td>
                                         </tr>
                                         <tr th:if="${topProducts == null || topProducts.isEmpty()}">
                                             <td colspan="4" class="text-center py-3">No products data available</td>
@@ -477,7 +477,7 @@
                                             <td th:text="${seller.shop_name}">Shop Name</td>
                                             <td th:text="${seller.seller_name}">John Doe</td>
                                             <td th:text="${seller.total_orders}">45</td>
-                                            <td th:text="${#numbers.formatCurrency(seller.total_revenue)}">$5,678</td>
+                                            <td th:text="${#numbers.formatDecimal(seller.total_revenue, 0, 'COMMA', 0, 'POINT')} + ' đ'">5,678 đ</td>
                                         </tr>
                                         <tr th:if="${topSellers == null || topSellers.isEmpty()}">
                                             <td colspan="4" class="text-center py-3">No sellers data available</td>
@@ -539,6 +539,12 @@
                             </a>
                             <a href="/admin/categories" class="btn btn-outline-primary quick-action-btn">
                                 <i class="fas fa-tags"></i> Manage Categories
+                            </a>
+                            <a href="/admin/reports" class="btn btn-outline-success quick-action-btn">
+                                <i class="fas fa-chart-line"></i> Revenue Reports
+                            </a>
+                            <a href="/admin/consolidated-reports" class="btn btn-outline-info quick-action-btn">
+                                <i class="fas fa-chart-bar"></i> Consolidated Reports
                             </a>
                         </div>
                     </div>
