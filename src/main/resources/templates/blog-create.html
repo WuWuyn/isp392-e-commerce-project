@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Blog Post - Bookix</title>
+    <title>Create a New Post - ReadHub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+
 </head>
 <body>
 
@@ -34,7 +32,6 @@
 
                     <div class="mb-4">
                         <label for="content" class="form-label fs-5">Content</label>
-                        <p class="text-muted small">You can use Markdown for formatting.</p>
                         <textarea class="form-control" id="content" th:field="*{content}" rows="15" placeholder="Write your story here..." required></textarea>
                     </div>
 
@@ -51,16 +48,6 @@
 <div th:replace="~{fragments/footer :: footer-content}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
-
-<script>
-    var simplemde = new SimpleMDE({ element: document.getElementById("content") });
-    simplemde.codemirror.on("change", function() {
-        var contentValue = simplemde.value();
-        document.getElementById("content").value = contentValue;
-    });
-</script>
 
 </body>
 </html>

@@ -111,30 +111,33 @@ public class BlogController {
     }
 
     // Blog single page
+    // Trong file controller/BlogController.java
+
     @GetMapping("/{blogId}")
-    public String viewBlog(@PathVariable int blogId, Model model) {
+    public String viewBlog(@PathVariable int blogId,
+                           Model model,
+                           @AuthenticationPrincipal UserDetails userDetails) {
+
         Optional<Blog> blogOpt = blogService.getBlogById(blogId);
 
         if (blogOpt.isPresent()) {
             Blog blog = blogOpt.get();
-
-            // Increment the view count
             blogService.incrementViewCount(blogId);
-
-            // Add blog to model
             model.addAttribute("blog", blog);
 
-            // Get previous and next blogs for navigation
+            // ================= THÊM LOGIC MỚI TẠI ĐÂY =================
+            // Kiểm tra xem người dùng đã đăng nhập chưa và gửi thông tin sang view
+            if (userDetails != null) {
+                User currentUser = userService.findByEmailDirectly(userDetails.getUsername());
+                model.addAttribute("currentUser", currentUser);
+            }
+            // ==========================================================
+
+            // ... phần code lấy previousBlog và nextBlog giữ nguyên ...
             Blog previousBlog = blogService.getPreviousBlog(blogId);
             Blog nextBlog = blogService.getNextBlog(blogId);
-
-            if (previousBlog != null) {
-                model.addAttribute("previousBlog", previousBlog);
-            }
-
-            if (nextBlog != null) {
-                model.addAttribute("nextBlog", nextBlog);
-            }
+            if (previousBlog != null) { model.addAttribute("previousBlog", previousBlog); }
+            if (nextBlog != null) { model.addAttribute("nextBlog", nextBlog); }
 
             return "blog-single";
         } else {
@@ -149,27 +152,41 @@ public class BlogController {
     public String addComment(
             @PathVariable int blogId,
             @RequestParam String comment,
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal UserDetails userDetails, // Sửa ở đây: Dùng UserDetails
             RedirectAttributes redirectAttributes) {
 
-        // Check if blog exists
+        // Kiểm tra xem người dùng đã đăng nhập chưa
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "You must be logged in to comment.");
+            return "redirect:/buyer/login";
+        }
+
+        // Kiểm tra xem bài viết có tồn tại không
         Optional<Blog> blogOpt = blogService.getBlogById(blogId);
         if (blogOpt.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Blog post not found");
+            redirectAttributes.addFlashAttribute("error", "Blog post not found.");
             return "redirect:/blog";
         }
 
-        // Add the comment
-        if (currentUser != null) {
-            BlogComment savedComment = blogCommentService.addComment(blogId, comment, currentUser);
-            if (savedComment != null) {
-                redirectAttributes.addFlashAttribute("success", "Comment added successfully");
-            } else {
-                redirectAttributes.addFlashAttribute("error", "Failed to add comment");
+        try {
+            // Lấy thông tin User đầy đủ từ email
+            String email = userDetails.getUsername();
+            User currentUser = userService.findByEmailDirectly(email);
+
+            if (currentUser == null) {
+                throw new Exception("Authenticated user could not be found in the database.");
             }
-        } else {
-            // Handle guest comments or redirect to login
-            redirectAttributes.addFlashAttribute("error", "You must be logged in to comment");
+
+            // Thêm bình luận với đối tượng User đầy đủ
+            BlogComment savedComment = blogCommentService.addComment(blogId, comment, currentUser);
+
+            if (savedComment != null) {
+                redirectAttributes.addFlashAttribute("success", "Comment added successfully!");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Failed to add comment.");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "An error occurred while adding your comment: " + e.getMessage());
         }
 
         return "redirect:/blog/" + blogId + "#comments";
@@ -182,18 +199,35 @@ public class BlogController {
     public String deleteComment(
             @PathVariable int blogId,
             @PathVariable int commentId,
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal UserDetails userDetails, // <-- SỬA Ở ĐÂY: Dùng UserDetails
             RedirectAttributes redirectAttributes) {
 
-        if (currentUser != null) {
-            boolean deleted = blogCommentService.deleteComment(commentId, currentUser.getUserId());
-            if (deleted) {
-                redirectAttributes.addFlashAttribute("success", "Comment deleted successfully");
-            } else {
-                redirectAttributes.addFlashAttribute("error", "You don't have permission to delete this comment");
+        // 1. Kiểm tra xem userDetails có tồn tại không (người dùng đã đăng nhập)
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "You must be logged in to delete comments.");
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            // 2. Lấy thông tin User đầy đủ từ database
+            String email = userDetails.getUsername();
+            User currentUser = userService.findByEmailDirectly(email);
+
+            if (currentUser == null) {
+                throw new IllegalStateException("Authenticated user could not be found in the database.");
             }
-        } else {
-            redirectAttributes.addFlashAttribute("error", "You must be logged in to delete comments");
+
+            // 3. Gọi service để thực hiện xóa với ID của người dùng
+            boolean deleted = blogCommentService.deleteComment(commentId, currentUser.getUserId());
+
+            if (deleted) {
+                redirectAttributes.addFlashAttribute("success", "Comment deleted successfully!");
+            } else {
+                // Lỗi này xảy ra khi service trả về false (không có quyền xóa)
+                redirectAttributes.addFlashAttribute("error", "You do not have permission to delete this comment.");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "An error occurred: " + e.getMessage());
         }
 
         return "redirect:/blog/" + blogId + "#comments";
