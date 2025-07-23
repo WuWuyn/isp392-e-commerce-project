@@ -8,6 +8,7 @@ import com.example.isp392.repository.UserRepository;
 import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
 import com.example.isp392.service.BookService;
+import com.example.isp392.service.FileStorageService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -45,17 +46,19 @@ public class ShopInformationController {
     private final UserRepository userRepository;
     private final HttpSession httpSession;
     private final BookService bookService;
+    private final FileStorageService fileStorageService;
     
     /**
      * Constructor for dependency injection
      */
     public ShopInformationController(ShopService shopService, UserService userService, 
-                                    UserRepository userRepository, HttpSession httpSession, BookService bookService) {
+                                    UserRepository userRepository, HttpSession httpSession, BookService bookService, FileStorageService fileStorageService) {
         this.shopService = shopService;
         this.userService = userService;
         this.userRepository = userRepository;
         this.httpSession = httpSession;
         this.bookService = bookService;
+        this.fileStorageService = fileStorageService;
     }
     
     /**
@@ -101,7 +104,6 @@ public class ShopInformationController {
      * @param shopDTO the shop data from form
      * @param bindingResult validation results
      * @param logoFile shop logo file
-     * @param coverImage shop cover image file
      * @param identificationFile identification document file
      * @param redirectAttributes attributes for redirect
      * @param model the Spring MVC model
@@ -112,7 +114,7 @@ public class ShopInformationController {
             @Valid @ModelAttribute("shop") ShopDTO shopDTO,
             BindingResult bindingResult,
             @RequestParam(value = "logoFile", required = false) MultipartFile logoFile,
-            @RequestParam(value = "coverImageFile", required = false) MultipartFile coverImage,
+            @RequestParam(value = "coverImageFile", required = false) MultipartFile coverImageFile,
             @RequestParam(value = "identificationFile", required = false) MultipartFile identificationFile,
             RedirectAttributes redirectAttributes,
             Model model
@@ -121,58 +123,73 @@ public class ShopInformationController {
         if (user == null) {
             return "redirect:/seller/login";
         }
-        
-        // Check for validation errors
+
         if (bindingResult.hasErrors()) {
-            // Add user and roles to model for sidebar
-            List<String> roles = userService.getUserRoles(user);
             model.addAttribute("user", user);
-            model.addAttribute("roles", roles);
-            model.addAttribute("isEdit", shopDTO.getShopId() != null);
-            return "seller/shop-information"; // Return to form with errors
+            model.addAttribute("roles", userService.getUserRoles(user));
+            return shopDTO.getShopId() == null ? "seller/shop-information" : "seller/edit-shop-information";
         }
-        
+
         try {
-            // Set the user ID
             shopDTO.setUserId(user.getUserId());
-            
-            // Handle file uploads if provided
+
+            // <<< BẮT ĐẦU THAY ĐỔI LOGIC >>>
+            // Tải thông tin shop hiện có nếu đây là thao tác chỉnh sửa
+            Shop existingShop = null;
+            if (shopDTO.getShopId() != null) {
+                existingShop = shopService.getShopById(shopDTO.getShopId());
+            }
+
+            // Xử lý Logo
             if (logoFile != null && !logoFile.isEmpty()) {
-                String logoUrl = uploadFile(logoFile);
+                String logoUrl = fileStorageService.storeFile(logoFile, "logos");
                 shopDTO.setLogoUrl(logoUrl);
+            } else if (existingShop != null) {
+                // Nếu không có file mới, giữ lại logo cũ
+                shopDTO.setLogoUrl(existingShop.getLogoUrl());
             }
-            
-            if (coverImage != null && !coverImage.isEmpty()) {
-                String coverImageUrl = uploadFile(coverImage);
+
+            // Xử lý Cover Image
+            if (coverImageFile != null && !coverImageFile.isEmpty()) {
+                String coverImageUrl = fileStorageService.storeFile(coverImageFile, "covers");
                 shopDTO.setCoverImageUrl(coverImageUrl);
+            } else if (existingShop != null) {
+                // Nếu không có file mới, giữ lại ảnh bìa cũ
+                shopDTO.setCoverImageUrl(existingShop.getCoverImageUrl());
             }
-            
+
+            // Xử lý Identification File
             if (identificationFile != null && !identificationFile.isEmpty()) {
-                String identificationFileUrl = uploadFile(identificationFile);
+                String identificationFileUrl = fileStorageService.storeFile(identificationFile, "documents");
                 shopDTO.setIdentificationFileUrl(identificationFileUrl);
+            } else if (existingShop != null) {
+                // Nếu không có file mới, giữ lại giấy tờ cũ
+                shopDTO.setIdentificationFileUrl(existingShop.getIdentificationFileUrl());
             }
-            
-            // Set request date for new shops
+            // <<< KẾT THÚC THAY ĐỔI LOGIC >>>
+
+            // Logic cho việc tạo mới không thay đổi
             if (shopDTO.getShopId() == null) {
                 shopDTO.setRequestAt(LocalDateTime.now());
                 shopDTO.setApprovalStatus(Shop.ApprovalStatus.PENDING);
             }
-            
-            // Save shop information
+
             shopService.saveShopInformation(shopDTO);
-            
-            redirectAttributes.addFlashAttribute("successMessage", 
-                "Shop information saved successfully! " +
-                (Shop.ApprovalStatus.PENDING.equals(shopDTO.getApprovalStatus()) ? 
-                "Your information is pending approval." : ""));
-                
-            return "redirect:/seller/shop-information?success";
+
+            redirectAttributes.addFlashAttribute("successMessage", "Shop information saved successfully!");
+            return "redirect:/seller/shop-information";
+        } catch (IOException e) {
+            log.error("File upload error", e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Error uploading file: " + e.getMessage());
+            return "redirect:/seller/shop-information/edit";
         } catch (Exception e) {
             log.error("Error saving shop information", e);
-            redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
-            return "redirect:/seller/shop-information?error";
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred: " + e.getMessage());
+            return "redirect:/seller/shop-information/edit";
         }
     }
+
+// Xóa phương thức private uploadFile() không còn cần thiết
     
     /**
      * Mock method for file uploads - in a real application, this would handle proper file storage
@@ -236,4 +253,27 @@ public class ShopInformationController {
         return user;
     }
 
+    @GetMapping("/shop-information/edit")
+    public String showEditShopInformationForm(Model model) {
+        User user = getCurrentUser();
+        if (user == null) {
+            return "redirect:/seller/login";
+        }
+
+        Shop shop = shopService.getShopByUserId(user.getUserId());
+        if (shop == null) {
+            // Nếu chưa có shop, chuyển hướng về trang tạo mới (trang thông tin chính)
+            return "redirect:/seller/shop-information";
+        }
+
+        ShopDTO shopDTO = new ShopDTO();
+        BeanUtils.copyProperties(shop, shopDTO);
+
+        model.addAttribute("user", user);
+        model.addAttribute("roles", userService.getUserRoles(user));
+        model.addAttribute("shop", shopDTO);
+        model.addAttribute("activeMenu", "shop-information"); // Để highlight sidebar
+
+        return "seller/edit-shop-information"; // Trả về trang edit mới
+    }
 } 

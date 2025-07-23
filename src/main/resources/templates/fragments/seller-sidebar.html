@@ -74,8 +74,8 @@
             </a>
             
             <!-- Store Settings -->
-            <a th:href="@{/seller/settings/store}" class="list-group-item list-group-item-action">
-                <i class="fas fa-store"></i> Store Information
+            <a th:href="@{/seller/shop-information}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'shop-information' ? 'active' : ''}">
+                <i class="fas fa-store"></i> Shop Information
             </a>
             <a th:href="@{/seller/settings/policies}" class="list-group-item list-group-item-action">
                 <i class="fas fa-file-alt"></i> Store Policies
