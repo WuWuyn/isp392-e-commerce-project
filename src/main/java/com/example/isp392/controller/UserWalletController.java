@@ -3,6 +3,7 @@ package com.example.isp392.controller;
 import com.example.isp392.dto.WalletBalanceDTO;
 import com.example.isp392.dto.WalletTransactionDTO;
 import com.example.isp392.dto.WalletTransactionHistoryDTO;
+import com.example.isp392.dto.WithdrawalRequestDTO;
 import com.example.isp392.model.User;
 import com.example.isp392.model.Wallet;
 import com.example.isp392.model.WalletTransaction;
@@ -21,8 +22,11 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -66,36 +70,7 @@ public class UserWalletController {
         }
     }
     
-    /**
-     * Display wallet balance page
-     */
-    @GetMapping("/balance")
-    public String showWalletBalance(Model model) {
-        User user = getCurrentUser();
-        if (user == null) {
-            return "redirect:/buyer/login";
-        }
-        
-        try {
-            // Ensure user has a wallet
-            userService.ensureUserHasWallet(user);
-            
-            BigDecimal balance = walletService.getBalance(user);
-            Optional<Wallet> walletOpt = walletService.getWalletByUser(user);
-            
-            WalletBalanceDTO walletBalanceDTO = new WalletBalanceDTO(balance, walletOpt.isPresent());
-            
-            model.addAttribute("user", user);
-            model.addAttribute("roles", userService.getUserRoles(user));
-            model.addAttribute("walletBalance", walletBalanceDTO);
-            
-            return "buyer/wallet-balance";
-        } catch (Exception e) {
-            log.error("Error displaying wallet balance for user {}: {}", user.getEmail(), e.getMessage(), e);
-            model.addAttribute("errorMessage", "Unable to load wallet information. Please try again.");
-            return "buyer/wallet-balance";
-        }
-    }
+
     
     /**
      * Display wallet transaction history
@@ -214,5 +189,109 @@ public class UserWalletController {
         }
 
         return dto;
+    }
+
+    /**
+     * Show withdrawal form
+     */
+    @GetMapping("/withdraw")
+    public String showWithdrawalForm(Model model, Authentication authentication) {
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/buyer/login";
+            }
+
+            // Ensure user has a wallet
+            userService.ensureUserHasWallet(user);
+
+            BigDecimal balance = walletService.getBalance(user);
+            WalletBalanceDTO walletBalanceDTO = new WalletBalanceDTO(balance, true);
+
+            model.addAttribute("walletBalance", walletBalanceDTO);
+            model.addAttribute("withdrawalRequest", new WithdrawalRequestDTO());
+
+            return "buyer/wallet-withdraw";
+        } catch (Exception e) {
+            log.error("Error showing withdrawal form for user: {}", authentication.getName(), e);
+            model.addAttribute("errorMessage", "Unable to load withdrawal form. Please try again.");
+            return "buyer/wallet-overview";
+        }
+    }
+
+    /**
+     * Process withdrawal request
+     */
+    @PostMapping("/withdraw")
+    public String processWithdrawal(@Valid @ModelAttribute("withdrawalRequest") WithdrawalRequestDTO withdrawalRequest,
+                                  BindingResult bindingResult,
+                                  Model model,
+                                  Authentication authentication,
+                                  RedirectAttributes redirectAttributes) {
+        if (authentication == null) {
+            return "redirect:/buyer/login";
+        }
+
+        try {
+            User user = getCurrentUser();
+            if (user == null) {
+                return "redirect:/buyer/login";
+            }
+
+            // Get current balance for validation
+            BigDecimal currentBalance = walletService.getBalance(user);
+
+            // Validate amount against current balance
+            if (withdrawalRequest.getAmount() != null && withdrawalRequest.getAmount().compareTo(currentBalance) > 0) {
+                bindingResult.rejectValue("amount", "insufficient.balance",
+                    "Insufficient balance. Available: " + String.format("%,d VND", currentBalance.longValue()));
+            }
+
+            // If validation errors, return to form
+            if (bindingResult.hasErrors()) {
+                WalletBalanceDTO walletBalanceDTO = new WalletBalanceDTO(currentBalance, true);
+                model.addAttribute("walletBalance", walletBalanceDTO);
+                return "buyer/wallet-withdraw";
+            }
+
+            // Process the withdrawal
+            WalletTransaction transaction = walletService.processWithdrawal(user, withdrawalRequest);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                String.format("Withdrawal request of %s has been processed successfully. Transaction ID: %d",
+                    withdrawalRequest.getFormattedAmount(), transaction.getTransactionId()));
+
+            log.info("Withdrawal processed successfully for user: {} - Amount: {}",
+                    user.getEmail(), withdrawalRequest.getFormattedAmount());
+
+            return "redirect:/buyer/wallet";
+
+        } catch (RuntimeException e) {
+            log.error("Error processing withdrawal for user: {} - {}", authentication.getName(), e.getMessage());
+
+            // Add error message and return to form
+            try {
+                User user = getCurrentUser();
+                if (user != null) {
+                    BigDecimal balance = walletService.getBalance(user);
+                    WalletBalanceDTO walletBalanceDTO = new WalletBalanceDTO(balance, true);
+                    model.addAttribute("walletBalance", walletBalanceDTO);
+                }
+            } catch (Exception balanceException) {
+                log.error("Error getting balance for error display: {}", balanceException.getMessage());
+            }
+            model.addAttribute("errorMessage", e.getMessage());
+
+            return "buyer/wallet-withdraw";
+        } catch (Exception e) {
+            log.error("Unexpected error processing withdrawal for user: {}", authentication.getName(), e);
+            redirectAttributes.addFlashAttribute("errorMessage",
+                "An unexpected error occurred while processing your withdrawal. Please try again.");
+            return "redirect:/buyer/wallet";
+        }
     }
 }
