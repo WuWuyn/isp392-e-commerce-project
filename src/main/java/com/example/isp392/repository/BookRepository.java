@@ -279,5 +279,49 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     @Query("UPDATE Book b SET b.isActive = false WHERE b.shop.shopId = :shopId")
     void deactivateBooksByShopId(@Param("shopId") Integer shopId);
 
+    /**
+     * Count books added within a date range
+     * @param startDate Start date
+     * @param endDate End date
+     * @return Count of books added in the date range
+     */
+    @Query("SELECT COUNT(b) FROM Book b WHERE b.dateAdded BETWEEN :startDate AND :endDate")
+    long countByDateAddedBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    /**
+     * Get product listing trend data by period
+     * @param startDate Start date
+     * @param endDate End date
+     * @return List of product listing data grouped by date
+     */
+    @Query(value = "SELECT date_added, COUNT(*) as count " +
+            "FROM books " +
+            "WHERE date_added BETWEEN :startDate AND :endDate " +
+            "GROUP BY date_added " +
+            "ORDER BY date_added",
+            nativeQuery = true)
+    List<Map<String, Object>> getProductListingTrend(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    /**
+     * Get product statistics by category
+     * @return List of category statistics
+     */
+    @Query(value = "SELECT c.category_name, COUNT(b.book_id) as product_count, " +
+            "AVG(b.selling_price) as avg_price, SUM(b.views_count) as total_views " +
+            "FROM books b " +
+            "JOIN book_categories bc ON b.book_id = bc.book_id " +
+            "JOIN categories c ON bc.category_id = c.category_id " +
+            "WHERE b.is_active = 1 " +
+            "GROUP BY c.category_id, c.category_name " +
+            "ORDER BY COUNT(b.book_id) DESC",
+            nativeQuery = true)
+    List<Map<String, Object>> getProductStatsByCategory();
+
+    /**
+     * Count all active books
+     * @return Count of active books
+     */
+    long countByIsActiveTrue();
+
     Page<Book> findByShop_ShopIdAndIsActiveTrueAndTitleContainingIgnoreCase(Integer shopId, String title, Pageable pageable);
 }

@@ -301,9 +301,8 @@
                 <div class="col-md-3">
                     <div class="stat-card position-relative">
                         <h4>Today's Revenue</h4>
-                        <p th:text="${#numbers.formatDecimal(todayRevenue, 0, 'COMMA', 0, 'POINT')}">1,200,000
-                            VND</p>
-                        <i class="fas fa-dollar-sign"></i>
+                        <p th:text="${#numbers.formatDecimal(todayRevenue, 0, 'COMMA', 0, 'POINT')} + ' đ'">1,200,000 đ</p>
+                        <i class="fas fa-coins"></i>
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -316,8 +315,8 @@
                 <div class="col-md-3">
                     <div class="stat-card position-relative">
                         <h4>Avg Order Value</h4>
-                        <p th:text="${#numbers.formatDecimal(averageOrderValue, 0, 'COMMA', 0, 'POINT')}">3</p>
-                        <i class="fas fa-envelope"></i>
+                        <p th:text="${#numbers.formatDecimal(averageOrderValue, 0, 'COMMA', 0, 'POINT')} + ' đ'">3 đ</p>
+                        <i class="fas fa-calculator"></i>
                     </div>
                 </div>
             </div>
@@ -599,7 +598,7 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return new Intl.NumberFormat('vi-VN').format(context.parsed.y) + ' VND';
+                                    return new Intl.NumberFormat('vi-VN').format(context.parsed.y) + ' đ';
                                 }
                             }
                         }

@@ -122,11 +122,10 @@ function clearErrorMessages(container) {
 
 // Format number as currency (VND)
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', { 
-        style: 'currency', 
-        currency: 'VND',
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'decimal',
         maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount) + ' đ';
 }
 
 // Remove currency formatting

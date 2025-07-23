@@ -8,9 +8,10 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Repository
 public interface BlogRepository extends JpaRepository<Blog, Integer>, JpaSpecificationExecutor<Blog> {
@@ -30,6 +31,53 @@ public interface BlogRepository extends JpaRepository<Blog, Integer>, JpaSpecifi
     
     // Find most popular blogs (by views)
     Page<Blog> findAllByOrderByViewsCountDesc(Pageable pageable);
+
+    /**
+     * Count blogs created within a date range
+     * @param startDate Start date
+     * @param endDate End date
+     * @return Count of blogs created in the date range
+     */
+    @Query("SELECT COUNT(b) FROM Blog b WHERE b.createdDate BETWEEN :startDate AND :endDate")
+    long countByCreatedDateBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Get blog creation trend data by period
+     * @param startDate Start date
+     * @param endDate End date
+     * @return List of blog creation data grouped by date
+     */
+    @Query(value = "SELECT CAST(created_date AS DATE) as creation_date, COUNT(*) as count " +
+            "FROM blogs " +
+            "WHERE created_date BETWEEN :startDate AND :endDate " +
+            "GROUP BY CAST(created_date AS DATE) " +
+            "ORDER BY CAST(created_date AS DATE)",
+            nativeQuery = true)
+    List<Map<String, Object>> getBlogCreationTrend(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Get total blog views
+     * @return Total views across all blogs
+     */
+    @Query(value = "SELECT COALESCE(SUM(views_count), 0) FROM blogs", nativeQuery = true)
+    long getTotalBlogViews();
+
+    /**
+     * Get forum activity statistics
+     * @param startDate Start date
+     * @param endDate End date
+     * @return Forum activity statistics
+     */
+    @Query(value = "SELECT " +
+            "COUNT(DISTINCT b.blog_id) as total_posts, " +
+            "COUNT(DISTINCT b.user_id) as active_users, " +
+            "COALESCE(SUM(b.views_count), 0) as total_views, " +
+            "COUNT(DISTINCT bc.comment_id) as total_comments " +
+            "FROM blogs b " +
+            "LEFT JOIN blog_comments bc ON b.blog_id = bc.blog_id " +
+            "WHERE b.created_date BETWEEN :startDate AND :endDate",
+            nativeQuery = true)
+    Map<String, Object> getForumActivityStats(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
     
     // Find blogs by author (user)
     Page<Blog> findByUserEmail(String email, Pageable pageable);

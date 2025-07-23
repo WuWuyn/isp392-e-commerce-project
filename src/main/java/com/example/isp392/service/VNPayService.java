@@ -64,7 +64,7 @@ public class VNPayService {
         String orderType = "other";
         String vnp_OrderInfo = "Thanh toan don hang " + vnp_TxnRef; // Remove colon
         String vnp_OrderType = orderType;
-        String vnp_Amount = String.valueOf(customerOrder.getTotalAmount().multiply(new java.math.BigDecimal(100)).longValue());
+        String vnp_Amount = String.valueOf(customerOrder.getTotalAmount().multiply(new BigDecimal(100)).longValue());
         String vnp_ReturnUrl = paymentConfig.getReturnUrl();
         String vnp_CurrCode = "VND";
 
@@ -258,7 +258,7 @@ public class VNPayService {
 
     private String urlEncode(String value) {
         try {
-            return java.net.URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
         } catch (Exception e) {
             return value;
         }

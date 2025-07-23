@@ -322,11 +322,11 @@
                             <div class="order-totals">
                                 <div class="row">
                                     <div class="col-md-9 total-label">Subtotal:</div>
-                                    <div class="col-md-3 total-value" th:text="${#numbers.formatCurrency(order.subTotal)}">$39.98</div>
+                                    <div class="col-md-3 total-value" th:text="${#numbers.formatDecimal(order.subTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">39,980 đ</div>
                                 </div>
                                 <div class="row" th:if="${order.shippingFee != null && order.shippingFee.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
                                     <div class="col-md-9 total-label">Shipping:</div>
-                                    <div class="col-md-3 total-value" th:text="${#numbers.formatCurrency(order.shippingFee)}">$5.00</div>
+                                    <div class="col-md-3 total-value" th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' đ'">5,000 đ</div>
                                 </div>
                                 <div class="row" th:if="${order.discountAmount != null && order.discountAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
                                     <div class="col-md-9 total-label">Discount:</div>

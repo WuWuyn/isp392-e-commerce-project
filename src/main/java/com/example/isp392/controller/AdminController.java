@@ -1032,4 +1032,145 @@ public class AdminController {
             return "redirect:/admin/moderation?tab=comments";
         }
     }
+
+    /**
+     * Display admin revenue reports page with filtering and analytics
+     *
+     * @param model Model to add attributes
+     * @param period Period for analytics (daily, weekly, monthly, yearly)
+     * @param startDate Start date for custom period
+     * @param endDate End date for custom period
+     * @param sellerId Specific seller ID to filter by
+     * @param compareMode Compare mode (previous, year)
+     * @return reports page view
+     */
+    @GetMapping("/reports")
+    public String showReportsPage(
+            Model model,
+            @RequestParam(defaultValue = "monthly") String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Integer sellerId,
+            @RequestParam(defaultValue = "previous") String compareMode) {
+
+        try {
+            // Add admin info to model
+            adminService.addAdminInfoToModel(model);
+
+            // Set default date range if not provided
+            if (startDate == null || endDate == null) {
+                endDate = LocalDate.now();
+                switch (period) {
+                    case "daily":
+                        startDate = endDate.minusDays(30); // Last 30 days
+                        break;
+                    case "weekly":
+                        startDate = endDate.minusWeeks(12); // Last 12 weeks
+                        break;
+                    case "yearly":
+                        startDate = endDate.minusYears(3); // Last 3 years
+                        break;
+                    default: // monthly
+                        startDate = endDate.minusMonths(12); // Last 12 months
+                        break;
+                }
+            }
+
+            // Get revenue analytics data
+            Map<String, Object> revenueData = adminService.getRevenueAnalytics(startDate, endDate, period, sellerId, compareMode);
+
+            // Add all data to model
+            model.addAllAttributes(revenueData);
+            model.addAttribute("period", period);
+            model.addAttribute("startDate", startDate);
+            model.addAttribute("endDate", endDate);
+            model.addAttribute("sellerId", sellerId);
+            model.addAttribute("compareMode", compareMode);
+            model.addAttribute("activeMenu", "reports");
+
+            log.debug("Reports page loaded for period: {}, startDate: {}, endDate: {}", period, startDate, endDate);
+
+        } catch (Exception e) {
+            log.error("Error loading reports page: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage", "Error loading reports data: " + e.getMessage());
+
+            // Add empty data to prevent template errors
+            model.addAttribute("totalRevenue", BigDecimal.ZERO);
+            model.addAttribute("revenueGrowth", 0.0);
+            model.addAttribute("topSellers", new ArrayList<>());
+            model.addAttribute("revenueChartLabels", "[]");
+            model.addAttribute("revenueChartData", "[]");
+            model.addAttribute("activeMenu", "reports");
+        }
+
+        return "admin/reports";
+    }
+
+    /**
+     * Display consolidated reports page with comprehensive analytics
+     *
+     * @param model Model to add attributes
+     * @param period Period for analytics (daily, weekly, monthly, yearly)
+     * @param startDate Start date for custom period
+     * @param endDate End date for custom period
+     * @return consolidated reports page view
+     */
+    @GetMapping("/consolidated-reports")
+    public String showConsolidatedReportsPage(
+            Model model,
+            @RequestParam(defaultValue = "monthly") String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        try {
+            // Add admin info to model
+            adminService.addAdminInfoToModel(model);
+
+            // Set default date range if not provided
+            if (startDate == null || endDate == null) {
+                endDate = LocalDate.now();
+                switch (period) {
+                    case "daily":
+                        startDate = endDate.minusDays(30); // Last 30 days
+                        break;
+                    case "weekly":
+                        startDate = endDate.minusWeeks(12); // Last 12 weeks
+                        break;
+                    case "yearly":
+                        startDate = endDate.minusYears(3); // Last 3 years
+                        break;
+                    default: // monthly
+                        startDate = endDate.minusMonths(12); // Last 12 months
+                        break;
+                }
+            }
+
+            // Get consolidated reports data
+            Map<String, Object> consolidatedData = adminService.getConsolidatedReports(startDate, endDate, period);
+
+            // Add all data to model
+            model.addAllAttributes(consolidatedData);
+            model.addAttribute("period", period);
+            model.addAttribute("startDate", startDate);
+            model.addAttribute("endDate", endDate);
+            model.addAttribute("activeMenu", "consolidated-reports");
+
+            log.debug("Consolidated reports page loaded for period: {}, startDate: {}, endDate: {}", period, startDate, endDate);
+
+        } catch (Exception e) {
+            log.error("Error loading consolidated reports page: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage", "Error loading consolidated reports data: " + e.getMessage());
+
+            // Add empty data to prevent template errors
+            model.addAttribute("orders", new HashMap<>());
+            model.addAttribute("users", new HashMap<>());
+            model.addAttribute("products", new HashMap<>());
+            model.addAttribute("forum", new HashMap<>());
+            model.addAttribute("revenue", new HashMap<>());
+            model.addAttribute("platform", new HashMap<>());
+            model.addAttribute("activeMenu", "consolidated-reports");
+        }
+
+        return "admin/consolidated-reports";
+    }
 }

@@ -97,11 +97,10 @@ document.addEventListener('DOMContentLoaded', function() {
     currencyValues.forEach(value => {
         const amount = parseFloat(value.textContent.replace(/[^\d.-]/g, ''));
         if (!isNaN(amount)) {
-            value.textContent = new Intl.NumberFormat('vi-VN', { 
-                style: 'currency', 
-                currency: 'VND',
+            value.textContent = new Intl.NumberFormat('vi-VN', {
+                style: 'decimal',
                 maximumFractionDigits: 0
-            }).format(amount);
+            }).format(amount) + ' đ';
         }
     });
 

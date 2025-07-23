@@ -81,7 +81,7 @@ public class DataImportExportService {
                     // Handle roles (giữ nguyên logic gốc)
                     String rolesString = csvRecord.get("roles");
                     if (rolesString != null && !rolesString.isEmpty()) {
-                        Set<com.example.isp392.model.UserRole> userRoles = Set.of(rolesString.split(","))
+                        Set<UserRole> userRoles = Set.of(rolesString.split(","))
                                 .stream()
                                 .map(roleName -> roleRepository.findByRoleName("ROLE_" + roleName.trim().toUpperCase())
                                         .map(role -> {

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -26,6 +27,29 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
      */
     @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :date")
     long countByRegistrationDateAfter(@Param("date") LocalDateTime date);
+
+    /**
+     * Count users registered within a date range
+     * @param startDate Start date
+     * @param endDate End date
+     * @return Count of users registered in the date range
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt BETWEEN :startDate AND :endDate")
+    long countByRegistrationDateBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Get user registration trend data by period
+     * @param startDate Start date
+     * @param endDate End date
+     * @return List of registration data grouped by date
+     */
+    @Query(value = "SELECT CAST(created_at AS DATE) as registration_date, COUNT(*) as count " +
+            "FROM users " +
+            "WHERE created_at BETWEEN :startDate AND :endDate " +
+            "GROUP BY CAST(created_at AS DATE) " +
+            "ORDER BY CAST(created_at AS DATE)",
+            nativeQuery = true)
+    List<Map<String, Object>> getUserRegistrationTrend(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
     
     /**
      * Find most recently registered users
