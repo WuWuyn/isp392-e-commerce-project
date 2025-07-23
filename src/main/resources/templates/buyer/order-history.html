@@ -347,22 +347,22 @@
                                                     <i class="fas fa-eye"></i> Details
                                                 </a>
 
-                                                <!-- Cancel button only for PROCESSING orders (before shipping) -->
-                                                <button th:if="${order.orderStatus != null && order.orderStatus.name() == 'PROCESSING'}"
+                                                <!-- Cancel button for PROCESSING and SHIPPED orders -->
+                                                <button th:if="${order.orderStatus != null && (order.orderStatus.name() == 'PROCESSING' || order.orderStatus.name() == 'SHIPPED')}"
                                                         type="button"
                                                         class="btn btn-outline-danger btn-sm rounded-3 cancel-order-btn"
                                                         th:data-order-id="${order.orderId}"
                                                         th:data-order-title="${order.orderItems[0].book.title + (order.orderItems.size() > 1 ? ' và ' + (order.orderItems.size() - 1) + ' sản phẩm khác' : '')}">
-                                                    <i class="fas fa-times"></i> Cancel
+                                                    <i class="fas fa-times"></i> Hủy đơn
                                                 </button>
 
                                                 <!-- Confirm Delivery button for SHIPPED orders -->
-                                                <button th:if="${order.orderStatus != null && order.orderStatus.name() == 'SHIPPED'}"
+                                                <button th:if="${order.orderStatus != null && order.orderStatus == T(com.example.isp392.model.OrderStatus).SHIPPED}"
                                                         type="button"
                                                         class="btn btn-success btn-sm rounded-3 confirm-delivery-btn"
                                                         th:data-order-id="${order.orderId}"
                                                         th:data-shop-name="${order.shop.shopName}">
-                                                    <i class="fas fa-check"></i> Confirm Delivery
+                                                    <i class="fas fa-check"></i> Đã nhận hàng
                                                 </button>
 
                                                 <!-- Rebuy button for DELIVERED and CANCELLED orders -->
@@ -370,7 +370,7 @@
                                                         type="button"
                                                         class="btn btn-primary btn-sm rounded-3 rebuy-order-btn"
                                                         th:data-order-id="${order.orderId}">
-                                                    <i class="fas fa-sync-alt"></i> Buy Again
+                                                    <i class="fas fa-sync-alt"></i> Mua lại
                                                 </button>
                                             </div>
                                         </div>
@@ -563,14 +563,14 @@
                 const customReason = document.getElementById('customReason');
 
                 if (!reasonSelect || !reasonSelect.value) {
-                    alert('Please select a reason for cancellation');
+                    alert('Vui lòng chọn lý do hủy đơn hàng');
                     return;
                 }
 
                 let finalReason = reasonSelect.value;
-                if (reasonSelect.value === 'Other') {
+                if (reasonSelect.value === 'Khác') {
                     if (!customReason || !customReason.value.trim()) {
-                        alert('Please enter detailed reason for cancellation');
+                        alert('Vui lòng nhập chi tiết lý do hủy đơn hàng');
                         return;
                     }
                     finalReason = customReason.value.trim();
@@ -629,7 +629,7 @@
         }
 
         const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang hủy...';
         button.disabled = true;
 
         // Get CSRF token
@@ -657,17 +657,17 @@
         .then(data => {
             console.log('Cancel order response data:', data);
             if (data.success) {
-                alert('Order has been cancelled successfully!');
+                alert('Đơn hàng đã được hủy thành công!');
                 location.reload(); // Refresh page to show updated status
             } else {
-                alert('Error: ' + (data.message || 'Unable to cancel order'));
+                alert('Lỗi: ' + (data.message || 'Không thể hủy đơn hàng'));
                 button.innerHTML = originalText;
                 button.disabled = false;
             }
         })
         .catch(error => {
             console.error('Cancel order error:', error);
-            alert('An error occurred while cancelling the order');
+            alert('Có lỗi xảy ra khi hủy đơn hàng');
             button.innerHTML = originalText;
             button.disabled = false;
         });
@@ -795,51 +795,51 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="cancelOrderModalLabel">
-                    <i class="fas fa-times-circle text-danger me-2"></i>Cancel Order
+                    <i class="fas fa-times-circle text-danger me-2"></i>Hủy đơn hàng
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Note:</strong> After cancelling the order, product quantities will be restored to inventory and you cannot undo this action.
+                    <strong>Lưu ý:</strong> Sau khi hủy đơn hàng, số lượng sản phẩm sẽ được hoàn lại vào kho và bạn không thể hoàn tác thao tác này.
                 </div>
 
                 <div class="mb-3">
-                    <strong>Order:</strong> <span id="cancelOrderTitle"></span>
+                    <strong>Đơn hàng:</strong> <span id="cancelOrderTitle"></span>
                 </div>
 
                 <div class="mb-3">
                     <label for="cancellationReason" class="form-label">
-                        <i class="fas fa-list me-1"></i>Reason for cancellation <span class="text-danger">*</span>
+                        <i class="fas fa-list me-1"></i>Lý do hủy đơn hàng <span class="text-danger">*</span>
                     </label>
                     <select class="form-select" id="cancellationReason" required>
-                        <option value="">-- Select cancellation reason --</option>
-                        <option value="Ordered wrong product">Ordered wrong product</option>
-                        <option value="Want to apply discount code">Want to apply discount code</option>
-                        <option value="No longer needed">No longer needed</option>
-                        <option value="Wrong delivery address">Wrong delivery address</option>
-                        <option value="Found better price">Found better price</option>
-                        <option value="Changed mind">Changed mind</option>
-                        <option value="Duplicate order">Duplicate order</option>
-                        <option value="Other">Other (please specify)</option>
+                        <option value="">-- Chọn lý do hủy đơn hàng --</option>
+                        <option value="Đặt sai sản phẩm">Đặt sai sản phẩm</option>
+                        <option value="Muốn áp dụng mã giảm giá">Muốn áp dụng mã giảm giá</option>
+                        <option value="Không còn nhu cầu">Không còn nhu cầu</option>
+                        <option value="Sai địa chỉ giao hàng">Sai địa chỉ giao hàng</option>
+                        <option value="Tìm được giá tốt hơn">Tìm được giá tốt hơn</option>
+                        <option value="Thay đổi ý định">Thay đổi ý định</option>
+                        <option value="Đặt trùng đơn hàng">Đặt trùng đơn hàng</option>
+                        <option value="Khác">Khác (vui lòng ghi rõ)</option>
                     </select>
                 </div>
 
                 <div class="mb-3" id="customReasonDiv" style="display: none;">
                     <label for="customReason" class="form-label">
-                        <i class="fas fa-edit me-1"></i>Detailed reason
+                        <i class="fas fa-edit me-1"></i>Chi tiết lý do
                     </label>
                     <textarea class="form-control" id="customReason" rows="3"
-                              placeholder="Please enter detailed reason for cancellation..."></textarea>
+                              placeholder="Vui lòng nhập chi tiết lý do hủy đơn hàng..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i>Cancel
+                    <i class="fas fa-times me-1"></i>Hủy bỏ
                 </button>
                 <button type="button" class="btn btn-danger" id="confirmCancelOrder">
-                    <i class="fas fa-check me-1"></i>Confirm Cancellation
+                    <i class="fas fa-check me-1"></i>Xác nhận hủy đơn
                 </button>
             </div>
         </div>

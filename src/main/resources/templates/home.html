@@ -20,10 +20,14 @@
 
 <main>
   <!-- Hero Section -->
-  <section class="hero-section text-white text-start d-flex align-items-center">
+  <section class="hero-section text-white text-start d-flex align-items-center"
+           th:if="${globalSettings.containsKey('hero_background_image') and not #strings.isEmpty(globalSettings['hero_background_image'])}"
+           th:style="'background-image: url(' + @{${globalSettings['hero_background_image']}} + '); background-size: cover; background-position: center center; background-repeat: no-repeat;'">
     <div class="container">
-      <p class="hero-subtitle">THE READHUB EDITORS'</p>
-      <h1 class="hero-title">First Time <br>With ReadHub?</h1>
+      <p class="hero-subtitle" th:text="${globalSettings['hero_description']}">THE READHUB EDITORS'</p>
+
+      <h1 class="hero-title" th:utext="${globalSettings['hero_title']}">First Time <br>With ReadHub?</h1>
+
       <a href="/about-contact" class="btn btn-hero">Learn More <i class="fas fa-arrow-right ms-1"></i></a>
     </div>
   </section>

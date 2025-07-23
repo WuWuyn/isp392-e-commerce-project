@@ -8,12 +8,9 @@ import com.example.isp392.model.BookReview;
 import com.example.isp392.model.BlogComment;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
-import com.example.isp392.service.AdminService;
-import com.example.isp392.service.BookService;
-import com.example.isp392.service.OrderService;
-import com.example.isp392.service.ShopService;
-import com.example.isp392.service.UserService;
+import com.example.isp392.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.isp392.service.FileStorageService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,10 +28,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.example.isp392.model.Blog;
-import com.example.isp392.service.BlogService;
-import com.example.isp392.service.CategoryService;
-import com.example.isp392.service.PublisherService;
-import com.example.isp392.service.ModerationService;
 import jakarta.persistence.EntityNotFoundException;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -57,7 +50,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
-import com.example.isp392.service.DataImportExportService;
+
 /**
  * Controller for handling admin-related requests
  * This controller manages the admin login page and admin panel pages
@@ -79,6 +72,8 @@ public class AdminController {
     private final PublisherService publisherService;
     private final DataImportExportService dataImportExportService;
     private final ModerationService moderationService;
+    private final SystemSettingService systemSettingService;
+    private final FileStorageService fileStorageService;
 
     /**
      * Constructor with explicit dependency injection
@@ -94,7 +89,7 @@ public class AdminController {
                            PublisherRepository publisherRepository,
                            ShopService shopService,
                            OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService, DataImportExportService dataImportExportService
-            , ModerationService moderationService) {
+            , ModerationService moderationService, SystemSettingService systemSettingService, FileStorageService fileStorageService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
@@ -107,6 +102,8 @@ public class AdminController {
         this.publisherService = publisherService;
         this.dataImportExportService = dataImportExportService;
         this.moderationService = moderationService;
+        this.systemSettingService = systemSettingService;
+        this.fileStorageService = fileStorageService;
 
     }
 
@@ -1175,5 +1172,57 @@ public class AdminController {
         }
 
         return "admin/consolidated-reports";
+    }
+
+    @GetMapping("/settings")
+    public String showSettingsPage(Model model) {
+        adminService.addAdminInfoToModel(model);
+
+        // THÊM KEY "hero_background_image" VÀO DANH SÁCH NÀY
+        List<String> settingKeys = List.of(
+                "hero_background_image", // << THÊM DÒNG NÀY
+                "hero_title", "hero_description", "hero_button_text", "hero_button_link",
+                "contact_email", "social_facebook", "social_instagram", "social_zalo"
+        );
+
+        Map<String, String> settings = systemSettingService.getSettings(settingKeys);
+
+        model.addAttribute("settings", settings);
+        model.addAttribute("activeMenu", "settings");
+        return "admin/system-settings";
+    }
+
+    /**
+     * Lưu các thay đổi từ trang cài đặt hệ thống
+     */
+    @PostMapping("/settings/save")
+    public String saveSettings(
+            @RequestParam Map<String, String> allParams,
+            @RequestParam("heroImageFile") MultipartFile heroImageFile,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            // --- XỬ LÝ UPLOAD ẢNH BẰNG FILESTORAGESERVICE ---
+            if (heroImageFile != null && !heroImageFile.isEmpty()) {
+                // Gọi service để lưu file vào thư mục con "settings"
+                String fileUrl = fileStorageService.storeFile(heroImageFile, "settings");
+
+                // Lưu đường dẫn web-accessible vào map để cập nhật vào DB
+                allParams.put("hero_background_image", fileUrl);
+            }
+            // --- KẾT THÚC XỬ LÝ UPLOAD ẢNH ---
+
+            systemSettingService.saveSettings(allParams);
+            redirectAttributes.addFlashAttribute("successMessage", "Settings saved successfully!");
+
+        } catch (IOException e) {
+            log.error("Error saving settings or uploading file: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while saving settings: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error saving settings: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while saving settings.");
+        }
+
+        return "redirect:/admin/settings";
     }
 }

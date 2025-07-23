@@ -137,13 +137,13 @@
                                     <i class="fas fa-arrow-left"></i> Back to Order History
                                 </a>
                                 <div class="d-flex gap-2">
-                                    <!-- Cancel button only for PROCESSING orders (before shipping) -->
-                                    <button th:if="${order.orderStatus != null && order.orderStatus.name() == 'PROCESSING'}"
+                                    <!-- Cancel button for PROCESSING and SHIPPED orders -->
+                                    <button th:if="${order.orderStatus != null && (order.orderStatus.name() == 'PROCESSING' || order.orderStatus.name() == 'SHIPPED')}"
                                             type="button"
                                             class="btn btn-outline-danger rounded-3 cancel-order-btn"
                                             th:data-order-id="${order.orderId}"
                                             th:data-order-title="${order.orderItems[0].book.title + (order.orderItems.size() > 1 ? ' và ' + (order.orderItems.size() - 1) + ' sản phẩm khác' : '')}">
-                                        <i class="fas fa-times"></i> Cancel Order
+                                        <i class="fas fa-times"></i> Hủy đơn hàng
                                     </button>
 
                                     <!-- Rebuy button for DELIVERED and CANCELLED orders -->
