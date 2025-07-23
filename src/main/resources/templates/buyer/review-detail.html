@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Details - ReadHub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <style>
+    .review-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .book-info {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 2rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .book-cover {
+        width: 100px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .rating-stars {
+        font-size: 1.5rem;
+        color: #ffc107;
+    }
+    .rating-stars .far {
+        color: #dee2e6;
+    }
+    .review-images img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-right: 15px;
+        border: 2px solid #e9ecef;
+        transition: transform 0.2s;
+    }
+    .review-images img:hover {
+        transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="main-content">
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-9">
+        <div class="review-container">
+          <div class="book-info">
+            <div class="row align-items-center">
+              <div class="col-md-3 text-center">
+                <img th:src="${orderItem.book.coverImgUrl != null ? orderItem.book.coverImgUrl : '/images/book-placeholder.jpg'}"
+                     alt="Book Cover" class="book-cover">
+              </div>
+              <div class="col-md-9">
+                <h4 class="mb-2" th:text="${orderItem.book.title}">Book Title</h4>
+                <p class="text-muted mb-1" th:text="${orderItem.book.authors}">Author</p>
+                <p class="text-muted mb-1">
+                  <small>
+                    <i class="fas fa-receipt me-1"></i>
+                    Order ID: <span class="fw-bold text-primary">#<span th:text="${orderItem.order.orderId}">12345</span></span>
+                  </small>
+                </p>
+                <p class="text-muted mb-0">
+                  <small>
+                    <i class="fas fa-calendar me-1"></i>
+                    Order Date: <span th:text="${#temporals.format(orderItem.order.orderDate, 'dd/MM/yyyy')}">01/01/2024</span>
+                  </small>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <h5 class="mb-1" th:text="${review.title}">Review Title</h5>
+            <p class="text-muted small mb-3">
+              Reviewed by <strong th:text="${review.user.fullName}">User Name</strong> on
+              <span th:text="${#temporals.format(review.createdDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+            </p>
+
+            <div class="mb-3">
+                            <span class="rating-stars">
+                                <i th:each="i : ${#numbers.sequence(1, 5)}"
+                                   th:class="${i <= review.rating} ? 'fas fa-star' : 'far fa-star'"></i>
+                            </span>
+              <span class="ms-2 fw-bold align-middle" th:text="${review.rating} + '.0 / 5.0'">5.0 / 5.0</span>
+            </div>
+
+            <p class="mb-4" style="white-space: pre-wrap;" th:text="${review.content}">Review content goes here.</p>
+
+            <div class="mb-4" th:if="${review.imgUrl1 != null || review.imgUrl2 != null || review.imgUrl3 != null}">
+              <h6 class="mb-3 fw-bold">Photos from this review:</h6>
+              <div class="review-images">
+                <img th:if="${review.imgUrl1}" th:src="${review.imgUrl1}" alt="Review Image 1">
+                <img th:if="${review.imgUrl2}" th:src="${review.imgUrl2}" alt="Review Image 2">
+                <img th:if="${review.imgUrl3}" th:src="${review.imgUrl3}" alt="Review Image 3">
+              </div>
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between">
+              <a th:href="@{/buyer/reviews}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to My Reviews
+              </a>
+              <a th:href="@{/buyer/reviews/edit/{id}(id=${orderItem.orderItemId})}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>Edit This Review
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

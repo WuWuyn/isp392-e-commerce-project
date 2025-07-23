@@ -71,16 +71,15 @@ public class BookReviewService {
         if (reviewOpt.isPresent()) {
             BookReview review = reviewOpt.get();
 
-            // THÊM 2 DÒNG SAU ĐỂ KIỂM TRA
-            System.out.println("ID người dùng của review: " + review.getUser().getUserId());
-            System.out.println("ID người dùng đang đăng nhập: " + currentUser.getUserId());
-
-            // **Kiểm tra bảo mật**:
+            // **Kiểm tra bảo mật quan trọng**: Chỉ cho phép xóa nếu review thuộc về người dùng hiện tại.
             if (review.getUser().getUserId().equals(currentUser.getUserId())) {
                 bookReviewRepository.delete(review);
                 return true;
             }
         }
         return false;
+    }
+    public Optional<BookReview> findByUserAndOrderItem_OrderItemId(User user, Integer orderItemId) {
+        return bookReviewRepository.findByUserAndOrderItem_OrderItemId(user, orderItemId);
     }
 }
