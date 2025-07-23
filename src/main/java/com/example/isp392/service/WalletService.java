@@ -317,4 +317,84 @@ public class WalletService {
     public Wallet ensureWalletExists(User user) {
         return getWalletByUser(user).orElseGet(() -> createWalletForUser(user));
     }
+
+    /**
+     * Process a withdrawal request
+     * @param user The user requesting withdrawal
+     * @param withdrawalRequest The withdrawal request details
+     * @return The wallet transaction
+     * @throws RuntimeException if validation fails or insufficient balance
+     */
+    @Transactional
+    public WalletTransaction processWithdrawal(User user, com.example.isp392.dto.WithdrawalRequestDTO withdrawalRequest) {
+        if (withdrawalRequest == null) {
+            throw new IllegalArgumentException("Withdrawal request cannot be null");
+        }
+
+        BigDecimal amount = withdrawalRequest.getAmount();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Withdrawal amount must be positive");
+        }
+
+        // Validate amount limits
+        BigDecimal minAmount = new BigDecimal("10000"); // 10,000 VND
+        BigDecimal maxAmount = new BigDecimal("50000000"); // 50,000,000 VND
+
+        if (amount.compareTo(minAmount) < 0) {
+            throw new RuntimeException("Minimum withdrawal amount is 10,000 VND");
+        }
+
+        if (amount.compareTo(maxAmount) > 0) {
+            throw new RuntimeException("Maximum withdrawal amount is 50,000,000 VND per transaction");
+        }
+
+        // Validate bank account details
+        if (withdrawalRequest.getBankName() == null || withdrawalRequest.getBankName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Bank name is required");
+        }
+
+        if (withdrawalRequest.getAccountNumber() == null || withdrawalRequest.getAccountNumber().trim().isEmpty()) {
+            throw new IllegalArgumentException("Account number is required");
+        }
+
+        if (withdrawalRequest.getAccountHolderName() == null || withdrawalRequest.getAccountHolderName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Account holder name is required");
+        }
+
+        // Get wallet and check balance
+        Wallet wallet = getWalletByUser(user)
+                .orElseThrow(() -> new RuntimeException("Wallet not found for user: " + user.getEmail()));
+
+        if (!wallet.hasSufficientBalance(amount)) {
+            throw new RuntimeException("Insufficient balance. Available: " +
+                String.format("%,d VND", wallet.getBalance().longValue()) +
+                ", Requested: " + String.format("%,d VND", amount.longValue()));
+        }
+
+        // Create withdrawal description with bank details
+        String description = String.format("Withdrawal to %s - Account: %s (%s)",
+                withdrawalRequest.getBankName().trim(),
+                withdrawalRequest.getAccountNumber().trim(),
+                withdrawalRequest.getAccountHolderName().trim());
+
+        try {
+            // Process the withdrawal using existing deductFunds method
+            WalletTransaction transaction = deductFunds(
+                    user,
+                    amount,
+                    description,
+                    WalletReferenceType.WITHDRAWAL,
+                    null, // No specific reference ID for withdrawals
+                    user.getUserId()
+            );
+
+            log.info("Processed withdrawal of {} for user: {} to bank account: {} - {}",
+                    amount, user.getEmail(), withdrawalRequest.getBankName(), withdrawalRequest.getAccountNumber());
+
+            return transaction;
+        } catch (Exception e) {
+            log.error("Failed to process withdrawal for user {}: {}", user.getEmail(), e.getMessage(), e);
+            throw new RuntimeException("Failed to process withdrawal: " + e.getMessage(), e);
+        }
+    }
 }
