@@ -74,9 +74,28 @@
             font-size: 1.2rem;
             font-weight: 700;
             color: #2c7be5;
-            border-top: 1px solid #dee2e6;
-            padding-top: 10px;
-            margin-top: 10px;
+            border-top: 2px solid #007bff;
+            padding: 15px;
+            margin-top: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-total.with-discount {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-top: 2px solid #28a745;
+        }
+
+        .summary-total .final-total-label {
+            color: #155724;
+        }
+
+        .summary-total .final-total-amount {
+            color: #155724;
+            font-size: 1.3rem;
         }
         .book-item {
             display: flex;
@@ -157,6 +176,68 @@
         }
         .address-toggle:hover {
             background-color: #e9ecef;
+        }
+
+        /* Shop Summary Styles */
+        .shop-summary {
+            border: 1px solid #dee2e6;
+            background-color: #f8f9fa !important;
+        }
+
+        .shop-discount-section {
+            background-color: #d4edda;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+            border-left: 4px solid #28a745;
+        }
+
+        .shop-discount-section .text-success {
+            color: #155724 !important;
+        }
+
+        .shop-discount-details {
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        /* Promotion Section Styles */
+        .promotion-section {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+
+        .applied-promotion {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .discount-breakdown {
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 15px;
+            background-color: #d1ecf1;
+            margin-top: 10px;
+        }
+
+        .discount-breakdown h6 {
+            color: #0c5460;
+            margin-bottom: 15px;
+        }
+
+        .order-breakdown {
+            background-color: white;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #17a2b8;
         }
     </style>
 </head>
@@ -385,6 +466,50 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Shop Order Summary -->
+                    <div class="shop-summary mt-3 p-3 bg-light rounded" th:with="shopSubtotal=${#aggregates.sum(shopEntry.value.![book.sellingPrice * quantity])}">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="summary-details">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Subtotal:</span>
+                                        <span class="shop-subtotal" th:text="${#numbers.formatDecimal(shopSubtotal, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Shipping Fee:</span>
+                                        <span class="shop-shipping">30,000 VND</span>
+                                    </div>
+
+                                    <!-- Discount section (hidden by default, shown when promotion applied) -->
+                                    <div class="shop-discount-section" style="display: none;">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-success">
+                                                <i class="fas fa-tag me-1"></i>Discount:
+                                            </span>
+                                            <span class="shop-discount-amount text-success fw-bold">-0 VND</span>
+                                        </div>
+                                        <div class="shop-discount-details text-muted small">
+                                            <div class="d-flex justify-content-between">
+                                                <span>Original Total:</span>
+                                                <span class="shop-original-total" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <span>After Discount:</span>
+                                                <span class="shop-discounted-total fw-bold" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="my-2">
+                                    <div class="d-flex justify-content-between fw-bold">
+                                        <span>Shop Total:</span>
+                                        <span class="shop-total" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -441,44 +566,105 @@
                 <div class="order-summary">
                     <div class="summary-item">
                         <span>Subtotal</span>
-                        <span th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                        <span id="summarySubtotal" th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
                     </div>
 
-                        <!-- Discount Code Section -->
-                        <div class="mb-3">
-                            <label for="discountCode" class="form-label">Discount Code</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="discountCode" name="discountCode" 
-                                       th:value="${discountCode}" placeholder="Enter discount code">
-                                <button class="btn btn-outline-secondary" type="button" id="applyDiscountBtn">Apply</button>
+                        <!-- Promotion Code Section (Applied from Cart) -->
+                        <div class="promotion-section mt-3 mb-3" th:if="${appliedPromotion != null and appliedPromotion.success}">
+                            <div class="alert alert-info mb-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-tag text-success me-2"></i>
+                                        <strong>Promotion Applied from Cart:</strong>
+                                        <span class="fw-bold text-success" th:text="${appliedPromotion.promoCode}">PROMO10</span>
+                                    </div>
+                                    <a href="/buyer/cart" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit me-1"></i>Change in Cart
+                                    </a>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-success fw-bold">
+                                            <i class="fas fa-percentage me-1"></i>
+                                            Discount Amount:
+                                        </span>
+                                        <span class="text-success fw-bold" th:text="${#numbers.formatDecimal(appliedPromotion.totalDiscount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        To apply or change promotion codes, please go back to your cart.
+                                    </div>
+                                </div>
                             </div>
-                            <div id="discountMessage" class="form-text text-success mt-1" style="display: none;"></div>
-                            <div id="discountError" class="form-text text-danger mt-1" style="display: none;"></div>
-                            <!-- Hidden fields for discount -->
-                            <input type="hidden" id="appliedDiscountCode" name="appliedDiscountCode">
-                            <input type="hidden" id="appliedDiscountAmount" name="appliedDiscountAmount">
                         </div>
 
-                        <!-- Discount Amount (if applied) -->
-                        <div class="summary-item" id="discountSection" th:style="${discountAmount != null && discountAmount > 0 ? 'display: block' : 'display: none'}">
-                            <span>Discount</span>
-                            <span class="text-danger" th:text="${discountAmount != null ? '-' + #numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT') + ' VND' : '0 VND'}">0 VND</span>
+                        <!-- No Promotion Applied -->
+                        <div class="promotion-section mt-3 mb-3" th:if="${appliedPromotion == null or !appliedPromotion.success}">
+                            <div class="alert alert-light mb-0">
+                                <div class="text-center">
+                                    <i class="fas fa-tag text-muted me-2"></i>
+                                    <span class="text-muted">No promotion code applied</span>
+                                </div>
+                                <div class="mt-2 text-center">
+                                    <a href="/buyer/cart" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-arrow-left me-1"></i>Go to Cart to Apply Promotion
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Discount Breakdown -->
+                        <div id="discountBreakdownSection" class="discount-breakdown" style="display: none;">
+                            <div id="discountBreakdownContent">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
                         </div>
 
                     <div class="summary-item">
                         <span>Shipping Fee</span>
-                        <span th:text="${#numbers.formatDecimal(shippingFee != null ? shippingFee : 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">30,000 VND</span>
-                        <input type="hidden" name="shippingFee" th:value="${shippingFee != null ? shippingFee : 30000}" />
+                        <span id="summaryShipping">30,000 VND</span>
+                        <input type="hidden" name="shippingFee" id="shippingFeeInput" value="30000" />
+                    </div>
+
+                    <!-- Discount row (hidden by default) -->
+                    <div class="summary-item" id="summaryDiscountRow" style="display: none;">
+                        <span class="text-success">
+                            <i class="fas fa-tag me-1"></i>Total Discount
+                            <small id="appliedPromoCodeSummary" class="text-muted"></small>
+                        </span>
+                        <span id="summaryDiscount" class="text-success fw-bold">-0 VND</span>
+                    </div>
+
+                    <!-- Subtotal (before discount) -->
+                    <div class="summary-item" th:if="${appliedPromotion != null and appliedPromotion.success}">
+                        <span class="text-muted">Subtotal (before discount)</span>
+                        <span class="text-muted" th:text="${#numbers.formatDecimal(originalTotalAmount != null ? originalTotalAmount : (subtotal + shippingFee), 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
                     </div>
 
                     <div class="summary-total">
-                        <span>Total</span>
-                            <span th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
-                        </div>
+                        <span class="fw-bold">
+                            <span th:if="${appliedPromotion != null and appliedPromotion.success}">Final Total</span>
+                            <span th:unless="${appliedPromotion != null and appliedPromotion.success}">Total</span>
+                        </span>
+                        <span id="summaryTotal" class="fw-bold text-primary" th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                    </div>
+
+                    <!-- Amount to Pay clarification -->
+                    <div class="text-center mt-2" th:if="${appliedPromotion != null and appliedPromotion.success}">
+                        <small class="text-success">
+                            <i class="fas fa-info-circle me-1"></i>
+                            This is the amount you need to pay
+                        </small>
+                    </div>
 
                         <button type="submit" class="btn btn-primary w-100 mt-3" id="placeOrderBtn">
                             <i class="fas fa-lock me-2"></i>
-                            Place Order
+                            <span th:if="${appliedPromotion != null and appliedPromotion.success}">
+                                Pay <span th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                            </span>
+                            <span th:unless="${appliedPromotion != null and appliedPromotion.success}">
+                                Place Order
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -496,6 +682,7 @@
 <!-- Custom JavaScript -->
 <script th:src="@{/js/scripts.js}"></script>
 <script th:src="@{/js/address-location.js}" defer></script>
+<script th:src="@{/js/checkout-discount.js}" defer></script>
 
 <!-- Vietnamese Provinces API dependencies -->    
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -507,15 +694,135 @@ document.addEventListener('DOMContentLoaded', function() {
     const addressSelect = document.getElementById('addressSelect');
     const newAddressForm = document.getElementById('newAddressForm');
     const selectedAddressDetails = document.getElementById('selectedAddressDetails');
-    let currentTotal = parseFloat(/*[[${subtotal}]]*/ '0') || 0;
-    let currentDiscount = parseFloat(/*[[${discountAmount != null ? discountAmount : 0}]]*/ '0') || 0;
-    const shippingFee = 30000; // Fixed shipping fee
+    let currentSubtotal = parseFloat(/*[[${subtotal}]]*/ '0') || 0;
+    let currentShippingFee = parseFloat(/*[[${shippingFee}]]*/ '0') || 0;
+    let serverCalculatedTotal = parseFloat(/*[[${totalAmount}]]*/ '0') || 0;
+    let serverOriginalTotal = parseFloat(/*[[${originalTotalAmount}]]*/ '0') || 0;
+    let appliedPromotion = /*[[${appliedPromotion}]]*/ null;
 
-    // Function to update total amount
+    // Expose server-calculated total to window for other scripts
+    window.serverCalculatedTotal = serverCalculatedTotal;
+    window.hasPromotion = appliedPromotion && appliedPromotion.success;
+
+    // Debug server values
+    console.log('Server values loaded:', {
+        subtotal: currentSubtotal,
+        shippingFee: currentShippingFee,
+        originalTotal: serverOriginalTotal,
+        finalTotal: serverCalculatedTotal,
+        promotion: appliedPromotion,
+        exposedToWindow: window.serverCalculatedTotal
+    });
+
+    // Calculate total shipping fee from all shops
+    function calculateTotalShippingFee() {
+        const shopGroups = document.querySelectorAll('.shop-group');
+        let totalShipping = 0;
+        shopGroups.forEach(shopGroup => {
+            totalShipping += 30000; // 30,000 VND per shop
+        });
+        return totalShipping;
+    }
+
+    const shippingFee = calculateTotalShippingFee();
+
+    // Function to update shipping fee display
+    function updateShippingFeeDisplay() {
+        const totalShipping = calculateTotalShippingFee();
+        document.getElementById('summaryShipping').textContent =
+            new Intl.NumberFormat('vi-VN').format(totalShipping) + ' VND';
+        document.getElementById('shippingFeeInput').value = totalShipping;
+        return totalShipping;
+    }
+
+    // Function to update total amount (use server-calculated total for consistency)
     function updateTotal() {
-        const total = Math.max(0, currentTotal - currentDiscount + shippingFee);
-        document.querySelector('.summary-total span:last-child').textContent = 
-            new Intl.NumberFormat('vi-VN').format(total) + ' VND';
+        let discount = 0;
+        if (appliedPromotion && appliedPromotion.success) {
+            discount = appliedPromotion.totalDiscount || 0;
+
+            // Show discount row
+            const discountRow = document.getElementById('summaryDiscountRow');
+            const discountAmount = document.getElementById('summaryDiscount');
+            const promoCodeSummary = document.getElementById('appliedPromoCodeSummary');
+
+            if (discountRow && discountAmount && promoCodeSummary) {
+                discountRow.style.display = 'flex';
+                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' VND';
+                promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
+            }
+        } else {
+            // Hide discount row
+            const discountRow = document.getElementById('summaryDiscountRow');
+            if (discountRow) {
+                discountRow.style.display = 'none';
+            }
+        }
+
+        // Use server-calculated total for consistency with backend logic
+        const total = serverCalculatedTotal;
+
+        const summaryTotalElement = document.getElementById('summaryTotal');
+        if (summaryTotalElement) {
+            summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(total) + ' VND';
+        }
+
+        console.log('Total display:', {
+            subtotal: currentSubtotal,
+            shipping: currentShippingFee,
+            discount: discount,
+            serverCalculatedTotal: serverCalculatedTotal,
+            displayedTotal: total
+        });
+    }
+
+    // Function to update only discount display without changing total
+    function updateDiscountDisplay() {
+        if (appliedPromotion && appliedPromotion.success) {
+            const discount = appliedPromotion.totalDiscount || 0;
+
+            // Show discount row
+            const discountRow = document.getElementById('summaryDiscountRow');
+            const discountAmount = document.getElementById('summaryDiscount');
+            const promoCodeSummary = document.getElementById('appliedPromoCodeSummary');
+
+            if (discountRow && discountAmount && promoCodeSummary) {
+                discountRow.style.display = 'flex';
+                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' VND';
+                promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
+            }
+
+            // Apply special styling to summary total when discount is applied
+            const summaryTotalDiv = document.querySelector('.summary-total');
+            if (summaryTotalDiv) {
+                summaryTotalDiv.classList.add('with-discount');
+
+                // Update label and amount styling
+                const totalLabel = summaryTotalDiv.querySelector('span:first-child');
+                const totalAmount = summaryTotalDiv.querySelector('#summaryTotal');
+
+                if (totalLabel) {
+                    totalLabel.classList.add('final-total-label');
+                }
+                if (totalAmount) {
+                    totalAmount.classList.add('final-total-amount');
+                }
+            }
+
+            // IMPORTANT: Ensure server-calculated total is preserved
+            const summaryTotalElement = document.getElementById('summaryTotal');
+            if (summaryTotalElement && serverCalculatedTotal) {
+                summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(serverCalculatedTotal) + ' VND';
+                console.log('Preserved server-calculated total:', serverCalculatedTotal);
+            }
+
+            console.log('Discount display updated:', {
+                discount: discount,
+                promoCode: appliedPromotion.promoCode,
+                serverTotal: serverCalculatedTotal,
+                displayedTotal: summaryTotalElement ? summaryTotalElement.textContent : 'not found'
+            });
+        }
     }
 
     // Function to display selected address details
@@ -722,24 +1029,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.action = '/buyer/vnpay-payment';
                 }
                 
-                // Ensure discount information is included
-                const appliedDiscountCode = document.getElementById('appliedDiscountCode').value;
-                const appliedDiscountAmount = document.getElementById('appliedDiscountAmount').value;
-                
-                // Add discount information to form if a discount was applied
-                if (appliedDiscountCode && appliedDiscountAmount) {
-                    const discountCodeInput = document.createElement('input');
-                    discountCodeInput.type = 'hidden';
-                    discountCodeInput.name = 'discountCode';
-                    discountCodeInput.value = appliedDiscountCode;
-                    form.appendChild(discountCodeInput);
-
-                    const discountAmountInput = document.createElement('input');
-                    discountAmountInput.type = 'hidden';
-                    discountAmountInput.name = 'discountAmount';
-                    discountAmountInput.value = appliedDiscountAmount;
-                    form.appendChild(discountAmountInput);
-                }
+                // Discount information is now handled via session, no need to add to form manually
                 
                 this.submit();
             } else {
@@ -824,77 +1114,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Enhanced discount code handling
-    const applyDiscountBtn = document.getElementById('applyDiscountBtn');
-    const discountCodeInput = document.getElementById('discountCode');
-    const discountMessage = document.getElementById('discountMessage');
-    const discountError = document.getElementById('discountError');
-    const discountSection = document.getElementById('discountSection');
-    
-    if (applyDiscountBtn) {
-        applyDiscountBtn.addEventListener('click', function() {
-            const code = discountCodeInput.value.trim();
-            if (!code) {
-                showDiscountMessage(false, 'Please enter a discount code');
-                return;
-            }
-
-            // Get CSRF token
-            const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
-            const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-            
-            // Call API to validate discount code
-            fetch(`/api/discount/validate?code=${encodeURIComponent(code)}&subtotal=${currentTotal}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    [csrfHeader]: csrfToken
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    showDiscountMessage(false, data.error);
-                    currentDiscount = 0;
-                    document.getElementById('appliedDiscountCode').value = '';
-                    document.getElementById('appliedDiscountAmount').value = '';
-                } else {
-                    currentDiscount = parseFloat(data.discountAmount) || 0;
-                    showDiscountMessage(true, data.message);
-                    
-                    // Store discount information in hidden fields
-                    document.getElementById('appliedDiscountCode').value = code;
-                    document.getElementById('appliedDiscountAmount').value = currentDiscount;
-                    
-                    // Update discount section
-                    if (discountSection) {
-                        discountSection.style.display = 'block';
-                        const discountSpan = discountSection.querySelector('span:last-child');
-                        if (discountSpan) {
-                            discountSpan.textContent = `-${new Intl.NumberFormat('vi-VN').format(currentDiscount)} VND`;
-                        }
-                    }
-                }
-                updateTotal();
-            })
-            .catch(error => {
-                console.error('Error validating discount:', error);
-                showDiscountMessage(false, 'Error validating discount code');
-            });
-        });
-    }
-
-    function showDiscountMessage(isSuccess, message) {
-        if (isSuccess) {
-            discountMessage.textContent = message;
-            discountMessage.style.display = 'block';
-            discountError.style.display = 'none';
-        } else {
-            discountError.textContent = message;
-            discountError.style.display = 'block';
-            discountMessage.style.display = 'none';
-        }
-    }
+    // Discount code handling removed - now handled in cart page only
+    // Discount information is passed from cart via session
 
     // Initialize province/district/ward selectors and hooks them to Vietnam address API
     if (document.getElementById('province')) {
@@ -1034,7 +1255,124 @@ document.addEventListener('DOMContentLoaded', function() {
         // Hiển thị lỗi dưới dạng toast
         showToast('error', errorElement.textContent);
     }
+
+    // Debug: Check if CheckoutDiscountSystem is available
+    console.log('CheckoutDiscountSystem available:', typeof CheckoutDiscountSystem);
+
+    // Initialize checkout discount system
+    try {
+        window.checkoutDiscount = new CheckoutDiscountSystem();
+        console.log('CheckoutDiscountSystem initialized successfully');
+
+        // Get order data from the page
+        const orderData = getOrderDataFromPage();
+        console.log('Order data extracted:', orderData);
+
+        window.checkoutDiscount.initializeWithData(orderData);
+
+        // Display existing promotion if any
+        if (appliedPromotion && appliedPromotion.success) {
+            console.log('Displaying existing promotion:', appliedPromotion);
+            window.checkoutDiscount.displayAppliedPromotion(appliedPromotion);
+            window.checkoutDiscount.displayDiscountBreakdown(appliedPromotion);
+        }
+
+        // Initialize shipping fee calculation
+        updateShippingFeeDisplay();
+
+        // Only update total if no promotion applied (server already calculated correctly)
+        if (!appliedPromotion || !appliedPromotion.success) {
+            updateTotal();
+        } else {
+            // Just update discount display, keep server-calculated total
+            updateDiscountDisplay();
+
+            // Ensure CheckoutDiscountSystem doesn't override server total
+            console.log('Preventing CheckoutDiscountSystem from overriding server total');
+        }
+
+        console.log('Checkout initialization completed');
+    } catch (error) {
+        console.error('Error initializing checkout discount system:', error);
+    }
 });
+
+// Function to extract order data from the checkout page
+function getOrderDataFromPage() {
+    const orderData = [];
+
+    // Extract data from DOM instead of serializing complex entities
+    const shopGroups = document.querySelectorAll('.shop-group');
+    console.log(`Found ${shopGroups.length} shop groups`);
+
+    shopGroups.forEach((shopGroup, index) => {
+        const shopNameElement = shopGroup.querySelector('.text-primary.fw-bold');
+        if (!shopNameElement) {
+            console.warn(`Shop group ${index} has no shop name element`);
+            return;
+        }
+
+        const shopName = shopNameElement.textContent.trim();
+        const bookItems = shopGroup.querySelectorAll('.book-item');
+        let subtotal = 0;
+        const orderItems = [];
+
+        console.log(`Shop "${shopName}" has ${bookItems.length} book items`);
+
+        bookItems.forEach((bookItem, itemIndex) => {
+            const titleElement = bookItem.querySelector('.book-title');
+            const priceElement = bookItem.querySelector('.book-price');
+            const quantityElement = bookItem.querySelector('.quantity-badge');
+
+            if (titleElement && priceElement && quantityElement) {
+                const title = titleElement.textContent.trim();
+                const priceText = priceElement.textContent.replace(/[^\d]/g, '');
+                const unitPrice = parseFloat(priceText) || 0;
+                const quantityText = quantityElement.textContent.replace(/[^\d]/g, '');
+                const quantity = parseInt(quantityText) || 1;
+                const totalPrice = unitPrice * quantity;
+
+                subtotal += totalPrice;
+
+                orderItems.push({
+                    bookId: Math.random(), // Temporary ID for preview
+                    bookTitle: title,
+                    quantity: quantity,
+                    unitPrice: unitPrice,
+                    totalPrice: totalPrice
+                });
+
+                console.log(`Item ${itemIndex}: ${title}, Price: ${unitPrice}, Qty: ${quantity}, Total: ${totalPrice}`);
+            } else {
+                console.warn(`Book item ${itemIndex} in shop "${shopName}" missing required elements:`, {
+                    titleElement: !!titleElement,
+                    priceElement: !!priceElement,
+                    quantityElement: !!quantityElement
+                });
+            }
+        });
+
+        // Only add order if it has items and subtotal > 0
+        if (orderItems.length > 0 && subtotal > 0) {
+            const orderData_item = {
+                orderId: Math.random(), // Temporary ID for preview
+                shopName: shopName,
+                subtotal: subtotal,
+                shippingFee: 30000, // Fixed shipping fee
+                totalAmount: subtotal + 30000,
+                items: orderItems
+            };
+
+            orderData.push(orderData_item);
+            console.log(`Added order for shop "${shopName}":`, orderData_item);
+        } else {
+            console.warn(`Skipping shop "${shopName}" - no valid items or zero subtotal. Items: ${orderItems.length}, Subtotal: ${subtotal}`);
+        }
+    });
+
+    console.log('Final order data:', orderData);
+    return orderData;
+}
 </script>
 
 </body>

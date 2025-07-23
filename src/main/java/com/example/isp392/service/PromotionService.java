@@ -4,6 +4,8 @@ import com.example.isp392.dto.PromotionFormDTO;
 import com.example.isp392.model.*;
 import com.example.isp392.repository.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -24,17 +26,20 @@ public class PromotionService {
 
     private final PromotionRepository promotionRepository;
     private final CategoryRepository categoryRepository;
-    private final BookRepository bookRepository;
-    private final ShopRepository shopRepository;
+    private final PromotionUsageRepository promotionUsageRepository;
+    private final CustomerOrderRepository customerOrderRepository;
+    private final UserRepository userRepository;
 
     public PromotionService(PromotionRepository promotionRepository,
                            CategoryRepository categoryRepository,
-                           BookRepository bookRepository,
-                           ShopRepository shopRepository) {
+                           PromotionUsageRepository promotionUsageRepository,
+                           CustomerOrderRepository customerOrderRepository,
+                           UserRepository userRepository) {
         this.promotionRepository = promotionRepository;
         this.categoryRepository = categoryRepository;
-        this.bookRepository = bookRepository;
-        this.shopRepository = shopRepository;
+        this.promotionUsageRepository = promotionUsageRepository;
+        this.customerOrderRepository = customerOrderRepository;
+        this.userRepository = userRepository;
     }
     
     // ==================== CRUD Operations ====================
@@ -94,10 +99,8 @@ public class PromotionService {
         Optional<Promotion> promotionOpt = promotionRepository.findById(id);
         if (promotionOpt.isPresent()) {
             Promotion promotion = promotionOpt.get();
-            // Force initialization of lazy collections
+            // Force initialization of lazy collections - only categories in simplified system
             promotion.getApplicableCategories().size();
-            promotion.getApplicableBooks().size();
-            promotion.getApplicableShops().size();
 
             // Force initialization of lazy user references
             if (promotion.getCreatedBy() != null) {
@@ -163,13 +166,21 @@ public class PromotionService {
         // Validate business rules
         validatePromotionBusinessRules(dto);
 
-        // Check if promotion can be updated (business rules)
-        if (existingPromotion.getCurrentUsageCount() > 0 &&
-            !dto.getCode().equals(existingPromotion.getCode())) {
-            throw new IllegalArgumentException("Cannot change code of a promotion that has been used");
+        // Check if promotion is active - must be deactivated before editing
+        if (existingPromotion.getIsActive()) {
+            throw new IllegalStateException("Promotion must be deactivated before editing. Please deactivate the promotion first.");
         }
 
-        mapDtoToEntity(dto, existingPromotion, currentUser);
+        // Apply different update rules based on usage status
+        if (existingPromotion.isNeverUsed()) {
+            // When never used, all fields can be updated
+            mapDtoToEntity(dto, existingPromotion, currentUser);
+            logger.info("Updated all fields for unused promotion: {}", existingPromotion.getCode());
+        } else {
+            // When used, only certain fields can be updated
+            updateRestrictedPromotionFields(existingPromotion, dto, currentUser);
+            logger.info("Updated restricted fields for used promotion: {}", existingPromotion.getCode());
+        }
         existingPromotion.setUpdatedBy(currentUser);
         existingPromotion.setUpdatedAt(LocalDateTime.now());
 
@@ -180,6 +191,50 @@ public class PromotionService {
         logger.info("Successfully updated promotion with ID: {}", id);
 
         return existingPromotion;
+    }
+
+    /**
+     * Update only allowed fields of a promotion (for used promotions)
+     */
+    private void updateRestrictedPromotionFields(Promotion promotion, PromotionFormDTO dto, User currentUser) {
+        // Only update operational fields that are safe to change after use
+        promotion.setEndDate(dto.getEndDate());
+        promotion.setTotalUsageLimit(dto.getTotalUsageLimit());
+        promotion.setUsageLimitPerUser(dto.getUsageLimitPerUser());
+        promotion.setIsActive(dto.getIsActive());
+
+        // Update metadata
+        promotion.setUpdatedBy(currentUser);
+        promotion.setUpdatedAt(LocalDateTime.now());
+
+        logger.info("Updated restricted fields for used promotion: {} (usage count: {})",
+                   promotion.getCode(), promotion.getCurrentUsageCount());
+    }
+
+    /**
+     * Get promotion edit status with editable fields information
+     */
+    public Map<String, Object> getPromotionEditStatus(Integer id) {
+        Map<String, Object> result = new HashMap<>();
+
+        Optional<Promotion> optionalPromotion = promotionRepository.findById(id);
+        if (optionalPromotion.isPresent()) {
+            Promotion promotion = optionalPromotion.get();
+
+            result.put("id", promotion.getPromotionId());
+            result.put("code", promotion.getCode());
+            result.put("isActive", promotion.getIsActive());
+            result.put("neverUsed", promotion.isNeverUsed());
+            result.put("hasBeenUsed", promotion.hasBeenUsed());
+            result.put("currentUsageCount", promotion.getCurrentUsageCount());
+            result.put("editableFields", promotion.getEditableFields());
+            result.put("nonEditableFields", promotion.getNonEditableFieldsWithReasons());
+
+            return result;
+        }
+
+        result.put("error", "Promotion not found");
+        return result;
     }
 
     /**
@@ -253,36 +308,14 @@ public class PromotionService {
      * Set scope-specific relationships
      */
     private void setScopeRelationships(Promotion promotion, PromotionFormDTO dto) {
-        // Clear existing relationships
+        // Clear existing relationships - only categories in simplified system
         promotion.getApplicableCategories().clear();
-        promotion.getApplicableBooks().clear();
-        promotion.getApplicableShops().clear();
 
         switch (dto.getScopeType()) {
-            case CATEGORY:
-                if (dto.getCategoryIds() != null && !dto.getCategoryIds().isEmpty()) {
-                    Set<Category> categories = categoryRepository.findAllById(dto.getCategoryIds())
-                        .stream().collect(Collectors.toSet());
-                    promotion.setApplicableCategories(categories);
-                }
-                break;
-            case PRODUCT:
-                if (dto.getBookIds() != null && !dto.getBookIds().isEmpty()) {
-                    Set<Book> books = bookRepository.findAllById(dto.getBookIds())
-                        .stream().collect(Collectors.toSet());
-                    promotion.setApplicableBooks(books);
-                }
-                break;
-            case SHOP:
-                if (dto.getShopIds() != null && !dto.getShopIds().isEmpty()) {
-                    Set<Shop> shops = shopRepository.findAllById(dto.getShopIds())
-                        .stream().collect(Collectors.toSet());
-                    promotion.setApplicableShops(shops);
-                }
-                break;
             case SITE_WIDE:
             default:
                 // No specific relationships needed for site-wide promotions
+                // All categories are cleared above
                 break;
         }
     }
@@ -318,9 +351,7 @@ public class PromotionService {
      * @return the usage count
      */
     public int getUserUsageCount(Integer userId, Integer promotionId) {
-        // TODO: In a real application, this would query a user_promotions table
-        // For now, just return 0 to allow usage
-        return 0;
+        return promotionUsageRepository.countByUserIdAndPromotionId(userId, promotionId);
     }
     
     /**
@@ -357,19 +388,52 @@ public class PromotionService {
      */
     @Transactional
     public boolean updatePromotionUsage(String code, Integer userId) {
+        return updatePromotionUsage(code, userId, null, BigDecimal.ZERO);
+    }
+
+    /**
+     * Update promotion usage statistics with customer order details
+     * Uses SERIALIZABLE isolation to prevent race conditions in usage counting
+     * @param code the promotion code
+     * @param userId the user ID who used the promotion
+     * @param customerOrderId the customer order ID (optional)
+     * @param discountAmount the discount amount applied
+     * @return true if updated successfully, false otherwise
+     */
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
+    public boolean updatePromotionUsage(String code, Integer userId, Integer customerOrderId, BigDecimal discountAmount) {
         Optional<Promotion> promotionOpt = promotionRepository.findByCodeAndIsActiveTrue(code);
         if (promotionOpt.isPresent()) {
             Promotion promotion = promotionOpt.get();
-            
+
             // Increment total usage count
             if (promotion.getCurrentUsageCount() == null) {
                 promotion.setCurrentUsageCount(1);
             } else {
                 promotion.setCurrentUsageCount(promotion.getCurrentUsageCount() + 1);
             }
-            
-            // TODO: In a real application, track user-specific usage in a separate table
-            
+
+            // Create usage record
+            try {
+                User user = new User();
+                user.setUserId(userId);
+
+                CustomerOrder customerOrder = null;
+                if (customerOrderId != null) {
+                    customerOrder = customerOrderRepository.findById(customerOrderId).orElse(null);
+                }
+
+                PromotionUsage usage = new PromotionUsage(promotion, user, customerOrder, discountAmount, code);
+                promotionUsageRepository.save(usage);
+
+                logger.info("Created promotion usage record for code: {} by user: {} with discount: {}",
+                           code, userId, discountAmount);
+            } catch (Exception e) {
+                logger.error("Failed to create promotion usage record for code: {} by user: {}: {}",
+                           code, userId, e.getMessage());
+                // Don't fail the promotion update if usage tracking fails
+            }
+
             promotionRepository.save(promotion);
             return true;
         }
@@ -377,7 +441,7 @@ public class PromotionService {
     }
 
     /**
-     * Find promotions applicable to a specific book and shop
+     * Find promotions applicable to a specific book - simplified for site-wide and category only
      */
     public List<Promotion> findApplicablePromotions(Book book, Shop shop) {
         List<Promotion> applicablePromotions = new ArrayList<>();
@@ -385,18 +449,123 @@ public class PromotionService {
         // Add site-wide promotions
         applicablePromotions.addAll(promotionRepository.findSiteWidePromotions());
 
-        // Add book-specific promotions
+        // Add category-specific promotions for the book
         if (book != null) {
-            applicablePromotions.addAll(promotionRepository.findBookPromotions(book.getBookId()));
             applicablePromotions.addAll(promotionRepository.findCategoryPromotions(book.getBookId()));
         }
 
-        // Add shop-specific promotions
-        if (shop != null) {
-            applicablePromotions.addAll(promotionRepository.findShopPromotions(shop.getShopId()));
-        }
+        // Note: Shop-specific and book-specific promotions are no longer supported in simplified system
 
         // Remove duplicates and return
         return applicablePromotions.stream().distinct().collect(Collectors.toList());
+    }
+
+    /**
+     * Validate promotion usage limits with concurrency control
+     * This method checks both global and per-user limits atomically
+     *
+     * @param promotionCode the promotion code to validate
+     * @param userId the user ID attempting to use the promotion
+     * @return true if the promotion can be used, false if limits are exceeded
+     */
+    @Transactional(isolation = Isolation.REPEATABLE_READ, readOnly = true)
+    public boolean validatePromotionUsageLimits(String promotionCode, Integer userId) {
+        logger.info("Validating usage limits for promotion: {} by user: {}", promotionCode, userId);
+
+        Optional<Promotion> promotionOpt = promotionRepository.findByCodeAndIsActiveTrue(promotionCode);
+        if (!promotionOpt.isPresent()) {
+            logger.warn("Promotion not found or inactive: {}", promotionCode);
+            return false;
+        }
+
+        Promotion promotion = promotionOpt.get();
+
+        // Check global usage limit
+        if (promotion.getTotalUsageLimit() != null && promotion.getCurrentUsageCount() != null) {
+            if (promotion.getCurrentUsageCount() >= promotion.getTotalUsageLimit()) {
+                logger.warn("Promotion {} has reached global usage limit: {}/{}",
+                           promotionCode, promotion.getCurrentUsageCount(), promotion.getTotalUsageLimit());
+                return false;
+            }
+        }
+
+        // Check per-user usage limit
+        if (promotion.getUsageLimitPerUser() != null) {
+            User user = userRepository.findById(userId).orElse(null);
+            if (user != null) {
+                long userUsageCount = promotionUsageRepository.countByPromotionAndUser(promotion, user);
+                if (userUsageCount >= promotion.getUsageLimitPerUser()) {
+                    logger.warn("User {} has reached usage limit for promotion {}: {}/{}",
+                               userId, promotionCode, userUsageCount, promotion.getUsageLimitPerUser());
+                    return false;
+                }
+            }
+        }
+
+        logger.info("Promotion usage validation passed for: {} by user: {}", promotionCode, userId);
+        return true;
+    }
+
+    /**
+     * Atomically reserve a promotion usage slot to prevent race conditions
+     * This method should be called before order processing to ensure usage limits are respected
+     *
+     * @param promotionCode the promotion code to reserve
+     * @param userId the user ID attempting to use the promotion
+     * @return true if reservation successful, false if limits would be exceeded
+     */
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
+    public boolean reservePromotionUsage(String promotionCode, Integer userId) {
+        logger.info("Attempting to reserve promotion usage for: {} by user: {}", promotionCode, userId);
+
+        // Re-validate limits within the serializable transaction
+        if (!validatePromotionUsageLimits(promotionCode, userId)) {
+            logger.warn("Promotion usage validation failed during reservation for: {} by user: {}", promotionCode, userId);
+            return false;
+        }
+
+        // Increment usage count atomically
+        Optional<Promotion> promotionOpt = promotionRepository.findByCodeAndIsActiveTrue(promotionCode);
+        if (promotionOpt.isPresent()) {
+            Promotion promotion = promotionOpt.get();
+
+            // Double-check limits one more time within the same transaction
+            if (promotion.getTotalUsageLimit() != null && promotion.getCurrentUsageCount() != null) {
+                if (promotion.getCurrentUsageCount() >= promotion.getTotalUsageLimit()) {
+                    logger.warn("Promotion {} usage limit exceeded during reservation", promotionCode);
+                    return false;
+                }
+            }
+
+            // Increment the usage count to reserve the slot
+            if (promotion.getCurrentUsageCount() == null) {
+                promotion.setCurrentUsageCount(1);
+            } else {
+                promotion.setCurrentUsageCount(promotion.getCurrentUsageCount() + 1);
+            }
+
+            promotionRepository.save(promotion);
+            logger.info("Successfully reserved promotion usage for: {} by user: {}, new count: {}",
+                       promotionCode, userId, promotion.getCurrentUsageCount());
+            return true;
+        }
+
+        logger.error("Promotion not found during reservation: {}", promotionCode);
+        return false;
+    }
+
+    /**
+     * Save a promotion entity
+     */
+    @Transactional
+    public Promotion save(Promotion promotion) {
+        return promotionRepository.save(promotion);
+    }
+
+    /**
+     * Find promotion by ID
+     */
+    public Optional<Promotion> findById(Integer id) {
+        return promotionRepository.findById(id);
     }
 }

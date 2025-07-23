@@ -3,14 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf?.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}"/>
     <title>Order History</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <style>
+        .order-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-processing { background-color: #d1ecf1; color: #0c5460; }
+        .status-shipped { background-color: #cff4fc; color: #055160; }
+        .status-delivered { background-color: #d1e7dd; color: #0f5132; }
+        .status-cancelled { background-color: #f8d7da; color: #721c24; }
+
+        /* Enhanced button styling */
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid transparent;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-sm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn-sm:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn-sm:disabled {
+            transform: none;
+            box-shadow: none;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Specific button styles */
+        .cancel-order-btn {
+            background-color: #fff;
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .cancel-order-btn:hover:not(:disabled) {
+            background-color: #dc3545;
+            color: #fff;
+            border-color: #dc3545;
+        }
+
+        .confirm-delivery-btn {
+            background-color: #198754;
+            border-color: #198754;
+            color: #fff;
+        }
+
+        .confirm-delivery-btn:hover:not(:disabled) {
+            background-color: #157347;
+            border-color: #146c43;
+        }
+
+        .rebuy-order-btn {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+
+        .rebuy-order-btn:hover:not(:disabled) {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+
+        /* Filter and search button improvements */
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.25);
+        }
+
+        .btn-outline-secondary {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-outline-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(108, 117, 125, 0.25);
+        }
+
+        /* Loading spinner animation */
+        .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive button spacing */
+        @media (max-width: 768px) {
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .d-flex.gap-2 {
+                flex-direction: column;
+                gap: 0.5rem !important;
+            }
+        }
+    </style>
 </head>
 <body>
 
+<!-- Header -->
 <div th:replace="~{fragments/header :: header-content}"></div>
 
 <main class="account-page py-5 bg-light">
@@ -22,58 +156,134 @@
             </ol>
         </nav>
         <div class="row">
+            <!-- Sidebar -->
             <div th:replace="fragments/buyer-account-sidebar :: sidebar('orders')"></div>
-
+            
+            <!-- Main Content -->
             <div class="col-lg-9">
+                <!-- Statistics Section -->
+                <div class="row mb-4" th:if="${statistics}">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white rounded-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Tổng đơn hàng</h6>
+                                        <h3 class="mb-0" th:text="${statistics.totalOrders}">0</h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-shopping-cart fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white rounded-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Tổng chi tiêu</h6>
+                                        <h3 class="mb-0" th:text="${#numbers.formatDecimal(statistics.totalSpent, 0, 'COMMA', 0, 'POINT')} + ' VND'">0 VND</h3>
+                                        <small>Đơn hàng đã giao</small>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-money-bill-wave fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white rounded-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Đã giao</h6>
+                                        <h3 class="mb-0" th:text="${statistics.ordersByStatus['DELIVERED'] ?: 0}">0</h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-check-circle fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white rounded-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Đang xử lý</h6>
+                                        <h3 class="mb-0" th:text="${(statistics.ordersByStatus['PENDING'] ?: 0) + (statistics.ordersByStatus['PROCESSING'] ?: 0) + (statistics.ordersByStatus['SHIPPED'] ?: 0)}">0</h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-clock fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card rounded-4 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pt-4 pb-0">
                         <h4 class="mb-0">Order History</h4>
                     </div>
                     <div class="card-body">
+                        <!-- Filters -->
                         <div class="row g-3 mb-4">
-                            <div class="col-md-3">
-                                <label for="statusFilter" class="form-label small text-muted">Status</label>
+                            <div class="col-md-6">
+                                <label for="searchInput" class="form-label small text-muted">Tìm kiếm</label>
+                                <input type="text" class="form-control rounded-3" id="searchInput"
+                                       placeholder="Tìm theo mã đơn hàng hoặc tên sách..."
+                                       th:value="${param.search}">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="statusFilter" class="form-label small text-muted">Trạng thái</label>
                                 <select class="form-select rounded-3" id="statusFilter">
-                                    <option value="">All Statuses</option>
+                                    <option value="">Tất cả</option>
                                     <option th:each="status : ${T(com.example.isp392.model.OrderStatus).values()}"
                                             th:value="${status}"
                                             th:text="${status.toString()}"
-                                            th:selected="${paramStatus != null && paramStatus == status.toString()}">
+                                            th:selected="${param.status != null && param.status[0] == status.toString()}">
                                     </option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label for="dateFrom" class="form-label small text-muted">From Date</label>
+                            <div class="col-md-2">
+                                <label for="dateFrom" class="form-label small text-muted">Từ ngày</label>
                                 <input type="date" class="form-control rounded-3" id="dateFrom"
-                                       th:value="${paramDateFrom}" max="9999-12-31">
+                                       th:value="${param.dateFrom}" max="9999-12-31">
                             </div>
-                            <div class="col-md-3">
-                                <label for="dateTo" class="form-label small text-muted">To Date</label>
+                            <div class="col-md-2">
+                                <label for="dateTo" class="form-label small text-muted">Đến ngày</label>
                                 <input type="date" class="form-control rounded-3" id="dateTo"
-                                       th:value="${paramDateTo}" max="9999-12-31">
+                                       th:value="${param.dateTo}" max="9999-12-31">
                             </div>
-                            <div class="col-md-3 d-flex align-items-end">
-                                <div class="d-flex gap-2 w-100">
-                                    <button class="btn btn-primary rounded-3 flex-grow-1" onclick="filterOrders()">
-                                        <i class="fas fa-filter me-1"></i> Filter
-                                    </button>
-                                    <button class="btn btn-outline-secondary rounded-3" onclick="resetFilters()">
-                                        <i class="fas fa-undo-alt"></i> Reset
-                                    </button>
-                                </div>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 d-flex gap-2">
+                                <button class="btn btn-primary rounded-3" onclick="filterOrders()">
+                                    <i class="fas fa-search me-1"></i> Tìm kiếm
+                                </button>
+                                <button class="btn btn-outline-secondary rounded-3" onclick="resetFilters()">
+                                    <i class="fas fa-undo-alt me-1"></i> Đặt lại
+                                </button>
                             </div>
                         </div>
 
+                        <!-- Alerts -->
                         <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert" th:if="${success != null}">
                             <span th:text="${success}"></span>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-
+                        
                         <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert" th:if="${error != null}">
                             <span th:text="${error}"></span>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
 
+                        <!-- Empty State -->
                         <div class="text-center py-5" th:if="${#lists.isEmpty(orders)}">
                             <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
                             <h5>No Orders Yet</h5>
@@ -81,82 +291,108 @@
                             <a th:href="@{/}" class="btn btn-primary rounded-3">Start Shopping</a>
                         </div>
 
+                        <!-- Order List -->
                         <div th:unless="${#lists.isEmpty(orders)}">
                             <div class="card mb-3 rounded-4 shadow-sm border" th:each="order : ${orders}">
-                                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                                    <div>
-                                        <span class="fw-bold">Order #</span>
-                                        <span th:text="${order.orderId}"></span>
-                                        <span class="ms-3 text-muted" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="d-flex align-items-center mb-1">
+                                                <span class="fw-bold">Order #</span>
+                                                <span th:text="${order.orderId}"></span>
+                                                <span class="ms-3 text-muted" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-store text-primary me-2"></i>
+                                                <span class="text-muted small" th:text="${order.shop.shopName}">Shop Name</span>
+                                            </div>
+                                        </div>
+                                        <span th:class="'order-status status-' + ${#strings.toLowerCase(order.orderStatus)}"
+                                            th:text="${order.orderStatus}">
+                                        </span>
                                     </div>
-                                    <span th:class="'order-status status-' + ${#strings.toLowerCase(order.orderStatus)}"
-                                          th:text="${order.orderStatus}">
-                                    </span>
                                 </div>
+                                <div class="card-body">
+                                    <!-- Show only first item with count -->
+                                    <div class="row align-items-center" th:if="${!order.orderItems.isEmpty()}">
+                                        <div class="col-2 col-md-1">
+                                            <img th:src="${order.orderItems[0].book.coverImgUrl}" 
+                                                class="img-fluid rounded-3" 
+                                                alt="Book cover"
+                                                style="width: 60px;">
+                                        </div>
+                                        <div class="col-10 col-md-7">
+                                            <h6 class="mb-1" th:text="${order.orderItems[0].book.title}"></h6>
+                                            <p class="mb-0 text-muted small">
+                                                <span th:text="${order.orderItems[0].quantity}"></span> x 
+                                                <span th:text="${#numbers.formatDecimal(order.orderItems[0].unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                                                <span th:if="${order.orderItems.size() > 1}" class="ms-2 text-primary">
+                                                    (and <span th:text="${order.orderItems.size() - 1}"></span> other items)
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4 mt-3 mt-md-0 text-md-end">
+                                            <div th:if="${order.discountAmount != null && order.discountAmount > 0}" class="mb-1">
+                                                <small class="text-success">
+                                                    <i class="fas fa-tag"></i> Discount<span th:if="${order.discountCode}" th:text="' (' + ${order.discountCode} + ')'"></span>:
+                                                    -<span th:text="${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                                                </small>
+                                            </div>
+                                            <p class="mb-2">
+                                                <span class="text-muted">Total payment:</span><br/>
+                                                <span class="text-primary fw-bold fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                                            </p>
+                                            <div class="d-flex gap-2 justify-content-md-end">
+                                                <a th:href="@{'/buyer/orders/' + ${order.orderId}}" class="btn btn-outline-primary btn-sm rounded-3">
+                                                    <i class="fas fa-eye"></i> Details
+                                                </a>
 
-                                <div class="card-body p-0">
-                                    <div th:each="item, itemStat : ${order.orderItems}" class="p-3" th:classappend="${!itemStat.last} ? 'border-bottom'">
-                                        <div class="row align-items-center">
-                                            <div class="col-2 col-md-1">
-                                                <img th:src="${item.book.coverImgUrl}" class="img-fluid rounded-3" alt="Book cover" style="width: 60px;">
-                                            </div>
-                                            <div class="col-10 col-md-6">
-                                                <h6 class="mb-1" th:text="${item.book.title}"></h6>
-                                                <p class="mb-0 text-muted small">
-                                                    <span th:text="${item.quantity}"></span> x
-                                                    <span th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
-                                                </p>
-                                            </div>
-                                            <div class="col-md-5 mt-3 mt-md-0 text-md-end">
-                                                <div th:if="${order.orderStatus.name() == 'DELIVERED'}">
-                                                    <a th:if="${reviewedItemIds != null and !reviewedItemIds.contains(item.orderItemId)}"
-                                                       th:href="@{'/buyer/orders/review/' + ${item.orderItemId}}"
-                                                       class="btn btn-warning btn-sm rounded-3">
-                                                        <i class="fas fa-star"></i> Write a Review
-                                                    </a>
-                                                    <a th:if="${reviewedItemIds != null and reviewedItemIds.contains(item.orderItemId)}"
-                                                       th:href="@{'/buyer/orders/review/' + ${item.orderItemId}}"
-                                                       class="btn btn-outline-secondary btn-sm rounded-3">
-                                                        <i class="fas fa-eye"></i> View Your Review
-                                                    </a>
-                                                </div>
+                                                <!-- Cancel button for PROCESSING and SHIPPED orders -->
+                                                <button th:if="${order.orderStatus != null && (order.orderStatus.name() == 'PROCESSING' || order.orderStatus.name() == 'SHIPPED')}"
+                                                        type="button"
+                                                        class="btn btn-outline-danger btn-sm rounded-3 cancel-order-btn"
+                                                        th:data-order-id="${order.orderId}"
+                                                        th:data-order-title="${order.orderItems[0].book.title + (order.orderItems.size() > 1 ? ' và ' + (order.orderItems.size() - 1) + ' sản phẩm khác' : '')}">
+                                                    <i class="fas fa-times"></i> Hủy đơn
+                                                </button>
+
+                                                <!-- Confirm Delivery button for SHIPPED orders -->
+                                                <button th:if="${order.orderStatus != null && order.orderStatus == T(com.example.isp392.model.OrderStatus).SHIPPED}"
+                                                        type="button"
+                                                        class="btn btn-success btn-sm rounded-3 confirm-delivery-btn"
+                                                        th:data-order-id="${order.orderId}"
+                                                        th:data-shop-name="${order.shop.shopName}">
+                                                    <i class="fas fa-check"></i> Đã nhận hàng
+                                                </button>
+
+                                                <!-- Rebuy button for DELIVERED and CANCELLED orders -->
+                                                <button th:if="${order.orderStatus != null && (order.orderStatus.name() == 'DELIVERED' || order.orderStatus.name() == 'CANCELLED')}"
+                                                        type="button"
+                                                        class="btn btn-primary btn-sm rounded-3 rebuy-order-btn"
+                                                        th:data-order-id="${order.orderId}">
+                                                    <i class="fas fa-sync-alt"></i> Mua lại
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="card-footer bg-light d-flex justify-content-between align-items-center py-3">
-                                    <div>
-                                        <span class="text-muted">Total payment:</span>
-                                        <span class="text-primary fw-bold fs-5 ms-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <a th:href="@{'/buyer/orders/' + ${order.orderId}}" class="btn btn-outline-primary btn-sm rounded-3">
-                                            <i class="fas fa-info-circle"></i> Details
-                                        </a>
-                                        <form th:if="${order.orderStatus.name() == 'DELIVERED'}" th:action="@{'/buyer/orders/' + ${order.orderId} + '/rebuy'}" method="post" class="d-inline">
-                                            <button type="submit" class="btn btn-primary btn-sm rounded-3">
-                                                <i class="fas fa-sync-alt"></i> Rebuy
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
                             </div>
 
+                            <!-- Pagination -->
                             <nav th:if="${totalPages > 1}" class="mt-4">
                                 <ul class="pagination justify-content-center">
                                     <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                                        <a class="page-link rounded-start-3" th:href="@{/buyer/orders(page=${currentPage - 1}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}">
+                                        <a class="page-link rounded-start-3" th:href="@{/buyer/orders(page=${currentPage - 1}, status=${param.status}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo}, search=${param.search})}">
                                             <i class="fas fa-chevron-left small"></i>
                                         </a>
                                     </li>
                                     <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
                                         th:classappend="${currentPage == i} ? 'active'">
-                                        <a class="page-link" th:href="@{/buyer/orders(page=${i}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}"
+                                        <a class="page-link" th:href="@{/buyer/orders(page=${i}, status=${param.status}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo}, search=${param.search})}"
                                            th:text="${i + 1}"></a>
                                     </li>
                                     <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                                        <a class="page-link rounded-end-3" th:href="@{/buyer/orders(page=${currentPage + 1}, status=${paramStatus}, dateFrom=${paramDateFrom}, dateTo=${paramDateTo})}">
+                                        <a class="page-link rounded-end-3" th:href="@{/buyer/orders(page=${currentPage + 1}, status=${param.status}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo}, search=${param.search})}">
                                             <i class="fas fa-chevron-right small"></i>
                                         </a>
                                     </li>
@@ -170,12 +406,17 @@
     </div>
 </main>
 
+<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer-content}"></div>
 
+<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
 <script th:src="@{/js/script.js}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM Content Loaded - Initializing order history page');
+
         // Initialize all dropdowns
         var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
         dropdownElementList.forEach(function(dropdownToggleEl) {
@@ -186,31 +427,50 @@
         const dateFrom = document.getElementById('dateFrom');
         const dateTo = document.getElementById('dateTo');
 
-        // Set max date for both to today
-        const today = new Date().toISOString().split('T')[0];
-        dateFrom.max = today;
-        dateTo.max = today;
+        if (dateFrom && dateTo) {
+            // Set max date for both to today
+            const today = new Date().toISOString().split('T')[0];
+            dateFrom.max = today;
+            dateTo.max = today;
 
-        dateFrom.addEventListener('change', function() {
-            dateTo.min = this.value;
-            if (dateTo.value && dateTo.value < this.value) {
-                dateTo.value = this.value;
-            }
-        });
+            dateFrom.addEventListener('change', function() {
+                dateTo.min = this.value;
+                if (dateTo.value && dateTo.value < this.value) {
+                    dateTo.value = this.value;
+                }
+            });
 
-        dateTo.addEventListener('change', function() {
-            if (dateFrom.value && this.value < dateFrom.value) {
-                this.value = dateFrom.value;
-            }
-        });
+            dateTo.addEventListener('change', function() {
+                if (dateFrom.value && this.value < dateFrom.value) {
+                    this.value = dateFrom.value;
+                }
+            });
+        }
+
+        // Add Enter key support for search input
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    filterOrders();
+                }
+            });
+        }
+
+        // Initialize all button event listeners
+        initializeButtonEventListeners();
     });
 
+    // Filter and search functions
     function filterOrders() {
-        const status = document.getElementById('statusFilter').value;
-        const dateFrom = document.getElementById('dateFrom').value;
-        const dateTo = document.getElementById('dateTo').value;
+        console.log('Filter orders called');
+        const search = document.getElementById('searchInput')?.value || '';
+        const status = document.getElementById('statusFilter')?.value || '';
+        const dateFrom = document.getElementById('dateFrom')?.value || '';
+        const dateTo = document.getElementById('dateTo')?.value || '';
 
         let url = '/buyer/orders?';
+        if (search) url += `search=${encodeURIComponent(search)}&`;
         if (status) url += `status=${status}&`;
         if (dateFrom) url += `dateFrom=${dateFrom}&`;
         if (dateTo) url += `dateTo=${dateTo}&`;
@@ -220,15 +480,371 @@
             url = url.slice(0, -1);
         }
 
+        console.log('Redirecting to:', url);
         window.location.href = url;
     }
 
     function resetFilters() {
-        document.getElementById('statusFilter').value = '';
-        document.getElementById('dateFrom').value = '';
-        document.getElementById('dateTo').value = '';
+        console.log('Reset filters called');
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const dateFrom = document.getElementById('dateFrom');
+        const dateTo = document.getElementById('dateTo');
+
+        if (searchInput) searchInput.value = '';
+        if (statusFilter) statusFilter.value = '';
+        if (dateFrom) dateFrom.value = '';
+        if (dateTo) dateTo.value = '';
+
         window.location.href = '/buyer/orders';
     }
+
+    // Initialize all button event listeners
+    function initializeButtonEventListeners() {
+        console.log('Initializing button event listeners');
+        let currentOrderId = null;
+
+        // Cancel order functionality
+        const cancelButtons = document.querySelectorAll('.cancel-order-btn');
+        console.log('Found', cancelButtons.length, 'cancel buttons');
+
+        cancelButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                console.log('Cancel button clicked for order:', this.getAttribute('data-order-id'));
+                currentOrderId = this.getAttribute('data-order-id');
+                const orderTitle = this.getAttribute('data-order-title');
+
+                // Set order title in modal
+                const titleElement = document.getElementById('cancelOrderTitle');
+                if (titleElement) {
+                    titleElement.textContent = orderTitle;
+                }
+
+                // Reset form
+                const reasonSelect = document.getElementById('cancellationReason');
+                const customReason = document.getElementById('customReason');
+                const customReasonDiv = document.getElementById('customReasonDiv');
+
+                if (reasonSelect) reasonSelect.value = '';
+                if (customReason) customReason.value = '';
+                if (customReasonDiv) customReasonDiv.style.display = 'none';
+
+                // Show modal
+                const modalElement = document.getElementById('cancelOrderModal');
+                if (modalElement) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
+            });
+        });
+
+        // Handle reason dropdown change
+        const reasonSelect = document.getElementById('cancellationReason');
+        if (reasonSelect) {
+            reasonSelect.addEventListener('change', function() {
+                const customReasonDiv = document.getElementById('customReasonDiv');
+                const customReason = document.getElementById('customReason');
+
+                if (this.value === 'Khác') {
+                    if (customReasonDiv) customReasonDiv.style.display = 'block';
+                    if (customReason) customReason.required = true;
+                } else {
+                    if (customReasonDiv) customReasonDiv.style.display = 'none';
+                    if (customReason) customReason.required = false;
+                }
+            });
+        }
+
+        // Handle confirm cancel button
+        const confirmCancelBtn = document.getElementById('confirmCancelOrder');
+        if (confirmCancelBtn) {
+            confirmCancelBtn.addEventListener('click', function() {
+                const reasonSelect = document.getElementById('cancellationReason');
+                const customReason = document.getElementById('customReason');
+
+                if (!reasonSelect || !reasonSelect.value) {
+                    alert('Vui lòng chọn lý do hủy đơn hàng');
+                    return;
+                }
+
+                let finalReason = reasonSelect.value;
+                if (reasonSelect.value === 'Khác') {
+                    if (!customReason || !customReason.value.trim()) {
+                        alert('Vui lòng nhập chi tiết lý do hủy đơn hàng');
+                        return;
+                    }
+                    finalReason = customReason.value.trim();
+                }
+
+                // Close modal
+                const modalElement = document.getElementById('cancelOrderModal');
+                if (modalElement) {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                }
+
+                // Cancel order
+                cancelOrder(currentOrderId, finalReason);
+            });
+        }
+
+        // Rebuy order functionality
+        const rebuyButtons = document.querySelectorAll('.rebuy-order-btn');
+        console.log('Found', rebuyButtons.length, 'rebuy buttons');
+
+        rebuyButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                console.log('Rebuy button clicked for order:', orderId);
+                rebuyOrder(orderId);
+            });
+        });
+
+        // Confirm delivery functionality
+        const confirmDeliveryButtons = document.querySelectorAll('.confirm-delivery-btn');
+        console.log('Found', confirmDeliveryButtons.length, 'confirm delivery buttons');
+
+        confirmDeliveryButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                const shopName = this.getAttribute('data-shop-name');
+
+                console.log('Confirm delivery clicked for order:', orderId, 'shop:', shopName);
+
+                if (confirm(`Bạn có chắc chắn đã nhận được đơn hàng từ ${shopName}?`)) {
+                    confirmDelivery(orderId);
+                }
+            });
+        });
+    }
+
+    function cancelOrder(orderId, reason) {
+        console.log('Cancel order function called for order:', orderId, 'reason:', reason);
+
+        // Show loading state
+        const button = document.querySelector(`[data-order-id="${orderId}"].cancel-order-btn`);
+        if (!button) {
+            console.error('Cancel button not found for order:', orderId);
+            return;
+        }
+
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang hủy...';
+        button.disabled = true;
+
+        // Get CSRF token
+        const token = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+        const header = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+        const headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+
+        if (token && header) {
+            headers[header] = token;
+        }
+
+        fetch('/buyer/cancel', {
+            method: 'POST',
+            headers: headers,
+            body: `orderId=${orderId}&reason=${encodeURIComponent(reason)}`
+        })
+        .then(response => {
+            console.log('Cancel order response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Cancel order response data:', data);
+            if (data.success) {
+                alert('Đơn hàng đã được hủy thành công!');
+                location.reload(); // Refresh page to show updated status
+            } else {
+                alert('Lỗi: ' + (data.message || 'Không thể hủy đơn hàng'));
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Cancel order error:', error);
+            alert('Có lỗi xảy ra khi hủy đơn hàng');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+
+    function rebuyOrder(orderId) {
+        console.log('Rebuy order function called for order:', orderId);
+
+        // Show loading state
+        const button = document.querySelector(`[data-order-id="${orderId}"].rebuy-order-btn`);
+        if (!button) {
+            console.error('Rebuy button not found for order:', orderId);
+            return;
+        }
+
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+        button.disabled = true;
+
+        // Get CSRF token
+        const token = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+        const header = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+        const headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+
+        if (token && header) {
+            headers[header] = token;
+        }
+
+        fetch('/buyer/rebuy', {
+            method: 'POST',
+            headers: headers,
+            body: `orderId=${orderId}`
+        })
+        .then(response => {
+            console.log('Rebuy order response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Rebuy order response data:', data);
+            if (data.success) {
+                alert('Sản phẩm đã được thêm vào giỏ hàng!');
+                if (data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
+                }
+            } else {
+                alert('Lỗi: ' + (data.message || 'Không thể mua lại đơn hàng'));
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Rebuy order error:', error);
+            alert('Có lỗi xảy ra khi mua lại đơn hàng');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+
+    function confirmDelivery(orderId) {
+        console.log('Confirm delivery function called for order:', orderId);
+
+        // Show loading state
+        const button = document.querySelector(`[data-order-id="${orderId}"].confirm-delivery-btn`);
+        if (!button) {
+            console.error('Confirm delivery button not found for order:', orderId);
+            return;
+        }
+
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+        button.disabled = true;
+
+        // Get CSRF token
+        const token = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+        const header = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+
+        if (token && header) {
+            headers[header] = token;
+        } else {
+            console.warn('CSRF token not found');
+        }
+
+        console.log('Sending confirm delivery request for order:', orderId);
+
+        fetch(`/buyer/orders/${orderId}/confirm-delivery`, {
+            method: 'POST',
+            headers: headers
+        })
+        .then(response => {
+            console.log('Confirm delivery response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Confirm delivery response data:', data);
+            if (data.success) {
+                alert('Đã xác nhận nhận hàng thành công!');
+                location.reload(); // Reload to update the UI
+            } else {
+                alert('Có lỗi xảy ra: ' + (data.message || 'Không thể xác nhận nhận hàng'));
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Confirm delivery error:', error);
+            alert('Có lỗi xảy ra khi xác nhận nhận hàng');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
 </script>
+
+<!-- Cancel Order Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelOrderModalLabel">
+                    <i class="fas fa-times-circle text-danger me-2"></i>Hủy đơn hàng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Lưu ý:</strong> Sau khi hủy đơn hàng, số lượng sản phẩm sẽ được hoàn lại vào kho và bạn không thể hoàn tác thao tác này.
+                </div>
+
+                <div class="mb-3">
+                    <strong>Đơn hàng:</strong> <span id="cancelOrderTitle"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="cancellationReason" class="form-label">
+                        <i class="fas fa-list me-1"></i>Lý do hủy đơn hàng <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="cancellationReason" required>
+                        <option value="">-- Chọn lý do hủy đơn hàng --</option>
+                        <option value="Đặt sai sản phẩm">Đặt sai sản phẩm</option>
+                        <option value="Muốn áp dụng mã giảm giá">Muốn áp dụng mã giảm giá</option>
+                        <option value="Không còn nhu cầu">Không còn nhu cầu</option>
+                        <option value="Sai địa chỉ giao hàng">Sai địa chỉ giao hàng</option>
+                        <option value="Tìm được giá tốt hơn">Tìm được giá tốt hơn</option>
+                        <option value="Thay đổi ý định">Thay đổi ý định</option>
+                        <option value="Đặt trùng đơn hàng">Đặt trùng đơn hàng</option>
+                        <option value="Khác">Khác (vui lòng ghi rõ)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3" id="customReasonDiv" style="display: none;">
+                    <label for="customReason" class="form-label">
+                        <i class="fas fa-edit me-1"></i>Chi tiết lý do
+                    </label>
+                    <textarea class="form-control" id="customReason" rows="3"
+                              placeholder="Vui lòng nhập chi tiết lý do hủy đơn hàng..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Hủy bỏ
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmCancelOrder">
+                    <i class="fas fa-check me-1"></i>Xác nhận hủy đơn
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

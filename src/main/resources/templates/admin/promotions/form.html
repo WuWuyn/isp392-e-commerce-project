@@ -14,6 +14,24 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
 
     <style>
+        .field-disabled {
+            background-color: #f8f9fa !important;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .edit-restriction-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .vnd-input {
+            text-align: right;
+        }
+    </style>
+
+    <style>
         body {
             font-family: 'Open Sans', sans-serif;
             background-color: #F8F5F0;
@@ -198,13 +216,10 @@
                     <div class="col-md-4">
                         <div class="mb-3">
                             <label for="maxDiscountAmount" class="form-label">Max Discount Amount</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="maxDiscountAmount" th:field="*{maxDiscountAmount}"
-                                       th:class="${#fields.hasErrors('maxDiscountAmount')} ? 'form-control is-invalid' : 'form-control'"
-                                       step="1" min="1" placeholder="100000">
-                                <span class="input-group-text">VNĐ</span>
-                            </div>
-                            <div class="form-text">Số tiền giảm giá tối đa cho khuyến mãi theo phần trăm</div>
+                            <input type="number" class="form-control" id="maxDiscountAmount" th:field="*{maxDiscountAmount}"
+                                   th:class="${#fields.hasErrors('maxDiscountAmount')} ? 'form-control is-invalid' : 'form-control'"
+                                   step="0.01" min="0" placeholder="100000">
+                            <div class="form-text">Maximum discount amount for percentage promotions (in VND)</div>
                             <div th:if="${#fields.hasErrors('maxDiscountAmount')}" class="invalid-feedback" th:errors="*{maxDiscountAmount}"></div>
                         </div>
                     </div>
@@ -213,13 +228,10 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="minOrderValue" class="form-label">Minimum Order Value</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="minOrderValue" th:field="*{minOrderValue}"
-                                       th:class="${#fields.hasErrors('minOrderValue')} ? 'form-control is-invalid' : 'form-control'"
-                                       step="1" min="1" placeholder="50000">
-                                <span class="input-group-text">VNĐ</span>
-                            </div>
-                            <div class="form-text">Giá trị đơn hàng tối thiểu để sử dụng khuyến mãi này</div>
+                            <input type="number" class="form-control" id="minOrderValue" th:field="*{minOrderValue}"
+                                   th:class="${#fields.hasErrors('minOrderValue')} ? 'form-control is-invalid' : 'form-control'"
+                                   step="0.01" min="0" placeholder="50000">
+                            <div class="form-text">Minimum order value to use this promotion (in VND)</div>
                             <div th:if="${#fields.hasErrors('minOrderValue')}" class="invalid-feedback" th:errors="*{minOrderValue}"></div>
                         </div>
                     </div>
@@ -260,29 +272,7 @@
                     </div>
                 </div>
 
-                <!-- Shop Selection -->
-                <div id="shopScope" class="scope-selection">
-                    <div class="mb-3">
-                        <label for="shopIds" class="form-label">Select Shops</label>
-                        <select class="form-select" id="shopIds" th:field="*{shopIds}" multiple>
-                            <option th:each="shop : ${shops}" 
-                                    th:value="${shop.shopId}" 
-                                    th:text="${shop.shopName}">Shop</option>
-                        </select>
-                        <div class="form-text">Select one or more shops for this promotion</div>
-                    </div>
-                </div>
-
-                <!-- Product Selection -->
-                <div id="productScope" class="scope-selection">
-                    <div class="mb-3">
-                        <label for="bookIds" class="form-label">Select Products</label>
-                        <select class="form-select" id="bookIds" th:field="*{bookIds}" multiple>
-                            <!-- Products will be loaded via AJAX -->
-                        </select>
-                        <div class="form-text">Search and select specific products for this promotion</div>
-                    </div>
-                </div>
+                <!-- Removed shop and product selection for simplified system -->
             </div>
 
                     <!-- Time Configuration -->
@@ -339,33 +329,23 @@
                 </div>
             </div>
 
-                    <!-- Status Configuration -->
+                    <!-- Status Configuration - Simplified -->
                     <div class="form-section">
                         <h5 class="form-section-title">
                             <i class="fas fa-toggle-on"></i> Status Configuration
                         </h5>
                 <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-select" id="status" th:field="*{status}"
-                                    th:class="${#fields.hasErrors('status')} ? 'form-select is-invalid' : 'form-select'">
-                                <option th:each="statusOption : ${statusOptions}" 
-                                        th:value="${statusOption}" 
-                                        th:text="${statusOption.displayName}">Status</option>
-                            </select>
-                            <div th:if="${#fields.hasErrors('status')}" class="invalid-feedback" th:errors="*{status}"></div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="isActive" th:field="*{isActive}">
+                                <input class="form-check-input" type="checkbox" id="isActive" th:field="*{isActive}" checked>
                                 <label class="form-check-label" for="isActive">
-                                    Active
+                                    <strong>Active Promotion</strong>
                                 </label>
                             </div>
-                            <div class="form-text">Enable or disable this promotion</div>
+                            <div class="form-text">Promotions are automatically set to active when created. Uncheck to disable.</div>
+                            <!-- Hidden field for status - automatically set to ACTIVE -->
+                            <input type="hidden" th:field="*{status}" th:value="ACTIVE">
                         </div>
                     </div>
                 </div>
@@ -395,31 +375,25 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- VND Formatter -->
+    <script th:src="@{/js/vnd-formatter.js}"></script>
     <script>
         $(document).ready(function() {
-            // Initialize Select2 for multi-select fields
-            $('#categoryIds, #shopIds, #bookIds').select2({
-                placeholder: 'Select items...',
+            // Initialize Select2 for category selection only
+            $('#categoryIds').select2({
+                placeholder: 'Select categories...',
                 allowClear: true
             });
 
-            // Handle scope type changes
+            // Handle scope type changes - simplified for only SITE_WIDE and CATEGORY
             $('#scopeType').change(function() {
                 const scopeType = $(this).val();
                 $('.scope-selection').removeClass('active');
-                
-                switch(scopeType) {
-                    case 'CATEGORY':
-                        $('#categoryScope').addClass('active');
-                        break;
-                    case 'SHOP':
-                        $('#shopScope').addClass('active');
-                        break;
-                    case 'PRODUCT':
-                        $('#productScope').addClass('active');
-                        loadProducts();
-                        break;
+
+                if (scopeType === 'CATEGORY') {
+                    $('#categoryScope').addClass('active');
                 }
+                // SITE_WIDE doesn't need any specific selection
             });
 
             // Handle promotion type changes
@@ -431,10 +405,12 @@
                     discountUnit.text('%');
                     $('#discountValue').attr('max', '100');
                     $('#discountValue').attr('step', '0.01');
+                    $('#discountValue').attr('placeholder', '10');
                 } else {
-                    discountUnit.text('VNĐ');
+                    discountUnit.text('VND');
                     $('#discountValue').removeAttr('max');
-                    $('#discountValue').attr('step', '1');
+                    $('#discountValue').attr('step', '0.01');
+                    $('#discountValue').attr('placeholder', '50000');
                 }
             });
 
@@ -455,29 +431,190 @@
                 $('#promotionType').trigger('change');
             }
 
-            // Load products via AJAX
-            function loadProducts() {
-                $('#bookIds').html('<option value="">Loading products...</option>');
+            // Add client-side validation for promotion fields
+            addPromotionValidation();
 
-                // In a real implementation, you would make an AJAX call to load products
-                // $.ajax({
-                //     url: '/admin/api/books/search',
-                //     method: 'GET',
-                //     success: function(data) {
-                //         let options = '<option value="">Select products...</option>';
-                //         data.forEach(function(book) {
-                //             options += `<option value="${book.bookId}">${book.title}</option>`;
-                //         });
-                //         $('#bookIds').html(options);
-                //     }
-                // });
-
-                // For now, show placeholder
-                setTimeout(function() {
-                    $('#bookIds').html('<option value="">Search for products...</option>');
-                }, 1000);
+            // Check edit restrictions for existing promotions
+            const promotionId = $('input[name="promotionId"]').val();
+            if (promotionId) {
+                checkEditRestrictions(promotionId);
             }
+
+            // Handle form submission - convert VND formatted values to plain numbers
+            $('form').on('submit', function(e) {
+                console.log('Form submission started - converting VND formatted values');
+
+                // Convert VND formatted fields to plain numbers before submission
+                $('.vnd-input').each(function() {
+                    const $input = $(this);
+                    const formattedValue = $input.val();
+
+                    if (formattedValue && formattedValue.trim() !== '') {
+                        // Parse the formatted value to get plain number
+                        const plainValue = window.VNDFormatter ?
+                            VNDFormatter.parse(formattedValue) :
+                            parseFloat(formattedValue.replace(/,/g, ''));
+
+                        // Set the plain number value (or empty string if null)
+                        $input.val(plainValue !== null ? plainValue : '');
+
+                        console.log('Converted', $input.attr('id'), 'from', formattedValue, 'to', plainValue);
+                    } else {
+                        // Clear empty fields to ensure they're sent as empty strings
+                        $input.val('');
+                        console.log('Cleared empty field:', $input.attr('id'));
+                    }
+                });
+
+                console.log('Form submission conversion completed');
+            });
+
+            // Removed product loading function as it's not needed in simplified system
         });
+
+        // Function to check edit restrictions based on promotion usage
+        function checkEditRestrictions(promotionId) {
+            $.get('/admin/promotions/' + promotionId + '/edit-status')
+                .done(function(data) {
+                    if (data.hasBeenUsed) {
+                        showEditRestrictions(data);
+                        applyFieldRestrictions(data.editableFields);
+                    }
+                })
+                .fail(function() {
+                    console.error('Failed to get promotion edit status');
+                });
+        }
+
+        // Show edit restrictions info
+        function showEditRestrictions(data) {
+            const infoHtml = `
+                <div class="edit-restriction-info">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Edit Restrictions</h6>
+                    <p><strong>This promotion has been used ${data.currentUsageCount} time(s).</strong></p>
+                    <p>Only the following fields can be edited:</p>
+                    <ul>
+                        <li>End Date (to extend promotion)</li>
+                        <li>Total Usage Limit (to increase limit)</li>
+                        <li>Usage Limit Per User (to increase limit)</li>
+                        <li>Active Status (to enable/disable)</li>
+                    </ul>
+                    <p class="mb-0"><small class="text-muted">Core promotion terms (code, discount value, minimum order value) cannot be changed after use.</small></p>
+                </div>
+            `;
+            $('.card-body').first().prepend(infoHtml);
+        }
+
+        // Apply field restrictions
+        function applyFieldRestrictions(editableFields) {
+            const allFields = ['code', 'discountValue', 'maxDiscountAmount', 'minOrderValue', 'endDate', 'totalUsageLimit', 'usageLimitPerUser', 'isActive'];
+
+            allFields.forEach(function(field) {
+                if (!editableFields.includes(field)) {
+                    const fieldElement = $('#' + field);
+                    fieldElement.prop('disabled', true);
+                    fieldElement.addClass('field-disabled');
+
+                    // Add tooltip explaining why field is disabled
+                    fieldElement.attr('title', 'This field cannot be edited because the promotion has been used');
+                    fieldElement.tooltip();
+                }
+            });
+        }
+
+        // Toggle promotion active status
+        function togglePromotionActive(promotionId) {
+            $.post('/admin/promotions/' + promotionId + '/toggle-active')
+                .done(function(data) {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to toggle promotion status'));
+                    }
+                })
+                .fail(function() {
+                    alert('Failed to toggle promotion status');
+                });
+        }
+
+        // Add client-side validation for promotion fields
+        function addPromotionValidation() {
+            // Validate percentage discount value
+            $('#discountValue').on('input blur', function() {
+                const promotionType = $('#promotionType').val();
+                const value = parseFloat($(this).val());
+
+                if (promotionType === 'PERCENTAGE_DISCOUNT' && value > 100) {
+                    $(this).addClass('is-invalid');
+                    showFieldError($(this), 'Percentage discount cannot exceed 100%');
+                } else {
+                    $(this).removeClass('is-invalid');
+                    hideFieldError($(this));
+                }
+            });
+
+            // Validate max discount amount vs min order value for percentage discounts
+            $('#maxDiscountAmount, #minOrderValue, #discountValue').on('input blur', function() {
+                validateDiscountLogic();
+            });
+
+            // Validate fixed amount vs min order value
+            $('#discountValue, #minOrderValue').on('input blur', function() {
+                const promotionType = $('#promotionType').val();
+                if (promotionType === 'FIXED_AMOUNT_DISCOUNT') {
+                    validateFixedAmountDiscount();
+                }
+            });
+        }
+
+        function validateDiscountLogic() {
+            const promotionType = $('#promotionType').val();
+            const discountValue = parseFloat($('#discountValue').val());
+            const maxDiscountAmount = parseFloat($('#maxDiscountAmount').val());
+            const minOrderValue = parseFloat($('#minOrderValue').val());
+
+            if (promotionType === 'PERCENTAGE_DISCOUNT' &&
+                !isNaN(discountValue) && !isNaN(maxDiscountAmount) && !isNaN(minOrderValue)) {
+
+                const discountAtMinOrder = minOrderValue * (discountValue / 100);
+
+                if (maxDiscountAmount < discountAtMinOrder) {
+                    $('#maxDiscountAmount').addClass('is-invalid');
+                    showFieldError($('#maxDiscountAmount'),
+                        'Max discount seems too low compared to minimum order value and discount percentage');
+                } else {
+                    $('#maxDiscountAmount').removeClass('is-invalid');
+                    hideFieldError($('#maxDiscountAmount'));
+                }
+            }
+        }
+
+        function validateFixedAmountDiscount() {
+            const discountValue = parseFloat($('#discountValue').val());
+            const minOrderValue = parseFloat($('#minOrderValue').val());
+
+            if (!isNaN(discountValue) && !isNaN(minOrderValue) && discountValue >= minOrderValue) {
+                $('#discountValue').addClass('is-invalid');
+                showFieldError($('#discountValue'),
+                    'Fixed discount amount should be less than minimum order value');
+            } else {
+                $('#discountValue').removeClass('is-invalid');
+                hideFieldError($('#discountValue'));
+            }
+        }
+
+        function showFieldError(field, message) {
+            let errorDiv = field.parent().find('.invalid-feedback');
+            if (errorDiv.length === 0) {
+                errorDiv = $('<div class="invalid-feedback"></div>');
+                field.parent().append(errorDiv);
+            }
+            errorDiv.text(message);
+        }
+
+        function hideFieldError(field) {
+            field.parent().find('.invalid-feedback').remove();
+        }
     </script>
 </body>
 </html>

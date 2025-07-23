@@ -41,6 +41,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addResourceLocations("classpath:/static/css/")
                 .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
                 .setCachePeriod(31556926);
+
+        // Add handler for uploaded files
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/")
+                .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS));
     }
 
     @Bean

@@ -34,12 +34,12 @@ public class PromotionFormDTO {
     @Digits(integer = 16, fraction = 2, message = "Invalid discount value format")
     private BigDecimal discountValue;
 
-    @DecimalMin(value = "0.01", message = "Max discount amount must be greater than 0")
     @Digits(integer = 16, fraction = 2, message = "Invalid max discount amount format")
+    @DecimalMin(value = "0.01", message = "Max discount amount must be greater than 0")
     private BigDecimal maxDiscountAmount;
 
-    @DecimalMin(value = "0.01", message = "Min order value must be greater than 0")
     @Digits(integer = 16, fraction = 2, message = "Invalid min order value format")
+    @DecimalMin(value = "0.01", message = "Min order value must be greater than 0")
     private BigDecimal minOrderValue;
 
     @NotNull(message = "Scope type is required")
@@ -54,7 +54,7 @@ public class PromotionFormDTO {
     private Boolean isActive = true;
 
     @NotNull(message = "Status is required")
-    private Promotion.PromotionStatus status = Promotion.PromotionStatus.DRAFT;
+    private Promotion.PromotionStatus status = Promotion.PromotionStatus.ACTIVE;
 
     @Min(value = 1, message = "Usage limit per user must be at least 1")
     private Integer usageLimitPerUser;
@@ -62,10 +62,8 @@ public class PromotionFormDTO {
     @Min(value = 1, message = "Total usage limit must be at least 1")
     private Integer totalUsageLimit;
 
-    // Scope-specific fields
+    // Scope-specific fields - Only categories for simplified system
     private List<Integer> categoryIds;
-    private List<Integer> bookIds;
-    private List<Integer> shopIds;
 
     // Validation methods
     @AssertTrue(message = "End date must be after start date")
@@ -76,13 +74,7 @@ public class PromotionFormDTO {
         return endDate.isAfter(startDate);
     }
 
-    @AssertTrue(message = "Start date must be in the future")
-    public boolean isStartDateInFuture() {
-        if (startDate == null) {
-            return true; // Let @NotNull handle null validation
-        }
-        return startDate.isAfter(LocalDateTime.now().minusMinutes(1)); // Allow 1 minute tolerance
-    }
+    // Removed strict future date validation to allow immediate promotions
 
     @AssertTrue(message = "For percentage discounts, value must be between 1 and 100")
     public boolean isValidPercentageDiscount() {
@@ -110,30 +102,38 @@ public class PromotionFormDTO {
         if (promotionType == null || discountValue == null || maxDiscountAmount == null) {
             return true;
         }
-        
+
         if (promotionType == Promotion.PromotionType.FIXED_AMOUNT_DISCOUNT) {
-            return maxDiscountAmount.compareTo(discountValue) <= 0;
+            // FIXED_AMOUNT_DISCOUNT promotions don't use max discount amount
+            return true;
         }
         return true;
     }
 
-    @AssertTrue(message = "Scope-specific items must be selected for non-site-wide promotions")
+    @AssertTrue(message = "Max discount amount must be greater than 0 when specified")
+    public boolean isMaxDiscountAmountValid() {
+        if (maxDiscountAmount == null) {
+            return true; // Allow null values
+        }
+        return maxDiscountAmount.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    @AssertTrue(message = "Min order value must be greater than 0 when specified")
+    public boolean isMinOrderValueValid() {
+        if (minOrderValue == null) {
+            return true; // Allow null values
+        }
+        return minOrderValue.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    @AssertTrue(message = "Categories must be selected for category-specific promotions")
     public boolean isScopeItemsValid() {
         if (scopeType == null) {
             return true;
         }
-        
-        switch (scopeType) {
-            case CATEGORY:
-                return categoryIds != null && !categoryIds.isEmpty();
-            case PRODUCT:
-                return bookIds != null && !bookIds.isEmpty();
-            case SHOP:
-                return shopIds != null && !shopIds.isEmpty();
-            case SITE_WIDE:
-            default:
-                return true;
-        }
+
+        // Only site-wide promotions are supported now
+        return true; // Site-wide promotions don't need specific items
     }
 
     // Helper method to get discount type string for backward compatibility
@@ -141,18 +141,12 @@ public class PromotionFormDTO {
         if (promotionType == null) {
             return null;
         }
-        
+
         switch (promotionType) {
             case PERCENTAGE_DISCOUNT:
                 return "PERCENTAGE";
             case FIXED_AMOUNT_DISCOUNT:
                 return "FIXED_AMOUNT";
-            case BUY_ONE_GET_ONE:
-                return "BOGO";
-            case FREE_SHIPPING:
-                return "FREE_SHIPPING";
-            case BUNDLE_DISCOUNT:
-                return "BUNDLE";
             default:
                 return "PERCENTAGE";
         }

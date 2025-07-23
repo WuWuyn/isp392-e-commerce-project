@@ -79,9 +79,8 @@
                                             <small class="text-muted" th:text="${#temporals.format(customerOrder.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
                                         </div>
                                         <div>
-                                            <span th:class="'badge ' + (${customerOrder.status.name() == 'PENDING'} ? 'bg-warning' : 
-                                                                      ${customerOrder.status.name() == 'PROCESSING'} ? 'bg-info' : 
-                                                                      ${customerOrder.status.name() == 'SHIPPED'} ? 'bg-primary' : 
+                                            <span th:class="'badge ' + (${customerOrder.status.name() == 'PROCESSING'} ? 'bg-info' :
+                                                                      ${customerOrder.status.name() == 'SHIPPED'} ? 'bg-primary' :
                                                                       ${customerOrder.status.name() == 'DELIVERED'} ? 'bg-success' : 'bg-danger')"
                                                   th:text="${customerOrder.status}">
                                             </span>

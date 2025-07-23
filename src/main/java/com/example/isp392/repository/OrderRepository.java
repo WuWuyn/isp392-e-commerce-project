@@ -338,7 +338,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * 
      * @return Total order value
      */
-    @Query(value = "SELECT COALESCE(SUM(total_amount), 0) FROM customer_orders " +
+    @Query(value = "SELECT COALESCE(SUM(final_total_amount), 0) FROM customer_orders " +
            "WHERE status NOT IN ('CANCELLED', 'REFUNDED')",
            nativeQuery = true)
     BigDecimal calculateTotalOrderValue();
@@ -411,7 +411,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @return List of recent orders
      */
     @Query(value = "SELECT TOP(:limit) co.customer_order_id AS order_id, co.created_at AS order_date, co.status, " +
-           "co.total_amount, u.full_name AS customer_name " +
+           "co.final_total_amount AS total_amount, u.full_name AS customer_name " +
            "FROM customer_orders co " +
            "JOIN users u ON co.user_id = u.user_id " +
            "ORDER BY co.created_at DESC",
@@ -437,7 +437,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @param commissionRate Platform commission rate (decimal)
      * @return Total platform revenue
      */
-    @Query(value = "SELECT COALESCE(SUM(total_amount * :commissionRate), 0) " +
+    @Query(value = "SELECT COALESCE(SUM(final_total_amount * :commissionRate), 0) " +
            "FROM customer_orders " +
            "WHERE status NOT IN ('CANCELLED', 'REFUNDED') " +
            "AND CAST(created_at AS DATE) BETWEEN :startDate AND :endDate",
@@ -475,4 +475,19 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             @Param("commissionRate") BigDecimal commissionRate);
-} 
+
+    /**
+     * Count total orders for a user
+     */
+    Long countByCustomerOrderUser(User user);
+
+    /**
+     * Count orders by user and status
+     */
+    Long countByCustomerOrderUserAndOrderStatus(User user, OrderStatus orderStatus);
+
+    /**
+     * Find orders by user and status
+     */
+    List<Order> findByCustomerOrderUserAndOrderStatus(User user, OrderStatus orderStatus);
+}

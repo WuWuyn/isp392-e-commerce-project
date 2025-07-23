@@ -12,6 +12,67 @@
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .search-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 2rem 0;
+            border-radius: 15px;
+            margin: 0 -15px;
+        }
+
+        .search-form .input-group {
+            border-radius: 50px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .search-input {
+            border: none;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            background: white;
+        }
+
+        .search-input:focus {
+            box-shadow: none;
+            border: none;
+            background: white;
+        }
+
+        .search-btn {
+            border: none;
+            padding: 1rem 2rem;
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            background: linear-gradient(45deg, #0056b3, #004085);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        }
+
+        .search-suggestions {
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .search-section {
+                padding: 1.5rem 0;
+                margin: 0 -10px;
+            }
+
+            .search-input {
+                font-size: 1rem;
+                padding: 0.8rem 1rem;
+            }
+
+            .search-btn {
+                padding: 0.8rem 1.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -39,21 +100,42 @@
                 </div>
             </div>
 
-            <!-- Category scroll filters - dynamic from database -->
-            <div class="shop-category-filters-scrollable mt-4">
-                <div class="d-flex justify-content-start flex-nowrap overflow-auto">
-                    <!-- All books filter option -->
-                    <a th:href="@{/all-category}" class="btn shop-category-filter-btn" th:classappend="${selectedCategoryIds == null || selectedCategoryIds.isEmpty() ? 'active' : ''}"><i class="fas fa-book me-2"></i>All Books</a>
-                    
-                    <!-- Dynamic categories from database -->
-                    <a th:each="category : ${allCategories}" 
-                       th:href="@{/all-category(category=${category.categoryId})}" 
-                       class="btn shop-category-filter-btn"
-                       th:classappend="${selectedCategoryIds != null && selectedCategoryIds.contains(category.categoryId) ? 'active' : ''}"
-                       th:attr="data-category-id=${category.categoryId}">
-                        <i class="fas fa-bookmark me-2"></i>
-                        <span th:text="${category.categoryName}">Category Name</span>
-                    </a>
+            <!-- Enhanced Search Bar -->
+            <div class="search-section mt-4">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 col-md-10">
+                        <form id="searchForm" th:action="@{/all-category}" method="get" class="search-form">
+                            <!-- Hidden inputs to preserve filters -->
+                            <input type="hidden" name="page" value="0">
+                            <input type="hidden" name="size" value="12">
+                            <input type="hidden" name="sort" th:value="${sortField}">
+                            <input type="hidden" name="direction" th:value="${sortDirection}">
+                            <input type="hidden" name="category" th:each="catId : ${selectedCategoryIds}" th:value="${catId}">
+                            <input type="hidden" name="publisher" th:each="pubId : ${selectedPublisherIds}" th:value="${pubId}">
+                            <input type="hidden" name="priceRange" th:each="range : ${selectedPriceRanges}" th:value="${range}">
+                            <input type="hidden" name="rating" th:value="${minRating}">
+
+                            <div class="input-group input-group-lg shadow-sm">
+                                <input type="text"
+                                       name="search"
+                                       class="form-control search-input"
+                                       placeholder="Search by book title, author, ISBN, or category..."
+                                       th:value="${searchQuery}"
+                                       autocomplete="off">
+                                <button class="btn btn-primary search-btn" type="submit">
+                                    <i class="fas fa-search me-2"></i>Search
+                                </button>
+                            </div>
+
+                            <!-- Search suggestions (optional enhancement) -->
+                            <div class="search-suggestions mt-2" style="display: none;">
+                                <small class="text-muted">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Try searching for: "Harry Potter", "Stephen King", "978-0-123456-78-9", "Fiction"
+                                </small>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -328,32 +410,38 @@
                 document.getElementById('filterForm').submit();
             });
         }
-        
-        // Make category links in the top bar use the form
-        const categoryLinks = document.querySelectorAll('.shop-category-filter-btn');
-        categoryLinks.forEach(link => {
-            link.addEventListener('click', function(event) {
-                event.preventDefault();
-                const categoryId = this.getAttribute('data-category-id');
-                const form = document.getElementById('filterForm');
-                
-                // Clear any existing category inputs
-                const existingInputs = form.querySelectorAll('input[name="category"]');
-                existingInputs.forEach(input => input.remove());
-                
-                // If this isn't the "All Books" link, add the category
-                if (categoryId) {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'category';
-                    input.value = categoryId;
-                    form.appendChild(input);
+
+        // Enhanced search functionality
+        const searchInput = document.querySelector('.search-input');
+        const searchForm = document.getElementById('searchForm');
+
+        if (searchInput && searchForm) {
+            // Add search suggestions on focus
+            searchInput.addEventListener('focus', function() {
+                const suggestions = document.querySelector('.search-suggestions');
+                if (suggestions) {
+                    suggestions.style.display = 'block';
                 }
-                
-                // Submit the form
-                form.submit();
             });
-        });
+
+            // Hide suggestions on blur (with delay to allow clicking)
+            searchInput.addEventListener('blur', function() {
+                setTimeout(() => {
+                    const suggestions = document.querySelector('.search-suggestions');
+                    if (suggestions) {
+                        suggestions.style.display = 'none';
+                    }
+                }, 200);
+            });
+
+            // Submit form on Enter key
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchForm.submit();
+                }
+            });
+        }
     });
 </script>
 </body>

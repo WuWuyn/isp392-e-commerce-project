@@ -1,9 +1,12 @@
 package com.example.isp392.controller;
 
+import com.example.isp392.dto.CheckoutDiscountBreakdown;
+import com.example.isp392.model.Book;
 import com.example.isp392.model.Promotion;
 import com.example.isp392.model.User;
+import com.example.isp392.service.BookService;
 import com.example.isp392.service.CartService;
-import com.example.isp392.service.PromotionService;
+import com.example.isp392.service.PromotionCalculationService;
 import com.example.isp392.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -16,10 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Controller responsible for AJAX operations on the buyer's cart such as
@@ -36,133 +36,37 @@ public class CartController {
 
     private final CartService cartService;
     private final UserService userService;
-    private final PromotionService promotionService;
+    private final PromotionCalculationService promotionCalculationService;
+    private final BookService bookService;
 
-    public CartController(CartService cartService, UserService userService, PromotionService promotionService) {
+    public CartController(CartService cartService, UserService userService,
+                         PromotionCalculationService promotionCalculationService, BookService bookService) {
         this.cartService = cartService;
         this.userService = userService;
-        this.promotionService = promotionService;
+        this.promotionCalculationService = promotionCalculationService;
+        this.bookService = bookService;
     }
 
+
+
     /**
-     * Apply a discount code to the cart.
-     * @param payload JSON payload containing the discount code
-     * @return HTTP 200 with success status and discount amount if valid, 400 otherwise
+     * Clear applied discount from session
      */
-    @PostMapping("/apply-discount")
+    @PostMapping("/clear-discount")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> applyDiscount(@RequestBody Map<String, String> payload) {
-        Optional<User> userOptional = getAuthenticatedUser();
+    public ResponseEntity<Map<String, Object>> clearDiscount(HttpSession session) {
         Map<String, Object> response = new HashMap<>();
-        
-        if (userOptional.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Người dùng chưa đăng nhập");
-            return ResponseEntity.badRequest().body(response);
-        }
-        
-        String code = payload.get("code");
-        if (code == null || code.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Mã giảm giá không được để trống");
-            return ResponseEntity.badRequest().body(response);
-        }
-        
-        User user = userOptional.get();
-        try {
-            // Find the promotion by code
-            Optional<Promotion> promotionOpt = promotionService.findByCode(code);
-            
-            if (promotionOpt.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Mã giảm giá không tồn tại");
-                return ResponseEntity.ok(response);
-            }
-            
-            Promotion promotion = promotionOpt.get();
-            
-            // Check if promotion is active
-            if (!promotion.getIsActive()) {
-                response.put("success", false);
-                response.put("message", "Mã giảm giá đã hết hạn");
-                return ResponseEntity.ok(response);
-            }
-            
-            // Check if promotion is within valid date range
-            LocalDateTime now = LocalDateTime.now();
-            if (now.isBefore(promotion.getStartDate()) || now.isAfter(promotion.getEndDate())) {
-                response.put("success", false);
-                response.put("message", "Mã giảm giá không trong thời gian sử dụng");
-                return ResponseEntity.ok(response);
-            }
-            
-            // Check usage limit per user if applicable
-            if (promotion.getUsageLimitPerUser() != null && promotion.getUsageLimitPerUser() > 0) {
-                int userUsageCount = promotionService.getUserUsageCount(user.getUserId(), promotion.getPromotionId());
-                if (userUsageCount >= promotion.getUsageLimitPerUser()) {
-                    response.put("success", false);
-                    response.put("message", "Bạn đã sử dụng hết số lần cho phép của mã giảm giá này");
-                    return ResponseEntity.ok(response);
-                }
-            }
-            
-            // Check total usage limit if applicable
-            if (promotion.getTotalUsageLimit() != null && promotion.getTotalUsageLimit() > 0) {
-                if (promotion.getCurrentUsageCount() >= promotion.getTotalUsageLimit()) {
-                    response.put("success", false);
-                    response.put("message", "Mã giảm giá đã hết lượt sử dụng");
-                    return ResponseEntity.ok(response);
-                }
-            }
-            
-            // Get cart total
-            BigDecimal cartTotal = cartService.getCartTotal(user);
-            
-            // Check minimum order value if applicable
-            if (promotion.getMinOrderValue() != null && cartTotal.compareTo(promotion.getMinOrderValue()) < 0) {
-                response.put("success", false);
-                response.put("message", "Giá trị đơn hàng tối thiểu để sử dụng mã này là " + 
-                             promotion.getMinOrderValue().toString() + " VND");
-                return ResponseEntity.ok(response);
-            }
-            
-            // Calculate discount amount
-            BigDecimal discountAmount;
-            if ("PERCENTAGE".equals(promotion.getDiscountType())) {
-                discountAmount = cartTotal.multiply(promotion.getDiscountValue().divide(new BigDecimal(100)));
-                
-                // Apply max discount amount if applicable
-                if (promotion.getMaxDiscountAmount() != null && 
-                    discountAmount.compareTo(promotion.getMaxDiscountAmount()) > 0) {
-                    discountAmount = promotion.getMaxDiscountAmount();
-                }
-            } else {
-                // Fixed amount discount
-                discountAmount = promotion.getDiscountValue();
-                
-                // Ensure discount doesn't exceed cart total
-                if (discountAmount.compareTo(cartTotal) > 0) {
-                    discountAmount = cartTotal;
-                }
-            }
-            
-            response.put("success", true);
-            response.put("message", "Áp dụng mã giảm giá thành công");
-            response.put("discountAmount", discountAmount);
-            response.put("discountCode", promotion.getCode());
-            response.put("discountDescription", promotion.getDescription());
-            
-            log.debug("Applied discount code {} for user {}, amount: {}", 
-                     code, user.getEmail(), discountAmount);
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("Error applying discount code: {}", e.getMessage());
-            response.put("success", false);
-            response.put("message", "Có lỗi xảy ra khi áp dụng mã giảm giá");
-            return ResponseEntity.badRequest().body(response);
-        }
+
+        // Remove discount from session
+        session.removeAttribute("appliedDiscountCode");
+        session.removeAttribute("appliedDiscountAmount");
+        session.removeAttribute("appliedDiscountDescription");
+
+        response.put("success", true);
+        response.put("message", "Discount cleared successfully");
+
+        log.debug("Cleared discount from session");
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -183,13 +87,11 @@ public class CartController {
 
         User user = userOptional.get();
         try {
-            // Use the cartService to get the total quantity
-            int totalQuantity = cartService.getCartForUser(user).getItems().stream()
-                                    .mapToInt(item -> item.getQuantity() != null ? item.getQuantity() : 0)
-                                    .sum();
+            // Count unique items instead of total quantity
+            int uniqueItemCount = cartService.getCartForUser(user).getItems().size();
 
             response.put("success", true);
-            response.put("totalQuantity", totalQuantity);
+            response.put("totalQuantity", uniqueItemCount);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error getting cart total quantity: {}", e.getMessage());
@@ -432,6 +334,184 @@ public class CartController {
     }
 
     // ---------- Helper methods ----------
+
+    /**
+     * Apply promotion to selected cart items (simplified)
+     */
+    @PostMapping("/apply-promotion")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> applyPromotion(
+            @RequestBody Map<String, Object> request,
+            Authentication authentication,
+            HttpSession session) {
+
+        log.info("Applying promotion in cart: {}", request);
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            if (authentication == null) {
+                response.put("success", false);
+                response.put("message", "Please login to apply promotion");
+                return ResponseEntity.ok(response);
+            }
+
+            String email = authentication.getName();
+            User user = userService.findByEmail(email).orElseThrow(() ->
+                    new IllegalArgumentException("User not found"));
+
+            String promotionCode = (String) request.get("promotionCode");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> selectedItemsData = (List<Map<String, Object>>) request.get("selectedItems");
+
+            if (promotionCode == null || promotionCode.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Promotion code is required");
+                return ResponseEntity.ok(response);
+            }
+
+            if (selectedItemsData == null || selectedItemsData.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "No items selected");
+                return ResponseEntity.ok(response);
+            }
+
+            // Calculate total order value from selected items
+            BigDecimal totalOrderValue = BigDecimal.ZERO;
+            Map<Integer, BigDecimal> shopTotals = new HashMap<>();
+
+            for (Map<String, Object> itemData : selectedItemsData) {
+                Integer bookId = safeToInteger(itemData.get("bookId"), "bookId");
+                Integer quantity = safeToInteger(itemData.get("quantity"), "quantity");
+                BigDecimal price = safeToBigDecimal(itemData.get("price"), "price");
+
+                BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(quantity));
+
+                // Get book to determine shop
+                Book book = bookService.getBookById(bookId).orElseThrow(() ->
+                        new IllegalArgumentException("Book not found: " + bookId));
+
+                Integer shopId = book.getShop().getShopId();
+                shopTotals.merge(shopId, itemTotal, BigDecimal::add);
+                totalOrderValue = totalOrderValue.add(itemTotal);
+            }
+
+            // Add shipping fees (30,000 VND per shop)
+            BigDecimal totalShippingFee = new BigDecimal("30000").multiply(BigDecimal.valueOf(shopTotals.size()));
+            totalOrderValue = totalOrderValue.add(totalShippingFee);
+
+            // Apply promotion using simple calculation
+            PromotionCalculationService.PromotionApplicationResult result =
+                promotionCalculationService.applyPromotion(promotionCode, user, totalOrderValue);
+
+            if (result.isSuccess()) {
+                // Create simple breakdown for session storage
+                CheckoutDiscountBreakdown breakdown = new CheckoutDiscountBreakdown();
+                breakdown.setSuccess(true);
+                breakdown.setPromoCode(promotionCode);
+                breakdown.setTotalDiscount(result.getDiscountAmount());
+                breakdown.setMessage("Promotion applied successfully");
+
+                // Store in session for checkout
+                session.setAttribute("appliedPromotion", breakdown);
+                log.info("Applied promotion {} in cart with discount: {}", promotionCode, result.getDiscountAmount());
+
+                response.put("success", true);
+                response.put("promoCode", promotionCode);
+                response.put("totalDiscount", result.getDiscountAmount());
+                response.put("message", "Promotion applied successfully");
+            } else {
+                response.put("success", false);
+                response.put("message", result.getErrorMessage());
+            }
+
+        } catch (Exception e) {
+            log.error("Error applying promotion in cart", e);
+            response.put("success", false);
+            response.put("message", "Error applying promotion: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Store promotion in session for checkout
+     */
+    @PostMapping("/store-promotion")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> storePromotion(
+            @RequestBody CheckoutDiscountBreakdown promotion,
+            HttpSession session) {
+
+        log.info("Storing promotion in session: {}", promotion.getPromoCode());
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            session.setAttribute("appliedPromotion", promotion);
+            response.put("success", true);
+            response.put("message", "Promotion stored successfully");
+        } catch (Exception e) {
+            log.error("Error storing promotion", e);
+            response.put("success", false);
+            response.put("message", "Error storing promotion");
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Remove promotion from session
+     */
+    @PostMapping("/remove-promotion")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> removePromotion(HttpSession session) {
+        log.info("Removing promotion from session");
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            session.removeAttribute("appliedPromotion");
+            response.put("success", true);
+            response.put("message", "Promotion removed successfully");
+        } catch (Exception e) {
+            log.error("Error removing promotion", e);
+            response.put("success", false);
+            response.put("message", "Error removing promotion");
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Safely convert object to Integer (handles Integer, Double, String)
+     */
+    private Integer safeToInteger(Object obj, String fieldName) {
+        if (obj instanceof Integer) {
+            return (Integer) obj;
+        } else if (obj instanceof Double) {
+            return ((Double) obj).intValue();
+        } else if (obj instanceof String) {
+            return Integer.parseInt((String) obj);
+        } else {
+            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + obj);
+        }
+    }
+
+    /**
+     * Safely convert object to BigDecimal (handles Integer, Double, String)
+     */
+    private BigDecimal safeToBigDecimal(Object obj, String fieldName) {
+        if (obj instanceof Integer) {
+            return BigDecimal.valueOf((Integer) obj);
+        } else if (obj instanceof Double) {
+            return BigDecimal.valueOf((Double) obj);
+        } else if (obj instanceof String) {
+            return new BigDecimal((String) obj);
+        } else {
+            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + obj);
+        }
+    }
 
     /**
      * Convenience method to retrieve the currently authenticated user as Optional.

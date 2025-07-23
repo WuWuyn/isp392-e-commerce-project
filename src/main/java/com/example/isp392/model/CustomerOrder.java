@@ -64,15 +64,29 @@ public class CustomerOrder {
     @Column(name = "payment_url")
     private String paymentUrl;
 
+    @Column(name = "vnpay_transaction_id", length = 100)
+    private String vnpayTransactionId;
+
     // Order totals
+    @Column(name = "original_total_amount", precision = 18, scale = 0)
+    private BigDecimal originalTotalAmount; // Total before discount (subtotal + shipping)
+
+    @Column(name = "final_total_amount", nullable = false, precision = 18, scale = 0)
+    private BigDecimal finalTotalAmount = BigDecimal.ZERO; // Total after discount (original - discount)
+
+    // Legacy total_amount field for database compatibility
     @Column(name = "total_amount", nullable = false, precision = 18, scale = 0)
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    private BigDecimal totalAmount = BigDecimal.ZERO; // Should match finalTotalAmount
 
     @Column(name = "shipping_fee", nullable = false, precision = 18, scale = 0)
     private BigDecimal shippingFee = BigDecimal.ZERO;
 
     @Column(name = "discount_amount", nullable = false, precision = 18, scale = 0)
     private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    // Promotion code that was applied to this customer order
+    @Column(name = "promotion_code", length = 50)
+    private String promotionCode;
 
     // Overall status (aggregated from individual orders)
     @Enumerated(EnumType.STRING)
@@ -110,10 +124,10 @@ public class CustomerOrder {
     }
     
     /**
-     * Calculate total amount from all orders
-     * @return calculated total amount
+     * Calculate final total amount from all orders
+     * @return calculated final total amount
      */
-    public BigDecimal calculateTotalAmount() {
+    public BigDecimal calculateFinalTotalAmount() {
         BigDecimal total = BigDecimal.ZERO;
         if (orders != null) {
             for (Order order : orders) {
@@ -122,7 +136,43 @@ public class CustomerOrder {
                 }
             }
         }
-        return total.add(shippingFee).subtract(discountAmount);
+        // Individual order totals already include shipping fees and discounts
+        return total;
+    }
+
+    /**
+     * Calculate total amount (legacy method - redirects to calculateFinalTotalAmount)
+     * @return calculated final total amount
+     */
+    public BigDecimal calculateTotalAmount() {
+        return calculateFinalTotalAmount();
+    }
+
+    /**
+     * Calculate and set the original and final total amounts
+     * This method should be called whenever totals are updated
+     */
+    public void calculateAndSetTotalAmounts() {
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalShipping = BigDecimal.ZERO;
+
+        // Calculate subtotal and shipping from orders
+        if (orders != null) {
+            for (Order order : orders) {
+                if (order.getSubTotal() != null) {
+                    subtotal = subtotal.add(order.getSubTotal());
+                }
+                if (order.getShippingFee() != null) {
+                    totalShipping = totalShipping.add(order.getShippingFee());
+                }
+            }
+        }
+
+        // Set calculated values
+        this.shippingFee = totalShipping;
+        this.originalTotalAmount = subtotal.add(totalShipping);
+        this.finalTotalAmount = this.originalTotalAmount.subtract(this.discountAmount != null ? this.discountAmount : BigDecimal.ZERO);
+        this.totalAmount = this.finalTotalAmount; // Keep totalAmount in sync
     }
     
     /**
@@ -164,11 +214,53 @@ public class CustomerOrder {
     }
     
     /**
-     * Get the total amount
+     * Get the total amount (returns the actual totalAmount field)
      * @return the total amount
      */
     public BigDecimal getTotalAmount() {
         return totalAmount;
+    }
+
+    /**
+     * Set the total amount (sets both totalAmount and finalTotalAmount for consistency)
+     * @param totalAmount the total amount to set
+     */
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+        this.finalTotalAmount = totalAmount; // Keep them in sync
+    }
+
+    /**
+     * Get the original total amount (before discount)
+     * @return the original total amount
+     */
+    public BigDecimal getOriginalTotalAmount() {
+        return originalTotalAmount;
+    }
+
+    /**
+     * Set the original total amount (before discount)
+     * @param originalTotalAmount the original total amount to set
+     */
+    public void setOriginalTotalAmount(BigDecimal originalTotalAmount) {
+        this.originalTotalAmount = originalTotalAmount;
+    }
+
+    /**
+     * Get the final total amount (after discount)
+     * @return the final total amount
+     */
+    public BigDecimal getFinalTotalAmount() {
+        return finalTotalAmount;
+    }
+
+    /**
+     * Set the final total amount (after discount)
+     * @param finalTotalAmount the final total amount to set
+     */
+    public void setFinalTotalAmount(BigDecimal finalTotalAmount) {
+        this.finalTotalAmount = finalTotalAmount;
+        this.totalAmount = finalTotalAmount; // Keep them in sync
     }
     
     /**

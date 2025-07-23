@@ -27,6 +27,7 @@ public class OrderDTO {
     // Order details
     private String notes;
     private String discountCode;
+    private String promotionCode; // Added for promotion tracking
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal discountAmount;

@@ -40,7 +40,11 @@ public class Order {
 
     //Tiền khi áp mã giảm giá
     @Column(name = "discount_amount", nullable = false, precision = 18, scale = 0)
-    private BigDecimal discountAmount;
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    //Mã giảm giá được áp dụng
+    @Column(name = "discount_code", length = 50)
+    private String discountCode;
 
     //sub_total + shipping_fee - discount_amount
     @Column(name = "total_amount", nullable = false, precision = 18, scale = 0)

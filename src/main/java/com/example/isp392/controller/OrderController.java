@@ -5,15 +5,17 @@ import com.example.isp392.service.CartService;
 import com.example.isp392.service.CustomerOrderService;
 import com.example.isp392.service.OrderService;
 import com.example.isp392.service.UserService;
-import com.example.isp392.service.BookReviewService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -25,18 +27,18 @@ import java.util.Optional;
 @RequestMapping("/buyer")
 public class OrderController {
 
+    private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
+
     private final OrderService orderService;
     private final CartService cartService;
     private final UserService userService;
     private final CustomerOrderService customerOrderService;
-    private final BookReviewService bookReviewService;
 
-    public OrderController(OrderService orderService, CartService cartService, UserService userService, CustomerOrderService customerOrderService, BookReviewService bookReviewService) {
+    public OrderController(OrderService orderService, CartService cartService, UserService userService, CustomerOrderService customerOrderService) {
         this.orderService = orderService;
         this.cartService = cartService;
         this.userService = userService;
         this.customerOrderService = customerOrderService;
-        this.bookReviewService = bookReviewService;
     }
 
     @GetMapping("/orders")
@@ -45,31 +47,32 @@ public class OrderController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) LocalDate dateFrom,
             @RequestParam(required = false) LocalDate dateTo,
+            @RequestParam(required = false) String search,
             Model model,
             Authentication authentication) {
 
-        User user = getCurrentUser(authentication); // Sử dụng helper method
-        if (user == null) {
-            return "redirect:/buyer/login";
-        }
+        User user = userService.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Page<Order> orderPage = orderService.findOrders(
-                user, status, dateFrom, dateTo, PageRequest.of(page, 10) // Giả sử 1 trang 10 đơn hàng
+        // Get individual orders with filters (display individual orders, not grouped by CustomerOrder), sorted by newest first
+        Sort sort = Sort.by(Sort.Direction.DESC, "orderDate");
+        Page<Order> orderPage = orderService.findOrdersWithSearch(
+            user, status, dateFrom, dateTo, search, PageRequest.of(page, 10, sort)
         );
 
-        // **PHẦN THÊM VÀO TỪ PHƯƠNG THỨC CŨ**
-        // Lấy danh sách ID các sản phẩm đã được đánh giá
-        model.addAttribute("reviewedItemIds", bookReviewService.getReviewedItemIdsForUser(user));
+        // Calculate statistics
+        Map<String, Object> statistics = orderService.getOrderStatistics(user);
 
-        // Phần còn lại giữ nguyên
         model.addAttribute("orders", orderPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", orderPage.getTotalPages());
+        model.addAttribute("statistics", statistics);
 
-        // Giữ lại các tham số lọc để dùng cho các liên kết phân trang
+        // Preserve filter parameters for pagination links
         model.addAttribute("paramStatus", status);
         model.addAttribute("paramDateFrom", dateFrom);
         model.addAttribute("paramDateTo", dateTo);
+        model.addAttribute("paramSearch", search);
 
         return "buyer/order-history";
     }
@@ -78,54 +81,54 @@ public class OrderController {
     public String getOrderDetail(@PathVariable Integer orderId, Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+                
         Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
         if (orderOpt.isEmpty()) {
             return "redirect:/buyer/orders";
         }
-
+        
         Order order = orderOpt.get();
 
         model.addAttribute("order", order);
         return "buyer/order-detail";
     }
-
+    
     @PostMapping("/orders/{orderId}/cancel")
     @ResponseBody
     public ResponseEntity<?> cancelOrder(@PathVariable Integer orderId, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+                
         Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
         if (orderOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("Đơn hàng không tồn tại");
         }
-
+        
         Order order = orderOpt.get();
         if (!order.canCancel()) {
             return ResponseEntity.badRequest().body("Không thể hủy đơn hàng ở trạng thái hiện tại");
         }
-
+        
         orderService.updateOrderStatus(orderId, OrderStatus.CANCELLED);
-
+        
         Map<String, String> response = new HashMap<>();
         response.put("status", "success");
         response.put("message", "Đơn hàng đã được hủy thành công");
-
+        
         return ResponseEntity.ok(response);
     }
-
+    
     @PostMapping("/orders/{orderId}/rebuy")
     public String rebuyOrder(@PathVariable Integer orderId, Authentication authentication, RedirectAttributes redirectAttributes) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+                
         Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
         if (orderOpt.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Đơn hàng không tồn tại");
             return "redirect:/buyer/orders";
         }
-
+        
         Order order = orderOpt.get();
         // Add items from order to cart
         order.getOrderItems().forEach(item -> {
@@ -135,7 +138,7 @@ public class OrderController {
                 redirectAttributes.addFlashAttribute("error", "Không thể thêm sản phẩm: " + e.getMessage());
             }
         });
-
+        
         redirectAttributes.addFlashAttribute("success", "Đã thêm các sản phẩm vào giỏ hàng");
         return "redirect:/buyer/cart";
     }
@@ -149,103 +152,187 @@ public class OrderController {
             RedirectAttributes redirectAttributes) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+        
         try {
             cartService.addBookToCart(user, bookId, quantity);
             redirectAttributes.addFlashAttribute("success", "Sản phẩm đã được thêm vào giỏ hàng!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Không thể thêm sản phẩm: " + e.getMessage());
         }
-
+        
         return "redirect:/buyer/cart";
     }
 
     @GetMapping("/order-success")
-    public String orderSuccessPage(@RequestParam Integer customerOrderId, Model model, Authentication authentication) {
+    public String orderSuccessPage(@RequestParam(required = false) Integer customerOrderId,
+                                 @RequestParam(required = false) Integer orderId,
+                                 Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
-        if (customerOrderOpt.isEmpty()) {
+        CustomerOrder customerOrder = null;
+
+        // Handle both customerOrderId and orderId parameters
+        if (customerOrderId != null) {
+            // Direct customer order lookup
+            Optional<CustomerOrder> customerOrderOpt = customerOrderService.findByIdAndUser(customerOrderId, user);
+            if (customerOrderOpt.isEmpty()) {
+                return "redirect:/buyer/orders";
+            }
+            customerOrder = customerOrderOpt.get();
+        } else if (orderId != null) {
+            // Lookup via individual order
+            Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
+            if (orderOpt.isEmpty()) {
+                return "redirect:/buyer/orders";
+            }
+            customerOrder = orderOpt.get().getCustomerOrder();
+            if (customerOrder == null) {
+                return "redirect:/buyer/orders";
+            }
+        } else {
+            // No valid parameters provided
             return "redirect:/buyer/orders";
         }
 
-        model.addAttribute("customerOrder", customerOrderOpt.get());
+        model.addAttribute("customerOrder", customerOrder);
         return "buyer/order-success";
     }
 
-    @GetMapping("/orders/review/{orderItemId}")
-    public String showReviewForm(@PathVariable("orderItemId") Integer orderItemId, Model model, Authentication authentication) {
-        User currentUser = getCurrentUser(authentication);
-        if (currentUser == null) return "redirect:/buyer/login";
+    /**
+     * Cancel an order
+     */
+    @PostMapping("/cancel")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> cancelOrder(@RequestParam Integer orderId,
+                                                          @RequestParam String reason,
+                                                          Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-        Optional<OrderItem> orderItemOpt = orderService.findOrderItemById(orderItemId);
-
-        // SỬA LỖI Ở ĐÂY
-        if (orderItemOpt.isEmpty() || !orderItemOpt.get().getOrder().getCustomerOrder().getUser().equals(currentUser)) {
-            return "redirect:/buyer/orders?error=Invalid item";
+        if (authentication == null) {
+            response.put("success", false);
+            response.put("message", "Bạn cần đăng nhập để thực hiện chức năng này");
+            return ResponseEntity.status(401).body(response);
         }
 
-        model.addAttribute("review", bookReviewService.getOrCreateReview(currentUser, orderItemId));
-        model.addAttribute("isEditing", bookReviewService.isExistingReview(currentUser, orderItemId));
-        model.addAttribute("orderItem", orderItemOpt.get());
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return "buyer/review-form";
+            boolean success = orderService.cancelOrderWithReason(orderId, reason, user);
+
+            if (success) {
+                response.put("success", true);
+                response.put("message", "Đơn hàng đã được hủy thành công");
+            } else {
+                response.put("success", false);
+                response.put("message", "Không thể hủy đơn hàng này");
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error cancelling order: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi hủy đơn hàng");
+            return ResponseEntity.status(500).body(response);
+        }
     }
 
-    @PostMapping("/orders/review")
-    public String submitReview(@ModelAttribute BookReview review,
-                               @RequestParam("orderItemId") Integer orderItemId,
-                               RedirectAttributes redirectAttributes, Authentication authentication) {
+    /**
+     * Rebuy items from a delivered order
+     */
+    @PostMapping("/rebuy")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> rebuyOrder(@RequestParam Integer orderId,
+                                                         Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-        User currentUser = getCurrentUser(authentication);
-        if (currentUser == null) return "redirect:/buyer/login";
-
-        Optional<OrderItem> orderItemOpt = orderService.findOrderItemById(orderItemId);
-
-        // SỬA LỖI Ở ĐÂY
-        if (orderItemOpt.isEmpty() || !orderItemOpt.get().getOrder().getCustomerOrder().getUser().equals(currentUser)) {
-            redirectAttributes.addFlashAttribute("error", "An error occurred. Invalid item.");
-            return "redirect:/buyer/orders";
+        if (authentication == null) {
+            response.put("success", false);
+            response.put("message", "Bạn cần đăng nhập để thực hiện chức năng này");
+            return ResponseEntity.status(401).body(response);
         }
 
-        boolean isEditing = bookReviewService.isExistingReview(currentUser, orderItemId);
-        bookReviewService.saveOrUpdateReview(review, currentUser, orderItemOpt.get());
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String message = isEditing ? "Your review has been updated successfully!" : "Thank you for your review!";
-        redirectAttributes.addFlashAttribute("success", message);
+            boolean success = orderService.rebuyOrder(orderId, user);
 
-        return "redirect:/buyer/orders";
+            if (success) {
+                response.put("success", true);
+                response.put("message", "Sản phẩm đã được thêm vào giỏ hàng");
+                response.put("redirectUrl", "/buyer/cart");
+            } else {
+                response.put("success", false);
+                response.put("message", "Không thể mua lại đơn hàng này");
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error rebuying order: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi mua lại đơn hàng");
+            return ResponseEntity.status(500).body(response);
+        }
     }
 
-    // Phương thức này không cần sửa, giữ nguyên
-    private User getCurrentUser(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return null;
-        }
-        String email = authentication.getName();
-        return userService.findByEmail(email).orElse(null);
-    }
+    /**
+     * Confirm delivery of an order (buyer confirms they received the order)
+     */
+    @PostMapping("/orders/{orderId}/confirm-delivery")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> confirmDelivery(@PathVariable Integer orderId,
+                                                              Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-    // Phương thức này không cần sửa, giữ nguyên
-    @PostMapping("/orders/review/delete")
-    public String deleteReview(@RequestParam("reviewId") Integer reviewId,
-                               Authentication authentication,
-                               RedirectAttributes redirectAttributes) {
-
-        User currentUser = getCurrentUser(authentication);
-        if (currentUser == null) {
-            return "redirect:/buyer/login";
+        if (authentication == null) {
+            response.put("success", false);
+            response.put("message", "Bạn cần đăng nhập để thực hiện chức năng này");
+            return ResponseEntity.status(401).body(response);
         }
 
-        boolean isDeleted = bookReviewService.deleteReview(reviewId, currentUser);
+        try {
+            User user = userService.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (isDeleted) {
-            redirectAttributes.addFlashAttribute("success", "Your review has been deleted successfully.");
-        } else {
-            redirectAttributes.addFlashAttribute("error", "Could not delete the review. It may not exist or you do not have permission.");
+            Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
+            if (orderOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Đơn hàng không tồn tại hoặc không thuộc về bạn");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            Order order = orderOpt.get();
+
+            // Check if order is in SHIPPED status
+            if (order.getOrderStatus() != OrderStatus.SHIPPED) {
+                response.put("success", false);
+                response.put("message", "Chỉ có thể xác nhận nhận hàng cho đơn hàng đã được giao");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Update order status to DELIVERED
+            boolean success = orderService.updateOrderStatus(orderId, OrderStatus.DELIVERED);
+
+            if (success) {
+                response.put("success", true);
+                response.put("message", "Đã xác nhận nhận hàng thành công");
+                logger.info("User {} confirmed delivery for order {}", user.getEmail(), orderId);
+            } else {
+                response.put("success", false);
+                response.put("message", "Không thể cập nhật trạng thái đơn hàng");
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error confirming delivery for order {}: {}", orderId, e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi xác nhận nhận hàng");
+            return ResponseEntity.status(500).body(response);
         }
-
-        return "redirect:/buyer/orders";
     }
 }

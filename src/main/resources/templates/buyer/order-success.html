@@ -24,7 +24,11 @@
                         <div class="col-md-6 text-start">
                             <p><strong>Tổng tiền hàng:</strong> <span th:text="${#numbers.formatDecimal(customerOrder.totalAmount - customerOrder.shippingFee + customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
                             <p><strong>Phí vận chuyển:</strong> <span th:text="${#numbers.formatDecimal(customerOrder.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
-                            <p><strong>Giảm giá:</strong> <span th:text="${#numbers.formatDecimal(customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
+                            <p th:if="${customerOrder.discountAmount != null && customerOrder.discountAmount > 0}">
+                                <strong>Giảm giá<span th:if="${customerOrder.promotionCode != null && !customerOrder.promotionCode.isEmpty()}"
+                                                     th:text="' (' + ${customerOrder.promotionCode} + ')'"></span>:</strong>
+                                <span class="text-success" th:text="'-' + ${#numbers.formatDecimal(customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                            </p>
                             <p><strong>Tổng thanh toán:</strong> <span th:text="${#numbers.formatDecimal(customerOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span></p>
                         </div>
                     </div>

@@ -7,6 +7,7 @@ import com.example.isp392.service.CustomerOrderService;
 import com.example.isp392.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -44,9 +45,10 @@ public class CustomerOrderController {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Get customer orders with status filter
+        // Get customer orders with status filter, sorted by newest first
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         Page<CustomerOrder> customerOrderPage = customerOrderService.findCustomerOrders(
-            user, status, dateFrom, dateTo, PageRequest.of(page, 10)
+            user, status, dateFrom, dateTo, PageRequest.of(page, 10, sort)
         );
 
         model.addAttribute("customerOrders", customerOrderPage.getContent());

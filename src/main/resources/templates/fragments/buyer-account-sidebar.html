@@ -8,7 +8,7 @@ This fragment provides a consistent sidebar for all buyer account pages
 Parameters:
 - user: the current logged in user object
 - roles: list of user roles 
-- activeTab: indicates which sidebar item should be highlighted (values: 'info', 'password', 'orders', 'address')
+- activeTab: indicates which sidebar item should be highlighted (values: 'info', 'password', 'orders', 'address', 'wallet')
 -->
 <aside class="col-lg-3 account-sidebar mb-4 mb-lg-0" th:fragment="sidebar(activeTab)">
     <div class="card">
@@ -43,14 +43,28 @@ Parameters:
                     <i class="fas fa-list-alt fa-fw me-2"></i> Order History
                 </a>
             </li>
-            
+
+            <!-- My Reviews -->
+            <li class="list-group-item" th:classappend="${activeTab == 'reviews'} ? 'active' : ''">
+                <a th:href="@{/buyer/reviews}" class="d-flex align-items-center text-decoration-none">
+                    <i class="fas fa-star fa-fw me-2"></i> My Reviews
+                </a>
+            </li>
+
             <!-- Address Book -->
             <li class="list-group-item" th:classappend="${activeTab == 'address'} ? 'active' : ''">
                 <a th:href="@{/buyer/addresses}" class="d-flex align-items-center text-decoration-none">
                     <i class="fas fa-map-marker-alt fa-fw me-2"></i> Address Book
                 </a>
             </li>
-            
+
+            <!-- Wallet -->
+            <li class="list-group-item" th:classappend="${activeTab == 'wallet'} ? 'active' : ''">
+                <a th:href="@{/buyer/wallet}" class="d-flex align-items-center text-decoration-none">
+                    <i class="fas fa-wallet fa-fw me-2"></i> My Wallet
+                </a>
+            </li>
+
             <!-- Logout -->
             <li class="list-group-item">
                 <a th:href="@{/logout}" class="d-flex align-items-center text-decoration-none text-danger">

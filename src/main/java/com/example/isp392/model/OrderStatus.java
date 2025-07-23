@@ -10,7 +10,6 @@ package com.example.isp392.model;
  * 4. Order can be CANCELLED at any time before DELIVERED
  */
 public enum OrderStatus {
-    PENDING,
     PROCESSING,     // Order paid and ready for seller to prepare
     SHIPPED,        // Order has been shipped
     DELIVERED,      // Order has been delivered

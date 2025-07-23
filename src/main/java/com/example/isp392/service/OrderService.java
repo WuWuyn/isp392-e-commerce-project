@@ -2,7 +2,6 @@ package com.example.isp392.service;
 
 import com.example.isp392.model.*;
 import com.example.isp392.repository.OrderRepository;
-import com.example.isp392.repository.OrderItemRepository;
 import com.example.isp392.repository.CustomerOrderRepository;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -23,7 +22,15 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Value;
+import com.example.isp392.model.enums.WalletReferenceType;
 
 @Service
 @Transactional
@@ -31,25 +38,35 @@ public class OrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
+    @Value("${platform.commission.rate:0.10}")
+    private BigDecimal platformCommissionRate; // Default to 10% if not specified
+
     private final OrderRepository orderRepository;
     private final CustomerOrderRepository customerOrderRepository;
     private final PromotionService promotionService;
+    private final PromotionCalculationService promotionCalculationService;
     private final BookService bookService;
     private final CustomerOrderService customerOrderService;
+    private final CartService cartService;
+    private final WalletService walletService;
     private final Lock orderStatusLock = new ReentrantLock();
-    private final OrderItemRepository orderItemRepository;
 
     public OrderService(OrderRepository orderRepository,
                        CustomerOrderRepository customerOrderRepository,
                        PromotionService promotionService,
+                       PromotionCalculationService promotionCalculationService,
                        BookService bookService,
-                       CustomerOrderService customerOrderService, OrderItemRepository orderItemRepository) {
+                       CustomerOrderService customerOrderService,
+                       CartService cartService,
+                       WalletService walletService) {
         this.orderRepository = orderRepository;
         this.customerOrderRepository = customerOrderRepository;
         this.promotionService = promotionService;
+        this.promotionCalculationService = promotionCalculationService;
         this.bookService = bookService;
         this.customerOrderService = customerOrderService;
-        this.orderItemRepository = orderItemRepository;
+        this.cartService = cartService;
+        this.walletService = walletService;
     }
 
     public List<Order> getOrdersForSeller(Integer sellerId) {
@@ -63,8 +80,8 @@ public class OrderService {
             return orderRepository.findById(orderId).map(order -> {
                 // Validate status transition
                 if (!isValidStatusTransition(order.getOrderStatus(), newStatus)) {
-                    throw new IllegalStateException("Cannot change status from " +
-                            order.getOrderStatus() + " to " + newStatus);
+                    throw new IllegalStateException("Không thể chuyển từ trạng thái " + 
+                        order.getOrderStatus() + " sang " + newStatus);
                 }
                 
                 // Check if order is part of a customer order
@@ -80,12 +97,23 @@ public class OrderService {
                 }
 
                 orderRepository.save(order);
-                
+
+                // Process seller payment if order is delivered
+                if (newStatus == OrderStatus.DELIVERED && oldStatus != OrderStatus.DELIVERED) {
+                    try {
+                        processSellerPayment(order);
+                        logger.info("Processed seller payment for order {}", orderId);
+                    } catch (Exception e) {
+                        logger.error("Failed to process seller payment for order {}: {}", orderId, e.getMessage(), e);
+                        // Don't fail the status update if payment processing fails
+                    }
+                }
+
                 // Update customer order status if needed
                 if (order.getCustomerOrder() != null) {
                     customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
                 }
-                
+
                 return true;
             }).orElse(false);
         } finally {
@@ -107,6 +135,92 @@ public class OrderService {
                 return false; // Cannot change from cancelled
             default:
                 return false;
+        }
+    }
+
+    /**
+     * Check if an order can be cancelled by the customer
+     */
+    public boolean canBeCancelled(Order order) {
+        return order.getOrderStatus() == OrderStatus.PROCESSING ||
+               order.getOrderStatus() == OrderStatus.SHIPPED;
+    }
+
+    /**
+     * Cancel an order with reason (for customer cancellation)
+     */
+    @Transactional
+    public boolean cancelOrder(Integer orderId, String cancellationReason, User user) {
+        try {
+            orderStatusLock.lock();
+
+            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            if (orderOpt.isEmpty()) {
+                logger.warn("Order not found: {}", orderId);
+                return false;
+            }
+
+            Order order = orderOpt.get();
+
+            // Verify order belongs to user
+            if (!order.getCustomerOrder().getUser().getUserId().equals(user.getUserId())) {
+                logger.warn("User {} attempted to cancel order {} that doesn't belong to them",
+                           user.getEmail(), orderId);
+                return false;
+            }
+
+            // Check if order can be cancelled
+            if (!canBeCancelled(order)) {
+                logger.warn("Order {} cannot be cancelled. Current status: {}",
+                           orderId, order.getOrderStatus());
+                return false;
+            }
+
+            // Cancel the order
+            OrderStatus oldStatus = order.getOrderStatus();
+            order.setOrderStatus(OrderStatus.CANCELLED);
+            order.setCancellationReason(cancellationReason);
+            order.setCancelledAt(LocalDateTime.now());
+
+            // Handle inventory restoration
+            handleInventoryForStatusChange(order, oldStatus, OrderStatus.CANCELLED);
+
+            // Save order
+            orderRepository.save(order);
+
+            // Process wallet refund if applicable
+            if (order.getCustomerOrder() != null) {
+                try {
+                    // Check if this is the last order in the customer order to be cancelled
+                    CustomerOrder customerOrder = order.getCustomerOrder();
+                    boolean allOrdersCancelled = customerOrder.getOrders().stream()
+                            .allMatch(o -> o.getOrderStatus() == OrderStatus.CANCELLED);
+
+                    if (allOrdersCancelled) {
+                        // Process refund to wallet for the entire customer order
+                        walletService.processRefund(customerOrder);
+                        logger.info("Processed wallet refund for customer order {} after cancelling order {}",
+                                   customerOrder.getCustomerOrderId(), orderId);
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to process wallet refund for order {}: {}", orderId, e.getMessage(), e);
+                    // Don't fail the cancellation if refund fails, but log the error
+                }
+            }
+
+            // Update customer order status
+            if (order.getCustomerOrder() != null) {
+                customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
+            }
+
+            logger.info("Order {} cancelled successfully by user {}", orderId, user.getEmail());
+            return true;
+
+        } catch (Exception e) {
+            logger.error("Error cancelling order {}: {}", orderId, e.getMessage(), e);
+            return false;
+        } finally {
+            orderStatusLock.unlock();
         }
     }
 
@@ -150,45 +264,26 @@ public class OrderService {
     }
 
     public void applyPromotion(Order order, String promotionCode) {
-        Optional<Promotion> promotionOpt = promotionService.findByCode(promotionCode);
-        if (promotionOpt.isEmpty()) {
-            throw new RuntimeException("Mã giảm giá không tồn tại");
+        logger.info("Applying promotion {} to order with subtotal: {}", promotionCode, order.getSubTotal());
+
+        // Use centralized promotion service for validation and calculation
+        PromotionCalculationService.PromotionApplicationResult result =
+            promotionCalculationService.applyPromotion(promotionCode, order.getCustomerOrder().getUser(), order.getSubTotal());
+
+        if (!result.isSuccess()) {
+            logger.error("Promotion application failed: {}", result.getErrorMessage());
+            throw new RuntimeException(result.getErrorMessage());
         }
 
-        Promotion promotion = promotionOpt.get();
-        
-        if (!promotion.getIsActive()) {
-            throw new RuntimeException("Mã giảm giá đã hết hạn");
-        }
+        logger.info("Promotion application successful. Discount amount: {}, Final total: {}",
+                   result.getDiscountAmount(), result.getFinalTotal());
 
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(promotion.getStartDate()) || now.isAfter(promotion.getEndDate())) {
-            throw new RuntimeException("Mã giảm giá không trong thời gian sử dụng");
-        }
+        order.setDiscountAmount(result.getDiscountAmount());
+        order.setDiscountCode(promotionCode);
+        promotionCalculationService.recordPromotionUsage(promotionCode, order.getCustomerOrder().getUser().getUserId());
 
-        if (promotion.getMinOrderValue() != null && 
-            order.getSubTotal().compareTo(promotion.getMinOrderValue()) < 0) {
-            throw new RuntimeException("Giá trị đơn hàng chưa đạt mức tối thiểu");
-        }
-
-        BigDecimal discountAmount;
-        if ("PERCENTAGE".equals(promotion.getDiscountType())) {
-            discountAmount = order.getSubTotal()
-                    .multiply(promotion.getDiscountValue().divide(new BigDecimal(100)));
-            
-            if (promotion.getMaxDiscountAmount() != null && 
-                discountAmount.compareTo(promotion.getMaxDiscountAmount()) > 0) {
-                discountAmount = promotion.getMaxDiscountAmount();
-            }
-        } else {
-            discountAmount = promotion.getDiscountValue();
-            if (discountAmount.compareTo(order.getSubTotal()) > 0) {
-                discountAmount = order.getSubTotal();
-            }
-        }
-
-        order.setDiscountAmount(discountAmount);
-        promotionService.updatePromotionUsage(promotionCode, order.getCustomerOrder().getUser().getUserId());
+        logger.info("Order discount amount set to: {}, discount code set to: {}",
+                   order.getDiscountAmount(), order.getDiscountCode());
     }
 
     private void handleInventoryForStatusChange(Order order, OrderStatus oldStatus, OrderStatus newStatus) {
@@ -599,7 +694,281 @@ public class OrderService {
             return true;
         }).orElse(false);
     }
-    public Optional<OrderItem> findOrderItemById(Integer orderItemId) {
-        return orderItemRepository.findById(orderItemId);
+
+    /**
+     * Check if an order can be reordered (rebuy)
+     * Allow rebuy for both DELIVERED and CANCELLED orders
+     */
+    public boolean canBeReordered(Order order) {
+        return order.getOrderStatus() == OrderStatus.DELIVERED ||
+               order.getOrderStatus() == OrderStatus.CANCELLED;
+    }
+
+    /**
+     * Rebuy all items from a delivered order by adding them to cart
+     */
+    @Transactional
+    public boolean rebuyOrder(Integer orderId, User user) {
+        try {
+            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            if (orderOpt.isEmpty()) {
+                logger.warn("Order not found for rebuy: {}", orderId);
+                return false;
+            }
+
+            Order order = orderOpt.get();
+
+            // Verify order belongs to user
+            if (!order.getCustomerOrder().getUser().getUserId().equals(user.getUserId())) {
+                logger.warn("User {} attempted to rebuy order {} that doesn't belong to them",
+                           user.getEmail(), orderId);
+                return false;
+            }
+
+            // Check if order can be reordered
+            if (!canBeReordered(order)) {
+                logger.warn("Order {} cannot be reordered. Current status: {}",
+                           orderId, order.getOrderStatus());
+                return false;
+            }
+
+            // Add all order items to cart
+            int itemsAdded = 0;
+            for (OrderItem orderItem : order.getOrderItems()) {
+                Book book = orderItem.getBook();
+
+                // Check if book is still active and has stock
+                if (!book.getActive()) {
+                    logger.warn("Book {} is no longer active, skipping rebuy", book.getBookId());
+                    continue;
+                }
+
+                if (book.getStockQuantity() <= 0) {
+                    logger.warn("Book {} is out of stock, skipping rebuy", book.getBookId());
+                    continue;
+                }
+
+                // Determine quantity to add (limited by current stock)
+                int quantityToAdd = Math.min(orderItem.getQuantity(), book.getStockQuantity());
+
+                try {
+                    // Add to cart using CartService
+                    cartService.addBookToCart(user, book.getBookId(), quantityToAdd);
+                    itemsAdded++;
+                    logger.info("Added {} x {} to cart for rebuy", quantityToAdd, book.getTitle());
+                } catch (Exception e) {
+                    logger.error("Failed to add book {} to cart for rebuy: {}",
+                               book.getBookId(), e.getMessage());
+                }
+            }
+
+            if (itemsAdded > 0) {
+                logger.info("Successfully added {} items to cart for rebuy of order {}",
+                           itemsAdded, orderId);
+                return true;
+            } else {
+                logger.warn("No items could be added to cart for rebuy of order {}", orderId);
+                return false;
+            }
+
+        } catch (Exception e) {
+            logger.error("Error during rebuy of order {}: {}", orderId, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Process and format cancellation reason from UI
+     * @param reason Raw reason from UI (could be predefined or custom)
+     * @return Formatted cancellation reason
+     */
+    private String processCancellationReason(String reason) {
+        if (reason == null || reason.trim().isEmpty()) {
+            return "Không có lý do cụ thể";
+        }
+
+        // Check if it's a predefined reason from CancellationReason enum
+        try {
+            CancellationReason cancellationReason = CancellationReason.fromDisplayName(reason.trim());
+            if (cancellationReason != CancellationReason.OTHER) {
+                return cancellationReason.getDisplayName();
+            }
+        } catch (Exception e) {
+            // If not a predefined reason, treat as custom reason
+            logger.debug("Custom cancellation reason provided: {}", reason);
+        }
+
+        // For custom reasons, ensure it's properly formatted
+        String processedReason = reason.trim();
+        if (processedReason.length() > 500) {
+            processedReason = processedReason.substring(0, 497) + "...";
+        }
+
+        return processedReason;
+    }
+
+    /**
+     * Find orders with search functionality
+     */
+    public Page<Order> findOrdersWithSearch(User user, String status, LocalDate dateFrom, LocalDate dateTo, String search, Pageable pageable) {
+        return orderRepository.findAll((Specification<Order>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Join with CustomerOrder to access User
+            Join<Order, CustomerOrder> customerOrderJoin = root.join("customerOrder", JoinType.INNER);
+            predicates.add(cb.equal(customerOrderJoin.get("user"), user));
+
+            if (status != null && !status.isEmpty()) {
+                predicates.add(cb.equal(root.get("orderStatus"), OrderStatus.valueOf(status)));
+            }
+
+            if (dateFrom != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("orderDate"), dateFrom));
+            }
+
+            if (dateTo != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("orderDate"), dateTo.plusDays(1)));
+            }
+
+            // Search functionality
+            if (search != null && !search.trim().isEmpty()) {
+                String searchPattern = "%" + search.trim().toLowerCase() + "%";
+
+                // Search by order ID or book title
+                Predicate orderIdPredicate = cb.like(cb.lower(cb.toString(root.get("orderId"))), searchPattern);
+
+                // Search by book title in order items
+                Join<Order, OrderItem> orderItemJoin = root.join("orderItems", JoinType.LEFT);
+                Join<OrderItem, Book> bookJoin = orderItemJoin.join("book", JoinType.LEFT);
+                Predicate bookTitlePredicate = cb.like(cb.lower(bookJoin.get("title")), searchPattern);
+
+                predicates.add(cb.or(orderIdPredicate, bookTitlePredicate));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable);
+    }
+
+    /**
+     * Get order statistics for a user
+     */
+    public Map<String, Object> getOrderStatistics(User user) {
+        Map<String, Object> statistics = new HashMap<>();
+
+        // Total orders count
+        Long totalOrders = orderRepository.countByCustomerOrderUser(user);
+        statistics.put("totalOrders", totalOrders);
+
+        // Total amount spent (only for DELIVERED orders)
+        BigDecimal totalSpent = orderRepository.findByCustomerOrderUserAndOrderStatus(user, OrderStatus.DELIVERED)
+                .stream()
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        statistics.put("totalSpent", totalSpent);
+
+        // Orders by status
+        Map<String, Long> ordersByStatus = new HashMap<>();
+        for (OrderStatus status : OrderStatus.values()) {
+            Long count = orderRepository.countByCustomerOrderUserAndOrderStatus(user, status);
+            ordersByStatus.put(status.name(), count);
+        }
+        statistics.put("ordersByStatus", ordersByStatus);
+
+        return statistics;
+    }
+
+    /**
+     * Process payment to seller when order is delivered
+     * @param order The delivered order
+     */
+    private void processSellerPayment(Order order) {
+        if (order.getShop() == null || order.getShop().getUser() == null) {
+            logger.error("Cannot process seller payment: shop or seller user not found for order {}", order.getOrderId());
+            return;
+        }
+
+        User seller = order.getShop().getUser();
+        BigDecimal orderTotal = order.getTotalAmount();
+
+        // Calculate platform commission
+        BigDecimal commission = orderTotal.multiply(platformCommissionRate);
+        BigDecimal sellerAmount = orderTotal.subtract(commission);
+
+        logger.info("Processing seller payment for order {}: Total={}, Commission={}, Seller Amount={}",
+                   order.getOrderId(), orderTotal, commission, sellerAmount);
+
+        // Add funds to seller's wallet
+        String description = String.format("Payment for delivered order #%d (Total: %s VND, Commission: %s VND)",
+                                         order.getOrderId(), orderTotal, commission);
+
+        try {
+            walletService.addFunds(
+                seller,
+                sellerAmount,
+                description,
+                WalletReferenceType.ORDER_PAYMENT,
+                order.getOrderId(),
+                seller.getUserId()
+            );
+
+            logger.info("Successfully processed seller payment of {} VND for order {} to seller {}",
+                       sellerAmount, order.getOrderId(), seller.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to add funds to seller wallet for order {}: {}", order.getOrderId(), e.getMessage(), e);
+            throw new RuntimeException("Failed to process seller payment: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Enhanced cancel order method with better reason processing
+     * @param orderId Order ID to cancel
+     * @param cancellationReason Raw cancellation reason from UI
+     * @param user User performing the cancellation
+     * @return true if cancellation successful, false otherwise
+     */
+    @Transactional
+    public boolean cancelOrderWithReason(Integer orderId, String cancellationReason, User user) {
+        String processedReason = processCancellationReason(cancellationReason);
+        logger.info("Cancelling order {} with processed reason: {}", orderId, processedReason);
+
+        return cancelOrder(orderId, processedReason, user);
+    }
+
+    /**
+     * Get all delivered order items for a user (for review management)
+     * @param user The user to get order items for
+     * @return List of delivered order items
+     */
+    public List<OrderItem> getDeliveredOrderItemsForUser(User user) {
+        List<Order> deliveredOrders = orderRepository.findByCustomerOrderUserAndOrderStatus(user, OrderStatus.DELIVERED);
+
+        List<OrderItem> allOrderItems = new ArrayList<>();
+        for (Order order : deliveredOrders) {
+            allOrderItems.addAll(order.getOrderItems());
+        }
+
+        // Sort by order date (newest first)
+        allOrderItems.sort((a, b) -> b.getOrder().getOrderDate().compareTo(a.getOrder().getOrderDate()));
+
+        return allOrderItems;
+    }
+
+    /**
+     * Get order item by ID
+     * @param orderItemId The order item ID
+     * @return OrderItem or null if not found
+     */
+    public OrderItem getOrderItemById(Integer orderItemId) {
+        // You'll need to add this method to your OrderItemRepository
+        // For now, let's implement it by searching through orders
+        List<Order> allOrders = orderRepository.findAll();
+        for (Order order : allOrders) {
+            for (OrderItem item : order.getOrderItems()) {
+                if (item.getOrderItemId().equals(orderItemId)) {
+                    return item;
+                }
+            }
+        }
+        return null;
     }
 }

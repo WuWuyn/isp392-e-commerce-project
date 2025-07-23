@@ -2,90 +2,259 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${isEditing} ? 'Edit Your Review' : 'Write a Review'"></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Edit Review' : 'Write Review'} + ' - ReadHub'">Write Review - ReadHub</title>
+    <!-- CSRF Protection -->
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}"/>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <style>
-        .rating { display: inline-block; border: none; }
-        .rating > input { display: none; }
-        .rating > label { float: right; cursor: pointer; color: #ddd; font-size: 2rem; }
-        .rating > input:checked ~ label,
-        .rating:not(:checked) > label:hover,
-        .rating:not(:checked) > label:hover ~ label { color: #f7d42c; }
+        .review-form {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .book-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 2rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .book-cover {
+            width: 100px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .rating-stars {
+            font-size: 2rem;
+            color: #dee2e6;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .rating-stars.active,
+        .rating-stars:hover {
+            color: #ffc107;
+        }
+        .image-upload-container {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .image-upload-container:hover {
+            border-color: #007bff;
+            background-color: #f8f9ff;
+        }
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        .remove-image {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .btn-submit {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            padding: 12px 40px;
+            font-weight: 600;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40,167,69,0.3);
+        }
     </style>
 </head>
 <body>
 
+<!-- Header -->
 <div th:replace="~{fragments/header :: header-content}"></div>
 
-<main class="py-5 bg-light">
-    <div class="container">
+<main class="main-content">
+    <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <div class="card rounded-4 shadow-sm">
-                    <div class="card-body p-4 p-md-5">
-
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-3">
-                                <i class="fas fa-arrow-left me-1"></i> Back
-                            </a>
-                            <h3 class="card-title mb-0" th:text="${isEditing} ? 'Edit Your Review' : 'Write a Review'"></h3>
-                        </div>
-
-                        <div class="d-flex align-items-center mb-4 border-bottom pb-3">
-                            <img th:src="${orderItem.book.coverImgUrl}" class="rounded-3 me-3" style="width: 80px;" alt="Product Image">
-                            <div>
-                                <h5 class="mb-1" th:text="${orderItem.book.title}"></h5>
-                                <p class="text-muted mb-0">Purchased on <span th:text="${#temporals.format(orderItem.order.orderDate, 'dd/MM/yyyy')}"></span></p>
+                <div class="review-form">
+                    <!-- Book Information Header -->
+                    <div class="book-info">
+                        <div class="row align-items-center">
+                            <div class="col-md-3 text-center">
+                                <img th:src="${orderItem.book.coverImgUrl != null ? orderItem.book.coverImgUrl : '/images/book-placeholder.jpg'}"
+                                     alt="Book Cover" class="book-cover">
+                            </div>
+                            <div class="col-md-9">
+                                <h4 class="mb-2" th:text="${orderItem.book.title}">Book Title</h4>
+                                <p class="text-muted mb-1" th:text="${orderItem.book.authors}">Author</p>
+                                <p class="text-muted mb-1">
+                                    <small>
+                                        <i class="fas fa-receipt me-1"></i>
+                                        Order ID: <span class="fw-bold text-primary">#<span th:text="${orderItem.order.orderId}">12345</span></span>
+                                    </small>
+                                </p>
+                                <p class="text-muted mb-0">
+                                    <small>
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Order Date: <span th:text="${#temporals.format(orderItem.order.orderDate, 'dd/MM/yyyy')}">01/01/2024</span>
+                                    </small>
+                                </p>
                             </div>
                         </div>
+                    </div>
 
-                        <form th:action="@{/buyer/orders/review}" method="post" th:object="${review}" id="review-form">
-                            <input type="hidden" th:field="*{reviewId}" />
-                            <input type="hidden" name="orderItemId" th:value="${orderItem.orderItemId}" />
+                    <!-- Review Form -->
+                    <div class="p-4">
+                        <h5 class="mb-4">
+                            <i class="fas fa-star me-2 text-warning"></i>
+                            <span th:text="${isEdit ? 'Edit Your Review' : 'Write Your Review'}">Write Your Review</span>
+                        </h5>
 
+                        <!-- Error Messages -->
+                        <div th:if="${error}" class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <span th:text="${error}">Error message</span>
+                        </div>
+
+                        <form th:action="${isEdit ? '/buyer/reviews/update/' + orderItem.orderItemId : '/buyer/reviews/submit/' + orderItem.orderItemId}"
+                              method="post"
+                              th:object="${review}"
+                              enctype="multipart/form-data"
+                              id="reviewForm">
+
+                            <!-- Rating -->
                             <div class="mb-4">
-                                <label class="form-label fw-bold">Your Rating:</label>
-                                <div class="rating">
-                                    <input type="radio" id="star5" th:field="*{rating}" value="5" required/><label for="star5" title="5 stars">★</label>
-                                    <input type="radio" id="star4" th:field="*{rating}" value="4" required/><label for="star4" title="4 stars">★</label>
-                                    <input type="radio" id="star3" th:field="*{rating}" value="3" required/><label for="star3" title="3 stars">★</label>
-                                    <input type="radio" id="star2" th:field="*{rating}" value="2" required/><label for="star2" title="2 stars">★</label>
-                                    <input type="radio" id="star1" th:field="*{rating}" value="1" required/><label for="star1" title="1 star">★</label>
+                                <label class="form-label fw-bold">Rating *</label>
+                                <div class="rating-container">
+                                    <span class="rating-stars" data-rating="1"><i class="fas fa-star"></i></span>
+                                    <span class="rating-stars" data-rating="2"><i class="fas fa-star"></i></span>
+                                    <span class="rating-stars" data-rating="3"><i class="fas fa-star"></i></span>
+                                    <span class="rating-stars" data-rating="4"><i class="fas fa-star"></i></span>
+                                    <span class="rating-stars" data-rating="5"><i class="fas fa-star"></i></span>
                                 </div>
+                                <input type="hidden" th:field="*{rating}" id="ratingInput" required>
+                                <small class="text-muted">Click on stars to rate this book</small>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="title" class="form-label fw-bold">Review Title:</label>
-                                <input type="text" class="form-control rounded-3" id="title" th:field="*{title}" placeholder="e.g., A fantastic read!">
-                            </div>
-
+                            <!-- Review Title -->
                             <div class="mb-4">
-                                <label for="content" class="form-label fw-bold">Your Review:</label>
-                                <textarea class="form-control rounded-3" id="content" th:field="*{content}" rows="6" placeholder="Tell us more about the product..." maxlength="200"></textarea>
+                                <label for="title" class="form-label fw-bold">Review Title *</label>
+                                <input type="text"
+                                       class="form-control"
+                                       th:field="*{title}"
+                                       id="title"
+                                       placeholder="Give your review a title..."
+                                       maxlength="200"
+                                       required>
+                                <div class="form-text">Maximum 200 characters</div>
+                            </div>
 
-                                <small id="char-counter" class="form-text text-muted float-end">200 characters remaining</small>
+                            <!-- Review Content -->
+                            <div class="mb-4">
+                                <label for="content" class="form-label fw-bold">Your Review *</label>
+                                <textarea class="form-control"
+                                          th:field="*{content}"
+                                          id="content"
+                                          rows="6"
+                                          placeholder="Share your thoughts about this book..."
+                                          maxlength="2000"
+                                          required></textarea>
+                                <div class="form-text">Maximum 2000 characters</div>
+                            </div>
+
+                            <!-- Image Upload -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Add Photos (Optional)</label>
+                                <p class="text-muted small mb-3">You can upload up to 3 photos to support your review</p>
+
+                                <div class="row" id="imageUploadContainer">
+                                    <!-- Image Upload Slots -->
+                                    <div class="col-md-4 mb-3">
+                                        <div class="image-upload-container" onclick="document.getElementById('image1').click()">
+                                            <div class="upload-content">
+                                                <i class="fas fa-camera fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Click to upload<br>Photo 1</p>
+                                            </div>
+                                            <div class="preview-content" style="display: none;">
+                                                <img class="image-preview" id="preview1" src="" alt="Preview">
+                                                <button type="button" class="remove-image" onclick="removeImage(1)">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="image1" name="image1" accept="image/*" style="display: none;" onchange="previewImage(1)">
+                                    </div>
+
+                                    <div class="col-md-4 mb-3">
+                                        <div class="image-upload-container" onclick="document.getElementById('image2').click()">
+                                            <div class="upload-content">
+                                                <i class="fas fa-camera fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Click to upload<br>Photo 2</p>
+                                            </div>
+                                            <div class="preview-content" style="display: none;">
+                                                <img class="image-preview" id="preview2" src="" alt="Preview">
+                                                <button type="button" class="remove-image" onclick="removeImage(2)">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="image2" name="image2" accept="image/*" style="display: none;" onchange="previewImage(2)">
+                                    </div>
+
+                                    <div class="col-md-4 mb-3">
+                                        <div class="image-upload-container" onclick="document.getElementById('image3').click()">
+                                            <div class="upload-content">
+                                                <i class="fas fa-camera fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Click to upload<br>Photo 3</p>
+                                            </div>
+                                            <div class="preview-content" style="display: none;">
+                                                <img class="image-preview" id="preview3" src="" alt="Preview">
+                                                <button type="button" class="remove-image" onclick="removeImage(3)">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="image3" name="image3" accept="image/*" style="display: none;" onchange="previewImage(3)">
+                                    </div>
+                                </div>
+                                <small class="text-muted">Supported formats: JPG, PNG, GIF. Max size: 5MB per image.</small>
+                            </div>
+
+                            <!-- Submit Buttons -->
+                            <div class="d-flex justify-content-between">
+                                <a th:href="@{/buyer/reviews}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Reviews
+                                </a>
+                                <button type="submit" class="btn btn-submit text-white">
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    <span th:text="${isEdit ? 'Update Review' : 'Submit Review'}">Submit Review</span>
+                                </button>
                             </div>
                         </form>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <form th:if="${isEditing}"
-                                  th:action="@{/buyer/orders/review/delete}"
-                                  method="post"
-                                  onsubmit="return confirm('Are you sure you want to delete this review?');"
-                                  class="me-md-auto">
-                                <input type="hidden" name="reviewId" th:value="${review.reviewId}" />
-                                <button type="submit" class="btn btn-outline-danger btn-lg rounded-3">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </form>
-
-                            <button type="submit" form="review-form" class="btn btn-primary btn-lg rounded-3"
-                                    th:text="${isEditing} ? 'Update Review' : 'Submit Review'">
-                            </button>
-                        </div>
-
                     </div>
                 </div>
             </div>
@@ -93,31 +262,122 @@
     </div>
 </main>
 
+<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script th:src="@{/js/script.js}"></script>
+
 <script>
+    // Rating functionality
     document.addEventListener('DOMContentLoaded', function() {
-        const contentArea = document.getElementById('content');
-        const charCounter = document.getElementById('char-counter');
-        const maxLength = 200;
+        const stars = document.querySelectorAll('.rating-stars');
+        const ratingInput = document.getElementById('ratingInput');
 
-        // Cập nhật bộ đếm khi trang tải lần đầu
-        const initialLength = contentArea.value.length;
-        charCounter.textContent = (maxLength - initialLength) + ' characters remaining';
+        // Set initial rating if editing
+        const initialRating = ratingInput.value;
+        if (initialRating) {
+            updateStars(parseInt(initialRating));
+        }
 
-        // Lắng nghe sự kiện nhập liệu
-        contentArea.addEventListener('input', function() {
-            const currentLength = contentArea.value.length;
-            const remaining = maxLength - currentLength;
-            charCounter.textContent = remaining + ' characters remaining';
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = parseInt(this.dataset.rating);
+                ratingInput.value = rating;
+                updateStars(rating);
+            });
 
-            // Đổi màu khi gần hết ký tự
-            if (remaining < 0) {
-                charCounter.classList.add('text-danger');
-            } else {
-                charCounter.classList.remove('text-danger');
-            }
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.dataset.rating);
+                highlightStars(rating);
+            });
         });
+
+        document.querySelector('.rating-container').addEventListener('mouseleave', function() {
+            const currentRating = parseInt(ratingInput.value) || 0;
+            updateStars(currentRating);
+        });
+
+        function updateStars(rating) {
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+
+        function highlightStars(rating) {
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.style.color = '#ffc107';
+                } else {
+                    star.style.color = '#dee2e6';
+                }
+            });
+        }
+    });
+
+    // Image preview functionality
+    function previewImage(slot) {
+        const input = document.getElementById(`image${slot}`);
+        const preview = document.getElementById(`preview${slot}`);
+        const uploadContent = input.parentElement.querySelector('.upload-content');
+        const previewContent = input.parentElement.querySelector('.preview-content');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                uploadContent.style.display = 'none';
+                previewContent.style.display = 'block';
+            };
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function removeImage(slot) {
+        const input = document.getElementById(`image${slot}`);
+        const preview = document.getElementById(`preview${slot}`);
+        const uploadContent = input.parentElement.querySelector('.upload-content');
+        const previewContent = input.parentElement.querySelector('.preview-content');
+
+        input.value = '';
+        preview.src = '';
+        uploadContent.style.display = 'block';
+        previewContent.style.display = 'none';
+    }
+
+    // Form validation
+    document.getElementById('reviewForm').addEventListener('submit', function(e) {
+        const rating = document.getElementById('ratingInput').value;
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
+
+        if (!rating || rating < 1 || rating > 5) {
+            e.preventDefault();
+            alert('Please select a rating from 1 to 5 stars.');
+            return;
+        }
+
+        if (!title) {
+            e.preventDefault();
+            alert('Please enter a review title.');
+            return;
+        }
+
+        if (!content) {
+            e.preventDefault();
+            alert('Please write your review.');
+            return;
+        }
     });
 </script>
+
 </body>
 </html>

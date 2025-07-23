@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History - ReadHub</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    
+    <style>
+        .balance-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .transaction-item {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .transaction-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+        
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+        
+        .transaction-icon.credit {
+            background: #28a745;
+        }
+        
+        .transaction-icon.debit {
+            background: #dc3545;
+        }
+        
+        .transaction-amount.credit {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .transaction-amount.debit {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .filter-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .pagination-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <nav aria-label="breadcrumb mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/buyer/account-info}">Account</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/buyer/wallet}">My Wallet</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Transaction History</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Account Sidebar using fragment -->
+            <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('wallet')}"></div>
+
+            <!-- Transaction History Content -->
+            <section class="col-lg-9 account-content">
+                <!-- Error Message -->
+                <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span th:text="${errorMessage}"></span>
+                </div>
+
+                <!-- Balance Summary -->
+                <div class="balance-summary">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-1">
+                                <i class="fas fa-wallet me-2"></i>
+                                Current Balance
+                            </h4>
+                            <h2 class="mb-0" th:text="${transactionHistory.formattedBalance}">0 VND</h2>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <a th:href="@{/buyer/wallet}" class="btn btn-light btn-sm">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Wallet
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Options -->
+                <div class="filter-card">
+                    <form th:action="@{/buyer/wallet/transactions}" method="get" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="typeFilter" class="form-label">Transaction Type</label>
+                            <select class="form-select" id="typeFilter" name="type">
+                                <option value="">All Transactions</option>
+                                <option th:each="type : ${transactionTypes}" 
+                                        th:value="${type.name()}" 
+                                        th:text="${type.name()}"
+                                        th:selected="${selectedType == type.name()}">Type</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="sizeFilter" class="form-label">Items per page</label>
+                            <select class="form-select" id="sizeFilter" name="size">
+                                <option value="10" th:selected="${transactionHistory.transactions.size == 10}">10</option>
+                                <option value="20" th:selected="${transactionHistory.transactions.size == 20}">20</option>
+                                <option value="50" th:selected="${transactionHistory.transactions.size == 50}">50</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter me-1"></i> Apply Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Transaction List -->
+                <div class="card">
+                    <div class="card-header bg-white py-3">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">
+                                    Transaction History
+                                    <span class="badge bg-secondary ms-2" th:text="${transactionHistory.totalElements}">0</span>
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${transactionHistory.transactions.empty}" class="text-center py-5 text-muted">
+                            <i class="fas fa-receipt fa-4x mb-3"></i>
+                            <h5>No transactions found</h5>
+                            <p class="mb-0">Your wallet transactions will appear here when you make purchases or receive refunds.</p>
+                        </div>
+                        
+                        <div th:unless="${transactionHistory.transactions.empty}">
+                            <div th:each="transaction : ${transactionHistory.transactions.content}" class="transaction-item">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="transaction-icon" 
+                                             th:classappend="${transaction.transactionType.name().toLowerCase()}">
+                                            <i th:class="${transaction.transactionType.name() == 'CREDIT'} ? 'fas fa-plus' : 'fas fa-minus'"></i>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="fw-bold mb-1" th:text="${transaction.description}">Transaction Description</div>
+                                        <div class="row text-muted small">
+                                            <div class="col-md-6">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                <span th:text="${#temporals.format(transaction.createdAt, 'dd/MM/yyyy HH:mm')}">Date</span>
+                                            </div>
+                                            <div class="col-md-6" th:if="${transaction.referenceType}">
+                                                <i class="fas fa-tag me-1"></i>
+                                                <span th:text="${transaction.referenceType.name()}">Reference Type</span>
+                                                <span th:if="${transaction.referenceId}" class="ms-1">
+                                                    #<span th:text="${transaction.referenceId}">ID</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto text-end">
+                                        <div class="transaction-amount" 
+                                             th:classappend="${transaction.transactionType.name().toLowerCase()}">
+                                            <span th:if="${transaction.transactionType.name() == 'CREDIT'}">+</span>
+                                            <span th:if="${transaction.transactionType.name() == 'DEBIT'}">-</span>
+                                            <span th:text="${#numbers.formatDecimal(transaction.amount, 0, 'COMMA', 0, 'POINT')} + ' VND'">Amount</span>
+                                        </div>
+                                        <div class="small text-muted">
+                                            Balance: <span th:text="${#numbers.formatDecimal(transaction.balanceAfter, 0, 'COMMA', 0, 'POINT')} + ' VND'">Balance</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div th:if="${transactionHistory.totalPages > 1}" class="pagination-wrapper">
+                    <nav aria-label="Transaction pagination">
+                        <ul class="pagination">
+                            <li class="page-item" th:classappend="${!transactionHistory.hasPrevious} ? 'disabled'">
+                                <a class="page-link" 
+                                   th:href="@{/buyer/wallet/transactions(page=${transactionHistory.transactions.number - 1}, size=${transactionHistory.transactions.size}, type=${selectedType})}">
+                                    Previous
+                                </a>
+                            </li>
+                            
+                            <li th:each="pageNum : ${#numbers.sequence(0, transactionHistory.totalPages - 1)}" 
+                                class="page-item" 
+                                th:classappend="${pageNum == transactionHistory.transactions.number} ? 'active'">
+                                <a class="page-link" 
+                                   th:href="@{/buyer/wallet/transactions(page=${pageNum}, size=${transactionHistory.transactions.size}, type=${selectedType})}"
+                                   th:text="${pageNum + 1}">1</a>
+                            </li>
+                            
+                            <li class="page-item" th:classappend="${!transactionHistory.hasNext} ? 'disabled'">
+                                <a class="page-link" 
+                                   th:href="@{/buyer/wallet/transactions(page=${transactionHistory.transactions.number + 1}, size=${transactionHistory.transactions.size}, type=${selectedType})}">
+                                    Next
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

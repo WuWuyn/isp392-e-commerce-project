@@ -90,6 +90,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BlogComment> blogComments;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Wallet wallet;
+
     /**
      * Get all orders from all customer orders (derived property for backward compatibility)
      * @return list of all orders belonging to this user
