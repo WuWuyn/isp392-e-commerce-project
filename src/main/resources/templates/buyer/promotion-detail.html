@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${promotion.name} + ' - Promotion Details - ReadHub'">Promotion Details - ReadHub</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .promotion-code-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            display: inline-block;
+            border: 2px dashed rgba(255,255,255,0.3);
+        }
+        
+        .discount-highlight {
+            background: #28a745;
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .discount-highlight.percentage {
+            background: #17a2b8;
+        }
+        
+        .detail-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .detail-card h5 {
+            color: #667eea;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .detail-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .usage-stats-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .usage-progress {
+            margin-top: 1rem;
+        }
+        
+        .progress-custom {
+            height: 12px;
+            border-radius: 6px;
+            background: #e9ecef;
+        }
+        
+        .progress-bar-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+        
+        .validity-card {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .conditions-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .condition-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .condition-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .condition-icon {
+            color: #667eea;
+            margin-right: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        
+        .btn-back {
+            background: #6c757d;
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-back:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+            color: white;
+        }
+        
+        .btn-copy-code {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-copy-code:hover {
+            background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+            transform: translateY(-1px);
+            color: white;
+        }
+        
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .status-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-limited {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="account-page py-5 bg-light">
+    <div class="container">
+        <nav aria-label="breadcrumb mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/buyer/promotions}">Promotions</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${promotion.name}">Promotion Details</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Account Sidebar using fragment -->
+            <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('promotions')}"></div>
+
+            <!-- Promotion Detail Content -->
+            <section class="col-lg-9 account-content">
+                <div class="card">
+                    <div class="card-header bg-white py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">
+                                <i class="fas fa-tag me-2"></i>Promotion Details
+                            </h4>
+                            <div class="promotion-code-display" th:text="${promotion.code}">PROMO10</div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+        <!-- Error Message -->
+        <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${errorMessage}">Error message</span>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Discount Highlight -->
+                <div class="discount-highlight" 
+                     th:classappend="${promotion.promotionType.name() == 'PERCENTAGE_DISCOUNT'} ? 'percentage' : ''">
+                    <i class="fas fa-tag fa-2x mb-2"></i><br>
+                    <span th:if="${promotion.promotionType.name() == 'PERCENTAGE_DISCOUNT'}" 
+                          th:text="${promotion.discountValue} + '% OFF'">10% OFF</span>
+                    <span th:if="${promotion.promotionType.name() == 'FIXED_AMOUNT_DISCOUNT'}" 
+                          th:text="'$' + ${#numbers.formatDecimal(promotion.discountValue, 0, 'COMMA', 0, 'POINT')} + ' OFF'">$50 OFF</span>
+                </div>
+
+                <!-- Promotion Details -->
+                <div class="detail-card">
+                    <h5><i class="fas fa-info-circle me-2"></i>Promotion Details</h5>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">
+                            <i class="fas fa-tag me-2"></i>Promotion Code
+                        </span>
+                        <span class="detail-value" th:text="${promotion.code}">PROMO10</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">
+                            <i class="fas fa-percentage me-2"></i>Discount Type
+                        </span>
+                        <span class="detail-value" th:text="${promotion.promotionType.displayName}">Percentage Discount</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">
+                            <i class="fas fa-dollar-sign me-2"></i>Discount Value
+                        </span>
+                        <span class="detail-value">
+                            <span th:if="${promotion.promotionType.name() == 'PERCENTAGE_DISCOUNT'}" 
+                                  th:text="${promotion.discountValue} + '%'">10%</span>
+                            <span th:if="${promotion.promotionType.name() == 'FIXED_AMOUNT_DISCOUNT'}" 
+                                  th:text="'$' + ${#numbers.formatDecimal(promotion.discountValue, 0, 'COMMA', 0, 'POINT')}">$50</span>
+                        </span>
+                    </div>
+                    
+                    <div class="detail-item" th:if="${promotion.minOrderValue != null}">
+                        <span class="detail-label">
+                            <i class="fas fa-shopping-cart me-2"></i>Minimum Order Value
+                        </span>
+                        <span class="detail-value" th:text="'$' + ${#numbers.formatDecimal(promotion.minOrderValue, 0, 'COMMA', 0, 'POINT')}">$100</span>
+                    </div>
+                    
+                    <div class="detail-item" th:if="${promotion.maxDiscountAmount != null}">
+                        <span class="detail-label">
+                            <i class="fas fa-hand-holding-usd me-2"></i>Maximum Discount Amount
+                        </span>
+                        <span class="detail-value" th:text="'$' + ${#numbers.formatDecimal(promotion.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}">$50</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">
+                            <i class="fas fa-globe me-2"></i>Scope
+                        </span>
+                        <span class="detail-value" th:text="${promotion.scopeType.displayName}">Site-wide</span>
+                    </div>
+                </div>
+
+                <!-- Validity Period -->
+                <div class="validity-card">
+                    <h5 class="text-warning">
+                        <i class="fas fa-calendar-alt me-2"></i>Validity Period
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Start Date:</strong><br>
+                            <span th:text="${#temporals.format(promotion.startDate, 'EEEE, MMMM dd, yyyy HH:mm')}">Monday, January 01, 2024 00:00</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>End Date:</strong><br>
+                            <span th:text="${#temporals.format(promotion.endDate, 'EEEE, MMMM dd, yyyy HH:mm')}">Sunday, December 31, 2024 23:59</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Usage Conditions -->
+                <div class="conditions-card">
+                    <h5><i class="fas fa-list-check me-2"></i>Terms & Conditions</h5>
+                    
+                    <div class="condition-item">
+                        <i class="fas fa-check-circle condition-icon"></i>
+                        <span>This promotion is valid for all registered users</span>
+                    </div>
+                    
+                    <div class="condition-item" th:if="${promotion.minOrderValue != null}">
+                        <i class="fas fa-shopping-cart condition-icon"></i>
+                        <span th:text="'Minimum order value of $' + ${#numbers.formatDecimal(promotion.minOrderValue, 0, 'COMMA', 0, 'POINT')} + ' required'">Minimum order value of $100 required</span>
+                    </div>
+                    
+                    <div class="condition-item" th:if="${promotion.maxDiscountAmount != null}">
+                        <i class="fas fa-hand-holding-usd condition-icon"></i>
+                        <span th:text="'Maximum discount amount is $' + ${#numbers.formatDecimal(promotion.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}">Maximum discount amount is $50</span>
+                    </div>
+                    
+                    <div class="condition-item" th:if="${promotion.usageLimitPerUser != null}">
+                        <i class="fas fa-user-check condition-icon"></i>
+                        <span th:text="'Limited to ' + ${promotion.usageLimitPerUser} + ' use(s) per user'">Limited to 1 use per user</span>
+                    </div>
+                    
+                    <div class="condition-item" th:if="${promotion.totalUsageLimit != null}">
+                        <i class="fas fa-users condition-icon"></i>
+                        <span th:text="'Total usage limit: ' + ${promotion.totalUsageLimit} + ' uses'">Total usage limit: 1000 uses</span>
+                    </div>
+                    
+                    <div class="condition-item">
+                        <i class="fas fa-info-circle condition-icon"></i>
+                        <span>Cannot be combined with other promotions</span>
+                    </div>
+                    
+                    <div class="condition-item">
+                        <i class="fas fa-clock condition-icon"></i>
+                        <span>Promotion expires at the end of the validity period</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Usage Statistics -->
+                <div class="usage-stats-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Your Usage Statistics</h5>
+                    
+                    <div class="text-center mb-3">
+                        <h2 class="text-primary" th:text="${usageStats.userUsageCount}">0</h2>
+                        <p class="mb-0">Times Used by You</p>
+                    </div>
+                    
+                    <div th:if="${promotion.usageLimitPerUser != null}" class="usage-progress">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Personal Usage</span>
+                            <span th:text="${usageStats.userUsageCount} + ' / ' + ${promotion.usageLimitPerUser}">0 / 1</span>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar-custom" 
+                                 th:style="'width: ' + ${(usageStats.userUsageCount * 100.0 / promotion.usageLimitPerUser)} + '%'"></div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                <span th:text="${usageStats.remainingUsesForUser}">1</span> use(s) remaining for you
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div th:if="${promotion.usageLimitPerUser == null}" class="text-center">
+                        <p class="text-success mb-0">
+                            <i class="fas fa-infinity me-2"></i>Unlimited uses for you
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Global Usage Statistics -->
+                <div class="detail-card" th:if="${promotion.totalUsageLimit != null}">
+                    <h5><i class="fas fa-globe me-2"></i>Global Usage</h5>
+                    
+                    <div class="text-center mb-3">
+                        <h3 class="text-info" th:text="${usageStats.totalUsageCount}">0</h3>
+                        <p class="mb-0">Total Uses</p>
+                    </div>
+                    
+                    <div class="usage-progress">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Global Usage</span>
+                            <span th:text="${usageStats.totalUsageCount} + ' / ' + ${promotion.totalUsageLimit}">0 / 1000</span>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar-custom" 
+                                 th:style="'width: ' + ${(usageStats.totalUsageCount * 100.0 / promotion.totalUsageLimit)} + '%'"></div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                <span th:text="${usageStats.totalRemainingUses}">1000</span> use(s) remaining globally
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button class="btn btn-copy-code" onclick="copyPromotionCode()" th:if="${usageStats.canBeUsed}">
+                        <i class="fas fa-copy me-2"></i>Copy Code
+                    </button>
+                    <a href="/buyer/cart" class="btn btn-primary" th:if="${usageStats.canBeUsed}">
+                        <i class="fas fa-shopping-cart me-2"></i>Shop Now
+                    </a>
+                    <a href="/buyer/promotions" class="btn btn-back">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Promotions
+                    </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JavaScript -->
+<script th:src="@{/js/scripts.js}"></script>
+
+<script>
+function copyPromotionCode() {
+    const code = /*[[${promotion.code}]]*/ 'PROMO10';
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(function() {
+            showCopySuccess();
+        }).catch(function() {
+            fallbackCopyTextToClipboard(code);
+        });
+    } else {
+        fallbackCopyTextToClipboard(code);
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showCopySuccess();
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+        alert('Unable to copy promotion code. Please copy manually: ' + text);
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function showCopySuccess() {
+    const button = document.querySelector('.btn-copy-code');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+    button.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.style.background = '';
+    }, 2000);
+}
+</script>
+</body>
+</html>
