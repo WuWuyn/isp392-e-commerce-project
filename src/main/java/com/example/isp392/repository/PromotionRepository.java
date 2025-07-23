@@ -45,6 +45,18 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer>, 
      */
     Page<Promotion> findByIsActiveTrue(Pageable pageable);
 
+
+
+    /**
+     * Find active promotions that are currently valid (not expired)
+     */
+    @Query("SELECT p FROM Promotion p WHERE p.isActive = true AND p.status = :status AND p.endDate > :currentTime")
+    Page<Promotion> findActivePromotions(
+        @Param("status") Promotion.PromotionStatus status,
+        @Param("currentTime") LocalDateTime currentTime,
+        Pageable pageable
+    );
+
     /**
      * Find promotions by name or code containing search term
      */

@@ -52,6 +52,18 @@ public class PromotionService {
     }
 
     /**
+     * Get active promotions for buyer listing
+     */
+    public Page<Promotion> getActivePromotions(Pageable pageable) {
+        LocalDateTime now = LocalDateTime.now();
+        return promotionRepository.findActivePromotions(
+            Promotion.PromotionStatus.ACTIVE,
+            now,
+            pageable
+        );
+    }
+
+    /**
      * Get promotions with filtering and search
      */
     public Page<Promotion> getPromotionsWithFilters(String search, Promotion.PromotionStatus status,
