@@ -115,8 +115,22 @@
                                             <td><span class="badge" th:classappend="${review.isApproved} ? 'bg-success' : 'bg-warning'" th:text="${review.isApproved} ? 'Approved' : 'Pending'"></span></td>
                                             <td>
                                                 <a th:href="@{/admin/moderation/reviews/{id}(id=${review.reviewId})}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
-                                                <form th:if="${!review.isApproved}" th:action="@{/admin/reviews/approve/{id}(id=${review.reviewId})}" method="post" class="d-inline"><button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="fas fa-check"></i></button></form>
-                                                <form th:action="@{/admin/reviews/delete/{id}(id=${review.reviewId})}" method="post" onsubmit="return confirm('Delete this review?')" class="d-inline"><button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button></form>
+                                                <form th:if="${!review.isApproved}" th:action="@{/admin/reviews/approve/{id}(id=${review.reviewId})}" method="post" class="d-inline">
+                                                    <input type="hidden" name="reviewPage" th:value="${reviews.number}">
+                                                    <input type="hidden" name="reviewSearch" th:value="${reviewSearch}">
+                                                    <input type="hidden" name="reviewRating" th:value="${reviewRating}">
+                                                    <input type="hidden" name="reviewSortField" th:value="${reviewSortField}">
+                                                    <input type="hidden" name="reviewSortDir" th:value="${reviewSortDir}">
+                                                    <button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="fas fa-check"></i></button>
+                                                </form>
+                                                <form th:action="@{/admin/reviews/delete/{id}(id=${review.reviewId})}" method="post" onsubmit="return confirm('Delete this review?')" class="d-inline">
+                                                    <input type="hidden" name="reviewPage" th:value="${reviews.number}">
+                                                    <input type="hidden" name="reviewSearch" th:value="${reviewSearch}">
+                                                    <input type="hidden" name="reviewRating" th:value="${reviewRating}">
+                                                    <input type="hidden" name="reviewSortField" th:value="${reviewSortField}">
+                                                    <input type="hidden" name="reviewSortDir" th:value="${reviewSortDir}">
+                                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button>
+                                                </form>
                                             </td>
                                         </tr>
                                         <tr th:if="${reviews.empty}"><td colspan="7" class="text-center p-3">No reviews found.</td></tr>
@@ -127,11 +141,21 @@
                             <div class="card-footer bg-white py-3" th:if="${reviews.totalPages > 1}">
                                 <nav>
                                     <ul class="pagination pagination-sm justify-content-center mb-0">
-                                        <li class="page-item" th:classappend="${reviews.first ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=0, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">First</a></li>
-                                        <li class="page-item" th:classappend="${!reviews.hasPrevious() ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.number - 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Previous</a></li>
-                                        <li class="page-item" th:each="i : ${#numbers.sequence(0, reviews.totalPages - 1)}" th:classappend="${i == reviews.number ? 'active' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${i}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}" th:text="${i + 1}"></a></li>
-                                        <li class="page-item" th:classappend="${!reviews.hasNext() ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.number + 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Next</a></li>
-                                        <li class="page-item" th:classappend="${reviews.last ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.totalPages - 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Last</a></li>
+                                        <li class="page-item" th:classappend="${reviews.first ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=0, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">First</a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${!reviews.hasPrevious() ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.number - 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Previous</a>
+                                        </li>
+                                        <li class="page-item" th:each="i : ${#numbers.sequence(0, reviews.totalPages - 1)}" th:classappend="${i == reviews.number ? 'active' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${i}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}" th:text="${i + 1}"></a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${!reviews.hasNext() ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.number + 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Next</a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${reviews.last ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='reviews', reviewPage=${reviews.totalPages - 1}, reviewSearch=${reviewSearch}, reviewRating=${reviewRating}, reviewSortField=${reviewSortField}, reviewSortDir=${reviewSortDir})}">Last</a>
+                                        </li>
                                     </ul>
                                 </nav>
                             </div>
@@ -194,8 +218,21 @@
                                             <td><span class="badge" th:classappend="${comment.isApproved} ? 'bg-success' : 'bg-warning'" th:text="${comment.isApproved} ? 'Approved' : 'Pending'"></span></td>
                                             <td>
                                                 <a th:href="@{/admin/moderation/comments/{id}(id=${comment.commentId})}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
-                                                <form th:if="${!comment.isApproved}" th:action="@{/admin/comments/approve/{id}(id=${comment.commentId})}" method="post" class="d-inline"><button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="fas fa-check"></i></button></form>
-                                                <form th:action="@{/admin/comments/delete/{id}(id=${comment.commentId})}" method="post" onsubmit="return confirm('Delete this comment?')" class="d-inline"><button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button></form>
+                                                <form th:if="${!comment.isApproved}" th:action="@{/admin/comments/approve/{id}(id=${comment.commentId})}" method="post" class="d-inline">
+                                                    <input type="hidden" name="commentPage" th:value="${comments.number}">
+                                                    <input type="hidden" name="commentSearch" th:value="${commentSearch}">
+                                                    <input type="hidden" name="commentSortField" th:value="${commentSortField}">
+                                                    <input type="hidden" name="commentSortDir" th:value="${commentSortDir}">
+                                                    <button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="fas fa-check"></i></button>
+                                                </form>
+
+                                                <form th:action="@{/admin/comments/delete/{id}(id=${comment.commentId})}" method="post" onsubmit="return confirm('Delete this comment?')" class="d-inline">
+                                                    <input type="hidden" name="commentPage" th:value="${comments.number}">
+                                                    <input type="hidden" name="commentSearch" th:value="${commentSearch}">
+                                                    <input type="hidden" name="commentSortField" th:value="${commentSortField}">
+                                                    <input type="hidden" name="commentSortDir" th:value="${commentSortDir}">
+                                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button>
+                                                </form>
                                             </td>
                                         </tr>
                                         <tr th:if="${comments.empty}"><td colspan="6" class="text-center p-3">No comments found.</td></tr>
@@ -206,11 +243,21 @@
                             <div class="card-footer bg-white py-3" th:if="${comments.totalPages > 1}">
                                 <nav>
                                     <ul class="pagination pagination-sm justify-content-center mb-0">
-                                        <li class="page-item" th:classappend="${comments.first ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=0, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">First</a></li>
-                                        <li class="page-item" th:classappend="${!comments.hasPrevious() ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.number - 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Previous</a></li>
-                                        <li class="page-item" th:each="i : ${#numbers.sequence(0, comments.totalPages - 1)}" th:classappend="${i == comments.number ? 'active' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${i}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}" th:text="${i + 1}"></a></li>
-                                        <li class="page-item" th:classappend="${!comments.hasNext() ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.number + 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Next</a></li>
-                                        <li class="page-item" th:classappend="${comments.last ? 'disabled' : ''}"><a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.totalPages - 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Last</a></li>
+                                        <li class="page-item" th:classappend="${comments.first ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=0, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">First</a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${!comments.hasPrevious() ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.number - 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Previous</a>
+                                        </li>
+                                        <li class="page-item" th:each="i : ${#numbers.sequence(0, comments.totalPages - 1)}" th:classappend="${i == comments.number ? 'active' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${i}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}" th:text="${i + 1}"></a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${!comments.hasNext() ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.number + 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Next</a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${comments.last ? 'disabled' : ''}">
+                                            <a class="page-link" th:href="@{/admin/moderation(tab='comments', commentPage=${comments.totalPages - 1}, commentSearch=${commentSearch}, commentSortField=${commentSortField}, commentSortDir=${commentSortDir})}">Last</a>
+                                        </li>
                                     </ul>
                                 </nav>
                             </div>

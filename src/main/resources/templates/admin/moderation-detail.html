@@ -18,8 +18,8 @@
             <main class="py-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3 class="section-title" th:text="${contentType == 'review'} ? 'Review Detail' : 'Comment Detail'"></h3>
-                    <a th:href="@{/admin/moderation}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Moderation
+                    <a th:href="${contentType == 'review' ? '/admin/product-reviews' : '/admin/blog-comments'}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
                     </a>
                 </div>
 

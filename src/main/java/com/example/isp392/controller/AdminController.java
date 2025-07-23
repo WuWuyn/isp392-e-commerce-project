@@ -903,60 +903,62 @@ public class AdminController {
 
     // ==================== REVIEW & COMMENT MODERATION =====================
 
-    @GetMapping("/moderation")
-    public String showModerationPage(
-            // Tham số cho tab Reviews
-            @RequestParam(name = "reviewPage", defaultValue = "0") int reviewPage,
-            @RequestParam(name = "reviewSearch", required = false) String reviewSearch,
-            @RequestParam(name = "reviewRating", required = false) Integer reviewRating,
-            @RequestParam(name = "reviewStartDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate reviewStartDate,
-            @RequestParam(name = "reviewEndDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate reviewEndDate,
-            @RequestParam(name = "reviewSortField", defaultValue = "createdDate") String reviewSortField,
-            @RequestParam(name = "reviewSortDir", defaultValue = "desc") String reviewSortDir,
-
-            // Tham số cho tab Comments
-            @RequestParam(name = "commentPage", defaultValue = "0") int commentPage,
-            @RequestParam(name = "commentSearch", required = false) String commentSearch,
-            @RequestParam(name = "commentStartDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate commentStartDate,
-            @RequestParam(name = "commentEndDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate commentEndDate,
-            @RequestParam(name = "commentSortField", defaultValue = "createdDate") String commentSortField,
-            @RequestParam(name = "commentSortDir", defaultValue = "desc") String commentSortDir,
-
+    @GetMapping("/product-reviews")
+    public String showProductReviewsPage(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "rating", required = false) Integer rating,
+            @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(name = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(name = "sortField", defaultValue = "createdDate") String sortField,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir,
             @RequestParam(name = "size", defaultValue = "10") int size,
             Model model) {
 
         adminService.addAdminInfoToModel(model);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDir), sortField));
+        Page<BookReview> reviews = moderationService.findPaginatedReviews(search, rating, startDate, endDate, pageable);
 
-        // Controller chỉ gọi Service, không tự xử lý logic
-        Pageable reviewPageable = PageRequest.of(reviewPage, size, Sort.by(Sort.Direction.fromString(reviewSortDir), reviewSortField));
-        Page<BookReview> reviews = moderationService.findPaginatedReviews(reviewSearch, reviewRating, reviewStartDate, reviewEndDate, reviewPageable);
-
-        Pageable commentPageable = PageRequest.of(commentPage, size, Sort.by(Sort.Direction.fromString(commentSortDir), commentSortField));
-        Page<BlogComment> comments = moderationService.findPaginatedComments(commentSearch, commentStartDate, commentEndDate, commentPageable);
-
-        // Gửi dữ liệu ra view
         model.addAttribute("reviews", reviews);
+        model.addAttribute("activeMenu", "product-reviews"); // Đặt menu active
+        // Giữ lại trạng thái lọc, tìm kiếm, sắp xếp
+        model.addAttribute("search", search);
+        model.addAttribute("rating", rating);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", "asc".equals(sortDir) ? "desc" : "asc");
+
+        return "admin/product-reviews";
+    }
+
+    @GetMapping("/blog-comments")
+    public String showBlogCommentsPage(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(name = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(name = "sortField", defaultValue = "createdDate") String sortField,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            Model model) {
+
+        adminService.addAdminInfoToModel(model);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDir), sortField));
+        Page<BlogComment> comments = moderationService.findPaginatedComments(search, startDate, endDate, pageable);
+
         model.addAttribute("comments", comments);
-        model.addAttribute("activeMenu", "moderation");
+        model.addAttribute("activeMenu", "blog-comments"); // Đặt menu active
+        // Giữ lại trạng thái lọc, tìm kiếm, sắp xếp
+        model.addAttribute("search", search);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", "asc".equals(sortDir) ? "desc" : "asc");
 
-        // Giữ lại trạng thái lọc, tìm kiếm, sắp xếp cho reviews
-        model.addAttribute("reviewSearch", reviewSearch);
-        model.addAttribute("reviewRating", reviewRating);
-        model.addAttribute("reviewStartDate", reviewStartDate);
-        model.addAttribute("reviewEndDate", reviewEndDate);
-        model.addAttribute("reviewSortField", reviewSortField);
-        model.addAttribute("reviewSortDir", reviewSortDir);
-        model.addAttribute("reviewReverseSortDir", "asc".equals(reviewSortDir) ? "desc" : "asc");
-
-        // Giữ lại trạng thái lọc, tìm kiếm, sắp xếp cho comments
-        model.addAttribute("commentSearch", commentSearch);
-        model.addAttribute("commentStartDate", commentStartDate);
-        model.addAttribute("commentEndDate", commentEndDate);
-        model.addAttribute("commentSortField", commentSortField);
-        model.addAttribute("commentSortDir", commentSortDir);
-        model.addAttribute("commentReverseSortDir", "asc".equals(commentSortDir) ? "desc" : "asc");
-
-        return "admin/moderation";
+        return "admin/blog-comments";
     }
 
     @PostMapping("/reviews/approve/{id}")
@@ -966,7 +968,7 @@ public class AdminController {
         } else {
             redirectAttributes.addFlashAttribute("errorMessage", "Review not found.");
         }
-        return "redirect:/admin/moderation";
+        return "redirect:/admin/product-reviews"; // Chuyển hướng về trang product-reviews
     }
 
     @PostMapping("/reviews/delete/{id}")
@@ -977,7 +979,7 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error deleting review.");
         }
-        return "redirect:/admin/moderation";
+        return "redirect:/admin/product-reviews"; // Chuyển hướng về trang product-reviews
     }
 
     @PostMapping("/comments/approve/{id}")
@@ -987,7 +989,7 @@ public class AdminController {
         } else {
             redirectAttributes.addFlashAttribute("errorMessage", "Comment not found.");
         }
-        return "redirect:/admin/moderation?tab=comments";
+        return "redirect:/admin/blog-comments"; // Chuyển hướng về trang blog-comments
     }
 
     @PostMapping("/comments/delete/{id}")
@@ -998,9 +1000,10 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error deleting comment.");
         }
-        return "redirect:/admin/moderation?tab=comments";
+        return "redirect:/admin/blog-comments"; // Chuyển hướng về trang blog-comments
     }
 
+    // Các phương thức xem chi tiết vẫn giữ nguyên, chúng không bị ảnh hưởng
     @GetMapping("/moderation/reviews/{id}")
     public String showReviewDetailPage(@PathVariable("id") Integer reviewId, Model model, RedirectAttributes redirectAttributes) {
         adminService.addAdminInfoToModel(model);
@@ -1008,12 +1011,12 @@ public class AdminController {
 
         if (reviewOpt.isPresent()) {
             model.addAttribute("review", reviewOpt.get());
-            model.addAttribute("contentType", "review"); // Đánh dấu đây là trang chi tiết review
-            model.addAttribute("activeMenu", "moderation");
-            return "admin/moderation-detail"; // Trả về template mới
+            model.addAttribute("contentType", "review");
+            model.addAttribute("activeMenu", "product-reviews"); // Cập nhật menu active
+            return "admin/moderation-detail";
         } else {
             redirectAttributes.addFlashAttribute("errorMessage", "Review not found.");
-            return "redirect:/admin/moderation";
+            return "redirect:/admin/product-reviews";
         }
     }
 
@@ -1024,12 +1027,12 @@ public class AdminController {
 
         if (commentOpt.isPresent()) {
             model.addAttribute("comment", commentOpt.get());
-            model.addAttribute("contentType", "comment"); // Đánh dấu đây là trang chi tiết comment
-            model.addAttribute("activeMenu", "moderation");
-            return "admin/moderation-detail"; // Trả về template mới
+            model.addAttribute("contentType", "comment");
+            model.addAttribute("activeMenu", "blog-comments"); // Cập nhật menu active
+            return "admin/moderation-detail";
         } else {
             redirectAttributes.addFlashAttribute("errorMessage", "Comment not found.");
-            return "redirect:/admin/moderation?tab=comments";
+            return "redirect:/admin/blog-comments";
         }
     }
 

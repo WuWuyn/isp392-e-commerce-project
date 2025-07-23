@@ -60,9 +60,11 @@
             <a th:href="@{/admin/blogs}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'blog' ? 'active' : ''}">
                 <i class="fas fa-blog"></i> Blog Management
             </a>
-
-            <a th:href="@{/admin/moderation}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'moderation' ? 'active' : ''}">
-                <i class="fas fa-comments-dollar"></i> Review Moderation
+            <a th:href="@{/admin/product-reviews}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'product-reviews' ? 'active' : ''}">
+                <i class="fas fa-star"></i> Product Reviews Moderation
+            </a>
+            <a th:href="@{/admin/blog-comments}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'blog-comments' ? 'active' : ''}">
+                <i class="fas fa-comments"></i> Blog Comments Moderation
             </a>
 
             <a th:href="@{/admin/data-management}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'data-management' ? 'active' : ''}">
