@@ -32,6 +32,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/blog">Blog</a>
                     </li>
+                    <li class="nav-item" sec:authorize="hasRole('BUYER')">
+                        <a class="nav-link" th:href="@{/buyer/promotions}">
+                            <i class="fas fa-tags me-1"></i>Promotions
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Pages
