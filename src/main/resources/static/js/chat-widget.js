@@ -8,10 +8,12 @@ class ReadHubChatWidget {
         this.sessionToken = this.getOrCreateSessionToken();
         this.isLoading = false;
         this.messages = [];
+        this.conversations = [];
 
         this.initializeWidget();
         this.bindEvents();
         this.loadChatHistory();
+        this.loadConversations();
         console.log('ReadHubChatWidget initialized with session:', this.sessionToken);
     }
 
@@ -30,28 +32,46 @@ class ReadHubChatWidget {
         // Create chat modal using Bootstrap 5
         const chatModal = `
             <div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
+                <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header bg-primary text-white">
                             <h5 class="modal-title" id="chatModalLabel">
                                 <i class="fas fa-robot me-2"></i>ReadHub Assistant
                             </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-light btn-sm" id="newChatBtn">
+                                    <i class="fas fa-plus me-1"></i>New Chat
+                                </button>
+                                <button type="button" class="btn btn-outline-light btn-sm" id="historyBtn">
+                                    <i class="fas fa-history me-1"></i>History
+                                </button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
                         </div>
-                        <div class="modal-body p-0">
-                            <div id="chatMessages" class="chat-messages"></div>
-                            <div class="chat-input-container p-3 border-top">
-                                <div class="input-group">
-                                    <input type="text" id="chatInput" class="form-control" 
-                                           placeholder="Ask about books, authors, or store info..." 
-                                           maxlength="2000">
-                                    <button id="sendBtn" class="btn btn-primary" type="button" disabled>
-                                        <i class="fas fa-paper-plane"></i>
-                                    </button>
+                        <div class="modal-body p-0 d-flex">
+                            <div id="conversationSidebar" class="conversation-sidebar border-end">
+                                <div class="p-3 border-bottom">
+                                    <h6 class="mb-0">Conversations</h6>
                                 </div>
-                                <small class="text-muted mt-1 d-block">
-                                    Try: "Recommend fiction books under $20" or "What are your store hours?"
-                                </small>
+                                <div id="conversationList" class="conversation-list">
+                                    <!-- Conversations will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="chat-main flex-grow-1">
+                                <div id="chatMessages" class="chat-messages"></div>
+                                <div class="chat-input-container p-3 border-top">
+                                    <div class="input-group">
+                                        <input type="text" id="chatInput" class="form-control"
+                                               placeholder="Ask about books, authors, or store info..."
+                                               maxlength="2000">
+                                        <button id="sendBtn" class="btn btn-primary" type="button" disabled>
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted mt-1 d-block">
+                                        Try: "Recommend fiction books under $20" or "What are your store hours?"
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -103,11 +123,62 @@ class ReadHubChatWidget {
                     justify-content: center;
                 }
                 
+                .conversation-sidebar {
+                    width: 280px;
+                    min-width: 280px;
+                    max-width: 280px;
+                    background: #f8f9fa;
+                    max-height: 500px;
+                    overflow-y: auto;
+                    flex-shrink: 0;
+                }
+
+                .conversation-list {
+                    max-height: 450px;
+                    overflow-y: auto;
+                }
+
+                .conversation-item {
+                    padding: 12px 16px;
+                    border-bottom: 1px solid #e9ecef;
+                    cursor: pointer;
+                    transition: background-color 0.2s ease;
+                }
+
+                .conversation-item:hover {
+                    background-color: #e9ecef;
+                }
+
+                .conversation-item.active {
+                    background-color: #0d6efd;
+                    color: white;
+                }
+
+                .conversation-title {
+                    font-weight: 500;
+                    font-size: 14px;
+                    margin-bottom: 4px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .conversation-time {
+                    font-size: 12px;
+                    opacity: 0.7;
+                }
+
+                .chat-main {
+                    display: flex;
+                    flex-direction: column;
+                }
+
                 .chat-messages {
                     height: 400px;
                     overflow-y: auto;
                     padding: 20px;
                     background: #f8f9fa;
+                    flex-grow: 1;
                 }
                 
                 .message {
@@ -278,6 +349,16 @@ class ReadHubChatWidget {
         document.getElementById('chatInput').addEventListener('input', (e) => {
             const sendBtn = document.getElementById('sendBtn');
             sendBtn.disabled = e.target.value.trim().length === 0 || this.isLoading;
+        });
+
+        // New chat button
+        document.getElementById('newChatBtn').addEventListener('click', () => {
+            this.createNewConversation();
+        });
+
+        // History button
+        document.getElementById('historyBtn').addEventListener('click', () => {
+            this.toggleConversationSidebar();
         });
 
         // Modal events
@@ -539,6 +620,145 @@ class ReadHubChatWidget {
         const notification = document.getElementById('chatNotification');
         if (notification) {
             notification.style.display = 'none';
+        }
+    }
+
+    /**
+     * Load user's conversation sessions
+     */
+    async loadConversations() {
+        try {
+            const response = await fetch('/api/chat/sessions');
+            const data = await response.json();
+
+            if (data.success && data.sessions) {
+                this.conversations = data.sessions;
+                this.renderConversationList();
+            }
+        } catch (error) {
+            console.error('Error loading conversations:', error);
+        }
+    }
+
+    /**
+     * Render the conversation list in the sidebar
+     */
+    renderConversationList() {
+        const conversationList = document.getElementById('conversationList');
+        if (!conversationList) return;
+
+        if (this.conversations.length === 0) {
+            conversationList.innerHTML = `
+                <div class="p-3 text-center text-muted">
+                    <i class="fas fa-comments mb-2 d-block"></i>
+                    No conversations yet
+                </div>
+            `;
+            return;
+        }
+
+        conversationList.innerHTML = this.conversations.map(conv => {
+            const isActive = conv.sessionToken === this.sessionToken;
+            const title = conv.title || 'New Conversation';
+            const time = new Date(conv.updatedAt).toLocaleDateString();
+
+            return `
+                <div class="conversation-item ${isActive ? 'active' : ''}"
+                     data-session-token="${conv.sessionToken}">
+                    <div class="conversation-title">${title}</div>
+                    <div class="conversation-time">${time}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers for conversation items
+        conversationList.querySelectorAll('.conversation-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const sessionToken = item.dataset.sessionToken;
+                if (sessionToken !== this.sessionToken) {
+                    this.switchToConversation(sessionToken);
+                }
+            });
+        });
+    }
+
+    /**
+     * Create a new conversation
+     */
+    async createNewConversation() {
+        try {
+            const response = await fetch('/api/chat/sessions/new', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.sessionToken = data.sessionToken;
+                localStorage.setItem('readhub_chat_session', this.sessionToken);
+
+                // Clear current messages
+                this.messages = [];
+                document.getElementById('chatMessages').innerHTML = '';
+
+                // Reload conversations and show welcome message
+                await this.loadConversations();
+                this.addWelcomeMessage();
+
+                console.log('New conversation created:', data.sessionToken);
+            } else {
+                console.error('Failed to create new conversation:', data.message);
+            }
+        } catch (error) {
+            console.error('Error creating new conversation:', error);
+        }
+    }
+
+    /**
+     * Switch to an existing conversation
+     */
+    async switchToConversation(sessionToken) {
+        try {
+            const response = await fetch('/api/chat/sessions/switch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ sessionToken })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.sessionToken = sessionToken;
+                localStorage.setItem('readhub_chat_session', this.sessionToken);
+
+                // Clear current messages and load history for this session
+                this.messages = [];
+                document.getElementById('chatMessages').innerHTML = '';
+
+                await this.loadChatHistory();
+                this.renderConversationList(); // Update active state
+
+                console.log('Switched to conversation:', sessionToken);
+            } else {
+                console.error('Failed to switch conversation:', data.message);
+            }
+        } catch (error) {
+            console.error('Error switching conversation:', error);
+        }
+    }
+
+    /**
+     * Toggle conversation sidebar visibility
+     */
+    toggleConversationSidebar() {
+        const sidebar = document.getElementById('conversationSidebar');
+        if (sidebar) {
+            sidebar.style.display = sidebar.style.display === 'none' ? 'block' : 'none';
         }
     }
 }

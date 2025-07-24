@@ -1,6 +1,7 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.model.ChatMessage;
+import com.example.isp392.model.ChatSession;
 import com.example.isp392.model.User;
 import com.example.isp392.service.ChatService;
 import com.example.isp392.service.UserService;
@@ -171,7 +172,114 @@ public class ChatController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Get all conversation sessions for the authenticated user
+     */
+    @GetMapping("/api/chat/sessions")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getUserSessions() {
+        Map<String, Object> response = new HashMap<>();
 
+        try {
+            User user = getAuthenticatedUser();
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "Authentication required");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            List<ChatSession> sessions = chatService.getAllUserSessions(user);
+
+            response.put("success", true);
+            response.put("sessions", sessions);
+            response.put("totalSessions", sessions.size());
+
+            logger.debug("Retrieved {} sessions for user: {}", sessions.size(), user.getEmail());
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error retrieving user sessions: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "An error occurred while retrieving sessions");
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * Create a new chat session
+     */
+    @PostMapping("/api/chat/sessions/new")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> createNewSession() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            User user = getAuthenticatedUser();
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "Authentication required");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            ChatSession newSession = chatService.createNewSession(user);
+
+            response.put("success", true);
+            response.put("sessionToken", newSession.getSessionToken());
+            response.put("sessionId", newSession.getSessionId());
+            response.put("message", "New conversation started");
+
+            logger.debug("Created new session: {} for user: {}", newSession.getSessionToken(), user.getEmail());
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error creating new session: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Failed to create new conversation");
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * Switch to an existing session
+     */
+    @PostMapping("/api/chat/sessions/switch")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> switchSession(@RequestBody Map<String, String> request) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            String sessionToken = request.get("sessionToken");
+            if (sessionToken == null || sessionToken.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Session token is required");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            User user = getAuthenticatedUser();
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "Authentication required");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            ChatSession session = chatService.switchToSession(sessionToken, user);
+
+            response.put("success", true);
+            response.put("sessionToken", session.getSessionToken());
+            response.put("sessionId", session.getSessionId());
+            response.put("title", session.getTitle());
+            response.put("message", "Switched to conversation");
+
+            logger.debug("Switched to session: {} for user: {}", sessionToken, user.getEmail());
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error switching session: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Failed to switch conversation");
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
 
     /**
      * Get authenticated user (returns null if not authenticated)
