@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - ReadHub</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    
+    <style>
+        .success-container {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .success-icon {
+            font-size: 5rem;
+            color: #28a745;
+            margin-bottom: 1.5rem;
+        }
+        
+        .success-title {
+            color: #28a745;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .order-info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #28a745;
+        }
+        
+        .action-buttons {
+            margin-top: 2rem;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+        
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header-content}"></div>
+
+<main class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="success-container">
+                    <i class="fas fa-check-circle success-icon"></i>
+                    <h1 class="success-title">Payment Successful!</h1>
+                    <p class="lead">Thank you for your purchase. Your payment has been processed successfully.</p>
+                    
+                    <div class="order-info-card">
+                        <h5 class="mb-3">
+                            <i class="fas fa-receipt me-2"></i>
+                            Order Details #<span th:text="${customerOrder.customerOrderId}">12345</span>
+                        </h5>
+                        
+                        <div class="info-row">
+                            <span>Order Date:</span>
+                            <span th:text="${#temporals.format(customerOrder.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:30</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span>Payment Method:</span>
+                            <span th:text="${customerOrder.paymentMethod}">VNPay</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span>Payment Status:</span>
+                            <span class="badge bg-success" th:text="${customerOrder.paymentStatus}">PAID</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span>Subtotal:</span>
+                            <span th:text="${#numbers.formatDecimal(customerOrder.totalAmount - customerOrder.shippingFee + customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'">500,000 VND</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span>Shipping Fee:</span>
+                            <span th:text="${#numbers.formatDecimal(customerOrder.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' VND'">30,000 VND</span>
+                        </div>
+                        
+                        <div class="info-row" th:if="${customerOrder.discountAmount != null && customerOrder.discountAmount > 0}">
+                            <span>Discount:</span>
+                            <span class="text-success" th:text="'-' + ${#numbers.formatDecimal(customerOrder.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'">-50,000 VND</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span>Total Paid:</span>
+                            <span th:text="${#numbers.formatDecimal(customerOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'">480,000 VND</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <a th:href="@{/buyer/customer-orders}" class="btn btn-primary-custom me-3">
+                            <i class="fas fa-list me-2"></i>
+                            View My Orders
+                        </a>
+                        <a th:href="@{/}" class="btn btn-outline-secondary">
+                            <i class="fas fa-home me-2"></i>
+                            Continue Shopping
+                        </a>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <p class="text-muted small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            You will receive an email confirmation shortly. Your order will be processed and shipped within 1-2 business days.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

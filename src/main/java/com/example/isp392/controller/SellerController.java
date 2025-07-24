@@ -6,6 +6,7 @@ import com.example.isp392.model.*;
 import com.example.isp392.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -54,6 +55,8 @@ public class SellerController {
     private final OrderService orderService;
     private final OtpService otpService;
     private final EmailService emailService;
+    private final DataImportExportService dataImportExportService;
+    private final BookReviewService bookReviewService;
 
     /**
      * Constructor for dependency injection
@@ -66,7 +69,8 @@ public class SellerController {
      */
     public SellerController(UserService userService, BookService bookService, ShopService shopService,
                             CategoryService categoryService, PublisherService publisherService,
-                            OrderService orderService, OtpService otpService, EmailService emailService) {
+                            OrderService orderService, OtpService otpService, EmailService emailService, DataImportExportService dataImportExportService
+    , BookReviewService bookReviewService) {
         this.userService = userService;
         this.bookService = bookService;
         this.shopService = shopService;
@@ -75,6 +79,8 @@ public class SellerController {
         this.orderService = orderService;
         this.otpService = otpService;
         this.emailService = emailService;
+        this.dataImportExportService = dataImportExportService;
+        this.bookReviewService = bookReviewService;
     }
 
     @GetMapping("/login")
@@ -1709,5 +1715,223 @@ public class SellerController {
 
         return response;
     }
+    // 1. Hiển thị trang quản lý dữ liệu cho Seller
+    @GetMapping("/data-management")
+    public String showDataManagementPage(Model model) {
+        // FIX: Add current user info to the model, do not use non-existent sellerService.
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return "redirect:/seller/login";
+        }
+        model.addAttribute("user", currentUser);
+        model.addAttribute("roles", userService.getUserRoles(currentUser));
+        model.addAttribute("activeMenu", "data-management");
+        return "seller/data-management";
+    }
 
+    /**
+     * 2. Handles the import of products for the seller's shop from a CSV file.
+     */
+    @PostMapping("/data-management/import/products")
+    public String importProducts(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
+            return "redirect:/seller/data-management";
+        }
+        try {
+            // FIX: Robustly get the shop ID for the current user.
+            User currentUser = getCurrentUser();
+            if (currentUser == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "User not authenticated.");
+                return "redirect:/seller/login";
+            }
+            Shop shop = shopService.getShopByUserId(currentUser.getUserId());
+            if (shop == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Shop not found for your account.");
+                return "redirect:/seller/data-management";
+            }
+
+            dataImportExportService.importBooksFromCsvForSeller(file, shop.getShopId());
+            redirectAttributes.addFlashAttribute("successMessage", "Products imported successfully!");
+
+        } catch (IOException e) {
+            log.error("Error processing CSV file during import: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("An unexpected error occurred during product import: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "An unexpected error occurred: " + e.getMessage());
+        }
+        return "redirect:/seller/data-management";
+    }
+
+    /**
+     * 3. Handles the export of the seller's products to a CSV file.
+     */
+    @GetMapping("/data-management/export/products")
+    public void exportProducts(HttpServletResponse response) {
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=\"my_products_export_" + LocalDate.now() + ".csv\"");
+
+        try {
+            // FIX: Robustly get the shop ID for the current user.
+            User currentUser = getCurrentUser();
+            if (currentUser == null) {
+                response.getWriter().write("Error: User not authenticated.");
+                return;
+            }
+            Shop shop = shopService.getShopByUserId(currentUser.getUserId());
+            if (shop == null) {
+                log.error("Shop not found for user {}", currentUser.getEmail());
+                response.getWriter().write("Error: Shop not found for your account.");
+                return;
+            }
+
+            dataImportExportService.exportBooksToCsvForSeller(response.getWriter(), shop.getShopId());
+
+        } catch (Exception e) {
+            log.error("Error exporting products: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 4. Handles the export of the seller's orders to a CSV file.
+     */
+    @GetMapping("/data-management/export/orders")
+    public void exportOrders(HttpServletResponse response) {
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=\"my_orders_export_" + LocalDate.now() + ".csv\"");
+
+        try {
+            User currentUser = getCurrentUser();
+            if (currentUser == null) {
+                response.getWriter().write("Error: User not authenticated.");
+                return;
+            }
+            Shop shop = shopService.getShopByUserId(currentUser.getUserId());
+            if (shop == null) {
+                log.error("Shop not found for user {}", currentUser.getEmail());
+                response.getWriter().write("Error: Shop not found for your account.");
+                return;
+            }
+
+            dataImportExportService.exportOrdersToCsvForSeller(response.getWriter(), shop.getShopId());
+
+        } catch (Exception e) {
+            log.error("Error exporting orders: {}", e.getMessage(), e);
+        }
+    }
+    @ModelAttribute
+    public void addCommonAttributes(Model model, Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            User currentUser = getCurrentUser(authentication);
+            if (currentUser != null) {
+                model.addAttribute("user", currentUser);
+                model.addAttribute("roles", userService.getUserRoles(currentUser));
+
+                Shop shop = shopService.getShopByUserId(currentUser.getUserId());
+                if (shop != null) {
+                    model.addAttribute("shop", shop);
+
+                    // Lấy số lượng thông báo đơn hàng mới
+                    long newOrderCount = orderService.countNewOrdersForSeller(shop.getShopId());
+                    model.addAttribute("notificationCount", newOrderCount);
+                } else {
+                    model.addAttribute("notificationCount", 0L);
+                }
+            }
+        }
+    }
+
+    @GetMapping("/reviews")
+    public String showSellerReviewsPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String searchTitle,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "date_desc") String sort, // Dùng một tham số sort cho tiện lợi
+            Model model) {
+
+        User seller = getCurrentUser();
+        Shop shop = shopService.getShopByUserId(seller.getUserId());
+        if (shop == null) {
+            return "redirect:/seller/dashboard";
+        }
+
+        // Xử lý tham số 'sort' để tạo đối tượng Sort
+        Sort sortObj;
+        switch (sort) {
+            case "date_asc":
+                sortObj = Sort.by("createdDate").ascending();
+                break;
+            case "title_asc":
+                sortObj = Sort.by("orderItem.book.title").ascending();
+                break;
+            case "title_desc":
+                sortObj = Sort.by("orderItem.book.title").descending();
+                break;
+            default: // "date_desc"
+                sortObj = Sort.by("createdDate").descending();
+                break;
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+
+        // Gọi service đã được nâng cấp
+        Page<BookReview> reviewPage = bookReviewService.getReviewsForSeller(shop.getShopId(), searchTitle, startDate, endDate, pageable);
+
+        // Nhóm các đánh giá theo sách để hiển thị (giữ nguyên logic này)
+        Map<Book, Long> reviewedBooksWithCount = reviewPage.getContent().stream()
+                .filter(r -> r.getOrderItem() != null && r.getOrderItem().getBook() != null)
+                .collect(Collectors.groupingBy(
+                        review -> review.getOrderItem().getBook(),
+                        Collectors.counting()
+                ));
+
+        model.addAttribute("reviewedBooksWithCount", reviewedBooksWithCount);
+        model.addAttribute("reviewPage", reviewPage);
+
+        // Gửi các giá trị lọc và sắp xếp lại cho view để giữ trạng thái trên form
+        model.addAttribute("searchTitle", searchTitle);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("sort", sort);
+
+        model.addAttribute("activeMenu", "reviews");
+        return "seller/seller-reviews";
+    }
+
+    // Phương thức showBookReviewDetails không cần thay đổi nhiều, nhưng ta có thể thêm sắp xếp
+    @GetMapping("/reviews/book/{bookId}")
+    public String showBookReviewDetails(@PathVariable("bookId") Integer bookId,
+                                        @RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "3") int size,
+                                        @RequestParam(defaultValue = "date_desc") String sort,
+                                        Model model) {
+        User seller = getCurrentUser();
+        Shop shop = shopService.getShopByUserId(seller.getUserId());
+        if (shop == null) return "redirect:/seller/dashboard";
+
+        Optional<Book> bookOpt = bookService.getBookById(bookId);
+        if (bookOpt.isEmpty() || !bookOpt.get().getShop().getShopId().equals(shop.getShopId())) {
+            return "redirect:/seller/reviews";
+        }
+        Book book = bookOpt.get();
+
+        Sort sortObj = "date_asc".equals(sort)
+                ? Sort.by("createdDate").ascending()
+                : Sort.by("createdDate").descending();
+
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+
+        // Gọi service đã được nâng cấp để lấy Page<BookReview>
+        Page<BookReview> reviewPage = bookReviewService.getReviewsForBookBySeller(bookId, shop.getShopId(), pageable);
+
+        model.addAttribute("book", book);
+        model.addAttribute("reviewPage", reviewPage); // Gửi đối tượng Page ra view
+        model.addAttribute("sort", sort);
+        model.addAttribute("activeMenu", "reviews");
+
+        return "seller/seller-review-detail";
+    }
 }

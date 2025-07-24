@@ -70,7 +70,6 @@ public class AdminController {
     private final BlogService blogService;
     private final CategoryService categoryService;
     private final PublisherService publisherService;
-    private final DataImportExportService dataImportExportService;
     private final ModerationService moderationService;
     private final SystemSettingService systemSettingService;
     private final FileStorageService fileStorageService;
@@ -88,7 +87,7 @@ public class AdminController {
                            CategoryRepository categoryRepository,
                            PublisherRepository publisherRepository,
                            ShopService shopService,
-                           OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService, DataImportExportService dataImportExportService
+                           OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService
             , ModerationService moderationService, SystemSettingService systemSettingService, FileStorageService fileStorageService) {
         this.userService = userService;
         this.adminService = adminService;
@@ -100,7 +99,6 @@ public class AdminController {
         this.blogService = blogService;
         this.categoryService = categoryService;
         this.publisherService = publisherService;
-        this.dataImportExportService = dataImportExportService;
         this.moderationService = moderationService;
         this.systemSettingService = systemSettingService;
         this.fileStorageService = fileStorageService;
@@ -803,100 +801,6 @@ public class AdminController {
         return "redirect:/admin/blogs";
     }
 
-    // NEW: Admin Data Import/Export Tools
-    @GetMapping("/data-management")
-    public String showDataManagementPage(Model model) {
-        adminService.addAdminInfoToModel(model);
-        model.addAttribute("activeMenu", "data-management");
-        return "admin/data-management"; // Create this new Thymeleaf template
-    }
-
-    @PostMapping("/data-management/import/users")
-    public String importUsers(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
-        if (file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
-            return "redirect:/admin/data-management";
-        }
-        try {
-            // Assuming your service handles CSV parsing and saving
-            dataImportExportService.importUsersFromCsv(file);
-            redirectAttributes.addFlashAttribute("successMessage", "Users imported successfully!");
-        } catch (IOException e) {
-            log.error("Error importing users: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error importing users: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error importing users: " + e.getMessage());
-        }
-        return "redirect:/admin/data-management";
-    }
-
-    @PostMapping("/data-management/import/products")
-    public String importProducts(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
-        if (file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
-            return "redirect:/admin/data-management";
-        }
-        try {
-            dataImportExportService.importBooksFromCsv(file);
-            redirectAttributes.addFlashAttribute("successMessage", "Products imported successfully!");
-        } catch (IOException e) {
-            log.error("Error importing products: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error importing products: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error importing products: " + e.getMessage());
-        }
-        return "redirect:/admin/data-management";
-    }
-
-    @GetMapping("/data-management/export/users")
-    public void exportUsers(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"users_export_" + LocalDate.now() + ".csv\"");
-        try {
-            dataImportExportService.exportUsersToCsv(response.getWriter());
-            redirectAttributes.addFlashAttribute("successMessage", "Users exported successfully!");
-        } catch (IOException e) {
-            log.error("Error exporting users: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting users: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error exporting users: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting users: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/data-management/export/products")
-    public void exportProducts(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"products_export_" + LocalDate.now() + ".csv\"");
-        try {
-            dataImportExportService.exportBooksToCsv(response.getWriter());
-            redirectAttributes.addFlashAttribute("successMessage", "Products exported successfully!");
-        } catch (IOException e) {
-            log.error("Error exporting products: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting products: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error exporting products: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting products: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/data-management/export/orders")
-    public void exportOrders(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"orders_export_" + LocalDate.now() + ".csv\"");
-        try {
-            dataImportExportService.exportOrdersToCsv(response.getWriter());
-            redirectAttributes.addFlashAttribute("successMessage", "Orders exported successfully!");
-        } catch (IOException e) {
-            log.error("Error exporting orders: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting orders: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error exporting orders: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting orders: " + e.getMessage());
-        }
-    }
 
     // ==================== REVIEW & COMMENT MODERATION =====================
 
@@ -1178,11 +1082,20 @@ public class AdminController {
     public String showSettingsPage(Model model) {
         adminService.addAdminInfoToModel(model);
 
-        // THÊM KEY "hero_background_image" VÀO DANH SÁCH NÀY
+        // Đảm bảo danh sách này chứa đủ 12 khóa
         List<String> settingKeys = List.of(
-                "hero_background_image", // << THÊM DÒNG NÀY
-                "hero_title", "hero_description", "hero_button_text", "hero_button_link",
-                "contact_email", "social_facebook", "social_instagram", "social_zalo"
+                "hero_background_image",
+                "hero_title",
+                "hero_description",
+                "hero_button_text",
+                "hero_button_link",
+                "contact_email",
+                "contact_province",
+                "contact_district",
+                "contact_ward",
+                "social_facebook",
+                "social_instagram",
+                "social_zalo"
         );
 
         Map<String, String> settings = systemSettingService.getSettings(settingKeys);

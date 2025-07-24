@@ -1,6 +1,7 @@
 package com.example.isp392.repository;
 
 import com.example.isp392.model.Book;
+import com.example.isp392.model.BookReview;
 import com.example.isp392.model.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,7 +51,7 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     // Thêm "AND b.active = true"
     @Query("SELECT b FROM Book b WHERE b.sellingPrice < b.originalPrice AND b.isActive = true")
     List<Book> findDiscountedBooks(Pageable pageable);
-    
+
     /**
      * Find all books belonging to a specific shop with pagination
      * 
@@ -77,7 +78,7 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
      * @return List of highest rated books
      */
     List<Book> findByShopShopIdAndIsActiveTrueOrderByAverageRatingDesc(Integer shopId, Pageable pageable);
-    
+    List<Book> findByShopShopId(Integer shopId);
     /**
      * Count active books by shop ID
      * 

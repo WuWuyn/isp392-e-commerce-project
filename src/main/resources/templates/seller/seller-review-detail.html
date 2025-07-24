@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Review Details - ReadHub Seller</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/seller-style.css}">
+  <style>
+    .rating-stars { color: #ffc107; }
+    .rating-stars .far { color: #dee2e6; }
+    .review-card { margin-bottom: 1.5rem; }
+    .review-images img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-right: 10px;
+        cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/seller-topbar :: seller-topbar}"></div>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-3 mb-4">
+      <div th:replace="~{fragments/seller-sidebar :: seller-sidebar}"></div>
+    </div>
+
+    <main class="col-lg-9 py-4">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Reviews for <span th:text="${book.title}">Book Title</span></h1>
+        <a th:href="@{/seller/reviews}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Back to All Reviews
+        </a>
+      </div>
+
+      <div class="card card-body mb-4" th:unless="${reviewPage.isEmpty()}">
+        <form th:action="@{/seller/reviews/book/{bookId}(bookId=${book.bookId})}" method="get" class="d-flex align-items-center">
+          <label for="sort" class="form-label me-2 mb-0">Sort By:</label>
+          <select id="sort" name="sort" class="form-select w-auto" onchange="this.form.submit()">
+            <option value="date_desc" th:selected="${sort == 'date_desc'}">Newest First</option>
+            <option value="date_asc" th:selected="${sort == 'date_asc'}">Oldest First</option>
+          </select>
+        </form>
+      </div>
+
+      <div th:if="${reviewPage.isEmpty()}" class="alert alert-info">
+        This product has no reviews yet.
+      </div>
+
+      <div th:unless="${reviewPage.isEmpty()}">
+        <div class="card review-card" th:each="review : ${reviewPage.content}">
+          <div class="card-body">
+            <div class="d-flex">
+              <div class="flex-shrink-0">
+                <img th:src="${review.user.profilePicUrl ?: 'https://via.placeholder.com/64'}" alt="User" class="rounded-circle" width="64" height="64">
+              </div>
+              <div class="flex-grow-1 ms-3">
+                <h5 class="mt-0" th:text="${review.title}">Review Title</h5>
+                <p class="text-muted small mb-1">
+                  Reviewed by <strong th:text="${review.user.fullName}">User Name</strong> on
+                  <span th:text="${#temporals.format(review.createdDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+                </p>
+                <div class="mb-2 rating-stars">
+                  <i th:each="i : ${#numbers.sequence(1, 5)}"
+                     th:class="${i <= review.rating} ? 'fas fa-star' : 'far fa-star'"></i>
+                </div>
+                <p style="white-space: pre-wrap;" th:text="${review.content}">Review content.</p>
+
+                <div class="review-images mt-3" th:if="${review.imgUrl1 != null || review.imgUrl2 != null || review.imgUrl3 != null}">
+                  <img th:if="${review.imgUrl1}" th:src="${review.imgUrl1}" alt="Review Image 1">
+                  <img th:if="${review.imgUrl2}" th:src="${review.imgUrl2}" alt="Review Image 2">
+                  <img th:if="${review.imgUrl3}" th:src="${review.imgUrl3}" alt="Review Image 3">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav th:if="${reviewPage.totalPages > 1}" aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+          <li class="page-item" th:classappend="${reviewPage.isFirst()} ? 'disabled'">
+            <a class="page-link" th:href="@{/seller/reviews/book/{bookId}(bookId=${book.bookId}, page=${reviewPage.number - 1}, size=${reviewPage.size}, sort=${sort})}">Previous</a>
+          </li>
+          <li class="page-item" th:each="i : ${#numbers.sequence(0, reviewPage.totalPages - 1)}" th:classappend="${i == reviewPage.number} ? 'active'">
+            <a class="page-link" th:href="@{/seller/reviews/book/{bookId}(bookId=${book.bookId}, page=${i}, size=${reviewPage.size}, sort=${sort})}" th:text="${i + 1}"></a>
+          </li>
+          <li class="page-item" th:classappend="${reviewPage.isLast()} ? 'disabled'">
+            <a class="page-link" th:href="@{/seller/reviews/book/{bookId}(bookId=${book.bookId}, page=${reviewPage.number + 1}, size=${reviewPage.size}, sort=${sort})}">Next</a>
+          </li>
+        </ul>
+      </nav>
+
+    </main>
+  </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

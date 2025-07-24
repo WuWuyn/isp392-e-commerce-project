@@ -1,8 +1,8 @@
 package com.example.isp392.model;
 
 import com.example.isp392.model.enums.WalletReferenceType;
-import com.example.isp392.model.enums.WalletTransactionType;
 import com.example.isp392.model.enums.WalletTransactionStatus;
+import com.example.isp392.model.enums.WalletTransactionType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

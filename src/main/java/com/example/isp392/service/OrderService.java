@@ -971,4 +971,10 @@ public class OrderService {
         }
         return null;
     }
+    public long countNewOrdersForSeller(Integer shopId) {
+        if (shopId == null) {
+            return 0;
+        }
+        return orderRepository.countByShopShopIdAndOrderStatus(shopId, OrderStatus.PROCESSING);
+    }
 }

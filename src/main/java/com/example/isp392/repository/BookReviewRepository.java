@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import com.example.isp392.model.User;
 import java.util.Optional;
@@ -18,6 +19,11 @@ public interface BookReviewRepository extends JpaRepository<BookReview, Integer>
     @Query("SELECT br FROM BookReview br WHERE br.orderItem.book.bookId = :bookId")
     List<BookReview> findByBookId(int bookId);
 
+    @Query("SELECT br FROM BookReview br JOIN br.orderItem oi JOIN oi.book b WHERE b.shop.shopId = :shopId ORDER BY br.createdDate DESC")
+    Page<BookReview> findReviewsByShopId(@Param("shopId") Integer shopId, Pageable pageable);
+
+    @Query("SELECT br FROM BookReview br JOIN br.orderItem oi JOIN oi.book b WHERE b.bookId = :bookId AND b.shop.shopId = :shopId")
+    Page<BookReview> findReviewsByBookIdAndShopId(@Param("bookId") Integer bookId, @Param("shopId") Integer shopId, Pageable pageable);
     // Tìm đánh giá với phân trang
     @Query("SELECT br FROM BookReview br WHERE br.orderItem.book.bookId = :bookId")
     Page<BookReview> findByBookId(int bookId, Pageable pageable);

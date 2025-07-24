@@ -7,7 +7,9 @@
         <div class="row">
             <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
                 <h5 class="footer-heading">Connect</h5>
-                <p class="small">329 Queensberry Street, North Melbourne VIC 3051, Australia.</p>
+                <p class="small" th:if="${globalSettings.containsKey('contact_ward') and not #strings.isEmpty(globalSettings.contact_ward)}">
+                    <span th:text="${globalSettings.contact_ward} + ', ' + ${globalSettings.contact_district} + ', ' + ${globalSettings.contact_province}"></span>
+                </p>
                 <p class="small" th:if="${globalSettings.containsKey('contact_email') and not #strings.isEmpty(globalSettings.contact_email)}">
                     <a th:href="'mailto:' + ${globalSettings.contact_email}" th:text="${globalSettings.contact_email}" class="text-white"></a>
                 </p>

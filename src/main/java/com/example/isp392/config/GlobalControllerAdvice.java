@@ -34,20 +34,20 @@ public class GlobalControllerAdvice {
 
     @ModelAttribute("globalSettings")
     public Map<String, String> addGlobalSettingsToModel() {
-        // Liệt kê tất cả các key cài đặt mà bạn muốn truy cập toàn cục (ví dụ: trong footer)
+        // Đảm bảo danh sách này giống hệt với danh sách trong AdminController
         List<String> settingKeys = List.of(
-                // Cài đặt footer (đã có)
-                "contact_email",
-                "social_facebook",
-                "social_instagram",
-                "social_zalo",
-
-                // THÊM MỚI: Cài đặt Hero Banner
                 "hero_background_image",
                 "hero_title",
                 "hero_description",
                 "hero_button_text",
-                "hero_button_link"
+                "hero_button_link",
+                "contact_email",
+                "contact_province",
+                "contact_district",
+                "contact_ward",
+                "social_facebook",
+                "social_instagram",
+                "social_zalo"
         );
         return systemSettingService.getSettings(settingKeys);
     }
