@@ -324,4 +324,26 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     long countByIsActiveTrue();
 
     Page<Book> findByShop_ShopIdAndIsActiveTrueAndTitleContainingIgnoreCase(Integer shopId, String title, Pageable pageable);
+
+    // Chat service methods
+    Page<Book> findByIsActiveTrueOrderByAverageRatingDesc(Pageable pageable);
+
+    @Query("SELECT b FROM Book b JOIN b.categories c WHERE c.categoryName LIKE %:categoryName% AND b.isActive = true")
+    Page<Book> findByIsActiveTrueAndCategories_CategoryNameContainingIgnoreCase(@Param("categoryName") String categoryName, Pageable pageable);
+
+    Page<Book> findByIsActiveTrueAndSellingPriceLessThanEqualOrderBySellingPriceAsc(java.math.BigDecimal maxPrice, Pageable pageable);
+
+    /**
+     * Find all active books with comprehensive information for vector store
+     * Includes: categories, shop, publisher, and all relevant metadata
+     */
+    @Query("""
+        SELECT DISTINCT b FROM Book b
+        LEFT JOIN FETCH b.categories c
+        LEFT JOIN FETCH b.shop s
+        LEFT JOIN FETCH b.publisher p
+        WHERE b.isActive = true
+        ORDER BY b.dateAdded DESC, b.averageRating DESC
+        """)
+    List<Book> findAllActiveWithCompleteInfo();
 }
