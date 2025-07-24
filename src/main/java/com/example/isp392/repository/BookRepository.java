@@ -62,25 +62,52 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     
     /**
      * Find books with low stock by shop ID
-     * 
+     *
      * @param shopId ID of the shop
      * @param threshold Stock threshold
      * @return List of books with stock below threshold
      */
     List<Book> findByShopShopIdAndStockQuantityLessThanAndIsActiveTrue(Integer shopId, Integer threshold);
-    
+
+    /**
+     * Find books with specific stock quantity by shop ID
+     *
+     * @param shopId ID of the shop
+     * @param stockQuantity Specific stock quantity to match
+     * @return List of books with exact stock quantity
+     */
+    List<Book> findByShopShopIdAndStockQuantityAndIsActiveTrue(Integer shopId, Integer stockQuantity);
+
+    /**
+     * Count books with stock less than or equal to threshold by shop ID
+     *
+     * @param shopId ID of the shop
+     * @param threshold Stock threshold
+     * @return Count of books with stock <= threshold
+     */
+    long countByShopShopIdAndStockQuantityLessThanEqualAndIsActiveTrue(Integer shopId, Integer threshold);
+
+    /**
+     * Count books with specific stock quantity by shop ID
+     *
+     * @param shopId ID of the shop
+     * @param stockQuantity Specific stock quantity to match
+     * @return Count of books with exact stock quantity
+     */
+    long countByShopShopIdAndStockQuantityAndIsActiveTrue(Integer shopId, Integer stockQuantity);
+
     /**
      * Find highest rated books by shop ID
-     * 
+     *
      * @param shopId ID of the shop
      * @param pageable Pagination and sorting
      * @return List of highest rated books
      */
     List<Book> findByShopShopIdAndIsActiveTrueOrderByAverageRatingDesc(Integer shopId, Pageable pageable);
-    
+
     /**
      * Count active books by shop ID
-     * 
+     *
      * @param shopId ID of the shop
      * @return Count of active books
      */
