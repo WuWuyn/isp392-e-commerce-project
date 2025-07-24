@@ -32,6 +32,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.stream.Collectors;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -163,7 +164,7 @@ public class SellerController {
             if (totalOrders == null) totalOrders = 0L;
             BigDecimal averageOrderValue = BigDecimal.ZERO;
             if (totalOrders > 0) {
-                averageOrderValue = totalRevenue.divide(BigDecimal.valueOf(totalOrders), 0, BigDecimal.ROUND_HALF_UP);
+                averageOrderValue = totalRevenue.divide(BigDecimal.valueOf(totalOrders), 0, RoundingMode.HALF_UP);
             }
             model.addAttribute("averageOrderValue", averageOrderValue);
 
