@@ -33,12 +33,12 @@
     <div th:if="${rejectionReason != null && !rejectionReason.isEmpty()}"
          class="alert alert-warning"
          role="alert">
-        <h5 class="alert-heading">Requirement Previously Rejected</h5>
-        <p>Your previous requirement was rejected for the following reason: <br>
+        <h5 class="alert-heading">Yêu cầu trước đó đã bị từ chối</h5>
+        <p>Yêu cầu đăng ký shop trước đó của bạn đã bị từ chối vì lý do sau: <br>
             <strong><th:block th:text="${rejectionReason}"></th:block></strong>
         </p>
         <hr>
-        <p class="mb-0">Please review the information below, make the necessary corrections, and resubmit.</p>
+        <p class="mb-0">Vui lòng xem xét thông tin bên dưới, thực hiện các chỉnh sửa cần thiết và gửi lại yêu cầu.</p>
     </div>
     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
