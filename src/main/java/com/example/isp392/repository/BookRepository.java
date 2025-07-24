@@ -63,25 +63,54 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     
     /**
      * Find books with low stock by shop ID
-     * 
+     *
      * @param shopId ID of the shop
      * @param threshold Stock threshold
      * @return List of books with stock below threshold
      */
     List<Book> findByShopShopIdAndStockQuantityLessThanAndIsActiveTrue(Integer shopId, Integer threshold);
-    
+
+    /**
+     * Find books with specific stock quantity by shop ID
+     *
+     * @param shopId ID of the shop
+     * @param stockQuantity Specific stock quantity to match
+     * @return List of books with exact stock quantity
+     */
+    List<Book> findByShopShopIdAndStockQuantityAndIsActiveTrue(Integer shopId, Integer stockQuantity);
+
+    /**
+     * Count books with stock less than or equal to threshold by shop ID
+     *
+     * @param shopId ID of the shop
+     * @param threshold Stock threshold
+     * @return Count of books with stock <= threshold
+     */
+    long countByShopShopIdAndStockQuantityLessThanEqualAndIsActiveTrue(Integer shopId, Integer threshold);
+
+    /**
+     * Count books with specific stock quantity by shop ID
+     *
+     * @param shopId ID of the shop
+     * @param stockQuantity Specific stock quantity to match
+     * @return Count of books with exact stock quantity
+     */
+    long countByShopShopIdAndStockQuantityAndIsActiveTrue(Integer shopId, Integer stockQuantity);
+
     /**
      * Find highest rated books by shop ID
-     * 
+     *
      * @param shopId ID of the shop
      * @param pageable Pagination and sorting
      * @return List of highest rated books
      */
     List<Book> findByShopShopIdAndIsActiveTrueOrderByAverageRatingDesc(Integer shopId, Pageable pageable);
+
     List<Book> findByShopShopId(Integer shopId);
+
     /**
      * Count active books by shop ID
-     * 
+     *
      * @param shopId ID of the shop
      * @return Count of active books
      */
@@ -325,4 +354,26 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     long countByIsActiveTrue();
 
     Page<Book> findByShop_ShopIdAndIsActiveTrueAndTitleContainingIgnoreCase(Integer shopId, String title, Pageable pageable);
+
+    // Chat service methods
+    Page<Book> findByIsActiveTrueOrderByAverageRatingDesc(Pageable pageable);
+
+    @Query("SELECT b FROM Book b JOIN b.categories c WHERE c.categoryName LIKE %:categoryName% AND b.isActive = true")
+    Page<Book> findByIsActiveTrueAndCategories_CategoryNameContainingIgnoreCase(@Param("categoryName") String categoryName, Pageable pageable);
+
+    Page<Book> findByIsActiveTrueAndSellingPriceLessThanEqualOrderBySellingPriceAsc(java.math.BigDecimal maxPrice, Pageable pageable);
+
+    /**
+     * Find all active books with comprehensive information for vector store
+     * Includes: categories, shop, publisher, and all relevant metadata
+     */
+    @Query("""
+        SELECT DISTINCT b FROM Book b
+        LEFT JOIN FETCH b.categories c
+        LEFT JOIN FETCH b.shop s
+        LEFT JOIN FETCH b.publisher p
+        WHERE b.isActive = true
+        ORDER BY b.dateAdded DESC, b.averageRating DESC
+        """)
+    List<Book> findAllActiveWithCompleteInfo();
 }
