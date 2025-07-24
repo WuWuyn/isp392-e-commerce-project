@@ -1,6 +1,9 @@
 package com.example.isp392.controller;
 
 import com.example.isp392.dto.BookFormDTO;
+import com.example.isp392.dto.BulkInventoryUpdateDTO;
+import com.example.isp392.dto.InventoryReportDTO;
+import com.example.isp392.dto.InventoryUpdateDTO;
 import com.example.isp392.dto.UserRegistrationDTO;
 import com.example.isp392.model.*;
 import com.example.isp392.service.*;
@@ -9,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -28,6 +32,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.stream.Collectors;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -1706,6 +1711,254 @@ public class SellerController {
         boolean isAvailable = !bookService.isbnExists(isbn.trim(), shop.getShopId());
         response.put("available", isAvailable);
         response.put("message", isAvailable ? "ISBN is available" : "A book with this ISBN already exists in your shop");
+
+        return response;
+    }
+
+    // ==================== INVENTORY MANAGEMENT ENDPOINTS ====================
+
+    /**
+     * Display inventory management page
+     *
+     * @param model Model to add attributes
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @param searchQuery Search query for product title
+     * @param stockFilter Filter by stock status (all, in_stock, low_stock, out_of_stock)
+     * @param sortField Field to sort by
+     * @param sortDir Sort direction (asc or desc)
+     * @return inventory management view
+     */
+    @GetMapping("/inventory")
+    public String showInventoryPage(
+            Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String searchQuery,
+            @RequestParam(defaultValue = "all") String stockFilter,
+            @RequestParam(defaultValue = "title") String sortField,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+
+        User user = getCurrentUser();
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        Shop shop = shopService.getShopByUserId(user.getUserId());
+        if (shop == null) {
+            model.addAttribute("error", "Shop not found for current user.");
+            return "error/404";
+        }
+
+        try {
+            // Create sort object
+            Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortField);
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            // Get inventory report
+            Page<InventoryReportDTO> inventoryPage;
+            if (searchQuery != null && !searchQuery.trim().isEmpty()) {
+                // If there's a search query, get all books first then filter
+                Page<Book> allBooks = bookService.searchBooksByShopAndTitle(shop.getShopId(), searchQuery, pageable);
+                inventoryPage = allBooks.map(book -> new InventoryReportDTO(
+                        book.getBookId(),
+                        book.getTitle(),
+                        book.getAuthors(),
+                        book.getIsbn(),
+                        book.getSku(),
+                        book.getStockQuantity(),
+                        book.getOriginalPrice(),
+                        book.getSellingPrice(),
+                        book.getCoverImgUrl(),
+                        book.getActive()
+                ));
+            } else {
+                inventoryPage = bookService.getInventoryReport(shop.getShopId(), pageable);
+            }
+
+            // Filter by stock status if specified
+            if (!"all".equals(stockFilter)) {
+                List<InventoryReportDTO> filteredContent = inventoryPage.getContent().stream()
+                        .filter(item -> {
+                            switch (stockFilter) {
+                                case "out_of_stock":
+                                    return "OUT_OF_STOCK".equals(item.getStockStatus());
+                                case "low_stock":
+                                    return "LOW_STOCK".equals(item.getStockStatus());
+                                case "in_stock":
+                                    return "IN_STOCK".equals(item.getStockStatus());
+                                default:
+                                    return true;
+                            }
+                        })
+                        .collect(Collectors.toList());
+
+                // Create new page with filtered content
+                inventoryPage = new PageImpl<>(filteredContent, pageable, filteredContent.size());
+            }
+
+            // Get inventory statistics
+            Map<String, Object> inventoryStats = bookService.getInventoryStatistics(shop.getShopId());
+
+            // Add attributes to model
+            model.addAttribute("inventoryPage", inventoryPage);
+            model.addAttribute("inventoryStats", inventoryStats);
+            model.addAttribute("currentPage", page);
+            model.addAttribute("pageSize", size);
+            model.addAttribute("searchQuery", searchQuery);
+            model.addAttribute("stockFilter", stockFilter);
+            model.addAttribute("sortField", sortField);
+            model.addAttribute("sortDir", sortDir);
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+
+            log.debug("Displaying inventory page for shop ID: {} with {} items",
+                     shop.getShopId(), inventoryPage.getTotalElements());
+
+            return "seller/inventory-management";
+
+        } catch (Exception e) {
+            log.error("Error loading inventory page for shop ID: {}", shop.getShopId(), e);
+            model.addAttribute("error", "Error loading inventory data: " + e.getMessage());
+            return "error/500";
+        }
+    }
+
+    /**
+     * Update stock for a single book
+     *
+     * @param bookId Book ID
+     * @param stockQuantity New stock quantity
+     * @param reason Reason for update
+     * @param notes Additional notes
+     * @return JSON response
+     */
+    @PostMapping("/inventory/update-stock")
+    @ResponseBody
+    public Map<String, Object> updateBookStock(
+            @RequestParam Integer bookId,
+            @RequestParam Integer stockQuantity,
+            @RequestParam(required = false) String reason,
+            @RequestParam(required = false) String notes) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            User user = getCurrentUser();
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "User not authenticated");
+                return response;
+            }
+
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                response.put("success", false);
+                response.put("message", "Shop not found");
+                return response;
+            }
+
+            bookService.updateBookStock(bookId, stockQuantity, shop.getShopId(), reason, notes);
+
+            response.put("success", true);
+            response.put("message", "Stock updated successfully");
+            log.info("Stock updated for book ID {} by user {}: new quantity = {}",
+                    bookId, user.getEmail(), stockQuantity);
+
+        } catch (Exception e) {
+            log.error("Error updating stock for book ID {}: {}", bookId, e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error updating stock: " + e.getMessage());
+        }
+
+        return response;
+    }
+
+    /**
+     * Bulk update stock for multiple books
+     *
+     * @param bulkUpdate Bulk update DTO
+     * @return JSON response
+     */
+    @PostMapping("/inventory/bulk-update")
+    @ResponseBody
+    public Map<String, Object> bulkUpdateStock(@Valid @RequestBody BulkInventoryUpdateDTO bulkUpdate) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            User user = getCurrentUser();
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "User not authenticated");
+                return response;
+            }
+
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                response.put("success", false);
+                response.put("message", "Shop not found");
+                return response;
+            }
+
+            int successCount = bookService.bulkUpdateStock(
+                    bulkUpdate.getInventoryUpdates(),
+                    shop.getShopId(),
+                    bulkUpdate.getGlobalReason(),
+                    bulkUpdate.getGlobalNotes()
+            );
+
+            response.put("success", true);
+            response.put("message", String.format("Successfully updated %d out of %d books",
+                    successCount, bulkUpdate.getInventoryUpdates().size()));
+            response.put("successCount", successCount);
+            response.put("totalCount", bulkUpdate.getInventoryUpdates().size());
+
+            log.info("Bulk stock update completed by user {}: {}/{} books updated",
+                    user.getEmail(), successCount, bulkUpdate.getInventoryUpdates().size());
+
+        } catch (Exception e) {
+            log.error("Error in bulk stock update: {}", e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error updating stocks: " + e.getMessage());
+        }
+
+        return response;
+    }
+
+    /**
+     * Get inventory statistics for the shop
+     *
+     * @return JSON response with inventory statistics
+     */
+    @GetMapping("/inventory/statistics")
+    @ResponseBody
+    public Map<String, Object> getInventoryStatistics() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            User user = getCurrentUser();
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "User not authenticated");
+                return response;
+            }
+
+            Shop shop = shopService.getShopByUserId(user.getUserId());
+            if (shop == null) {
+                response.put("success", false);
+                response.put("message", "Shop not found");
+                return response;
+            }
+
+            Map<String, Object> stats = bookService.getInventoryStatistics(shop.getShopId());
+            response.put("success", true);
+            response.put("statistics", stats);
+
+        } catch (Exception e) {
+            log.error("Error getting inventory statistics: {}", e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error getting statistics: " + e.getMessage());
+        }
 
         return response;
     }
