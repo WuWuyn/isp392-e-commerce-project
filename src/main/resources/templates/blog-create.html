@@ -29,7 +29,11 @@
                         <label for="title" class="form-label fs-5">Post Title</label>
                         <input type="text" class="form-control form-control-lg" id="title" th:field="*{title}" placeholder="Enter a catchy title" required>
                     </div>
-
+                    <div class="mb-4">
+                        <label for="imageFile" class="form-label fs-5">Thumbnail Image</label>
+                        <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*">
+                        <small class="text-muted">Accepted formats: jpg, png, webp. Max: 5MB</small>
+                    </div>
                     <div class="mb-4">
                         <label for="content" class="form-label fs-5">Content</label>
                         <textarea class="form-control" id="content" th:field="*{content}" rows="15" placeholder="Write your story here..." required></textarea>

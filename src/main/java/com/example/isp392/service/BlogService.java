@@ -228,4 +228,13 @@ public class BlogService {
         blogRepository.save(blog);
         return blog.isLocked();
     }
+    @Transactional
+    public Blog save(Blog blog) {
+        return blogRepository.save(blog);
+    }
+    @Transactional(readOnly = true)
+    public Blog findById(int blogId) {
+        return blogRepository.findById(blogId)
+                .orElseThrow(() -> new EntityNotFoundException("Blog not found with id: " + blogId));
+    }
 }

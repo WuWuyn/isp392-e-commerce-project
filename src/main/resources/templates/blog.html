@@ -30,7 +30,10 @@
         <section class="latest-post-highlight mb-5" th:if="${latestBlog != null}">
             <div class="card latest-post-card flex-md-row">
                 <div class="col-md-6">
-                    <img th:src="@{/images/blog-latest-post.jpg}" class="card-img-top card-img-md-left h-100 object-fit-cover" th:alt="${latestBlog.title}">
+                    <img th:src="${latestBlog.imageUrl != null} ? @{${latestBlog.imageUrl}} : 'https://via.placeholder.com/600x400/f8f9fa/6c757d?text=Blog+Post'"
+                         class="card-img-top card-img-md-left h-100 object-fit-cover"
+                         th:alt="${latestBlog.title}">
+
                 </div>
                 <div class="col-md-6">
                     <div class="card-body p-md-5 d-flex flex-column justify-content-center">
@@ -81,11 +84,14 @@
                 <!-- Blog Post Card (Dynamic Blogs) -->
                 <div class="col" th:each="blog : ${blogs}" th:if="${latestBlog == null || blog.blogId != latestBlog.blogId}">
                     <div class="card blog-post-card h-100">
-                        <a th:href="@{/blog/{id}(id=${blog.blogId})}"><img th:src="@{/images/blog-post-default.jpg}" class="card-img-top" th:alt="${blog.title}"></a>
+                        <a th:href="@{/blog/{id}(id=${blog.blogId})}"><img th:src="${blog.imageUrl != null} ? @{${blog.imageUrl}} : 'https://via.placeholder.com/400x300/f8f9fa/6c757d?text=Blog+Post'"
+                                                                           class="card-img-top card-img-md-left h-100 object-fit-cover"
+                                                                           th:alt="${blog.title}">
+                        </a>
                         <div class="card-body">
                             <p class="blog-post-meta small text-muted">
                                 <span th:text="${#temporals.format(blog.createdDate, 'dd MMM, yyyy')}">Date</span>
-                                <span class="mx-1">•</span> by 
+                                <span class="mx-1">•</span> by
                                 <a href="#" class="text-muted" th:text="${blog.user.fullName}">Author Name</a>
                             </p>
                             <h5 class="card-title blog-title">
