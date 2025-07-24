@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -241,6 +242,36 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .csrf(csrf -> csrf.disable());
+
+        return http.build();
+    }
+
+    /**
+     * API security filter chain for REST endpoints
+     * Allows public access to chat API
+     * @param http HttpSecurity
+     * @return SecurityFilterChain
+     * @throws Exception if an error occurs
+     */
+    @Bean
+    @Order(4)
+    public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/api/**")
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/chat/**").authenticated() // Require login for chat API
+                        .requestMatchers("/api/location/**").permitAll() // Keep existing location API public
+                        .requestMatchers("/api/debug/**").permitAll() // Debug endpoints for development
+                        .requestMatchers("/api/test/**").permitAll() // Test endpoints for development
+                        .anyRequest().authenticated() // All other API endpoints require authentication
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.IF_REQUIRED)
+                )
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers("/api/chat/**") // Allow CSRF for chat API
+                ); // Keep session-based auth for chat API
 
         return http.build();
     }
