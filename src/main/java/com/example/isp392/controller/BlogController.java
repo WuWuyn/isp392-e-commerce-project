@@ -5,12 +5,14 @@ import com.example.isp392.model.BlogComment;
 import com.example.isp392.model.User;
 import com.example.isp392.service.BlogCommentService;
 import com.example.isp392.service.BlogService;
+import com.example.isp392.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.security.access.AccessDeniedException;
 import com.example.isp392.service.UserService;
@@ -24,14 +26,16 @@ public class BlogController {
     private final BlogService blogService;
     private final BlogCommentService blogCommentService;
     private final UserService userService;
+    private final FileStorageService fileStorageService;
 
     @Autowired
     public BlogController(BlogService blogService,
                           BlogCommentService blogCommentService,
-                          UserService userService) {
+                          UserService userService, FileStorageService fileStorageService) {
         this.blogService = blogService;
         this.blogCommentService = blogCommentService;
         this.userService = userService;
+        this.fileStorageService = fileStorageService;
     }
 
     // Main blog page with filtering options
@@ -81,26 +85,37 @@ public class BlogController {
      * @AuthenticationPrincipal sẽ luôn có giá trị ở đây.
      */
     @PostMapping("/create")
-    public String processCreateBlog(
-            @ModelAttribute("blog") Blog blog,
-            @AuthenticationPrincipal UserDetails userDetails,
-            RedirectAttributes redirectAttributes) {
+    public String processCreateBlog(@ModelAttribute("blog") Blog blog,
+                                    @RequestParam("imageFile") MultipartFile imageFile,
+                                    @AuthenticationPrincipal UserDetails userDetails,
+                                    RedirectAttributes redirectAttributes) {
         if (userDetails == null) {
             redirectAttributes.addFlashAttribute("error", "You must be logged in to create a post.");
             return "redirect:/buyer/login";
         }
 
         try {
-
             String email = userDetails.getUsername();
-
             User fullCurrentUser = userService.findByEmailDirectly(email);
 
             if (fullCurrentUser == null) {
                 throw new Exception("Authenticated user not found in the database.");
             }
 
-            Blog savedBlog = blogService.createBlog(blog.getTitle(), blog.getContent(), fullCurrentUser);
+            // 👇 Lưu file ảnh nếu có
+            if (imageFile != null && !imageFile.isEmpty()) {
+                String imageUrl = fileStorageService.storeFile(imageFile, "blogs");
+                blog.setImageUrl(imageUrl);
+            }
+
+            // 👇 Set các thông tin cần thiết
+            blog.setUser(fullCurrentUser);
+            blog.setCreatedDate(java.time.LocalDateTime.now());
+            blog.setViewsCount(0);
+            blog.setLocked(false);
+
+            // 👇 Lưu vào DB
+            Blog savedBlog = blogService.save(blog); // Nếu bạn có blogRepository.save(blog)
 
             redirectAttributes.addFlashAttribute("success", "Blog post created successfully!");
             return "redirect:/blog/" + savedBlog.getBlogId();
@@ -109,6 +124,7 @@ public class BlogController {
             return "redirect:/blog/create";
         }
     }
+
 
     // Blog single page
     // Trong file controller/BlogController.java
@@ -273,10 +289,10 @@ public class BlogController {
     @PostMapping("/edit/{blogId}")
     public String processEditBlog(@PathVariable int blogId,
                                   @ModelAttribute("blog") Blog blog,
-                                  @AuthenticationPrincipal UserDetails userDetails, // <-- SỬA Ở ĐÂY
+                                  @RequestParam("imageFile") MultipartFile imageFile,
+                                  @AuthenticationPrincipal UserDetails userDetails,
                                   RedirectAttributes redirectAttributes) {
 
-        // Kiểm tra xem người dùng đã đăng nhập hay chưa
         if (userDetails == null) {
             redirectAttributes.addFlashAttribute("error", "Your session may have expired. Please log in again.");
             return "redirect:/buyer/login";
@@ -290,19 +306,37 @@ public class BlogController {
                 throw new Exception("Could not find the authenticated user in the database.");
             }
 
-            blogService.updateBlog(blogId, blog.getTitle(), blog.getContent(), currentUser);
+            // Lấy blog cũ từ DB để giữ lại các thông tin như createdDate, viewsCount, imageUrl...
+            Blog existingBlog = blogService.findById(blogId);
+            if (existingBlog == null) {
+                throw new Exception("Blog post not found.");
+            }
+
+            // Cập nhật các trường có thể thay đổi
+            existingBlog.setTitle(blog.getTitle());
+            existingBlog.setContent(blog.getContent());
+            existingBlog.setUser(currentUser); // vẫn gán lại user
+
+            // Nếu người dùng upload ảnh mới, lưu ảnh và cập nhật imageUrl
+            if (imageFile != null && !imageFile.isEmpty()) {
+                String imageUrl = fileStorageService.storeFile(imageFile, "blogs");
+                existingBlog.setImageUrl(imageUrl);
+            }
+
+            blogService.save(existingBlog); // hoặc blogRepository.save(existingBlog)
 
             redirectAttributes.addFlashAttribute("success", "Blog post updated successfully!");
             return "redirect:/blog/" + blogId;
+
         } catch (AccessDeniedException e) {
             redirectAttributes.addFlashAttribute("error", "You do not have permission to perform this action.");
             return "redirect:/blog/" + blogId;
         } catch (Exception e) {
-            // Cải tiến: Thêm e.getMessage() để hiển thị lỗi chi tiết hơn
             redirectAttributes.addFlashAttribute("error", "Error updating blog post: " + e.getMessage());
             return "redirect:/blog/edit/" + blogId;
         }
     }
+
 
     /**
      * Xử lý việc xóa một bài blog.

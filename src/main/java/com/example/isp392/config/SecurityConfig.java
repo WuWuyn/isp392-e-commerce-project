@@ -99,7 +99,8 @@ public class SecurityConfig {
                 .securityMatcher("/css/**", "/js/**", "/images/**", "/webjars/**", "/error/**",
                         "/", "/about-contact", "/all-category", "/blog/**", "/blog-single",
                         "/terms-policy", "/product-detail", "/favicon.ico",
-                        "/password-reset/**")
+                        "/password-reset/**", "/uploads/**")
+
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().permitAll()
                 )

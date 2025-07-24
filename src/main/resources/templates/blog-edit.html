@@ -24,12 +24,23 @@
                 <div th:if="${error}" class="alert alert-danger" role="alert" th:text="${error}"></div>
                 <div th:if="${success}" class="alert alert-success" role="alert" th:text="${success}"></div>
 
-                <form th:action="@{/blog/edit/{id}(id=${blog.blogId})}" th:object="${blog}" method="post">
+                <form th:action="@{/blog/edit/{id}(id=${blog.blogId})}"
+                      th:object="${blog}"
+                      method="post"
+                      enctype="multipart/form-data">
                     <div class="mb-4">
                         <label for="title" class="form-label fs-5">Post Title</label>
                         <input type="text" class="form-control form-control-lg" id="title" th:field="*{title}" required>
                     </div>
-
+                    <div class="mb-4">
+                        <label for="imageFile" class="form-label fs-5">Thumbnail Image</label>
+                        <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*">
+                        <small class="text-muted">Accepted formats: jpg, png, webp. Max: 5MB</small>
+                    </div>
+                    <div th:if="${blog.imageUrl != null}">
+                        <p class="fw-bold">Current Image:</p>
+                        <img th:src="@{${blog.imageUrl}}" alt="Blog Thumbnail" class="img-thumbnail mb-2" style="max-width: 300px;">
+                    </div>
                     <div class="mb-4">
                         <label for="content" class="form-label fs-5">Content</label>
                         <textarea class="form-control" id="content" th:field="*{content}" rows="15" required></textarea>
