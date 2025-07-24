@@ -2,13 +2,17 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<footer th:fragment="footer-content" class="site-footer pt-5 pb-4">
+<footer th:fragment="footer-content" class="site-footer pt-5 pb-4 bg-dark text-white">
     <div class="container">
         <div class="row">
             <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
                 <h5 class="footer-heading">Connect</h5>
-                <p class="small">329 Queensberry Street, North Melbourne VIC 3051, Australia.</p>
-                <p class="small"><a href="mailto:sales@readhub.com">sales@readhub.com</a></p>
+                <p class="small" th:if="${globalSettings.containsKey('contact_ward') and not #strings.isEmpty(globalSettings.contact_ward)}">
+                    <span th:text="${globalSettings.contact_ward} + ', ' + ${globalSettings.contact_district} + ', ' + ${globalSettings.contact_province}"></span>
+                </p>
+                <p class="small" th:if="${globalSettings.containsKey('contact_email') and not #strings.isEmpty(globalSettings.contact_email)}">
+                    <a th:href="'mailto:' + ${globalSettings.contact_email}" th:text="${globalSettings.contact_email}" class="text-white"></a>
+                </p>
                 <p class="small">1234567890</p>
             </div>
             <div class="col-lg-2 col-md-6 mb-4 mb-lg-0 ms-auto">
@@ -18,6 +22,22 @@
                     <li><a href="/terms-policy">Policy</a></li>
                     <li><a href="/blog">Blog</a></li>
                 </ul>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4 mb-lg-0 ms-auto">
+                <h5 class="footer-heading">Follow Us</h5>
+                <div class="footer-social-links">
+                    <a th:if="${globalSettings.containsKey('social_facebook') and not #strings.isEmpty(globalSettings.social_facebook)}"
+                       th:href="${globalSettings.social_facebook}" target="_blank" class="text-white me-3 fs-5">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a th:if="${globalSettings.containsKey('social_instagram') and not #strings.isEmpty(globalSettings.social_instagram)}"
+                       th:href="${globalSettings.social_instagram}" target="_blank" class="text-white me-3 fs-5">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a th:if="${globalSettings.containsKey('social_zalo') and not #strings.isEmpty(globalSettings.social_zalo)}"
+                       th:href="${globalSettings.social_zalo}" target="_blank" class="text-white me-3 fs-5">
+                        <i class="fas fa-comment-dots"></i> </a>
+                </div>
             </div>
         </div>
         <hr class="footer-hr">

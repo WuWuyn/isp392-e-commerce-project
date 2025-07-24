@@ -127,8 +127,8 @@ public class OrderService {
                 return newStatus == OrderStatus.SHIPPED ||
                        newStatus == OrderStatus.CANCELLED;
             case SHIPPED:
-                // Không cho phép hủy khi đã ship, chỉ cho phép chuyển thành DELIVERED
-                return newStatus == OrderStatus.DELIVERED;
+                return newStatus == OrderStatus.DELIVERED ||
+                       newStatus == OrderStatus.CANCELLED;
             case DELIVERED:
                 return false; // Cannot change from delivered
             case CANCELLED:
@@ -142,8 +142,8 @@ public class OrderService {
      * Check if an order can be cancelled by the customer
      */
     public boolean canBeCancelled(Order order) {
-        // Chỉ cho phép hủy khi đơn hàng ở trạng thái PROCESSING (chưa ship)
-        return order.getOrderStatus() == OrderStatus.PROCESSING;
+        return order.getOrderStatus() == OrderStatus.PROCESSING ||
+               order.getOrderStatus() == OrderStatus.SHIPPED;
     }
 
     /**
@@ -970,5 +970,11 @@ public class OrderService {
             }
         }
         return null;
+    }
+    public long countNewOrdersForSeller(Integer shopId) {
+        if (shopId == null) {
+            return 0;
+        }
+        return orderRepository.countByShopShopIdAndOrderStatus(shopId, OrderStatus.PROCESSING);
     }
 }

@@ -5,9 +5,17 @@ import com.example.isp392.model.OrderItem;
 import com.example.isp392.model.User;
 import com.example.isp392.repository.BookReviewRepository;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import com.example.isp392.model.Book;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.criteria.Predicate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -81,5 +89,43 @@ public class BookReviewService {
     }
     public Optional<BookReview> findByUserAndOrderItem_OrderItemId(User user, Integer orderItemId) {
         return bookReviewRepository.findByUserAndOrderItem_OrderItemId(user, orderItemId);
+    }
+
+    public Page<BookReview> getReviewsForSeller(Integer shopId, String searchTitle, LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        Specification<BookReview> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Join các bảng để có thể lọc và sắp xếp
+            Join<BookReview, OrderItem> orderItemJoin = root.join("orderItem", JoinType.INNER);
+            Join<OrderItem, Book> bookJoin = orderItemJoin.join("book", JoinType.INNER);
+
+            // 1. Luôn lọc theo shopId của người bán
+            predicates.add(cb.equal(bookJoin.get("shop").get("shopId"), shopId));
+
+            // 2. Lọc theo tiêu đề sách (nếu có)
+            if (searchTitle != null && !searchTitle.trim().isEmpty()) {
+                predicates.add(cb.like(cb.lower(bookJoin.get("title")), "%" + searchTitle.trim().toLowerCase() + "%"));
+            }
+
+            // 3. Lọc theo ngày bắt đầu (nếu có)
+            if (startDate != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdDate"), startDate.atStartOfDay()));
+            }
+
+            // 4. Lọc theo ngày kết thúc (nếu có)
+            if (endDate != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdDate"), endDate.atTime(23, 59, 59)));
+            }
+
+            // Phân biệt để không bị trùng lặp kết quả khi join
+            query.distinct(true);
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return bookReviewRepository.findAll(spec, pageable);
+    }
+    public Page<BookReview> getReviewsForBookBySeller(Integer bookId, Integer shopId, Pageable pageable) {
+        return bookReviewRepository.findReviewsByBookIdAndShopId(bookId, shopId, pageable);
     }
 }

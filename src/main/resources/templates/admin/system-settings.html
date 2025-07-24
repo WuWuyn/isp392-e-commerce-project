@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>System Settings</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/admin-style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/admin-topbar :: admin-topbar}"></div>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-3 mb-4">
+      <div th:replace="~{fragments/admin-sidebar :: admin-sidebar}"></div>
+    </div>
+    <div class="col-lg-9">
+      <main class="py-4">
+        <h3 class="section-title">System Settings</h3>
+
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+          <span th:text="${successMessage}"></span>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+          <span th:text="${errorMessage}"></span>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <form th:action="@{/admin/settings/save}" method="post" class="needs-validation" novalidate enctype="multipart/form-data">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-image me-2"></i>Homepage Banner</h5>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Current Background Image</label>
+                <div>
+                  <img th:if="${settings.containsKey('hero_background_image') and not #strings.isEmpty(settings['hero_background_image'])}"
+                       th:src="@{${settings['hero_background_image']}}" alt="Hero Background" class="img-thumbnail" style="max-width: 300px;"/>
+                  <p th:unless="${settings.containsKey('hero_background_image') and not #strings.isEmpty(settings['hero_background_image'])}" class="text-muted">
+                    No image set.
+                  </p>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="heroImageFile" class="form-label">Upload New Background Image</label>
+                <input type="file" class="form-control" id="heroImageFile" name="heroImageFile"
+                       accept="image/png, image/jpeg, image/webp" required>
+                <div class="invalid-feedback">Please upload a valid image file (PNG, JPEG, or WEBP).</div>
+
+                <small class="form-text text-muted">Leave empty to keep the current image. Recommended size: 1920x800px.</small>
+              </div>
+              <hr/>
+              <div class="mb-3">
+                <label for="hero_title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="hero_title" name="hero_title"
+                       th:value="${settings['hero_title']}" placeholder="e.g., First Time <br>With ReadHub?"
+                       required maxlength="100">
+                <div class="invalid-feedback">Please enter a hero title (max 100 characters).</div>
+              </div>
+              <div class="mb-3">
+                <label for="hero_description" class="form-label">Description / Subtitle</label>
+                <input type="text" class="form-control" id="hero_description" name="hero_description"
+                       th:value="${settings['hero_description']}" placeholder="e.g., THE READHUB EDITORS'"
+                       required maxlength="100">
+                <div class="invalid-feedback">Please enter a hero description (max 100 characters).</div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="hero_button_text" class="form-label">Button Text</label>
+                  <input type="text" class="form-control" id="hero_button_text" name="hero_button_text"
+                         th:value="${settings['hero_button_text']}" placeholder="e.g., Shop Now"
+                         required maxlength="50">
+                  <div class="invalid-feedback">Please enter button text (max 50 characters).</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="hero_button_link" class="form-label">Button Link (URL)</label>
+                  <input type="url" class="form-control" id="hero_button_link" name="hero_button_link"
+                         th:value="${settings['hero_button_link']}" placeholder="e.g., /shop"
+                         required pattern="^(\/|https?:\/\/).+">
+                  <div class="invalid-feedback">Please enter a valid URL or relative path starting with /.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h5><i class="fas fa-address-book me-2"></i>Contact & Social Links</h5>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="contact_email" class="form-label">Contact Email</label>
+                <input type="email" class="form-control" id="contact_email" name="contact_email"
+                       th:value="${settings['contact_email']}" required>
+                <div class="invalid-feedback">Please enter a valid email address.</div>
+
+              </div>
+
+              <h6 class="mt-4">Contact Address</h6>
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label for="province" class="form-label fw-bold">Province / City</label>
+                  <select class="form-select" id="province" required></select>
+                  <input type="hidden" id="provinceName" name="contact_province" th:value="${settings.get('contact_province')}">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="district" class="form-label fw-bold">District</label>
+                  <select class="form-select" id="district" required disabled></select>
+                  <input type="hidden" id="districtName" name="contact_district" th:value="${settings.get('contact_district')}">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="ward" class="form-label fw-bold">Ward / Commune</label>
+                  <select class="form-select" id="ward" required disabled></select>
+                  <input type="hidden" id="wardName" name="contact_ward" th:value="${settings.get('contact_ward')}">
+                </div>
+              </div>
+              <hr/>
+
+              <div class="mb-3">
+                <label for="social_facebook" class="form-label">Facebook URL</label>
+                <input type="url" class="form-control" id="social_facebook" name="social_facebook" th:value="${settings['social_facebook']}">
+              </div>
+              <div class="mb-3">
+                <label for="social_instagram" class="form-label">Instagram URL</label>
+                <input type="url" class="form-control" id="social_instagram" name="social_instagram" th:value="${settings['social_instagram']}">
+              </div>
+              <div class="mb-3">
+                <label for="social_zalo" class="form-label">Zalo Link</label>
+                <input type="url" class="form-control" id="social_zalo" name="social_zalo" th:value="${settings['social_zalo']}">
+              </div>
+            </div>
+          </div>
+
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save Changes</button>
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+</div>
+<div th:replace="~{fragments/footer :: footer-content}"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js"></script>
+<script>
+  (() => {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  $(document).ready(function() {
+      // SỬA LỖI: Sử dụng cú pháp dấu ngoặc vuông ['key'] để truy cập Map
+      const savedProvince = /*[[${settings['contact_province']}]]*/ null;
+      const savedDistrict = /*[[${settings['contact_district']}]]*/ null;
+      const savedWard = /*[[${settings['contact_ward']}]]*/ null;
+
+      // (Tùy chọn) Thêm log để kiểm tra giá trị trong Console của trình duyệt (F12)
+      console.log("Saved Address:", { province: savedProvince, district: savedDistrict, ward: savedWard });
+
+      const provinceSelect = $('#province');
+      const districtSelect = $('#district');
+      const wardSelect = $('#ward');
+
+      const provinceNameInput = $('#provinceName');
+      const districtNameInput = $('#districtName');
+      const wardNameInput = $('#wardName');
+
+      const host = "https://provinces.open-api.vn/api"; // API endpoint
+
+      function renderOptions(selectElement, data, placeholder, savedValue) {
+          selectElement.html(`<option value="" selected disabled>${placeholder}</option>`);
+          $.each(data, function(index, item) {
+              const isSelected = item.name === savedValue;
+              selectElement.append(`<option value="${item.code}" ${isSelected ? 'selected' : ''}>${item.name}</option>`);
+          });
+      }
+
+      // Tải Tỉnh/Thành phố
+      axios.get(host + "/p/")
+          .then(function(response) {
+              renderOptions(provinceSelect, response.data, "Select Province/City", savedProvince);
+              // Kích hoạt sự kiện change nếu có tỉnh đã lưu để tải quận/huyện
+              if (provinceSelect.val()) {
+                  provinceSelect.trigger('change');
+              }
+          });
+
+      // Sự kiện thay đổi Tỉnh/Thành phố
+      provinceSelect.change(function() {
+          const provinceCode = $(this).val();
+          const provinceName = $(this).find('option:selected').text();
+
+          provinceNameInput.val(provinceName !== "Select Province/City" ? provinceName : '');
+          districtSelect.html('<option value="" selected disabled>Select District</option>').prop('disabled', true);
+          wardSelect.html('<option value="" selected disabled>Select Ward/Commune</option>').prop('disabled', true);
+          districtNameInput.val('');
+          wardNameInput.val('');
+
+          if (provinceCode) {
+              axios.get(host + `/p/${provinceCode}?depth=2`)
+                  .then(function(response) {
+                      renderOptions(districtSelect, response.data.districts, "Select District", savedDistrict);
+                      districtSelect.prop('disabled', false);
+                      // Kích hoạt sự kiện change nếu có quận đã lưu để tải phường/xã
+                      if (districtSelect.val()) {
+                          districtSelect.trigger('change');
+                      }
+                  });
+          }
+      });
+
+      // Sự kiện thay đổi Quận/Huyện
+      districtSelect.change(function() {
+          const districtCode = $(this).val();
+          const districtName = $(this).find('option:selected').text();
+
+          districtNameInput.val(districtName !== "Select District" ? districtName : '');
+          wardSelect.html('<option value="" selected disabled>Select Ward/Commune</option>').prop('disabled', true);
+          wardNameInput.val('');
+
+          if (districtCode) {
+              axios.get(host + `/d/${districtCode}?depth=2`)
+                  .then(function(response) {
+                      renderOptions(wardSelect, response.data.wards, "Select Ward/Commune", savedWard);
+                      wardSelect.prop('disabled', false);
+                  });
+          }
+      });
+
+      // Sự kiện thay đổi Phường/Xã
+      wardSelect.change(function() {
+          const wardName = $(this).find('option:selected').text();
+          wardNameInput.val(wardName !== "Select Ward/Commune" ? wardName : '');
+      });
+  });
+  /*]]>*/
+</script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Shop Information</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/seller-style.css}">
+    <style>
+        /* Sao chép toàn bộ thẻ <style> từ file shop-information.html vào đây */
+        body { font-family: 'Open Sans', sans-serif; background-color: #F8F5F0; }
+        .account-container { background-color: #fff; border-radius: 8px; box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08); padding: 2rem; }
+        /* ... và các style khác ... */
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/seller/dashboard}">Seller Dashboard</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/seller/shop-information}">Shop Information</a></li>
+            <li class="breadcrumb-item active">Edit</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div th:replace="~{fragments/seller-account-sidebar :: seller-sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="account-container">
+                <h3 class="section-title">Edit Shop Information</h3>
+
+                <form th:action="@{/seller/shop-information/save}" th:object="${shop}" method="post" enctype="multipart/form-data">
+                    <input type="hidden" th:field="*{shopId}" />
+                    <input type="hidden" th:field="*{userId}" />
+                    <input type="hidden" th:field="*{taxCode}" />
+                    <input type="hidden" th:field="*{identificationFileUrl}" />
+
+                    <div class="mb-3">
+                        <label for="shopName" class="form-label fw-bold">Shop Name</label>
+                        <input type="text" class="form-control" id="shopName" th:field="*{shopName}" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('shopName')}" th:errors="*{shopName}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label fw-bold">Shop Description</label>
+                        <textarea class="form-control" id="description" th:field="*{description}" rows="4"></textarea>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Shop Logo</label>
+                            <div class="mb-2">
+                                <img th:if="*{logoUrl != null}" th:src="*{logoUrl}" alt="Current Logo" class="img-thumbnail" style="max-width: 120px;">
+                                <span th:if="*{logoUrl == null}" class="text-muted">No logo</span>
+                            </div>
+                            <input type="file" class="form-control" name="logoFile" accept="image/*">
+                            <small class="text-muted">Leave empty to keep the current logo.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Cover Image</label>
+                            <div class="mb-2">
+                                <img th:if="*{coverImageUrl != null}" th:src="*{coverImageUrl}" alt="Current Cover" class="img-thumbnail" style="max-width: 200px;">
+                                <span th:if="*{coverImageUrl == null}" class="text-muted">No cover image</span>
+                            </div>
+                            <input type="file" class="form-control" name="coverImageFile" accept="image/*">
+                            <small class="text-muted">Leave empty to keep the current cover image.</small>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="mb-3">Shop Address</h5>
+                    <div class="mb-3">
+                        <label for="shopDetailAddress" class="form-label fw-bold">Detail Address (Street, Number)</label>
+                        <input type="text" class="form-control" id="shopDetailAddress" th:field="*{shopDetailAddress}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="province" class="form-label fw-bold">Province / City</label>
+                            <select class="form-select" id="province" required></select>
+                            <input type="hidden" id="provinceName" th:field="*{shopProvince}">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="district" class="form-label fw-bold">District</label>
+                            <select class="form-select" id="district" required disabled></select>
+                            <input type="hidden" id="districtName" th:field="*{shopDistrict}">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="ward" class="form-label fw-bold">Ward / Commune</label>
+                            <select class="form-select" id="ward" required disabled></select>
+                            <input type="hidden" id="wardName" th:field="*{shopWard}">
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="mb-3">Contact Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="contactEmail" class="form-label fw-bold">Contact Email</label>
+                            <input type="email" class="form-control" id="contactEmail" th:field="*{contactEmail}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contactPhone" class="form-label fw-bold">Contact Phone</label>
+                            <input type="tel" class="form-control" id="contactPhone" th:field="*{contactPhone}" required>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <a th:href="@{/seller/shop-information}" class="btn btn-secondary me-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        // Lấy các giá trị địa chỉ đã lưu từ model của Thymeleaf
+        const savedProvince = /*[[${shop.shopProvince}]]*/ null;
+        const savedDistrict = /*[[${shop.shopDistrict}]]*/ null;
+        const savedWard = /*[[${shop.shopWard}]]*/ null;
+
+        const provinceSelect = $('#province');
+        const districtSelect = $('#district');
+        const wardSelect = $('#ward');
+
+        const provinceNameInput = $('#provinceName');
+        const districtNameInput = $('#districtName');
+        const wardNameInput = $('#wardName');
+
+        const host = "/api/location"; // API endpoint
+
+        function renderOptions(selectElement, data, placeholder) {
+            selectElement.html(`<option value="" selected disabled>${placeholder}</option>`);
+            $.each(data, function(index, item) {
+                // Tạo option và thêm thuộc tính 'selected' nếu nó khớp với giá trị đã lưu
+                const isSelected = item.name === savedProvince || item.name === savedDistrict || item.name === savedWard;
+                selectElement.append(`<option value="${item.code}" ${isSelected ? 'selected' : ''}>${item.name}</option>`);
+            });
+        }
+
+        // --- LOGIC XỬ LÝ CHO TRANG EDIT ---
+
+        // 1. Tải danh sách Tỉnh/Thành phố
+        axios.get(host + "/provinces")
+            .then(function(response) {
+                renderOptions(provinceSelect, response.data, "Select Province/City");
+
+                // Nếu có tỉnh đã lưu, tự động trigger sự kiện change để tải quận/huyện
+                if (savedProvince) {
+                    provinceSelect.trigger('change');
+                }
+            })
+            .catch(function(error) { console.error("Error fetching provinces:", error); });
+
+        // 2. Bắt sự kiện thay đổi Tỉnh/Thành phố
+        provinceSelect.change(function() {
+            const provinceCode = $(this).val();
+            const provinceName = $(this).find('option:selected').text();
+            if (provinceName !== "Select Province/City") {
+                provinceNameInput.val(provinceName);
+            }
+
+            if (provinceCode) {
+                axios.get(host + `/provinces/${provinceCode}?depth=2`)
+                    .then(function(response) {
+                        renderOptions(districtSelect, response.data.districts, "Select District");
+                        districtSelect.prop('disabled', false);
+
+                        // Nếu có quận đã lưu, tự động trigger sự kiện change để tải phường/xã
+                        if (savedDistrict) {
+                            districtSelect.trigger('change');
+                        }
+                    })
+                    .catch(function(error) { console.error("Error fetching districts:", error); });
+            } else {
+                districtSelect.html('').prop('disabled', true);
+                wardSelect.html('').prop('disabled', true);
+            }
+        });
+
+        // 3. Bắt sự kiện thay đổi Quận/Huyện
+        districtSelect.change(function() {
+            const districtCode = $(this).val();
+            const districtName = $(this).find('option:selected').text();
+            if (districtName !== "Select District") {
+                districtNameInput.val(districtName);
+            }
+
+            if (districtCode) {
+                axios.get(host + `/districts/${districtCode}?depth=2`)
+                    .then(function(response) {
+                        renderOptions(wardSelect, response.data.wards, "Select Ward/Commune");
+                        wardSelect.prop('disabled', false);
+                    })
+                    .catch(function(error) { console.error("Error fetching wards:", error); });
+            } else {
+                wardSelect.html('').prop('disabled', true);
+            }
+        });
+
+        // 4. Bắt sự kiện thay đổi Phường/Xã
+        wardSelect.change(function() {
+            const wardName = $(this).find('option:selected').text();
+            if (wardName !== "Select Ward/Commune") {
+                wardNameInput.val(wardName);
+            }
+        });
+    });
+    /*]]>*/
+</script>
+</body>
+</html>

@@ -1,10 +1,11 @@
 package com.example.isp392.dto;
-
 import lombok.Data;
 import java.util.List;
 
+
 @Data
-public class CheckoutDTO {
+public class
+CheckoutDTO {
     private String recipientName;
     private String recipientPhone;
     private String shippingProvince;

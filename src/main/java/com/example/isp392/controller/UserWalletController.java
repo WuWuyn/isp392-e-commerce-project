@@ -39,10 +39,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class UserWalletController {
-    
+
     private final WalletService walletService;
     private final UserService userService;
-    
+
     /**
      * Get current authenticated user (supports both local and OAuth2 authentication)
      */
@@ -69,9 +69,9 @@ public class UserWalletController {
             return null;
         }
     }
-    
 
-    
+
+
     /**
      * Display wallet transaction history
      */
@@ -81,38 +81,38 @@ public class UserWalletController {
             @RequestParam(name = "size", defaultValue = "10") int size,
             @RequestParam(name = "type", required = false) String transactionType,
             Model model) {
-        
+
         User user = getCurrentUser();
         if (user == null) {
             return "redirect:/buyer/login";
         }
-        
+
         try {
             // Ensure user has a wallet
             userService.ensureUserHasWallet(user);
-            
+
             Pageable pageable = PageRequest.of(page, size);
             Page<WalletTransaction> transactionPage;
-            
+
             if (transactionType != null && !transactionType.isEmpty()) {
                 WalletTransactionType type = WalletTransactionType.valueOf(transactionType.toUpperCase());
                 transactionPage = walletService.getTransactionHistoryByType(user, type, pageable);
             } else {
                 transactionPage = walletService.getTransactionHistory(user, pageable);
             }
-            
+
             // Convert to DTOs
             Page<WalletTransactionDTO> transactionDTOPage = transactionPage.map(this::convertToDTO);
-            
+
             BigDecimal currentBalance = walletService.getBalance(user);
             WalletTransactionHistoryDTO historyDTO = new WalletTransactionHistoryDTO(currentBalance, transactionDTOPage);
-            
+
             model.addAttribute("user", user);
             model.addAttribute("roles", userService.getUserRoles(user));
             model.addAttribute("transactionHistory", historyDTO);
             model.addAttribute("selectedType", transactionType);
             model.addAttribute("transactionTypes", WalletTransactionType.values());
-            
+
             return "buyer/wallet-transactions";
         } catch (Exception e) {
             log.error("Error displaying transaction history for user {}: {}", user.getEmail(), e.getMessage(), e);
@@ -120,7 +120,7 @@ public class UserWalletController {
             return "buyer/wallet-transactions";
         }
     }
-    
+
     /**
      * Display wallet overview page (main wallet page)
      */
@@ -130,26 +130,26 @@ public class UserWalletController {
         if (user == null) {
             return "redirect:/buyer/login";
         }
-        
+
         try {
             // Ensure user has a wallet
             userService.ensureUserHasWallet(user);
-            
+
             BigDecimal balance = walletService.getBalance(user);
             Optional<Wallet> walletOpt = walletService.getWalletByUser(user);
-            
+
             // Get recent transactions (last 5)
             Pageable recentTransactionsPageable = PageRequest.of(0, 5);
             Page<WalletTransaction> recentTransactions = walletService.getTransactionHistory(user, recentTransactionsPageable);
             Page<WalletTransactionDTO> recentTransactionDTOs = recentTransactions.map(this::convertToDTO);
-            
+
             WalletBalanceDTO walletBalanceDTO = new WalletBalanceDTO(balance, walletOpt.isPresent());
-            
+
             model.addAttribute("user", user);
             model.addAttribute("roles", userService.getUserRoles(user));
             model.addAttribute("walletBalance", walletBalanceDTO);
             model.addAttribute("recentTransactions", recentTransactionDTOs);
-            
+
             return "buyer/wallet-overview";
         } catch (Exception e) {
             log.error("Error displaying wallet overview for user {}: {}", user.getEmail(), e.getMessage(), e);
@@ -157,7 +157,7 @@ public class UserWalletController {
             return "buyer/wallet-overview";
         }
     }
-    
+
     /**
      * Convert WalletTransaction entity to DTO
      */
@@ -228,10 +228,10 @@ public class UserWalletController {
      */
     @PostMapping("/withdraw")
     public String processWithdrawal(@Valid @ModelAttribute("withdrawalRequest") WithdrawalRequestDTO withdrawalRequest,
-                                  BindingResult bindingResult,
-                                  Model model,
-                                  Authentication authentication,
-                                  RedirectAttributes redirectAttributes) {
+                                    BindingResult bindingResult,
+                                    Model model,
+                                    Authentication authentication,
+                                    RedirectAttributes redirectAttributes) {
         if (authentication == null) {
             return "redirect:/buyer/login";
         }
@@ -248,7 +248,7 @@ public class UserWalletController {
             // Validate amount against current balance
             if (withdrawalRequest.getAmount() != null && withdrawalRequest.getAmount().compareTo(currentBalance) > 0) {
                 bindingResult.rejectValue("amount", "insufficient.balance",
-                    "Insufficient balance. Available: " + String.format("%,d VND", currentBalance.longValue()));
+                        "Insufficient balance. Available: " + String.format("%,d VND", currentBalance.longValue()));
             }
 
             // If validation errors, return to form
@@ -262,8 +262,8 @@ public class UserWalletController {
             WalletTransaction transaction = walletService.processWithdrawal(user, withdrawalRequest);
 
             redirectAttributes.addFlashAttribute("successMessage",
-                String.format("Withdrawal request of %s has been processed successfully. Transaction ID: %d",
-                    withdrawalRequest.getFormattedAmount(), transaction.getTransactionId()));
+                    String.format("Withdrawal request of %s has been processed successfully. Transaction ID: %d",
+                            withdrawalRequest.getFormattedAmount(), transaction.getTransactionId()));
 
             log.info("Withdrawal processed successfully for user: {} - Amount: {}",
                     user.getEmail(), withdrawalRequest.getFormattedAmount());
@@ -290,7 +290,7 @@ public class UserWalletController {
         } catch (Exception e) {
             log.error("Unexpected error processing withdrawal for user: {}", authentication.getName(), e);
             redirectAttributes.addFlashAttribute("errorMessage",
-                "An unexpected error occurred while processing your withdrawal. Please try again.");
+                    "An unexpected error occurred while processing your withdrawal. Please try again.");
             return "redirect:/buyer/wallet";
         }
     }

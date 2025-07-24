@@ -59,13 +59,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT o FROM Order o WHERE o.customerOrder.user.userId = :userId ORDER BY o.orderDate DESC")
     List<Order> findRecentOrdersByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
 
-    /**
-     * Find all orders for a specific seller by navigating through book->shop->user relationship
-     * @param sellerId the seller ID (user ID of the seller)
-     * @return list of orders belonging to the seller
-     */
-    @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE b.shop.user.userId = :sellerId")
-    List<Order> findOrdersBySellerId(@Param("sellerId") Integer sellerId);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi JOIN oi.book b WHERE b.shop.shopId = :shopId")
+    List<Order> findOrdersByShopId(@Param("shopId") Integer shopId);
 
     /**
      * Find a specific order by ID and eagerly fetch its items.
@@ -100,7 +96,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     int countByShopShopIdAndOrderDateAfter(Integer shopId, LocalDateTime startDate);
     
     Long countByShopShopIdAndOrderDateBetween(Integer shopId, LocalDateTime startDate, LocalDateTime endDate);
-    
+    long countByShopShopIdAndOrderStatus(Integer shopId, OrderStatus status);
     List<Order> findByShopShopIdAndOrderDateBetweenAndOrderStatus(
             Integer shopId, LocalDateTime startDate, LocalDateTime endDate, OrderStatus status);
     

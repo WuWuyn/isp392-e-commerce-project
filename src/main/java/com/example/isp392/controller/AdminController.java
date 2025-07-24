@@ -8,13 +8,10 @@ import com.example.isp392.model.BookReview;
 import com.example.isp392.model.BlogComment;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
-import com.example.isp392.service.AdminService;
-import com.example.isp392.service.BookService;
-import com.example.isp392.service.OrderService;
-import com.example.isp392.service.ShopService;
-import com.example.isp392.service.UserService;
+import com.example.isp392.service.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.isp392.service.FileStorageService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -38,10 +35,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 
 import com.example.isp392.model.Blog;
-import com.example.isp392.service.BlogService;
-import com.example.isp392.service.CategoryService;
-import com.example.isp392.service.PublisherService;
-import com.example.isp392.service.ModerationService;
 import jakarta.persistence.EntityNotFoundException;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -64,7 +57,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
-import com.example.isp392.service.DataImportExportService;
+
 /**
  * Controller for handling admin-related requests
  * This controller manages the admin login page and admin panel pages
@@ -84,8 +77,9 @@ public class AdminController {
     private final BlogService blogService;
     private final CategoryService categoryService;
     private final PublisherService publisherService;
-    private final DataImportExportService dataImportExportService;
     private final ModerationService moderationService;
+    private final SystemSettingService systemSettingService;
+    private final FileStorageService fileStorageService;
 
     /**
      * Constructor with explicit dependency injection
@@ -100,8 +94,8 @@ public class AdminController {
                            CategoryRepository categoryRepository,
                            PublisherRepository publisherRepository,
                            ShopService shopService,
-                           OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService, DataImportExportService dataImportExportService
-            , ModerationService moderationService) {
+                           OrderService orderService, BlogService blogService, CategoryService categoryService, PublisherService publisherService
+            , ModerationService moderationService, SystemSettingService systemSettingService, FileStorageService fileStorageService) {
         this.userService = userService;
         this.adminService = adminService;
         this.bookService = bookService;
@@ -112,8 +106,9 @@ public class AdminController {
         this.blogService = blogService;
         this.categoryService = categoryService;
         this.publisherService = publisherService;
-        this.dataImportExportService = dataImportExportService;
         this.moderationService = moderationService;
+        this.systemSettingService = systemSettingService;
+        this.fileStorageService = fileStorageService;
 
     }
 
@@ -813,100 +808,6 @@ public class AdminController {
         return "redirect:/admin/blogs";
     }
 
-    // NEW: Admin Data Import/Export Tools
-    @GetMapping("/data-management")
-    public String showDataManagementPage(Model model) {
-        adminService.addAdminInfoToModel(model);
-        model.addAttribute("activeMenu", "data-management");
-        return "admin/data-management"; // Create this new Thymeleaf template
-    }
-
-    @PostMapping("/data-management/import/users")
-    public String importUsers(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
-        if (file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
-            return "redirect:/admin/data-management";
-        }
-        try {
-            // Assuming your service handles CSV parsing and saving
-            dataImportExportService.importUsersFromCsv(file);
-            redirectAttributes.addFlashAttribute("successMessage", "Users imported successfully!");
-        } catch (IOException e) {
-            log.error("Error importing users: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error importing users: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error importing users: " + e.getMessage());
-        }
-        return "redirect:/admin/data-management";
-    }
-
-    @PostMapping("/data-management/import/products")
-    public String importProducts(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
-        if (file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
-            return "redirect:/admin/data-management";
-        }
-        try {
-            dataImportExportService.importBooksFromCsv(file);
-            redirectAttributes.addFlashAttribute("successMessage", "Products imported successfully!");
-        } catch (IOException e) {
-            log.error("Error importing products: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error processing file: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error importing products: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error importing products: " + e.getMessage());
-        }
-        return "redirect:/admin/data-management";
-    }
-
-    @GetMapping("/data-management/export/users")
-    public void exportUsers(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"users_export_" + LocalDate.now() + ".csv\"");
-        try {
-            dataImportExportService.exportUsersToCsv(response.getWriter());
-            redirectAttributes.addFlashAttribute("successMessage", "Users exported successfully!");
-        } catch (IOException e) {
-            log.error("Error exporting users: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting users: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error exporting users: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting users: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/data-management/export/products")
-    public void exportProducts(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"products_export_" + LocalDate.now() + ".csv\"");
-        try {
-            dataImportExportService.exportBooksToCsv(response.getWriter());
-            redirectAttributes.addFlashAttribute("successMessage", "Products exported successfully!");
-        } catch (IOException e) {
-            log.error("Error exporting products: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting products: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error exporting products: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting products: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/data-management/export/orders")
-    public void exportOrders(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"orders_export_" + LocalDate.now() + ".csv\"");
-        try {
-            dataImportExportService.exportOrdersToCsv(response.getWriter());
-            redirectAttributes.addFlashAttribute("successMessage", "Orders exported successfully!");
-        } catch (IOException e) {
-            log.error("Error exporting orders: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting orders: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error exporting orders: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", "Error exporting orders: " + e.getMessage());
-        }
-    }
 
     // ==================== REVIEW & COMMENT MODERATION =====================
 
@@ -1184,196 +1085,64 @@ public class AdminController {
         return "admin/consolidated-reports";
     }
 
+    @GetMapping("/settings")
+    public String showSettingsPage(Model model) {
+        adminService.addAdminInfoToModel(model);
 
+        // Đảm bảo danh sách này chứa đủ 12 khóa
+        List<String> settingKeys = List.of(
+                "hero_background_image",
+                "hero_title",
+                "hero_description",
+                "hero_button_text",
+                "hero_button_link",
+                "contact_email",
+                "contact_province",
+                "contact_district",
+                "contact_ward",
+                "social_facebook",
+                "social_instagram",
+                "social_zalo"
+        );
 
+        Map<String, String> settings = systemSettingService.getSettings(settingKeys);
 
-
-
-
-    /**
-     * Export consolidated reports data to CSV
-     */
-    @GetMapping("/consolidated-reports/export-csv")
-    public void exportConsolidatedReportsCSV(
-            HttpServletResponse response,
-            @RequestParam(defaultValue = "monthly") String period,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        try {
-            // Set default dates if not provided
-            if (startDate == null || endDate == null) {
-                endDate = LocalDate.now();
-                switch (period.toLowerCase()) {
-                    case "daily":
-                        startDate = endDate.minusDays(30); // Last 30 days
-                        break;
-                    case "weekly":
-                        startDate = endDate.minusWeeks(12); // Last 12 weeks
-                        break;
-                    case "yearly":
-                        startDate = endDate.minusYears(2); // Last 2 years
-                        break;
-                    case "monthly":
-                    default:
-                        startDate = endDate.minusMonths(12); // Last 12 months
-                        break;
-                }
-            }
-
-            // Get consolidated reports data
-            Map<String, Object> consolidatedData = adminService.getConsolidatedReports(startDate, endDate, period);
-
-            // Set response headers
-            response.setContentType("text/csv");
-            response.setHeader("Content-Disposition", "attachment; filename=consolidated_reports_" +
-                    LocalDate.now().format(DateTimeFormatter.ISO_DATE) + ".csv");
-
-            // Generate CSV content
-            StringBuilder csvContent = new StringBuilder();
-            csvContent.append("Consolidated Platform Reports\n");
-            csvContent.append("Period:,").append(startDate).append(" to ").append(endDate).append("\n\n");
-
-            // Platform statistics
-            csvContent.append("Platform Statistics\n");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> platform = (Map<String, Object>) consolidatedData.get("platform");
-            if (platform != null) {
-                for (Map.Entry<String, Object> entry : platform.entrySet()) {
-                    csvContent.append(entry.getKey()).append(",").append(entry.getValue()).append("\n");
-                }
-            }
-
-            csvContent.append("\nOrders Statistics\n");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> orders = (Map<String, Object>) consolidatedData.get("orders");
-            if (orders != null) {
-                for (Map.Entry<String, Object> entry : orders.entrySet()) {
-                    if (!entry.getKey().contains("trend")) {
-                        csvContent.append(entry.getKey()).append(",").append(entry.getValue()).append("\n");
-                    }
-                }
-            }
-
-            // Write to response
-            response.getWriter().write(csvContent.toString());
-            response.getWriter().flush();
-
-            log.info("Consolidated reports CSV exported successfully for period: {}", period);
-
-        } catch (Exception e) {
-            log.error("Error exporting consolidated reports CSV: {}", e.getMessage(), e);
-            try {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                        "Error generating CSV export: " + e.getMessage());
-            } catch (IOException ex) {
-                log.error("Error sending error response: {}", ex.getMessage());
-            }
-        }
+        model.addAttribute("settings", settings);
+        model.addAttribute("activeMenu", "settings");
+        return "admin/system-settings";
     }
 
     /**
-     * Export revenue reports data to CSV
+     * Lưu các thay đổi từ trang cài đặt hệ thống
      */
-    @GetMapping("/reports/export-csv")
-    public void exportRevenueReportsCSV(
-            HttpServletResponse response,
-            @RequestParam(defaultValue = "monthly") String period,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(required = false) Integer sellerId,
-            @RequestParam(defaultValue = "previous") String compareMode) {
+    @PostMapping("/settings/save")
+    public String saveSettings(
+            @RequestParam Map<String, String> allParams,
+            @RequestParam("heroImageFile") MultipartFile heroImageFile,
+            RedirectAttributes redirectAttributes) {
 
         try {
-            // Set default dates if not provided
-            if (startDate == null || endDate == null) {
-                endDate = LocalDate.now();
-                switch (period.toLowerCase()) {
-                    case "daily":
-                        startDate = endDate.minusDays(30); // Last 30 days
-                        break;
-                    case "weekly":
-                        startDate = endDate.minusWeeks(12); // Last 12 weeks
-                        break;
-                    case "yearly":
-                        startDate = endDate.minusYears(2); // Last 2 years
-                        break;
-                    case "monthly":
-                    default:
-                        startDate = endDate.minusMonths(12); // Last 12 months
-                        break;
-                }
+            // --- XỬ LÝ UPLOAD ẢNH BẰNG FILESTORAGESERVICE ---
+            if (heroImageFile != null && !heroImageFile.isEmpty()) {
+                // Gọi service để lưu file vào thư mục con "settings"
+                String fileUrl = fileStorageService.storeFile(heroImageFile, "settings");
+
+                // Lưu đường dẫn web-accessible vào map để cập nhật vào DB
+                allParams.put("hero_background_image", fileUrl);
             }
+            // --- KẾT THÚC XỬ LÝ UPLOAD ẢNH ---
 
-            // Get revenue analytics data
-            Map<String, Object> revenueData = adminService.getRevenueAnalytics(startDate, endDate, period, sellerId, compareMode);
+            systemSettingService.saveSettings(allParams);
+            redirectAttributes.addFlashAttribute("successMessage", "Settings saved successfully!");
 
-            // Set response headers
-            response.setContentType("text/csv");
-            response.setHeader("Content-Disposition", "attachment; filename=revenue_reports_" +
-                    LocalDate.now().format(DateTimeFormatter.ISO_DATE) + ".csv");
-
-            // Generate CSV content
-            StringBuilder csvContent = new StringBuilder();
-            csvContent.append("Revenue Reports & Analytics\n");
-            csvContent.append("Period:,").append(startDate).append(" to ").append(endDate).append("\n");
-            if (sellerId != null) {
-                csvContent.append("Seller ID:,").append(sellerId).append("\n");
-            }
-            csvContent.append("\n");
-
-            // Revenue summary
-            csvContent.append("Revenue Summary\n");
-            csvContent.append("Total Platform Revenue:,").append(revenueData.get("totalRevenue")).append("\n");
-            csvContent.append("Average Order Value:,").append(revenueData.get("averageOrderValue")).append("\n");
-
-            if (revenueData.containsKey("comparisonRevenue")) {
-                csvContent.append("Comparison Period Revenue:,").append(revenueData.get("comparisonRevenue")).append("\n");
-
-                // Calculate growth percentage
-                BigDecimal currentRevenue = (BigDecimal) revenueData.get("totalRevenue");
-                BigDecimal previousRevenue = (BigDecimal) revenueData.get("comparisonRevenue");
-                if (previousRevenue != null && previousRevenue.compareTo(BigDecimal.ZERO) > 0) {
-                    BigDecimal growthPercentage = currentRevenue.subtract(previousRevenue)
-                            .divide(previousRevenue, 4, RoundingMode.HALF_UP)
-                            .multiply(new BigDecimal(100));
-
-                    csvContent.append("Growth Percentage:,").append(growthPercentage.setScale(2, RoundingMode.HALF_UP)).append("%\n");
-                }
-            }
-
-            csvContent.append("\nTop Contributing Sellers\n");
-            csvContent.append("Rank,Seller ID,Shop Name,Total Sales,Platform Revenue\n");
-
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> topSellers = (List<Map<String, Object>>) revenueData.get("topSellers");
-            if (topSellers != null && !topSellers.isEmpty()) {
-                int rank = 1;
-                for (Map<String, Object> seller : topSellers) {
-                    csvContent.append(rank++).append(",")
-                            .append(seller.get("sellerId")).append(",")
-                            .append("\"").append(seller.get("shopName")).append("\"").append(",")
-                            .append(seller.get("totalSales")).append(",")
-                            .append(seller.get("platformRevenue")).append("\n");
-                }
-            }
-
-            // Write to response
-            response.getWriter().write(csvContent.toString());
-            response.getWriter().flush();
-
-            log.info("Revenue reports CSV exported successfully for period: {}", period);
-
+        } catch (IOException e) {
+            log.error("Error saving settings or uploading file: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while saving settings: " + e.getMessage());
         } catch (Exception e) {
-            log.error("Error exporting revenue reports CSV: {}", e.getMessage(), e);
-            try {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                        "Error generating CSV export: " + e.getMessage());
-            } catch (IOException ex) {
-                log.error("Error sending error response: {}", ex.getMessage());
-            }
+            log.error("Error saving settings: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while saving settings.");
         }
+
+        return "redirect:/admin/settings";
     }
-
-
 }

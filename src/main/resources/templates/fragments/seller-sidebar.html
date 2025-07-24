@@ -41,9 +41,7 @@
             <a th:href="@{/seller/orders}" class="list-group-item list-group-item-action">
                 <i class="fas fa-shopping-cart"></i> All Orders
             </a>
-            <a th:href="@{/seller/orders(status=PROCESSING)}" class="list-group-item list-group-item-action">
-                <i class="fas fa-bell"></i> New Orders
-            </a>
+
             <a th:href="@{/seller/orders(status=SHIPPED)}" class="list-group-item list-group-item-action">
                 <i class="fas fa-truck"></i> In Shipping
             </a>
@@ -58,8 +56,9 @@
             <a th:href="@{/seller/messages}" class="list-group-item list-group-item-action">
                 <i class="fas fa-comments"></i> Messages
             </a>
-            <a th:href="@{/seller/reviews}" class="list-group-item list-group-item-action">
-                <i class="fas fa-star"></i> Reviews
+
+            <a th:href="@{/seller/reviews}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'reviews' ? 'active' : ''}">
+            <i class="fas fa-star"></i> Reviews
             </a>
             
             <!-- Finance -->
@@ -72,10 +71,14 @@
             <a th:href="@{/seller/finance/withdraw}" class="list-group-item list-group-item-action">
                 <i class="fas fa-wallet"></i> Withdrawal
             </a>
+
+            <a th:href="@{/seller/data-management}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'data-management' ? 'active' : ''}">
+                <i class="fas fa-file-import"></i> Data Management
+            </a>
             
             <!-- Store Settings -->
-            <a th:href="@{/seller/settings/store}" class="list-group-item list-group-item-action">
-                <i class="fas fa-store"></i> Store Information
+            <a th:href="@{/seller/shop-information}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'shop-information' ? 'active' : ''}">
+                <i class="fas fa-store"></i> Shop Information
             </a>
             <a th:href="@{/seller/settings/policies}" class="list-group-item list-group-item-action">
                 <i class="fas fa-file-alt"></i> Store Policies
