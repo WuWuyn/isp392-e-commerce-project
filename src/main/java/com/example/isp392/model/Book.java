@@ -32,6 +32,7 @@ public class Book {
     @Column(name = "publication_date")
     private LocalDate publicationDate;
 
+
     @Column(name = "isbn", length = 20)
     private String isbn;
 

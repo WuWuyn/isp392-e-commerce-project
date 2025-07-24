@@ -20,22 +20,11 @@
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" th:href="@{/}">Home</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="/all-category" id="shopDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Shop
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="shopDropdown">
-                            <li><a class="dropdown-item" href="/all-category">All Category</a></li>
-                            <li><a class="dropdown-item" href="#">Discovery</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/all-category">Shop</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/blog">Blog</a>
-                    </li>
-                    <li class="nav-item" sec:authorize="hasRole('BUYER')">
-                        <a class="nav-link" th:href="@{/buyer/promotions}">
-                            <i class="fas fa-tags me-1"></i>Promotions
-                        </a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -43,7 +32,7 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="pagesDropdown">
                             <li><a class="dropdown-item" href="/terms-policy">Terms and Policy</a></li>
-                            <li><a class="dropdown-item" href="#">Seller Center</a></li>
+
                         </ul>
                     </li>
                     <li class="nav-item">

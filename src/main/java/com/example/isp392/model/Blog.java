@@ -23,6 +23,8 @@ public class Blog {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "image_url", columnDefinition = "NVARCHAR(255)")
+    private String imageUrl;
 
     @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;

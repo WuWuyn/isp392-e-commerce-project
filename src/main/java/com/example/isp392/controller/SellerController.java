@@ -1,22 +1,31 @@
 package com.example.isp392.controller;
 
-import com.example.isp392.dto.BookFormDTO;
-import com.example.isp392.dto.BulkInventoryUpdateDTO;
-import com.example.isp392.dto.InventoryReportDTO;
-import com.example.isp392.dto.InventoryUpdateDTO;
-import com.example.isp392.dto.UserRegistrationDTO;
-import com.example.isp392.model.*;
-import com.example.isp392.service.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
+import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.Principal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,28 +34,45 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.File;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.stream.Collectors;
-import java.security.Principal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import com.example.isp392.dto.BookFormDTO;
+import com.example.isp392.dto.BulkInventoryUpdateDTO;
+import com.example.isp392.dto.InventoryReportDTO;
+import com.example.isp392.dto.UserRegistrationDTO;
+import com.example.isp392.model.Book;
+import com.example.isp392.model.BookReview;
+import com.example.isp392.model.Category;
+import com.example.isp392.model.Order;
+import com.example.isp392.model.OrderItem;
+import com.example.isp392.model.OrderStatus;
+import com.example.isp392.model.Shop;
+import com.example.isp392.model.User;
+import com.example.isp392.service.BookReviewService;
+import com.example.isp392.service.BookService;
+import com.example.isp392.service.CategoryService;
+import com.example.isp392.service.DataImportExportService;
+import com.example.isp392.service.EmailService;
+import com.example.isp392.service.OrderService;
+import com.example.isp392.service.OtpService;
+import com.example.isp392.service.PublisherService;
+import com.example.isp392.service.ShopService;
+import com.example.isp392.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.format.annotation.DateTimeFormat;
-import java.time.temporal.ChronoUnit;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/seller")
@@ -1941,7 +1967,7 @@ public class SellerController {
 
         return "seller/seller-review-detail";
     }
-}
+
     // ==================== INVENTORY MANAGEMENT ENDPOINTS ====================
 
     /**
