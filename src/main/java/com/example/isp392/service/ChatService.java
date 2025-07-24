@@ -399,6 +399,48 @@ public class ChatService {
     }
 
     /**
+     * Create a new chat session for a user
+     */
+    public ChatSession createNewSession(User user) {
+        try {
+            String newSessionToken = generateSessionToken();
+            ChatSession newSession = new ChatSession(newSessionToken, user);
+            return chatSessionRepository.save(newSession);
+        } catch (Exception e) {
+            logger.error("Error creating new session: {}", e.getMessage());
+            throw new RuntimeException("Failed to create new chat session");
+        }
+    }
+
+    /**
+     * Switch to an existing session (if it belongs to the user)
+     */
+    public ChatSession switchToSession(String sessionToken, User user) {
+        try {
+            Optional<ChatSession> session = chatSessionRepository.findBySessionToken(sessionToken);
+            if (session.isPresent() && session.get().getUser().getUserId().equals(user.getUserId())) {
+                return session.get();
+            }
+            throw new RuntimeException("Session not found or access denied");
+        } catch (Exception e) {
+            logger.error("Error switching to session: {}", e.getMessage());
+            throw new RuntimeException("Failed to switch to session");
+        }
+    }
+
+    /**
+     * Get all active sessions for a user
+     */
+    public List<ChatSession> getAllUserSessions(User user) {
+        try {
+            return chatSessionRepository.findAllActiveSessionsByUser(user);
+        } catch (Exception e) {
+            logger.error("Error getting user sessions: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
      * Switch to a different conversation session
      */
     public Map<String, Object> switchToConversation(String sessionToken, User user) {

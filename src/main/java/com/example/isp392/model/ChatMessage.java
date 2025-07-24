@@ -1,5 +1,6 @@
 package com.example.isp392.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,6 +33,7 @@ public class ChatMessage {
     private String content;
 
     @Column(name = "is_user_message", nullable = false)
+    @JsonProperty("isUserMessage")
     private boolean isUserMessage;
 
     @Column(name = "message_type", length = 50)

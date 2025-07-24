@@ -117,24 +117,8 @@
 </head>
 <body>
 
-<!-- Chat Widget Fragment - Authenticated Users Only -->
-<div th:fragment="chat-widget" sec:authorize="isAuthenticated()">
-    <!-- Chat Widget HTML will be injected by JavaScript -->
-
-    <!-- Chat Widget Script -->
-    <script th:src="@{/js/chat-widget.js}"></script>
-</div>
-
 <!-- Chat Widget Fragment - Buyers Only -->
 <div th:fragment="buyer-chat-widget" sec:authorize="hasRole('BUYER')">
-    <!-- Chat Widget HTML will be injected by JavaScript -->
-
-    <!-- Chat Widget Script -->
-    <script th:src="@{/js/chat-widget.js}"></script>
-</div>
-
-<!-- Chat Widget Fragment - Sellers Only -->
-<div th:fragment="seller-chat-widget" sec:authorize="hasRole('SELLER')">
     <!-- Chat Widget HTML will be injected by JavaScript -->
 
     <!-- Chat Widget Script -->
