@@ -1,6 +1,8 @@
 package com.example.isp392.service;
 
 import com.example.isp392.dto.BookFormDTO;
+import com.example.isp392.dto.InventoryReportDTO;
+import com.example.isp392.dto.InventoryUpdateDTO;
 import com.example.isp392.model.Book;
 import com.example.isp392.model.Category;
 import com.example.isp392.model.OrderItem;
@@ -696,6 +698,142 @@ public class BookService {
             return Optional.empty();
         }
         return bookRepository.findByIsbn(isbn.trim());
+    }
+
+    // ==================== INVENTORY MANAGEMENT METHODS ====================
+
+    /**
+     * Get inventory report for all books in a shop
+     *
+     * @param shopId ID of the shop
+     * @param pageable Pagination information
+     * @return Page of inventory report DTOs
+     */
+    public Page<InventoryReportDTO> getInventoryReport(Integer shopId, Pageable pageable) {
+        Page<Book> books = bookRepository.findByShopShopId(shopId, pageable);
+        return books.map(book -> new InventoryReportDTO(
+                book.getBookId(),
+                book.getTitle(),
+                book.getAuthors(),
+                book.getIsbn(),
+                book.getSku(),
+                book.getStockQuantity(),
+                book.getOriginalPrice(),
+                book.getSellingPrice(),
+                book.getCoverImgUrl(),
+                book.getActive()
+        ));
+    }
+
+    /**
+     * Update stock quantity for a single book with validation
+     *
+     * @param bookId ID of the book
+     * @param newQuantity New stock quantity
+     * @param shopId ID of the shop (for security validation)
+     * @param reason Reason for the update
+     * @param notes Additional notes
+     * @throws IllegalArgumentException if book not found or doesn't belong to shop
+     */
+    @Transactional
+    public void updateBookStock(Integer bookId, Integer newQuantity, Integer shopId, String reason, String notes) {
+        Book book = bookRepository.findByIdForUpdate(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Book not found with ID: " + bookId));
+
+        // Validate that the book belongs to the shop
+        if (!book.getShop().getShopId().equals(shopId)) {
+            throw new IllegalArgumentException("Book does not belong to your shop");
+        }
+
+        int oldQuantity = book.getStockQuantity();
+        book.setStockQuantity(newQuantity);
+        bookRepository.save(book);
+
+        log.info("Stock updated for book ID {}: {} -> {} (Shop: {}, Reason: {}, Notes: {})",
+                bookId, oldQuantity, newQuantity, shopId, reason, notes);
+    }
+
+    /**
+     * Bulk update stock quantities for multiple books
+     *
+     * @param inventoryUpdates List of inventory updates
+     * @param shopId ID of the shop (for security validation)
+     * @param globalReason Global reason for all updates
+     * @param globalNotes Global notes for all updates
+     * @return Number of successfully updated books
+     */
+    @Transactional
+    public int bulkUpdateStock(List<InventoryUpdateDTO> inventoryUpdates, Integer shopId,
+                              String globalReason, String globalNotes) {
+        int successCount = 0;
+
+        for (InventoryUpdateDTO update : inventoryUpdates) {
+            try {
+                String reason = update.getReason() != null ? update.getReason() : globalReason;
+                String notes = update.getNotes() != null ? update.getNotes() : globalNotes;
+
+                updateBookStock(update.getBookId(), update.getStockQuantity(), shopId, reason, notes);
+                successCount++;
+            } catch (Exception e) {
+                log.error("Failed to update stock for book ID {}: {}", update.getBookId(), e.getMessage());
+                // Continue with other updates instead of failing the entire batch
+            }
+        }
+
+        log.info("Bulk stock update completed: {}/{} books updated successfully",
+                successCount, inventoryUpdates.size());
+        return successCount;
+    }
+
+    /**
+     * Get low stock books for a shop with custom threshold
+     *
+     * @param shopId ID of the shop
+     * @param threshold Stock threshold (default 5 if null)
+     * @return List of books with stock below threshold
+     */
+    public List<Book> getLowStockBooks(Integer shopId, Integer threshold) {
+        int stockThreshold = threshold != null ? threshold : 5;
+        return bookRepository.findByShopShopIdAndStockQuantityLessThanAndIsActiveTrue(shopId, stockThreshold);
+    }
+
+    /**
+     * Get out of stock books for a shop
+     *
+     * @param shopId ID of the shop
+     * @return List of books with zero stock
+     */
+    public List<Book> getOutOfStockBooks(Integer shopId) {
+        return bookRepository.findByShopShopIdAndStockQuantityAndIsActiveTrue(shopId, 0);
+    }
+
+    /**
+     * Get inventory statistics for a shop
+     *
+     * @param shopId ID of the shop
+     * @return Map containing inventory statistics
+     */
+    public Map<String, Object> getInventoryStatistics(Integer shopId) {
+        Map<String, Object> stats = new HashMap<>();
+
+        // Total active products
+        long totalProducts = bookRepository.countByShopShopIdAndIsActiveTrue(shopId);
+
+        // Low stock products (stock <= 5)
+        long lowStockCount = bookRepository.countByShopShopIdAndStockQuantityLessThanEqualAndIsActiveTrue(shopId, 5);
+
+        // Out of stock products
+        long outOfStockCount = bookRepository.countByShopShopIdAndStockQuantityAndIsActiveTrue(shopId, 0);
+
+        // In stock products
+        long inStockCount = totalProducts - outOfStockCount;
+
+        stats.put("totalProducts", totalProducts);
+        stats.put("inStockCount", inStockCount);
+        stats.put("lowStockCount", lowStockCount);
+        stats.put("outOfStockCount", outOfStockCount);
+
+        return stats;
     }
 
     /**

@@ -13,7 +13,12 @@ import com.example.isp392.service.BookService;
 import com.example.isp392.service.OrderService;
 import com.example.isp392.service.ShopService;
 import com.example.isp392.service.UserService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.format.DateTimeFormatter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +35,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+
 import com.example.isp392.model.Blog;
 import com.example.isp392.service.BlogService;
 import com.example.isp392.service.CategoryService;
@@ -1176,4 +1183,197 @@ public class AdminController {
 
         return "admin/consolidated-reports";
     }
+
+
+
+
+
+
+
+    /**
+     * Export consolidated reports data to CSV
+     */
+    @GetMapping("/consolidated-reports/export-csv")
+    public void exportConsolidatedReportsCSV(
+            HttpServletResponse response,
+            @RequestParam(defaultValue = "monthly") String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        try {
+            // Set default dates if not provided
+            if (startDate == null || endDate == null) {
+                endDate = LocalDate.now();
+                switch (period.toLowerCase()) {
+                    case "daily":
+                        startDate = endDate.minusDays(30); // Last 30 days
+                        break;
+                    case "weekly":
+                        startDate = endDate.minusWeeks(12); // Last 12 weeks
+                        break;
+                    case "yearly":
+                        startDate = endDate.minusYears(2); // Last 2 years
+                        break;
+                    case "monthly":
+                    default:
+                        startDate = endDate.minusMonths(12); // Last 12 months
+                        break;
+                }
+            }
+
+            // Get consolidated reports data
+            Map<String, Object> consolidatedData = adminService.getConsolidatedReports(startDate, endDate, period);
+
+            // Set response headers
+            response.setContentType("text/csv");
+            response.setHeader("Content-Disposition", "attachment; filename=consolidated_reports_" +
+                    LocalDate.now().format(DateTimeFormatter.ISO_DATE) + ".csv");
+
+            // Generate CSV content
+            StringBuilder csvContent = new StringBuilder();
+            csvContent.append("Consolidated Platform Reports\n");
+            csvContent.append("Period:,").append(startDate).append(" to ").append(endDate).append("\n\n");
+
+            // Platform statistics
+            csvContent.append("Platform Statistics\n");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> platform = (Map<String, Object>) consolidatedData.get("platform");
+            if (platform != null) {
+                for (Map.Entry<String, Object> entry : platform.entrySet()) {
+                    csvContent.append(entry.getKey()).append(",").append(entry.getValue()).append("\n");
+                }
+            }
+
+            csvContent.append("\nOrders Statistics\n");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> orders = (Map<String, Object>) consolidatedData.get("orders");
+            if (orders != null) {
+                for (Map.Entry<String, Object> entry : orders.entrySet()) {
+                    if (!entry.getKey().contains("trend")) {
+                        csvContent.append(entry.getKey()).append(",").append(entry.getValue()).append("\n");
+                    }
+                }
+            }
+
+            // Write to response
+            response.getWriter().write(csvContent.toString());
+            response.getWriter().flush();
+
+            log.info("Consolidated reports CSV exported successfully for period: {}", period);
+
+        } catch (Exception e) {
+            log.error("Error exporting consolidated reports CSV: {}", e.getMessage(), e);
+            try {
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        "Error generating CSV export: " + e.getMessage());
+            } catch (IOException ex) {
+                log.error("Error sending error response: {}", ex.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Export revenue reports data to CSV
+     */
+    @GetMapping("/reports/export-csv")
+    public void exportRevenueReportsCSV(
+            HttpServletResponse response,
+            @RequestParam(defaultValue = "monthly") String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Integer sellerId,
+            @RequestParam(defaultValue = "previous") String compareMode) {
+
+        try {
+            // Set default dates if not provided
+            if (startDate == null || endDate == null) {
+                endDate = LocalDate.now();
+                switch (period.toLowerCase()) {
+                    case "daily":
+                        startDate = endDate.minusDays(30); // Last 30 days
+                        break;
+                    case "weekly":
+                        startDate = endDate.minusWeeks(12); // Last 12 weeks
+                        break;
+                    case "yearly":
+                        startDate = endDate.minusYears(2); // Last 2 years
+                        break;
+                    case "monthly":
+                    default:
+                        startDate = endDate.minusMonths(12); // Last 12 months
+                        break;
+                }
+            }
+
+            // Get revenue analytics data
+            Map<String, Object> revenueData = adminService.getRevenueAnalytics(startDate, endDate, period, sellerId, compareMode);
+
+            // Set response headers
+            response.setContentType("text/csv");
+            response.setHeader("Content-Disposition", "attachment; filename=revenue_reports_" +
+                    LocalDate.now().format(DateTimeFormatter.ISO_DATE) + ".csv");
+
+            // Generate CSV content
+            StringBuilder csvContent = new StringBuilder();
+            csvContent.append("Revenue Reports & Analytics\n");
+            csvContent.append("Period:,").append(startDate).append(" to ").append(endDate).append("\n");
+            if (sellerId != null) {
+                csvContent.append("Seller ID:,").append(sellerId).append("\n");
+            }
+            csvContent.append("\n");
+
+            // Revenue summary
+            csvContent.append("Revenue Summary\n");
+            csvContent.append("Total Platform Revenue:,").append(revenueData.get("totalRevenue")).append("\n");
+            csvContent.append("Average Order Value:,").append(revenueData.get("averageOrderValue")).append("\n");
+
+            if (revenueData.containsKey("comparisonRevenue")) {
+                csvContent.append("Comparison Period Revenue:,").append(revenueData.get("comparisonRevenue")).append("\n");
+
+                // Calculate growth percentage
+                BigDecimal currentRevenue = (BigDecimal) revenueData.get("totalRevenue");
+                BigDecimal previousRevenue = (BigDecimal) revenueData.get("comparisonRevenue");
+                if (previousRevenue != null && previousRevenue.compareTo(BigDecimal.ZERO) > 0) {
+                    BigDecimal growthPercentage = currentRevenue.subtract(previousRevenue)
+                            .divide(previousRevenue, 4, RoundingMode.HALF_UP)
+                            .multiply(new BigDecimal(100));
+
+                    csvContent.append("Growth Percentage:,").append(growthPercentage.setScale(2, RoundingMode.HALF_UP)).append("%\n");
+                }
+            }
+
+            csvContent.append("\nTop Contributing Sellers\n");
+            csvContent.append("Rank,Seller ID,Shop Name,Total Sales,Platform Revenue\n");
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> topSellers = (List<Map<String, Object>>) revenueData.get("topSellers");
+            if (topSellers != null && !topSellers.isEmpty()) {
+                int rank = 1;
+                for (Map<String, Object> seller : topSellers) {
+                    csvContent.append(rank++).append(",")
+                            .append(seller.get("sellerId")).append(",")
+                            .append("\"").append(seller.get("shopName")).append("\"").append(",")
+                            .append(seller.get("totalSales")).append(",")
+                            .append(seller.get("platformRevenue")).append("\n");
+                }
+            }
+
+            // Write to response
+            response.getWriter().write(csvContent.toString());
+            response.getWriter().flush();
+
+            log.info("Revenue reports CSV exported successfully for period: {}", period);
+
+        } catch (Exception e) {
+            log.error("Error exporting revenue reports CSV: {}", e.getMessage(), e);
+            try {
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        "Error generating CSV export: " + e.getMessage());
+            } catch (IOException ex) {
+                log.error("Error sending error response: {}", ex.getMessage());
+            }
+        }
+    }
+
+
 }
