@@ -94,40 +94,12 @@
     <section class="contact-form-section py-5 bg-light-tint">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-7">
-                    <h2 class="section-title text-center mb-4">Get in Touch</h2>
-                    <form th:action="@{/send-email}" method="post"> <!-- Placeholder action -->
-                        <div class="mb-3">
-                            <label for="contactName" class="form-label">Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="contactName" name="name" th:value="${name ?: 'Ali Tufan'}" required> <!-- Example prefill -->
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="contactEmail" class="form-label">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="contactEmail" name="email" th:value="${email ?: 'creativelayers088@gmail.com'}" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="contactPhone" class="form-label">Phone</label>
-                                <input type="tel" class="form-control" id="contactPhone" name="phone" th:value="${phone ?: '+34 8465 938 2832'}">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="contactMessage" class="form-label">Message <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="contactMessage" name="message" rows="5" required>Comment</textarea> <!-- Example prefill -->
-                        </div>
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-dark submit-contact-btn">Submit</button>
-                        </div>
-                    </form>
-                </div>
+
             </div>
         </div>
     </section>
 
 </main>
-
-<!-- Newsletter Subscription Section -->
-<div th:replace="~{fragments/newsletter :: newsletter-section}"></div>
 
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer-content}"></div>

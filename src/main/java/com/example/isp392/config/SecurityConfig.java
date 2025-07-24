@@ -164,7 +164,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/buyer/login")
                         .loginProcessingUrl("/buyer/process_login")
-                        .defaultSuccessUrl("/buyer/account-info", true) // Redirect to account-info page with true to always redirect
+                        .defaultSuccessUrl("/home", true) // Redirect to account-info page with true to always redirect
                         .failureUrl("/buyer/login?error")
                         .permitAll()
                 )

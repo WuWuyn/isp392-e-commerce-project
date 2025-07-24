@@ -72,14 +72,13 @@
         <div class="col-lg-2 col-md-4 col-6 mb-4" th:each="category, iterStat : ${categories}" th:if="${iterStat.index < 6}">
           <a th:href="@{/all-category(category=${category.categoryId})}" class="category-card text-decoration-none">
             <!-- Sử dụng ảnh mặc định cho các danh mục -->
-            <img th:src="@{'/images/category-' + ${iterStat.index % 6 + 1} + '.jpg'}" th:alt="${category.categoryName}" class="img-fluid category-img mb-2">
+
             <h6 class="category-name" th:text="${category.categoryName}">Category Name</h6>
           </a>
         </div>
         <!-- Hiển thị danh mục mặc định nếu không có dữ liệu -->
         <div class="col-lg-2 col-md-4 col-6 mb-4" th:if="${#lists.isEmpty(categories) || categories.size() < 1}">
           <a href="/all-category" class="category-card text-decoration-none">
-            <img th:src="@{/images/category-childrens.jpg}" alt="Children's Books" class="img-fluid category-img mb-2">
             <h6 class="category-name">Children's Books</h6>
           </a>
         </div>
@@ -266,8 +265,6 @@
   </section>
 </main>
 
-<!-- Newsletter Subscription Section -->
-<div th:replace="~{fragments/newsletter :: newsletter-section}"></div>
 
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer-content}"></div>

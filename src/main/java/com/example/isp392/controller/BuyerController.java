@@ -82,7 +82,7 @@ public class BuyerController {
         // Check if user is already authenticated
         if (isUserAuthenticated()) {
 
-            return "redirect:/buyer/account-info";
+            return "redirect:/home";
         }
         return "buyer/login";
     }
