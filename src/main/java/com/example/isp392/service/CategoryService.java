@@ -146,4 +146,7 @@ public class CategoryService {
         }
         return count;
     }
+    public boolean existsByName(String name) {
+        return categoryRepository.findByCategoryNameIgnoreCase(name).isPresent();
+    }
 }

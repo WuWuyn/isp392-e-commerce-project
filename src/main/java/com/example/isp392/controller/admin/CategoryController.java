@@ -105,19 +105,26 @@ public class CategoryController {
             @ModelAttribute Category category,
             BindingResult bindingResult,
             RedirectAttributes redirectAttributes) {
-        
+
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Please check your input");
             return "redirect:/admin/categories";
         }
-        
+
         try {
+            // MODIFICATION: Add validation check for existing category name
+            if (categoryService.existsByName(category.getCategoryName())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Error: A category with the name '" + category.getCategoryName() + "' already exists.");
+                return "redirect:/admin/categories";
+            }
+
             categoryService.save(category);
             redirectAttributes.addFlashAttribute("successMessage", "Category created successfully");
+
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error creating category: " + e.getMessage());
         }
-        
+
         return "redirect:/admin/categories";
     }
 
