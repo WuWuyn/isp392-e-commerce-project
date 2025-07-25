@@ -1,16 +1,19 @@
 package com.example.isp392.controller;
 
-import com.example.isp392.dto.UserRegistrationDTO;
-import com.example.isp392.model.*;
-import com.example.isp392.service.*;
-import com.example.isp392.service.FileStorageService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -19,21 +22,31 @@ import org.springframework.security.web.authentication.logout.SecurityContextLog
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.File;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.example.isp392.dto.UserRegistrationDTO;
+import com.example.isp392.model.BookReview;
+import com.example.isp392.model.OrderItem;
+import com.example.isp392.model.OrderStatus;
+import com.example.isp392.model.Shop;
+import com.example.isp392.model.User;
+import com.example.isp392.service.BookReviewService;
+import com.example.isp392.service.CartService;
+import com.example.isp392.service.FileStorageService;
+import com.example.isp392.service.OrderService;
+import com.example.isp392.service.ShopService;
+import com.example.isp392.service.UserService;
 
-import org.springframework.web.multipart.MultipartFile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 
 /**
  * Controller for buyer-related operations
@@ -485,7 +498,7 @@ public class BuyerController {
             // 1. Dùng Shop.ApprovalStatus thay vì ApprovalStatus
             // 2. Dùng getApprovalStatus() thay vì getApproval_status()
             if (shop.getApprovalStatus() == Shop.ApprovalStatus.PENDING) {
-                redirectAttributes.addFlashAttribute("infoMessage", "Yêu cầu đăng ký cửa hàng của bạn đang được xử lý. Vui lòng đợi.");
+                redirectAttributes.addFlashAttribute("infoMessage", "Your shop registration request is being reviewed.");
                 return "redirect:/buyer/account-info";
             } else if (shop.getApprovalStatus() == Shop.ApprovalStatus.APPROVED) {
                 redirectAttributes.addFlashAttribute("infoMessage", "Bạn đã là người bán hàng!");
@@ -552,7 +565,7 @@ public class BuyerController {
 
             shopService.registerNewShop(shopToSave, currentUser, logoFile, coverImageFile, identificationFile);
 
-            redirectAttributes.addFlashAttribute("successMessage", "Yêu cầu đăng ký của bạn đã được gửi lại thành công! Vui lòng chờ phê duyệt.");
+            redirectAttributes.addFlashAttribute("successMessage", "Shop registration successful! Your request will be considered.");
             return "redirect:/buyer/account-info";
         } catch (IOException e) {
             // log.error("Lỗi khi đăng ký shop: {}", e.getMessage());

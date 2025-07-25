@@ -33,6 +33,24 @@
 
             <!-- Account Content -->
             <section class="col-lg-9 account-content">
+                <!-- Success message display -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                    <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Error message display -->
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Info message display -->
+                <div th:if="${infoMessage}" class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+                    <i class="fas fa-info-circle me-2"></i> <span th:text="${infoMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
                 <div class="card">
                     <div class="card-header bg-white py-3">
                         <h4 class="mb-0">Account Information</h4>
