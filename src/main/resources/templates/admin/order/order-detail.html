@@ -298,20 +298,14 @@
                             <h5 class="section-title mt-4">Order Items</h5>
                             <div class="order-items">
                                 <div class="order-item" th:each="item : ${order.orderItems}">
-                                    <img th:if="${item.book.coverImgUrl != null}" th:src="${item.book.coverImgUrl}" alt="Book Cover" class="item-image">
-                                    <img th:unless="${item.book.coverImgUrl != null}" src="/images/book-placeholder.jpg" alt="No Cover" class="item-image">
                                     <div class="item-details">
                                         <div class="row">
                                             <div class="col-md-8">
                                                 <h6 class="item-title" th:text="${item.book.title}">Book Title</h6>
-                                                <p class="item-price" th:text="${'Price: ' + #numbers.formatCurrency(item.unitPrice)}">Price: $19.99</p>
-                                                <p class="item-quantity" th:text="${'Quantity: ' + item.quantity}">Quantity: 2</p>
-                                                <p class="small text-muted">
-                                                    Seller: <span th:text="${item.book.shop.shopName}">Shop Name</span>
-                                                </p>
+                                                <p class="item-price" th:text="'Price: ' + ${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'"></p>
                                             </div>
                                             <div class="col-md-4 text-end">
-                                                <div class="item-subtotal" th:text="${#numbers.formatCurrency(item.subtotal)}">$39.98</div>
+                                                <div class="item-subtotal" th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -322,19 +316,19 @@
                             <div class="order-totals">
                                 <div class="row">
                                     <div class="col-md-9 total-label">Subtotal:</div>
-                                    <div class="col-md-3 total-value" th:text="${#numbers.formatDecimal(order.subTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">39,980 đ</div>
+                                    <div class="col-md-3 total-value" th:text="${#numbers.formatDecimal(order.subTotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></div>
                                 </div>
                                 <div class="row" th:if="${order.shippingFee != null && order.shippingFee.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
                                     <div class="col-md-9 total-label">Shipping:</div>
-                                    <div class="col-md-3 total-value" th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' đ'">5,000 đ</div>
+                                    <div class="col-md-3 total-value" th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' VND'"></div>
                                 </div>
                                 <div class="row" th:if="${order.discountAmount != null && order.discountAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
                                     <div class="col-md-9 total-label">Discount:</div>
-                                    <div class="col-md-3 total-value text-danger" th:text="${'-' + #numbers.formatCurrency(order.discountAmount)}">-$5.00</div>
+                                    <div class="col-md-3 total-value text-danger" th:text="'-' + ${#numbers.formatDecimal(order.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></div>
                                 </div>
                                 <div class="row mt-2">
                                     <div class="col-md-9 total-label grand-total">Total:</div>
-                                    <div class="col-md-3 total-value grand-total" th:text="${#numbers.formatCurrency(order.totalAmount)}">$39.98</div>
+                                    <div class="col-md-3 total-value grand-total" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></div>
                                 </div>
                             </div>
                             

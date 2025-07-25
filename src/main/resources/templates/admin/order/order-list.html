@@ -265,7 +265,7 @@
                                     </div>
                                 </td>
                                 <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">Order Date</td>
-                                <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'">Total đ</td>
+                                <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'">Total VND</td>
                                 <td>
                                     <span th:class="'order-status status-' + ${#strings.toLowerCase(order.orderStatus)}" th:text="${order.orderStatus}">Status</span>
                                 </td>
