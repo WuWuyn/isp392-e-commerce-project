@@ -213,8 +213,8 @@
                 <div class="card card-cart h-100">
                     <div class="card-header card-header-cart d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Your Shopping Cart</h4>
-                        <span id="cartItemCountBadge" class="badge bg-primary rounded-pill" th:if="${cartTotalQuantity > 0}"
-                              th:text="${cartTotalQuantity} + ' items'">0 items</span>
+                        <span id="cartItemCountBadge" class="badge bg-primary rounded-pill" th:if="${cart != null && cart.items != null && !cart.items.isEmpty()}"
+                              th:text="${cart.items.size()} + ' items'">0 items</span>
                     </div>
                     <div class="card-body p-4" th:if="${cart == null || cart.items == null || cart.items.isEmpty()}">
                         <!-- Empty Cart -->
@@ -247,9 +247,7 @@
                                                 <td colspan="6" class="shop-header">
                                                     <div class="d-flex align-items-center py-2">
                                                         <i class="fas fa-store text-primary me-2"></i>
-                                                        <a th:href="@{/shops/{shopId}(shopId=${shopEntry.value[0].book.shop.shopId})}"
-                                                           th:text="${shopEntry.key}"
-                                                           class="text-primary text-decoration-none fw-bold">Shop Name</a>
+                                                        <strong th:text="${shopEntry.key}" class="text-primary">Shop Name</strong>
                                                         <span class="badge bg-light text-dark ms-2" th:text="${shopEntry.value.size()} + ' item' + (${shopEntry.value.size()} > 1 ? 's' : '')">2 items</span>
                                                     </div>
                                                 </td>
@@ -271,36 +269,19 @@
                                                         </a>
                                                         <div>
                                                             <a th:href="@{/product-detail(book_id=${item.book.bookId})}" class="book-title" th:text="${item.book.title}">Book Title</a>
-
-                                                            <!-- Always show author if available -->
-                                                            <p class="mb-0 small text-muted" th:if="${item.book.authors != null}">
-                                                                <i class="fas fa-user-edit"></i>
-                                                                <span th:text="'Tác giả: ' + ${item.book.authors}">Tác giả: Author Name</span>
+                                                            <p class="mb-0 small" th:if="${item.book.stockQuantity != null}">
+                                                                <span th:class="${item.book.stockQuantity < item.quantity ? 'text-danger' : 'text-success'}">
+                                                                    <i class="fas" th:class="${item.book.stockQuantity < item.quantity ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+                                                                    <span th:if="${item.book.stockQuantity < item.quantity}">
+                                                                        Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho
+                                                                    </span>
+                                                                    <span th:unless="${item.book.stockQuantity < item.quantity}">
+                                                                        Còn [[${item.book.stockQuantity}]] sản phẩm trong kho
+                                                                    </span>
+                                                                </span>
                                                             </p>
-
-                                                            <!-- Show shop name with link -->
-                                                            <p class="mb-0 small text-muted" th:if="${item.book.shop != null}">
-                                                                <i class="fas fa-store"></i>
-                                                                <a th:href="@{/shops/{shopId}(shopId=${item.book.shop.shopId})}"
-                                                                   th:text="'Cửa hàng: ' + ${item.book.shop.shopName}"
-                                                                   class="text-decoration-none">Cửa hàng: Shop Name</a>
-                                                            </p>
-
-                                                            <!-- Show low stock warning (5 or less) with author -->
-                                                            <p class="mb-0 small text-warning" th:if="${item.book.stockQuantity != null && item.book.stockQuantity <= 5 && item.book.stockQuantity >= item.quantity}">
-                                                                <i class="fas fa-exclamation-triangle"></i>
-                                                                <span>Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho</span>
-                                                            </p>
-
-                                                            <!-- Show insufficient stock error -->
-                                                            <p class="mb-0 small text-danger" th:if="${item.book.stockQuantity != null && item.book.stockQuantity < item.quantity}">
-                                                                <i class="fas fa-exclamation-circle"></i>
-                                                                <span>Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho</span>
-                                                            </p>
-
-                                                            <!-- Show out of stock -->
-                                                            <p class="mb-0 small text-danger" th:if="${item.book.stockQuantity == null || item.book.stockQuantity == 0}">
-                                                                <i class="fas fa-times-circle"></i> Sản phẩm đã hết hàng
+                                                            <p class="mb-0 small text-danger" th:unless="${item.book.stockQuantity != null}">
+                                                                <i class="fas fa-exclamation-circle"></i> Sản phẩm đã hết hàng
                                                             </p>
                                                         </div>
                                                     </div>
@@ -444,47 +425,24 @@
         }
         
         function calculateUniqueItemCount() {
-            // Calculate unique item count (number of different items)
-            const quantityInputs = document.querySelectorAll('input[name="quantity"]');
-            return quantityInputs.length;
-        }
-
-        function calculateTotalQuantity() {
-            // Calculate total quantity (sum of all quantities) - for shop counts
-            let totalQuantity = 0;
-            const quantityInputs = document.querySelectorAll('input[name="quantity"]');
-
-            quantityInputs.forEach(input => {
-                const qty = parseInt(input.value) || 0;
-                totalQuantity += qty;
-            });
-
-            return totalQuantity;
+            // Count unique items instead of total quantity
+            return document.querySelectorAll('input[name="quantity"]').length;
         }
 
         function updateAllQuantityBadges() {
-            const uniqueItemCount = calculateUniqueItemCount();
-
+            const itemCount = calculateUniqueItemCount();
             if (cartItemCountBadge) {
-                cartItemCountBadge.textContent = uniqueItemCount + ' items';
-                cartItemCountBadge.style.display = uniqueItemCount > 0 ? '' : 'none';
+                cartItemCountBadge.textContent = itemCount + ' items';
             }
-
             if (headerCartCountBadge) {
-                headerCartCountBadge.textContent = uniqueItemCount;
-                headerCartCountBadge.style.display = uniqueItemCount > 0 ? '' : 'none';
+                headerCartCountBadge.textContent = itemCount;
             }
-
-            // Trigger global cart update event for synchronization across pages
-            if (window.dispatchEvent) {
-                window.dispatchEvent(new CustomEvent('cartUpdated', {
-                    detail: { uniqueItemCount: uniqueItemCount }
-                }));
+            // If itemCount is 0, hide the badge as per existing logic
+            if (cartItemCountBadge) {
+                cartItemCountBadge.style.display = itemCount > 0 ? '' : 'none';
             }
-
-            // Also directly call global cart update function
-            if (window.updateGlobalCartCount) {
-                window.updateGlobalCartCount();
+            if (headerCartCountBadge) {
+                headerCartCountBadge.style.display = itemCount > 0 ? '' : 'none';
             }
         }
 
@@ -546,9 +504,6 @@
             // Update checkout button state
             updateCheckoutButtonState();
 
-            // Update shop item counts
-            updateShopItemCounts();
-
             updateAllQuantityBadges();
         }
 
@@ -556,10 +511,7 @@
         if (getItemCheckboxes().length > 0) {
             // Default: no items selected initially
             updateCartSummary();
-
-            // Initialize shop item counts
-            updateShopItemCounts();
-
+            
             // Set checkout button to disabled initially
             if (checkoutBtn) {
                 checkoutBtn.classList.add('disabled');
@@ -663,143 +615,53 @@
             */
         }
 
-        // Debounce function to prevent rapid clicking
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Track pending requests to prevent multiple simultaneous updates
-        const pendingRequests = new Set();
-
-        // Use event delegation for quantity buttons with improved handling
+        // Use event delegation for quantity buttons
         document.querySelector('table').addEventListener('click', function(e) {
-            if (e.target.classList.contains('qty-btn') || e.target.closest('.qty-btn')) {
-                const btn = e.target.closest('.qty-btn') || e.target;
+            if (e.target.classList.contains('qty-btn')) {
+                const btn = e.target;
                 const row = btn.closest('tr');
                 const bookId = row.dataset.bookId;
                 const input = row.querySelector('input[name="quantity"]');
-                let currentQty = parseInt(input.value) || 1;
-                let newQty = currentQty;
+                let qty = parseInt(input.value);
 
-                // Prevent multiple simultaneous requests for the same item
-                if (pendingRequests.has(bookId)) {
-                    return;
-                }
-
-                // Calculate new quantity
                 if (btn.dataset.action === 'increase') {
-                    newQty = currentQty + 1;
-                } else if (btn.dataset.action === 'decrease' && currentQty > 1) {
-                    newQty = currentQty - 1;
+                    qty++;
+                } else if (btn.dataset.action === 'decrease' && qty > 1) {
+                    qty--;
                 }
 
-                // Only proceed if quantity actually changed
-                if (newQty !== currentQty) {
-                    // Disable all quantity buttons for this item
-                    const allBtns = row.querySelectorAll('.qty-btn');
-                    allBtns.forEach(b => b.disabled = true);
-
-                    // Add visual feedback
-                    input.style.opacity = '0.6';
-
-                    pendingRequests.add(bookId);
-
+                if (qty !== parseInt(input.value)) {
                     fetch('/buyer/cart/update-qty', {
                         method: 'POST',
                         headers: withCsrf({'Content-Type': 'application/json'}),
-                        body: JSON.stringify({bookId: parseInt(bookId), quantity: newQty})
+                        body: JSON.stringify({bookId, quantity: qty})
                     })
                     .then(response => {
                         return response.json().then(data => {
                             if (response.ok) {
-                                input.value = newQty;
+                                input.value = qty;
                                 updateItemTotal(row);
                                 updateCartSummary();
                                 updateAllQuantityBadges();
                                 if (data.message) {
+                                    // Hiển thị thông báo thành công nếu có
                                     showToast('success', data.message);
                                 }
                             } else {
-                                // Revert to original value on error
-                                input.value = currentQty;
+                                // Hiển thị thông báo lỗi từ server
                                 showToast('error', data.message || 'Không thể cập nhật số lượng.');
+                                // Đặt lại giá trị cũ
+                                input.value = parseInt(input.defaultValue);
                             }
                         });
                     })
                     .catch(error => {
-                        console.error('Error updating quantity:', error);
-                        // Revert to original value on error
-                        input.value = currentQty;
+                        console.error('Error:', error);
                         showToast('error', 'Có lỗi xảy ra khi cập nhật số lượng.');
-                    })
-                    .finally(() => {
-                        // Re-enable buttons and remove visual feedback
-                        allBtns.forEach(b => b.disabled = false);
-                        input.style.opacity = '1';
-                        pendingRequests.delete(bookId);
                     });
                 }
             }
         });
-
-        // Function to update shop item counts
-        function updateShopItemCounts() {
-            const shopHeaders = document.querySelectorAll('.shop-header-row');
-            shopHeaders.forEach(header => {
-                // Find the next sibling rows until we hit another shop header or end of table
-                let nextRow = header.nextElementSibling;
-                let itemCount = 0;
-                let totalQuantity = 0;
-
-                while (nextRow && !nextRow.classList.contains('shop-header-row')) {
-                    if (nextRow.classList.contains('cart-item')) {
-                        itemCount++;
-                        const quantityInput = nextRow.querySelector('input[name="quantity"]');
-                        if (quantityInput) {
-                            totalQuantity += parseInt(quantityInput.value) || 0;
-                        }
-                    }
-                    nextRow = nextRow.nextElementSibling;
-                }
-
-                // Update the shop item count badge
-                const badge = header.querySelector('.badge');
-                if (badge) {
-                    badge.textContent = `${itemCount} item${itemCount !== 1 ? 's' : ''} (${totalQuantity} total)`;
-                }
-            });
-        }
-
-        // Function to check and remove empty shop headers
-        function removeEmptyShopHeaders() {
-            const shopHeaders = document.querySelectorAll('.shop-header-row');
-            shopHeaders.forEach(header => {
-                // Find the next sibling rows until we hit another shop header or end of table
-                let nextRow = header.nextElementSibling;
-                let hasItems = false;
-
-                while (nextRow && !nextRow.classList.contains('shop-header-row')) {
-                    if (nextRow.classList.contains('cart-item')) {
-                        hasItems = true;
-                        break;
-                    }
-                    nextRow = nextRow.nextElementSibling;
-                }
-
-                // If no items found for this shop, remove the header
-                if (!hasItems) {
-                    header.remove();
-                }
-            });
-        }
 
         // Use event delegation for remove buttons
         document.querySelector('table').addEventListener('click', function(e) {
@@ -818,13 +680,7 @@
                             row.style.opacity = '0';
                             setTimeout(() => {
                                 row.remove();
-
-                                // Update shop item counts before removing empty headers
-                                updateShopItemCounts();
-
-                                // Remove empty shop headers
-                                removeEmptyShopHeaders();
-
+                                
                                 // If no cart items left, reload to show empty cart
                                 if (document.querySelectorAll('tbody tr.cart-item').length === 0) {
                                     location.reload();

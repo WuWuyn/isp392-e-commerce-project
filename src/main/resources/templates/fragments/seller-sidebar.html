@@ -53,9 +53,6 @@
             </a>
             
             <!-- Customer Interaction -->
-            <a th:href="@{/seller/messages}" class="list-group-item list-group-item-action">
-                <i class="fas fa-comments"></i> Messages
-            </a>
 
             <a th:href="@{/seller/reviews}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'reviews' ? 'active' : ''}">
             <i class="fas fa-star"></i> Reviews
@@ -80,9 +77,7 @@
             <a th:href="@{/seller/shop-information}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'shop-information' ? 'active' : ''}">
                 <i class="fas fa-store"></i> Shop Information
             </a>
-            <a th:href="@{/seller/settings/policies}" class="list-group-item list-group-item-action">
-                <i class="fas fa-file-alt"></i> Store Policies
-            </a>
+
 <!--            <a th:href="@{/seller/settings/shipping}" class="list-group-item list-group-item-action">-->
 <!--                <i class="fas fa-shipping-fast"></i> Shipping Settings-->
 <!--            </a>-->
@@ -91,9 +86,7 @@
 <!--            </a>-->
             
             <!-- Help -->
-            <a th:href="@{/seller/help}" class="list-group-item list-group-item-action">
-                <i class="fas fa-question-circle"></i> Help & Support
-            </a>
+
             
             <!-- Logout -->
             <form th:action="@{/seller/logout}" method="post">
