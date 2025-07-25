@@ -27,5 +27,6 @@ public interface CategoryRepository extends JpaRepository<Category, Integer> {
     Page<Category> findByIsActiveTrue(Pageable pageable);
 
     Optional<Category> findByCategoryName(String categoryName);
+    Optional<Category> findByCategoryNameIgnoreCase(String categoryName);
 }
 
