@@ -16,12 +16,14 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <style>
+        /* Checkout specific styles - consistent with buyer pages */
         .checkout-section {
             background-color: #fff;
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 20px;
             margin-bottom: 20px;
+            border: 1px solid #e9ecef;
         }
         .section-title {
             color: #333;
@@ -30,6 +32,18 @@
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 2px solid #f0f0f0;
+        }
+        .card-checkout {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-header-checkout {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            color: #333;
         }
         .address-card {
             border: 1px solid #e0e0e0;
@@ -261,418 +275,432 @@
         </nav>
 
         <form id="checkoutForm" th:action="@{/buyer/process-checkout}" method="post">
-        <div class="row">
+            <div class="row">
                 <!-- Left Column -->
-            <div class="col-lg-8">
-                <!-- Shipping Address Section -->
-                <div class="checkout-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-map-marker-alt me-2"></i>
-                        Shipping Address
-                    </h2>
-                    
-                    <!-- Address Selection Dropdown -->
-                    <div class="mb-4">
-                        <label for="addressSelect" class="form-label">Select Shipping Address</label>
-                        <select class="form-select" id="addressSelect" name="addressSelect">
-                            <option value="">Choose an address...</option>
-                            <option value="new">+ Add New Address</option>
-                            <th:block th:each="address : ${userAddresses}">
-                                <option th:value="${address.addressId}" 
-                                        th:selected="${address.isDefault()}"
-                                        th:data-recipient-name="${address.recipientName}"
-                                        th:data-recipient-phone="${address.recipientPhone}"
-                                        th:data-province="${address.province}"
-                                        th:data-district="${address.district}"
-                                        th:data-ward="${address.ward}"
-                                        th:data-address-detail="${address.addressDetail}"
-                                        th:data-company="${address.company}"
-                                        th:data-type="${address.address_type}">
-                                    [[${address.addressDetail + ', ' + address.ward + ', ' + address.district + ', ' + address.province}]]
-                                    [[${address.isDefault() ? '(Default)' : ''}]]
-                                </option>
-                            </th:block>
-                        </select>
-                        <div class="invalid-feedback">Please select a shipping address</div>
-                    </div>
-
-                    <!-- Hidden input for existingAddressId -->
-                    <input type="hidden" id="existingAddressId" name="existingAddressId" th:value="${defaultAddress != null ? defaultAddress.addressId : ''}">
-
-                    <!-- Selected Address Details -->
-                    <div id="selectedAddressDetails" class="card mb-4" style="display: none;">
+                <div class="col-lg-8 mb-4 mb-lg-0">
+                    <!-- Shipping Address Section -->
+                    <div class="card card-checkout mb-4">
+                        <div class="card-header card-header-checkout">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            Shipping Address
+                        </div>
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-3 text-muted">Selected Address Details</h6>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Recipient Name</label>
-                                    <div class="form-control-plaintext" id="displayRecipientName"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Phone Number</label>
-                                    <div class="form-control-plaintext" id="displayRecipientPhone"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Province/City</label>
-                                    <div class="form-control-plaintext" id="displayProvince"></div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">District</label>
-                                    <div class="form-control-plaintext" id="displayDistrict"></div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Ward</label>
-                                    <div class="form-control-plaintext" id="displayWard"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Address Details</label>
-                                <div class="form-control-plaintext" id="displayAddressDetail"></div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6" id="displayCompanyContainer" style="display: none;">
-                                    <label class="form-label fw-bold">Company</label>
-                                    <div class="form-control-plaintext" id="displayCompany"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Address Type</label>
-                                    <div class="form-control-plaintext" id="displayAddressType"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- New Address Form -->
-                    <div id="newAddressForm" style="display: none;">
-                        <input type="hidden" name="isNewAddress" id="isNewAddress" value="false">
-                        <!-- Hidden fields for storing location names -->
-                        <input type="hidden" id="provinceName" name="province">
-                        <input type="hidden" id="districtName" name="district">
-                        <input type="hidden" id="wardName" name="ward">
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="recipientName" class="form-label">Recipient Name</label>
-                                <input type="text" class="form-control" id="recipientName" name="recipientName" 
-                                       required minlength="2" maxlength="100">
-                                <div class="invalid-feedback">Recipient name must be 2-100 characters</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="recipientPhone" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="recipientPhone" name="recipientPhone" 
-                                       required pattern="^(\+84|84|0)[3|5|7|8|9][0-9]{8}$">
-                                <div class="invalid-feedback">Please enter a valid Vietnamese phone number</div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="province" class="form-label">Province/City</label>
-                                <select class="form-select" id="province" required>
-                                    <option value="">Select Province/City</option>
+                            <!-- Address Selection Dropdown -->
+                            <div class="mb-4">
+                                <label for="addressSelect" class="form-label">Select Shipping Address</label>
+                                <select class="form-select" id="addressSelect" name="addressSelect">
+                                    <option value="new">+ Add New Address</option>
+                                    <th:block th:each="address : ${userAddresses}">
+                                        <option th:value="${address.addressId}"
+                                                th:selected="${address.isDefault()}"
+                                                th:data-recipient-name="${address.recipientName}"
+                                                th:data-recipient-phone="${address.recipientPhone}"
+                                                th:data-province="${address.province}"
+                                                th:data-district="${address.district}"
+                                                th:data-ward="${address.ward}"
+                                                th:data-address-detail="${address.addressDetail}"
+                                                th:data-company="${address.company}"
+                                                th:data-type="${address.address_type}">
+                                            [[${address.addressDetail + ', ' + address.ward + ', ' + address.district + ', ' + address.province}]]
+                                            [[${address.isDefault() ? '(Default)' : ''}]]
+                                        </option>
+                                    </th:block>
                                 </select>
-                                <div class="invalid-feedback">Please select a province</div>
+                                <div class="invalid-feedback">Please select a shipping address</div>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="district" class="form-label">District</label>
-                                <select class="form-select" id="district" required disabled>
-                                    <option value="">Select District</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a district</div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="ward" class="form-label">Ward</label>
-                                <select class="form-select" id="ward" required disabled>
-                                    <option value="">Select Ward</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a ward</div>
-                            </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <label for="addressDetail" class="form-label">Address Details</label>
-                            <input type="text" class="form-control" id="addressDetail" name="addressDetail" 
-                                   required maxlength="500">
-                            <div class="invalid-feedback">Please enter address details (max 500 characters)</div>
-                        </div>
+                            <!-- Hidden input for existingAddressId -->
+                            <input type="hidden" id="existingAddressId" name="existingAddressId" th:value="${defaultAddress != null ? defaultAddress.addressId : ''}">
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="company" class="form-label">Company (Optional)</label>
-                                <input type="text" class="form-control" id="company" name="company" maxlength="255">
-                                <div class="invalid-feedback">Company name must be less than 255 characters</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label d-block">Address Type</label>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="addressType" 
-                                           id="addressType0" value="0" required checked>
-                                    <label class="form-check-label" for="addressType0">Home</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="addressType" 
-                                           id="addressType1" value="1" required>
-                                    <label class="form-check-label" for="addressType1">Company</label>
-                                </div>
-                                <div class="invalid-feedback">Please select an address type</div>
-                        </div>
-                        </div>
-
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="saveAddress" name="saveAddress">
-                            <label class="form-check-label" for="saveAddress">
-                                Save this address for future use
-                            </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Order Items Section -->
-        <div class="checkout-section">
-            <h2 class="section-title">
-                <i class="fas fa-shopping-bag me-2"></i>
-                Order Items
-            </h2>
-            
-            <div class="order-items">
-                <!-- Group items by shop -->
-                <div th:each="shopEntry : ${itemsByShop}" class="shop-group mb-4">
-                    <!-- Shop header -->
-                    <div class="shop-header-checkout">
-                        <div class="d-flex align-items-center mb-3">
-                            <i class="fas fa-store text-primary me-2"></i>
-                            <h6 class="mb-0 text-primary fw-bold" th:text="${shopEntry.key}">Shop Name</h6>
-                            <span class="badge bg-light text-dark ms-2" th:text="${shopEntry.value.size()} + ' item' + (${shopEntry.value.size()} > 1 ? 's' : '')">2 items</span>
-                        </div>
-                    </div>
-
-                    <!-- Items for this shop -->
-                    <div class="shop-items">
-                        <div th:each="item : ${shopEntry.value}" class="book-item">
-                            <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}"
-                                 alt="Book Cover" class="book-image">
-                            <div class="book-details">
-                                <h5 class="book-title" th:text="${item.book.title}">Book Title</h5>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="book-price" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
-                                    <span class="quantity-badge" th:text="'Quantity: ' + ${item.quantity}">Quantity: 1</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Shop Order Summary -->
-                    <div class="shop-summary mt-3 p-3 bg-light rounded" th:with="shopSubtotal=${#aggregates.sum(shopEntry.value.![book.sellingPrice * quantity])}">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="summary-details">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Subtotal:</span>
-                                        <span class="shop-subtotal" th:text="${#numbers.formatDecimal(shopSubtotal, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Shipping Fee:</span>
-                                        <span class="shop-shipping">30,000 VND</span>
+                            <!-- Selected Address Details -->
+                            <div id="selectedAddressDetails" class="card mb-4" style="display: none;">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-3 text-muted">Selected Address Details</h6>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Recipient Name</label>
+                                            <div class="form-control-plaintext" id="displayRecipientName"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Phone Number</label>
+                                            <div class="form-control-plaintext" id="displayRecipientPhone"></div>
+                                        </div>
                                     </div>
 
-                                    <!-- Discount section (hidden by default, shown when promotion applied) -->
-                                    <div class="shop-discount-section" style="display: none;">
-                                        <div class="d-flex justify-content-between mb-2">
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">Province/City</label>
+                                            <div class="form-control-plaintext" id="displayProvince"></div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">District</label>
+                                            <div class="form-control-plaintext" id="displayDistrict"></div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">Ward</label>
+                                            <div class="form-control-plaintext" id="displayWard"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Address Details</label>
+                                        <div class="form-control-plaintext" id="displayAddressDetail"></div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6" id="displayCompanyContainer" style="display: none;">
+                                            <label class="form-label fw-bold">Company</label>
+                                            <div class="form-control-plaintext" id="displayCompany"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Address Type</label>
+                                            <div class="form-control-plaintext" id="displayAddressType"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- New Address Form -->
+                            <div id="newAddressForm" style="display: none;">
+                                <input type="hidden" name="isNewAddress" id="isNewAddress" value="false">
+                                <!-- Hidden fields for storing location names -->
+                                <input type="hidden" id="provinceName" name="province">
+                                <input type="hidden" id="districtName" name="district">
+                                <input type="hidden" id="wardName" name="ward">
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recipientName" class="form-label">Recipient Name</label>
+                                        <input type="text" class="form-control" id="recipientName" name="recipientName"
+                                               required minlength="2" maxlength="100">
+                                        <div class="invalid-feedback">Recipient name must be 2-100 characters</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recipientPhone" class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-control" id="recipientPhone" name="recipientPhone"
+                                               required pattern="^(\+84|84|0)[3|5|7|8|9][0-9]{8}$">
+                                        <div class="invalid-feedback">Please enter a valid Vietnamese phone number</div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="province" class="form-label">Province/City</label>
+                                        <select class="form-select" id="province" required>
+                                            <option value="">Select Province/City</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select a province</div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="district" class="form-label">District</label>
+                                        <select class="form-select" id="district" required disabled>
+                                            <option value="">Select District</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select a district</div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="ward" class="form-label">Ward</label>
+                                        <select class="form-select" id="ward" required disabled>
+                                            <option value="">Select Ward</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select a ward</div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="addressDetail" class="form-label">Address Details</label>
+                                    <input type="text" class="form-control" id="addressDetail" name="addressDetail"
+                                           required maxlength="500">
+                                    <div class="invalid-feedback">Please enter address details (max 500 characters)</div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="company" class="form-label">Company (Optional)</label>
+                                        <input type="text" class="form-control" id="company" name="company" maxlength="255">
+                                        <div class="invalid-feedback">Company name must be less than 255 characters</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label d-block">Address Type</label>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="addressType"
+                                                   id="addressType0" value="0" required checked>
+                                            <label class="form-check-label" for="addressType0">Home</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="addressType"
+                                                   id="addressType1" value="1" required>
+                                            <label class="form-check-label" for="addressType1">Company</label>
+                                        </div>
+                                        <div class="invalid-feedback">Please select an address type</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="saveAddress" name="saveAddress">
+                                    <label class="form-check-label" for="saveAddress">
+                                        Save this address for future use
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Items Section -->
+                    <div class="card card-checkout mb-4">
+                        <div class="card-header card-header-checkout">
+                            <i class="fas fa-shopping-bag me-2"></i>
+                            Order Items
+                        </div>
+                        <div class="card-body">
+
+                            <div class="order-items">
+                                <!-- Group items by shop -->
+                                <div th:each="shopEntry : ${itemsByShop}" class="shop-group mb-4">
+                                    <!-- Shop header -->
+                                    <div class="shop-header-checkout">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-store text-primary me-2"></i>
+                                            <h6 class="mb-0 text-primary fw-bold" th:text="${shopEntry.key}">Shop Name</h6>
+                                            <span class="badge bg-light text-dark ms-2" th:text="${shopEntry.value.size()} + ' item' + (${shopEntry.value.size()} > 1 ? 's' : '')">2 items</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Items for this shop -->
+                                    <div class="shop-items">
+                                        <div th:each="item : ${shopEntry.value}" class="book-item border-bottom pb-3 mb-3">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-2">
+                                                    <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}"
+                                                         alt="Book Cover" class="img-fluid rounded book-image" style="max-height: 80px; object-fit: cover;">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6 class="book-title mb-1" th:text="${item.book.title}">Book Title</h6>
+                                                    <p class="text-muted small mb-1" th:if="${item.book.authors}" th:text="'Author: ' + ${item.book.authors}">Author: Author Name</p>
+                                                    <p class="text-muted small mb-0" th:if="${item.book.isbn}" th:text="'ISBN: ' + ${item.book.isbn}">ISBN: 123456789</p>
+                                                </div>
+                                                <div class="col-md-2 text-center">
+                                                    <span class="badge bg-secondary" th:text="'Qty: ' + ${item.quantity}">Qty: 1</span>
+                                                </div>
+                                                <div class="col-md-2 text-end">
+                                                    <span class="fw-bold text-primary" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Shop Order Summary -->
+                                    <div class="shop-summary mt-3 p-3 bg-light rounded" th:with="shopSubtotal=${#aggregates.sum(shopEntry.value.![book.sellingPrice * quantity])}">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="summary-details">
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span>Subtotal:</span>
+                                                        <span class="shop-subtotal" th:text="${#numbers.formatDecimal(shopSubtotal, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span>Shipping Fee:</span>
+                                                        <span class="shop-shipping">30,000 VND</span>
+                                                    </div>
+
+                                                    <!-- Discount section (hidden by default, shown when promotion applied) -->
+                                                    <div class="shop-discount-section" style="display: none;">
+                                                        <div class="d-flex justify-content-between mb-2">
                                             <span class="text-success">
                                                 <i class="fas fa-tag me-1"></i>Discount:
                                             </span>
-                                            <span class="shop-discount-amount text-success fw-bold">-0 VND</span>
-                                        </div>
-                                        <div class="shop-discount-details text-muted small">
-                                            <div class="d-flex justify-content-between">
-                                                <span>Original Total:</span>
-                                                <span class="shop-original-total" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between">
-                                                <span>After Discount:</span>
-                                                <span class="shop-discounted-total fw-bold" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                                            <span class="shop-discount-amount text-success fw-bold">-0 VND</span>
+                                                        </div>
+                                                        <div class="shop-discount-details text-muted small">
+                                                            <div class="d-flex justify-content-between">
+                                                                <span>Original Total:</span>
+                                                                <span class="shop-original-total" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between">
+                                                                <span>After Discount:</span>
+                                                                <span class="shop-discounted-total fw-bold" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <hr class="my-2">
+                                                    <div class="d-flex justify-content-between fw-bold">
+                                                        <span>Shop Total:</span>
+                                                        <span class="shop-total" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                    <hr class="my-2">
-                                    <div class="d-flex justify-content-between fw-bold">
-                                        <span>Shop Total:</span>
-                                        <span class="shop-total" th:text="${#numbers.formatDecimal(shopSubtotal + 30000, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                        <!-- Payment Method Section -->
+                        <div class="checkout-section">
+                            <h2 class="section-title">
+                                <i class="fas fa-credit-card me-2"></i>
+                                Payment Method
+                            </h2>
+
+                            <div class="payment-methods">
+                                <div class="payment-method selected" data-payment="COD">
+                                    <div class="d-flex align-items-center">
+                                        <input type="radio" name="paymentMethod" value="COD" class="form-check-input me-3" checked>
+                                        <div>
+                                            <strong>Cash on Delivery (COD)</strong>
+                                            <p class="mb-0 text-muted small">Pay when you receive your order</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="payment-method mt-3" data-payment="VNPAY">
+                                    <div class="d-flex align-items-center">
+                                        <input type="radio" name="paymentMethod" value="VNPAY" class="form-check-input me-3">
+                                        <div class="d-flex align-items-center">
+                                            <div>
+                                                <strong>VNPay</strong>
+                                                <p class="mb-0 text-muted small">Pay securely with VNPay</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-            <!-- Payment Method Section -->
-            <div class="checkout-section">
-                <h2 class="section-title">
-                    <i class="fas fa-credit-card me-2"></i>
-                    Payment Method
-                </h2>
-                
-                <div class="payment-methods">
-                    <div class="payment-method selected" data-payment="COD">
-                        <div class="d-flex align-items-center">
-                            <input type="radio" name="paymentMethod" value="COD" class="form-check-input me-3" checked>
-                            <div>
-                                <strong>Cash on Delivery (COD)</strong>
-                                <p class="mb-0 text-muted small">Pay when you receive your order</p>
-                            </div>
+                    <!-- Order Notes -->
+                    <div class="card card-checkout mb-4">
+                        <div class="card-header card-header-checkout">
+                            <i class="fas fa-pencil-alt me-2"></i>
+                            Order Notes
                         </div>
-                    </div>
-                    
-                    <div class="payment-method mt-3" data-payment="VNPAY">
-                        <div class="d-flex align-items-center">
-                            <input type="radio" name="paymentMethod" value="VNPAY" class="form-check-input me-3">
-                            <div class="d-flex align-items-center">
-                                <div>
-                                    <strong>VNPay</strong>
-                                    <p class="mb-0 text-muted small">Pay securely with VNPay</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Order Notes -->
-            <div class="checkout-section">
-                <h2 class="section-title">
-                    <i class="fas fa-pencil-alt me-2"></i>
-                    Order Notes
-                </h2>
-                <div class="mb-3">
-                    <textarea class="form-control" id="notes" name="notes" rows="3" 
+                        <div class="card-body">
+                    <textarea class="form-control" id="notes" name="notes" rows="3"
                               placeholder="Add any special instructions or notes for your order"></textarea>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column - Order Summary -->
-        <div class="col-lg-4">
-            <div class="checkout-section">
-                <h2 class="section-title">Order Summary</h2>
-                <div class="order-summary">
-                    <div class="summary-item">
-                        <span>Subtotal</span>
-                        <span id="summarySubtotal" th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                        </div>
                     </div>
+                </div>
 
-                        <!-- Promotion Code Section (Applied from Cart) -->
-                        <div class="promotion-section mt-3 mb-3" th:if="${appliedPromotion != null and appliedPromotion.success}">
-                            <div class="alert alert-info mb-0">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <i class="fas fa-tag text-success me-2"></i>
-                                        <strong>Promotion Applied from Cart:</strong>
-                                        <span class="fw-bold text-success" th:text="${appliedPromotion.promoCode}">PROMO10</span>
-                                    </div>
-                                    <a href="/buyer/cart" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit me-1"></i>Change in Cart
-                                    </a>
+                <!-- Right Column - Order Summary -->
+                <div class="col-lg-4">
+                    <div class="card card-checkout sticky-top" style="top: 20px;">
+                        <div class="card-header card-header-checkout">
+                            <i class="fas fa-receipt me-2"></i>
+                            Order Summary
+                        </div>
+                        <div class="card-body">
+                            <div class="order-summary">
+                                <div class="summary-item">
+                                    <span>Subtotal</span>
+                                    <span id="summarySubtotal" th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
                                 </div>
-                                <div class="mt-2">
-                                    <div class="d-flex justify-content-between align-items-center">
+
+                                <!-- Promotion Code Section (Applied from Cart) -->
+                                <div class="promotion-section mt-3 mb-3" th:if="${appliedPromotion != null and appliedPromotion.success}">
+                                    <div class="alert alert-info mb-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="fas fa-tag text-success me-2"></i>
+                                                <strong>Promotion Applied from Cart:</strong>
+                                                <span class="fw-bold text-success" th:text="${appliedPromotion.promoCode}">PROMO10</span>
+                                            </div>
+                                            <a href="/buyer/cart" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit me-1"></i>Change in Cart
+                                            </a>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div class="d-flex justify-content-between align-items-center">
                                         <span class="text-success fw-bold">
                                             <i class="fas fa-percentage me-1"></i>
                                             Discount Amount:
                                         </span>
-                                        <span class="text-success fw-bold" th:text="${#numbers.formatDecimal(appliedPromotion.totalDiscount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                                <span class="text-success fw-bold" th:text="${#numbers.formatDecimal(appliedPromotion.totalDiscount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                            </div>
+                                            <div class="text-muted small mt-1">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                To apply or change promotion codes, please go back to your cart.
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="text-muted small mt-1">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        To apply or change promotion codes, please go back to your cart.
+                                </div>
+
+                                <!-- No Promotion Applied -->
+                                <div class="promotion-section mt-3 mb-3" th:if="${appliedPromotion == null or !appliedPromotion.success}">
+                                    <div class="alert alert-light mb-0">
+                                        <div class="text-center">
+                                            <i class="fas fa-tag text-muted me-2"></i>
+                                            <span class="text-muted">No promotion code applied</span>
+                                        </div>
+                                        <div class="mt-2 text-center">
+                                            <a href="/buyer/cart" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-arrow-left me-1"></i>Go to Cart to Apply Promotion
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- No Promotion Applied -->
-                        <div class="promotion-section mt-3 mb-3" th:if="${appliedPromotion == null or !appliedPromotion.success}">
-                            <div class="alert alert-light mb-0">
-                                <div class="text-center">
-                                    <i class="fas fa-tag text-muted me-2"></i>
-                                    <span class="text-muted">No promotion code applied</span>
+                                <!-- Discount Breakdown -->
+                                <div id="discountBreakdownSection" class="discount-breakdown" style="display: none;">
+                                    <div id="discountBreakdownContent">
+                                        <!-- Will be populated by JavaScript -->
+                                    </div>
                                 </div>
-                                <div class="mt-2 text-center">
-                                    <a href="/buyer/cart" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-arrow-left me-1"></i>Go to Cart to Apply Promotion
-                                    </a>
+
+                                <div class="summary-item">
+                                    <span>Shipping Fee</span>
+                                    <span id="summaryShipping">30,000 VND</span>
+                                    <input type="hidden" name="shippingFee" id="shippingFeeInput" value="30000" />
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Discount Breakdown -->
-                        <div id="discountBreakdownSection" class="discount-breakdown" style="display: none;">
-                            <div id="discountBreakdownContent">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
-
-                    <div class="summary-item">
-                        <span>Shipping Fee</span>
-                        <span id="summaryShipping">30,000 VND</span>
-                        <input type="hidden" name="shippingFee" id="shippingFeeInput" value="30000" />
-                    </div>
-
-                    <!-- Discount row (hidden by default) -->
-                    <div class="summary-item" id="summaryDiscountRow" style="display: none;">
+                                <!-- Discount row (hidden by default) -->
+                                <div class="summary-item" id="summaryDiscountRow" style="display: none;">
                         <span class="text-success">
                             <i class="fas fa-tag me-1"></i>Total Discount
                             <small id="appliedPromoCodeSummary" class="text-muted"></small>
                         </span>
-                        <span id="summaryDiscount" class="text-success fw-bold">-0 VND</span>
-                    </div>
+                                    <span id="summaryDiscount" class="text-success fw-bold">-0 VND</span>
+                                </div>
 
-                    <!-- Subtotal (before discount) -->
-                    <div class="summary-item" th:if="${appliedPromotion != null and appliedPromotion.success}">
-                        <span class="text-muted">Subtotal (before discount)</span>
-                        <span class="text-muted" th:text="${#numbers.formatDecimal(originalTotalAmount != null ? originalTotalAmount : (subtotal + shippingFee), 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
-                    </div>
+                                <!-- Subtotal (before discount) -->
+                                <div class="summary-item" th:if="${appliedPromotion != null and appliedPromotion.success}">
+                                    <span class="text-muted">Subtotal (before discount)</span>
+                                    <span class="text-muted" th:text="${#numbers.formatDecimal(originalTotalAmount != null ? originalTotalAmount : (subtotal + shippingFee), 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                </div>
 
-                    <div class="summary-total">
+                                <div class="summary-total">
                         <span class="fw-bold">
                             <span th:if="${appliedPromotion != null and appliedPromotion.success}">Final Total</span>
                             <span th:unless="${appliedPromotion != null and appliedPromotion.success}">Total</span>
                         </span>
-                        <span id="summaryTotal" class="fw-bold text-primary" th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
-                    </div>
+                                    <span id="summaryTotal" class="fw-bold text-primary" th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
+                                </div>
 
-                    <!-- Amount to Pay clarification -->
-                    <div class="text-center mt-2" th:if="${appliedPromotion != null and appliedPromotion.success}">
-                        <small class="text-success">
-                            <i class="fas fa-info-circle me-1"></i>
-                            This is the amount you need to pay
-                        </small>
-                    </div>
+                                <!-- Amount to Pay clarification -->
+                                <div class="text-center mt-2" th:if="${appliedPromotion != null and appliedPromotion.success}">
+                                    <small class="text-success">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        This is the amount you need to pay
+                                    </small>
+                                </div>
 
-                        <button type="submit" class="btn btn-primary w-100 mt-3" id="placeOrderBtn">
-                            <i class="fas fa-lock me-2"></i>
-                            <span th:if="${appliedPromotion != null and appliedPromotion.success}">
+                                <button type="submit" class="btn btn-primary w-100 mt-3" id="placeOrderBtn">
+                                    <i class="fas fa-lock me-2"></i>
+                                    <span th:if="${appliedPromotion != null and appliedPromotion.success}">
                                 Pay <span th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
                             </span>
-                            <span th:unless="${appliedPromotion != null and appliedPromotion.success}">
+                                    <span th:unless="${appliedPromotion != null and appliedPromotion.success}">
                                 Place Order
                             </span>
-                        </button>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-    </div>
 
-    </form>
-</div>
+        </form>
+    </div>
 </main>
 
 <!-- Footer -->
@@ -685,695 +713,695 @@
 <script th:src="@{/js/address-location.js}" defer></script>
 <script th:src="@{/js/checkout-discount.js}" defer></script>
 
-<!-- Vietnamese Provinces API dependencies -->    
+<!-- Vietnamese Provinces API dependencies -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js" integrity="sha512-bPh3uwgU5qEMipS/VOmRqynnMXGGSRv+72H/N260MQeXZIK4PG48401Bsby9Nq5P5fz7hy5UGNmC/W1Z51h2GQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script th:inline="javascript">
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize variables
-    const addressSelect = document.getElementById('addressSelect');
-    const newAddressForm = document.getElementById('newAddressForm');
-    const selectedAddressDetails = document.getElementById('selectedAddressDetails');
-    let currentSubtotal = parseFloat(/*[[${subtotal}]]*/ '0') || 0;
-    let currentShippingFee = parseFloat(/*[[${shippingFee}]]*/ '0') || 0;
-    let serverCalculatedTotal = parseFloat(/*[[${totalAmount}]]*/ '0') || 0;
-    let serverOriginalTotal = parseFloat(/*[[${originalTotalAmount}]]*/ '0') || 0;
-    let appliedPromotion = /*[[${appliedPromotion}]]*/ null;
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize variables
+        const addressSelect = document.getElementById('addressSelect');
+        const newAddressForm = document.getElementById('newAddressForm');
+        const selectedAddressDetails = document.getElementById('selectedAddressDetails');
+        let currentSubtotal = parseFloat(/*[[${subtotal}]]*/ '0') || 0;
+        let currentShippingFee = parseFloat(/*[[${shippingFee}]]*/ '0') || 0;
+        let serverCalculatedTotal = parseFloat(/*[[${totalAmount}]]*/ '0') || 0;
+        let serverOriginalTotal = parseFloat(/*[[${originalTotalAmount}]]*/ '0') || 0;
+        let appliedPromotion = /*[[${appliedPromotion}]]*/ null;
 
-    // Expose server-calculated total to window for other scripts
-    window.serverCalculatedTotal = serverCalculatedTotal;
-    window.hasPromotion = appliedPromotion && appliedPromotion.success;
+        // Expose server-calculated total to window for other scripts
+        window.serverCalculatedTotal = serverCalculatedTotal;
+        window.hasPromotion = appliedPromotion && appliedPromotion.success;
 
-    // Debug server values
-    console.log('Server values loaded:', {
-        subtotal: currentSubtotal,
-        shippingFee: currentShippingFee,
-        originalTotal: serverOriginalTotal,
-        finalTotal: serverCalculatedTotal,
-        promotion: appliedPromotion,
-        exposedToWindow: window.serverCalculatedTotal
-    });
-
-    // Calculate total shipping fee from all shops
-    function calculateTotalShippingFee() {
-        const shopGroups = document.querySelectorAll('.shop-group');
-        let totalShipping = 0;
-        shopGroups.forEach(shopGroup => {
-            totalShipping += 30000; // 30,000 VND per shop
-        });
-        return totalShipping;
-    }
-
-    const shippingFee = calculateTotalShippingFee();
-
-    // Function to update shipping fee display
-    function updateShippingFeeDisplay() {
-        const totalShipping = calculateTotalShippingFee();
-        document.getElementById('summaryShipping').textContent =
-            new Intl.NumberFormat('vi-VN').format(totalShipping) + ' đ';
-        document.getElementById('shippingFeeInput').value = totalShipping;
-        return totalShipping;
-    }
-
-    // Function to update total amount (use server-calculated total for consistency)
-    function updateTotal() {
-        let discount = 0;
-        if (appliedPromotion && appliedPromotion.success) {
-            discount = appliedPromotion.totalDiscount || 0;
-
-            // Show discount row
-            const discountRow = document.getElementById('summaryDiscountRow');
-            const discountAmount = document.getElementById('summaryDiscount');
-            const promoCodeSummary = document.getElementById('appliedPromoCodeSummary');
-
-            if (discountRow && discountAmount && promoCodeSummary) {
-                discountRow.style.display = 'flex';
-                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' đ';
-                promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
-            }
-        } else {
-            // Hide discount row
-            const discountRow = document.getElementById('summaryDiscountRow');
-            if (discountRow) {
-                discountRow.style.display = 'none';
-            }
-        }
-
-        // Use server-calculated total for consistency with backend logic
-        const total = serverCalculatedTotal;
-
-        const summaryTotalElement = document.getElementById('summaryTotal');
-        if (summaryTotalElement) {
-            summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(total) + ' VND';
-        }
-
-        console.log('Total display:', {
+        // Debug server values
+        console.log('Server values loaded:', {
             subtotal: currentSubtotal,
-            shipping: currentShippingFee,
-            discount: discount,
-            serverCalculatedTotal: serverCalculatedTotal,
-            displayedTotal: total
+            shippingFee: currentShippingFee,
+            originalTotal: serverOriginalTotal,
+            finalTotal: serverCalculatedTotal,
+            promotion: appliedPromotion,
+            exposedToWindow: window.serverCalculatedTotal
         });
-    }
 
-    // Function to update only discount display without changing total
-    function updateDiscountDisplay() {
-        if (appliedPromotion && appliedPromotion.success) {
-            const discount = appliedPromotion.totalDiscount || 0;
-
-            // Show discount row
-            const discountRow = document.getElementById('summaryDiscountRow');
-            const discountAmount = document.getElementById('summaryDiscount');
-            const promoCodeSummary = document.getElementById('appliedPromoCodeSummary');
-
-            if (discountRow && discountAmount && promoCodeSummary) {
-                discountRow.style.display = 'flex';
-                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' đ';
-                promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
-            }
-
-            // Apply special styling to summary total when discount is applied
-            const summaryTotalDiv = document.querySelector('.summary-total');
-            if (summaryTotalDiv) {
-                summaryTotalDiv.classList.add('with-discount');
-
-                // Update label and amount styling
-                const totalLabel = summaryTotalDiv.querySelector('span:first-child');
-                const totalAmount = summaryTotalDiv.querySelector('#summaryTotal');
-
-                if (totalLabel) {
-                    totalLabel.classList.add('final-total-label');
-                }
-                if (totalAmount) {
-                    totalAmount.classList.add('final-total-amount');
-                }
-            }
-
-            // IMPORTANT: Ensure server-calculated total is preserved
-            const summaryTotalElement = document.getElementById('summaryTotal');
-            if (summaryTotalElement && serverCalculatedTotal) {
-                summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(serverCalculatedTotal) + ' đ';
-                console.log('Preserved server-calculated total:', serverCalculatedTotal);
-            }
-
-            console.log('Discount display updated:', {
-                discount: discount,
-                promoCode: appliedPromotion.promoCode,
-                serverTotal: serverCalculatedTotal,
-                displayedTotal: summaryTotalElement ? summaryTotalElement.textContent : 'not found'
+        // Calculate total shipping fee from all shops
+        function calculateTotalShippingFee() {
+            const shopGroups = document.querySelectorAll('.shop-group');
+            let totalShipping = 0;
+            shopGroups.forEach(shopGroup => {
+                totalShipping += 30000; // 30,000 VND per shop
             });
-        }
-    }
-
-    // Function to display selected address details
-    function displayAddressDetails(option) {
-        if (!option || option.value === '' || option.value === 'new') {
-            selectedAddressDetails.style.display = 'none';
-            return;
+            return totalShipping;
         }
 
-        // Get data from selected option
-        const data = option.dataset;
-        document.getElementById('displayRecipientName').textContent = data.recipientName || '';
-        document.getElementById('displayRecipientPhone').textContent = data.recipientPhone || '';
-        document.getElementById('displayAddressDetail').textContent = data.addressDetail || '';
-        document.getElementById('displayProvince').textContent = data.province || '';
-        document.getElementById('displayDistrict').textContent = data.district || '';
-        document.getElementById('displayWard').textContent = data.ward || '';
-        document.getElementById('displayAddressType').textContent = 
-            data.type === '0' ? 'Residential' : 'Company';
+        const shippingFee = calculateTotalShippingFee();
 
-        // Handle company display
-        const companyContainer = document.getElementById('displayCompanyContainer');
-        const companyField = document.getElementById('displayCompany');
-        if (data.company) {
-            companyContainer.style.display = 'block';
-            companyField.textContent = data.company;
-        } else {
-            companyContainer.style.display = 'none';
+        // Function to update shipping fee display
+        function updateShippingFeeDisplay() {
+            const totalShipping = calculateTotalShippingFee();
+            document.getElementById('summaryShipping').textContent =
+                new Intl.NumberFormat('vi-VN').format(totalShipping) + ' đ';
+            document.getElementById('shippingFeeInput').value = totalShipping;
+            return totalShipping;
         }
 
-        // Set the hidden input value for form submission
-        const hiddenAddressId = document.getElementById('existingAddressId');
-        if (hiddenAddressId) {
-            hiddenAddressId.value = option.value;
-        }
+        // Function to update total amount (use server-calculated total for consistency)
+        function updateTotal() {
+            let discount = 0;
+            if (appliedPromotion && appliedPromotion.success) {
+                discount = appliedPromotion.totalDiscount || 0;
 
-        selectedAddressDetails.style.display = 'block';
-    }
+                // Show discount row
+                const discountRow = document.getElementById('summaryDiscountRow');
+                const discountAmount = document.getElementById('summaryDiscount');
+                const promoCodeSummary = document.getElementById('appliedPromoCodeSummary');
 
-    // Address selection change handler
-    if (addressSelect) {
-        addressSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const existingAddressIdInput = document.getElementById('existingAddressId');
-            const isNewAddressInput = document.getElementById('isNewAddress');
-            
-            if (this.value === 'new') {
-                // Show new address form and hide selected address details
-                newAddressForm.style.display = 'block';
-                selectedAddressDetails.style.display = 'none';
-                
-                // Update form state for new address
-                existingAddressIdInput.value = '';
-                isNewAddressInput.value = 'true';
-                
-                // Make new address fields required
-                const formFields = newAddressForm.querySelectorAll('input, select');
-                formFields.forEach(field => {
-                    if (field.hasAttribute('data-required')) {
-                        field.setAttribute('required', '');
-                    }
-                });
-                
-                // Initialize location selectors
-                setTimeout(() => {
-                    if (typeof initLocationSelectors === 'function') {
-                        initLocationSelectors();
-                    }
-                }, 100);
+                if (discountRow && discountAmount && promoCodeSummary) {
+                    discountRow.style.display = 'flex';
+                    discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' đ';
+                    promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
+                }
             } else {
-                // Hide new address form and show selected address details
-                newAddressForm.style.display = 'none';
-                selectedAddressDetails.style.display = 'block';
-                
-                // Update form state for existing address
-                existingAddressIdInput.value = this.value;
-                isNewAddressInput.value = 'false';
-                
-                // Remove required from new address fields
-                const formFields = newAddressForm.querySelectorAll('[required]');
-                formFields.forEach(field => {
-                    field.removeAttribute('required');
-                    field.setAttribute('data-required', 'true');
+                // Hide discount row
+                const discountRow = document.getElementById('summaryDiscountRow');
+                if (discountRow) {
+                    discountRow.style.display = 'none';
+                }
+            }
+
+            // Use server-calculated total for consistency with backend logic
+            const total = serverCalculatedTotal;
+
+            const summaryTotalElement = document.getElementById('summaryTotal');
+            if (summaryTotalElement) {
+                summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(total) + ' VND';
+            }
+
+            console.log('Total display:', {
+                subtotal: currentSubtotal,
+                shipping: currentShippingFee,
+                discount: discount,
+                serverCalculatedTotal: serverCalculatedTotal,
+                displayedTotal: total
+            });
+        }
+
+        // Function to update only discount display without changing total
+        function updateDiscountDisplay() {
+            if (appliedPromotion && appliedPromotion.success) {
+                const discount = appliedPromotion.totalDiscount || 0;
+
+                // Show discount row
+                const discountRow = document.getElementById('summaryDiscountRow');
+                const discountAmount = document.getElementById('summaryDiscount');
+                const promoCodeSummary = document.getElementById('appliedPromoCodeSummary');
+
+                if (discountRow && discountAmount && promoCodeSummary) {
+                    discountRow.style.display = 'flex';
+                    discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' đ';
+                    promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
+                }
+
+                // Apply special styling to summary total when discount is applied
+                const summaryTotalDiv = document.querySelector('.summary-total');
+                if (summaryTotalDiv) {
+                    summaryTotalDiv.classList.add('with-discount');
+
+                    // Update label and amount styling
+                    const totalLabel = summaryTotalDiv.querySelector('span:first-child');
+                    const totalAmount = summaryTotalDiv.querySelector('#summaryTotal');
+
+                    if (totalLabel) {
+                        totalLabel.classList.add('final-total-label');
+                    }
+                    if (totalAmount) {
+                        totalAmount.classList.add('final-total-amount');
+                    }
+                }
+
+                // IMPORTANT: Ensure server-calculated total is preserved
+                const summaryTotalElement = document.getElementById('summaryTotal');
+                if (summaryTotalElement && serverCalculatedTotal) {
+                    summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(serverCalculatedTotal) + ' đ';
+                    console.log('Preserved server-calculated total:', serverCalculatedTotal);
+                }
+
+                console.log('Discount display updated:', {
+                    discount: discount,
+                    promoCode: appliedPromotion.promoCode,
+                    serverTotal: serverCalculatedTotal,
+                    displayedTotal: summaryTotalElement ? summaryTotalElement.textContent : 'not found'
                 });
-                
-                displayAddressDetails(selectedOption);
-            }
-        });
-
-        // Initialize with default selection
-        // Select default address on page load if available
-        let defaultFound = false;
-        for (let i = 0; i < addressSelect.options.length; i++) {
-            const option = addressSelect.options[i];
-            if (option.text.includes('(Default)')) {
-                addressSelect.selectedIndex = i;
-                displayAddressDetails(option);
-                document.getElementById('existingAddressId').value = option.value;
-                defaultFound = true;
-                break;
             }
         }
 
-        // Fall back to first address if no default is marked
-        if (!defaultFound && addressSelect.options.length > 2) { // Skip 'Choose an address' and 'Add New'
-            addressSelect.selectedIndex = 2; // Select the first actual address
-            displayAddressDetails(addressSelect.options[2]);
-            document.getElementById('existingAddressId').value = addressSelect.options[2].value;
-        }
-
-        if (addressSelect.selectedIndex > 0) {
-            addressSelect.dispatchEvent(new Event('change'));
-        }
-    }
-
-    // Add event listeners for address fields validation
-    const addressFields = ['recipientName', 'recipientPhone', 'province', 'district', 'ward', 'addressDetail', 'company'];
-    addressFields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', function() {
-                validateField(this);
-            });
-            field.addEventListener('change', function() {
-                validateField(this);
-            });
-        }
-    });
-
-    // Form validation
-    const form = document.getElementById('checkoutForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            let isValid = true;
-            const isNewAddress = addressSelect.value === 'new' || 
-                               document.getElementById('existingAddressId').value === '';
-            
-            // Validate address selection
-            if (addressSelect.value === '' && !isNewAddress) {
-                setValidationVisuals(addressSelect, false, 'Please select a shipping address');
-                isValid = false;
+        // Function to display selected address details
+        function displayAddressDetails(option) {
+            if (!option || option.value === '' || option.value === 'new') {
+                selectedAddressDetails.style.display = 'none';
+                return;
             }
 
-            // Validate new address form if it's visible
-            if (newAddressForm.style.display === 'block' && isNewAddress) {
-                const requiredFields = newAddressForm.querySelectorAll('[required], [data-required="true"]');
-                requiredFields.forEach(field => {
-                    if (field.type === 'radio') {
-                        const radioGroup = document.getElementsByName(field.name);
-                        const isChecked = Array.from(radioGroup).some(radio => radio.checked);
-                        if (!isChecked) {
-                            isValid = false;
-                            const container = field.closest('.mb-3');
-                            if (container) {
-                                container.querySelector('.invalid-feedback').style.display = 'block';
-                            }
-                        }
-                    } else {
-                        // Temporarily add required attribute for validation
+            // Get data from selected option
+            const data = option.dataset;
+            document.getElementById('displayRecipientName').textContent = data.recipientName || '';
+            document.getElementById('displayRecipientPhone').textContent = data.recipientPhone || '';
+            document.getElementById('displayAddressDetail').textContent = data.addressDetail || '';
+            document.getElementById('displayProvince').textContent = data.province || '';
+            document.getElementById('displayDistrict').textContent = data.district || '';
+            document.getElementById('displayWard').textContent = data.ward || '';
+            document.getElementById('displayAddressType').textContent =
+                data.type === '0' ? 'Residential' : 'Company';
+
+            // Handle company display
+            const companyContainer = document.getElementById('displayCompanyContainer');
+            const companyField = document.getElementById('displayCompany');
+            if (data.company) {
+                companyContainer.style.display = 'block';
+                companyField.textContent = data.company;
+            } else {
+                companyContainer.style.display = 'none';
+            }
+
+            // Set the hidden input value for form submission
+            const hiddenAddressId = document.getElementById('existingAddressId');
+            if (hiddenAddressId) {
+                hiddenAddressId.value = option.value;
+            }
+
+            selectedAddressDetails.style.display = 'block';
+        }
+
+        // Address selection change handler
+        if (addressSelect) {
+            addressSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const existingAddressIdInput = document.getElementById('existingAddressId');
+                const isNewAddressInput = document.getElementById('isNewAddress');
+
+                if (this.value === 'new') {
+                    // Show new address form and hide selected address details
+                    newAddressForm.style.display = 'block';
+                    selectedAddressDetails.style.display = 'none';
+
+                    // Update form state for new address
+                    existingAddressIdInput.value = '';
+                    isNewAddressInput.value = 'true';
+
+                    // Make new address fields required
+                    const formFields = newAddressForm.querySelectorAll('input, select');
+                    formFields.forEach(field => {
                         if (field.hasAttribute('data-required')) {
                             field.setAttribute('required', '');
                         }
-                        
-                        const isFieldValid = validateField(field);
-                        if (!isFieldValid) isValid = false;
-                    }
+                    });
+
+                    // Initialize location selectors
+                    setTimeout(() => {
+                        if (typeof initLocationSelectors === 'function') {
+                            initLocationSelectors();
+                        }
+                    }, 100);
+                } else {
+                    // Hide new address form and show selected address details
+                    newAddressForm.style.display = 'none';
+                    selectedAddressDetails.style.display = 'block';
+
+                    // Update form state for existing address
+                    existingAddressIdInput.value = this.value;
+                    isNewAddressInput.value = 'false';
+
+                    // Remove required from new address fields
+                    const formFields = newAddressForm.querySelectorAll('[required]');
+                    formFields.forEach(field => {
+                        field.removeAttribute('required');
+                        field.setAttribute('data-required', 'true');
+                    });
+
+                    displayAddressDetails(selectedOption);
+                }
+            });
+
+            // Initialize with default selection
+            // Select default address on page load if available
+            let defaultFound = false;
+            for (let i = 0; i < addressSelect.options.length; i++) {
+                const option = addressSelect.options[i];
+                if (option.text.includes('(Default)')) {
+                    addressSelect.selectedIndex = i;
+                    displayAddressDetails(option);
+                    document.getElementById('existingAddressId').value = option.value;
+                    defaultFound = true;
+                    break;
+                }
+            }
+
+            // Fall back to first address if no default is marked
+            if (!defaultFound && addressSelect.options.length > 2) { // Skip 'Choose an address' and 'Add New'
+                addressSelect.selectedIndex = 2; // Select the first actual address
+                displayAddressDetails(addressSelect.options[2]);
+                document.getElementById('existingAddressId').value = addressSelect.options[2].value;
+            }
+
+            if (addressSelect.selectedIndex > 0) {
+                addressSelect.dispatchEvent(new Event('change'));
+            }
+        }
+
+        // Add event listeners for address fields validation
+        const addressFields = ['recipientName', 'recipientPhone', 'province', 'district', 'ward', 'addressDetail', 'company'];
+        addressFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', function() {
+                    validateField(this);
                 });
-            } else if (!isNewAddress) {
-                // If using existing address, make sure the hidden field has a value
-                const hiddenAddressId = document.getElementById('existingAddressId');
-                if (!hiddenAddressId.value) {
+                field.addEventListener('change', function() {
+                    validateField(this);
+                });
+            }
+        });
+
+        // Form validation
+        const form = document.getElementById('checkoutForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                let isValid = true;
+                const isNewAddress = addressSelect.value === 'new' ||
+                                   document.getElementById('existingAddressId').value === '';
+
+                // Validate address selection
+                if (addressSelect.value === '' && !isNewAddress) {
                     setValidationVisuals(addressSelect, false, 'Please select a shipping address');
                     isValid = false;
                 }
-            }
-            
-            // Validate payment method selection
-            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
-            if (!paymentMethod) {
-                isValid = false;
-                const paymentSection = document.querySelector('.payment-methods');
-                if (paymentSection) {
-                    paymentSection.classList.add('is-invalid');
-                }
-            }
 
-            // If form is valid, submit it
-            if (isValid) {
-                // If using existing address, ensure its ID is passed
-                if (!isNewAddress) {
-                    // Make sure the existing address ID is included in the form submission
-                    const addressSelect = document.querySelector('select[name="addressSelect"]');
+                // Validate new address form if it's visible
+                if (newAddressForm.style.display === 'block' && isNewAddress) {
+                    const requiredFields = newAddressForm.querySelectorAll('[required], [data-required="true"]');
+                    requiredFields.forEach(field => {
+                        if (field.type === 'radio') {
+                            const radioGroup = document.getElementsByName(field.name);
+                            const isChecked = Array.from(radioGroup).some(radio => radio.checked);
+                            if (!isChecked) {
+                                isValid = false;
+                                const container = field.closest('.mb-3');
+                                if (container) {
+                                    container.querySelector('.invalid-feedback').style.display = 'block';
+                                }
+                            }
+                        } else {
+                            // Temporarily add required attribute for validation
+                            if (field.hasAttribute('data-required')) {
+                                field.setAttribute('required', '');
+                            }
+
+                            const isFieldValid = validateField(field);
+                            if (!isFieldValid) isValid = false;
+                        }
+                    });
+                } else if (!isNewAddress) {
+                    // If using existing address, make sure the hidden field has a value
                     const hiddenAddressId = document.getElementById('existingAddressId');
-                    if (addressSelect && hiddenAddressId) {
-                        hiddenAddressId.value = addressSelect.value;
+                    if (!hiddenAddressId.value) {
+                        setValidationVisuals(addressSelect, false, 'Please select a shipping address');
+                        isValid = false;
                     }
                 }
-                
-                // If using VNPay, change form action
-                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
-                if (paymentMethod === 'VNPAY') {
-                    this.action = '/buyer/vnpay-payment';
+
+                // Validate payment method selection
+                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+                if (!paymentMethod) {
+                    isValid = false;
+                    const paymentSection = document.querySelector('.payment-methods');
+                    if (paymentSection) {
+                        paymentSection.classList.add('is-invalid');
+                    }
                 }
-                
-                // Discount information is now handled via session, no need to add to form manually
-                
-                this.submit();
-            } else {
-                // Focus first invalid field
-                const firstInvalid = form.querySelector('.is-invalid');
-                if (firstInvalid) {
-                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    firstInvalid.focus();
+
+                // If form is valid, submit it
+                if (isValid) {
+                    // If using existing address, ensure its ID is passed
+                    if (!isNewAddress) {
+                        // Make sure the existing address ID is included in the form submission
+                        const addressSelect = document.querySelector('select[name="addressSelect"]');
+                        const hiddenAddressId = document.getElementById('existingAddressId');
+                        if (addressSelect && hiddenAddressId) {
+                            hiddenAddressId.value = addressSelect.value;
+                        }
+                    }
+
+                    // If using VNPay, change form action
+                    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                    if (paymentMethod === 'VNPAY') {
+                        this.action = '/buyer/vnpay-payment';
+                    }
+
+                    // Discount information is now handled via session, no need to add to form manually
+
+                    this.submit();
+                } else {
+                    // Focus first invalid field
+                    const firstInvalid = form.querySelector('.is-invalid');
+                    if (firstInvalid) {
+                        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstInvalid.focus();
+                    }
                 }
-            }
-        });
-    }
-
-    // Field validation functions
-    function validateField(field) {
-        let isValid = true;
-        const value = field.value.trim();
-
-        switch (field.id) {
-            case 'recipientName':
-                isValid = value.length >= 2 && value.length <= 100;
-                setValidationVisuals(field, isValid, 'Recipient name must be 2-100 characters');
-                break;
-            case 'recipientPhone':
-                isValid = /^(\+84|84|0)[3|5|7|8|9][0-9]{8}$/.test(value);
-                setValidationVisuals(field, isValid, 'Please enter a valid Vietnamese phone number');
-                break;
-            case 'addressDetail':
-                isValid = value.length > 0 && value.length <= 500;
-                setValidationVisuals(field, isValid, 'Address details are required (max 500 characters)');
-                break;
-            case 'company':
-                if (value.length > 0) {
-                    isValid = value.length <= 255;
-                    setValidationVisuals(field, isValid, 'Company name must be less than 255 characters');
-                }
-                break;
-            case 'province':
-            case 'district':
-            case 'ward':
-                isValid = value !== '';
-                setValidationVisuals(field, isValid, `Please select a ${field.id}`);
-                break;
-        }
-
-        return isValid;
-    }
-
-    // Initialize province/district/ward selectors
-    if (document.getElementById('province')) {
-        initializeAddressSelects();
-    }
-
-    // Initialize total
-    updateTotal();
-
-    // Enhanced location selectors handling
-    if (document.getElementById('province')) {
-        const provinceSelect = document.getElementById('province');
-        const districtSelect = document.getElementById('district');
-        const wardSelect = document.getElementById('ward');
-        
-        // Store location names in hidden fields when selections change
-        provinceSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            document.getElementById('provinceName').value = selectedOption.text;
-            // Reset district and ward
-            document.getElementById('districtName').value = '';
-            document.getElementById('wardName').value = '';
-        });
-        
-        districtSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            document.getElementById('districtName').value = selectedOption.text;
-            // Reset ward
-            document.getElementById('wardName').value = '';
-        });
-        
-        wardSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            document.getElementById('wardName').value = selectedOption.text;
-        });
-    }
-
-    // Discount code handling removed - now handled in cart page only
-    // Discount information is passed from cart via session
-
-    // Initialize province/district/ward selectors and hooks them to Vietnam address API
-    if (document.getElementById('province')) {
-        initLocationSelectors(); // This function is defined in address-location.js
-    }
-
-    function initializeAddressSelects() {
-        // This function loads Vietnam address data when needed
-        if (typeof initLocationSelectors === 'function') {
-            initLocationSelectors();
-        } else {
-            console.error('Address location API functions not found');
-        }
-    }
-
-    // Handle payment method selection
-    const paymentMethods = document.querySelectorAll('.payment-method');
-    if (paymentMethods.length > 0) {
-        paymentMethods.forEach(method => {
-            method.addEventListener('click', function() {
-                // Remove selected class from all methods
-                paymentMethods.forEach(m => {
-                    m.classList.remove('selected');
-                    m.querySelector('input[type="radio"]').checked = false;
-                });
-                
-                // Add selected class to clicked method
-                this.classList.add('selected');
-                this.querySelector('input[type="radio"]').checked = true;
             });
-        });
-    }
-
-    // Add the field validation functions for address fields
-    function validateField(field) {
-        let isValid = true;
-        const value = field.value.trim();
-
-        switch (field.id) {
-            case 'recipientName':
-                isValid = value.length >= 2 && value.length <= 100;
-                setValidationVisuals(field, isValid, 'Recipient name must be 2-100 characters');
-                break;
-            case 'recipientPhone':
-                isValid = /^(\+84|84|0)[3|5|7|8|9][0-9]{8}$/.test(value);
-                setValidationVisuals(field, isValid, 'Please enter a valid Vietnamese phone number');
-                break;
-            case 'addressDetail':
-                isValid = value.length > 0 && value.length <= 500;
-                setValidationVisuals(field, isValid, 'Address details are required (max 500 characters)');
-                break;
-            case 'company':
-                if (value.length > 0) {
-                    isValid = value.length <= 255;
-                    setValidationVisuals(field, isValid, 'Company name must be less than 255 characters');
-                }
-                break;
-            case 'province':
-            case 'district':
-            case 'ward':
-                isValid = value !== '';
-                setValidationVisuals(field, isValid, `Please select a ${field.id}`);
-                break;
         }
 
-        return isValid;
-    }
+        // Field validation functions
+        function validateField(field) {
+            let isValid = true;
+            const value = field.value.trim();
 
-    function setValidationVisuals(element, isValid, errorMessage = '') {
-        if (!element) return;
-        const feedbackElement = element.nextElementSibling;
-
-        if (isValid) {
-            element.classList.remove('is-invalid');
-            element.classList.add('is-valid');
-            if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
-                feedbackElement.style.display = 'none';
-                feedbackElement.textContent = '';
+            switch (field.id) {
+                case 'recipientName':
+                    isValid = value.length >= 2 && value.length <= 100;
+                    setValidationVisuals(field, isValid, 'Recipient name must be 2-100 characters');
+                    break;
+                case 'recipientPhone':
+                    isValid = /^(\+84|84|0)[3|5|7|8|9][0-9]{8}$/.test(value);
+                    setValidationVisuals(field, isValid, 'Please enter a valid Vietnamese phone number');
+                    break;
+                case 'addressDetail':
+                    isValid = value.length > 0 && value.length <= 500;
+                    setValidationVisuals(field, isValid, 'Address details are required (max 500 characters)');
+                    break;
+                case 'company':
+                    if (value.length > 0) {
+                        isValid = value.length <= 255;
+                        setValidationVisuals(field, isValid, 'Company name must be less than 255 characters');
+                    }
+                    break;
+                case 'province':
+                case 'district':
+                case 'ward':
+                    isValid = value !== '';
+                    setValidationVisuals(field, isValid, `Please select a ${field.id}`);
+                    break;
             }
-        } else {
-            element.classList.remove('is-valid');
-            element.classList.add('is-invalid');
-            if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
-                feedbackElement.textContent = errorMessage;
-                feedbackElement.style.display = 'block';
-            }
-        }
-    }
 
-    // Initialize total
-    updateTotal();
-});
-
-// Hiển thị thông báo toast
-function showToast(type, message) {
-    let toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-        // Tạo container cho toast nếu chưa tồn tại
-        const container = document.createElement('div');
-        container.id = 'toast-container';
-        container.style.position = 'fixed';
-        container.style.bottom = '20px';
-        container.style.right = '20px';
-        container.style.zIndex = '9999';
-        document.body.appendChild(container);
-        toastContainer = container;
-    }
-    
-    const toast = document.createElement('div');
-    toast.className = `toast ${type === 'error' ? 'bg-danger' : 'bg-success'} text-white`;
-    toast.style.minWidth = '250px';
-    toast.innerHTML = `
-        <div class="toast-body">
-            ${message}
-        </div>
-    `;
-    
-    toastContainer.appendChild(toast);
-    
-    const bsToast = new bootstrap.Toast(toast, {
-        autohide: true,
-        delay: 5000
-    });
-    bsToast.show();
-    
-    // Xóa toast sau khi ẩn
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
-}
-
-// Kiểm tra thông báo lỗi từ Flash attributes
-document.addEventListener('DOMContentLoaded', function() {
-    // Kiểm tra nếu có thông báo lỗi từ server
-    const errorElement = document.getElementById('server-error');
-    if (errorElement && errorElement.textContent.trim() !== '') {
-        // Hiển thị lỗi dưới dạng toast
-        showToast('error', errorElement.textContent);
-    }
-
-    // Debug: Check if CheckoutDiscountSystem is available
-    console.log('CheckoutDiscountSystem available:', typeof CheckoutDiscountSystem);
-
-    // Initialize checkout discount system
-    try {
-        window.checkoutDiscount = new CheckoutDiscountSystem();
-        console.log('CheckoutDiscountSystem initialized successfully');
-
-        // Get order data from the page
-        const orderData = getOrderDataFromPage();
-        console.log('Order data extracted:', orderData);
-
-        window.checkoutDiscount.initializeWithData(orderData);
-
-        // Display existing promotion if any
-        if (appliedPromotion && appliedPromotion.success) {
-            console.log('Displaying existing promotion:', appliedPromotion);
-            window.checkoutDiscount.displayAppliedPromotion(appliedPromotion);
-            window.checkoutDiscount.displayDiscountBreakdown(appliedPromotion);
+            return isValid;
         }
 
-        // Initialize shipping fee calculation
-        updateShippingFeeDisplay();
-
-        // Only update total if no promotion applied (server already calculated correctly)
-        if (!appliedPromotion || !appliedPromotion.success) {
-            updateTotal();
-        } else {
-            // Just update discount display, keep server-calculated total
-            updateDiscountDisplay();
-
-            // Ensure CheckoutDiscountSystem doesn't override server total
-            console.log('Preventing CheckoutDiscountSystem from overriding server total');
+        // Initialize province/district/ward selectors
+        if (document.getElementById('province')) {
+            initializeAddressSelects();
         }
 
-        console.log('Checkout initialization completed');
-    } catch (error) {
-        console.error('Error initializing checkout discount system:', error);
-    }
-});
+        // Initialize total
+        updateTotal();
 
-// Function to extract order data from the checkout page
-function getOrderDataFromPage() {
-    const orderData = [];
+        // Enhanced location selectors handling
+        if (document.getElementById('province')) {
+            const provinceSelect = document.getElementById('province');
+            const districtSelect = document.getElementById('district');
+            const wardSelect = document.getElementById('ward');
 
-    // Extract data from DOM instead of serializing complex entities
-    const shopGroups = document.querySelectorAll('.shop-group');
-    console.log(`Found ${shopGroups.length} shop groups`);
+            // Store location names in hidden fields when selections change
+            provinceSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('provinceName').value = selectedOption.text;
+                // Reset district and ward
+                document.getElementById('districtName').value = '';
+                document.getElementById('wardName').value = '';
+            });
 
-    shopGroups.forEach((shopGroup, index) => {
-        const shopNameElement = shopGroup.querySelector('.text-primary.fw-bold');
-        if (!shopNameElement) {
-            console.warn(`Shop group ${index} has no shop name element`);
-            return;
+            districtSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('districtName').value = selectedOption.text;
+                // Reset ward
+                document.getElementById('wardName').value = '';
+            });
+
+            wardSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('wardName').value = selectedOption.text;
+            });
         }
 
-        const shopName = shopNameElement.textContent.trim();
-        const bookItems = shopGroup.querySelectorAll('.book-item');
-        let subtotal = 0;
-        const orderItems = [];
+        // Discount code handling removed - now handled in cart page only
+        // Discount information is passed from cart via session
 
-        console.log(`Shop "${shopName}" has ${bookItems.length} book items`);
+        // Initialize province/district/ward selectors and hooks them to Vietnam address API
+        if (document.getElementById('province')) {
+            initLocationSelectors(); // This function is defined in address-location.js
+        }
 
-        bookItems.forEach((bookItem, itemIndex) => {
-            const titleElement = bookItem.querySelector('.book-title');
-            const priceElement = bookItem.querySelector('.book-price');
-            const quantityElement = bookItem.querySelector('.quantity-badge');
-
-            if (titleElement && priceElement && quantityElement) {
-                const title = titleElement.textContent.trim();
-                const priceText = priceElement.textContent.replace(/[^\d]/g, '');
-                const unitPrice = parseFloat(priceText) || 0;
-                const quantityText = quantityElement.textContent.replace(/[^\d]/g, '');
-                const quantity = parseInt(quantityText) || 1;
-                const totalPrice = unitPrice * quantity;
-
-                subtotal += totalPrice;
-
-                orderItems.push({
-                    bookId: Math.random(), // Temporary ID for preview
-                    bookTitle: title,
-                    quantity: quantity,
-                    unitPrice: unitPrice,
-                    totalPrice: totalPrice
-                });
-
-                console.log(`Item ${itemIndex}: ${title}, Price: ${unitPrice}, Qty: ${quantity}, Total: ${totalPrice}`);
+        function initializeAddressSelects() {
+            // This function loads Vietnam address data when needed
+            if (typeof initLocationSelectors === 'function') {
+                initLocationSelectors();
             } else {
-                console.warn(`Book item ${itemIndex} in shop "${shopName}" missing required elements:`, {
-                    titleElement: !!titleElement,
-                    priceElement: !!priceElement,
-                    quantityElement: !!quantityElement
-                });
+                console.error('Address location API functions not found');
             }
+        }
+
+        // Handle payment method selection
+        const paymentMethods = document.querySelectorAll('.payment-method');
+        if (paymentMethods.length > 0) {
+            paymentMethods.forEach(method => {
+                method.addEventListener('click', function() {
+                    // Remove selected class from all methods
+                    paymentMethods.forEach(m => {
+                        m.classList.remove('selected');
+                        m.querySelector('input[type="radio"]').checked = false;
+                    });
+
+                    // Add selected class to clicked method
+                    this.classList.add('selected');
+                    this.querySelector('input[type="radio"]').checked = true;
+                });
+            });
+        }
+
+        // Add the field validation functions for address fields
+        function validateField(field) {
+            let isValid = true;
+            const value = field.value.trim();
+
+            switch (field.id) {
+                case 'recipientName':
+                    isValid = value.length >= 2 && value.length <= 100;
+                    setValidationVisuals(field, isValid, 'Recipient name must be 2-100 characters');
+                    break;
+                case 'recipientPhone':
+                    isValid = /^(\+84|84|0)[3|5|7|8|9][0-9]{8}$/.test(value);
+                    setValidationVisuals(field, isValid, 'Please enter a valid Vietnamese phone number');
+                    break;
+                case 'addressDetail':
+                    isValid = value.length > 0 && value.length <= 500;
+                    setValidationVisuals(field, isValid, 'Address details are required (max 500 characters)');
+                    break;
+                case 'company':
+                    if (value.length > 0) {
+                        isValid = value.length <= 255;
+                        setValidationVisuals(field, isValid, 'Company name must be less than 255 characters');
+                    }
+                    break;
+                case 'province':
+                case 'district':
+                case 'ward':
+                    isValid = value !== '';
+                    setValidationVisuals(field, isValid, `Please select a ${field.id}`);
+                    break;
+            }
+
+            return isValid;
+        }
+
+        function setValidationVisuals(element, isValid, errorMessage = '') {
+            if (!element) return;
+            const feedbackElement = element.nextElementSibling;
+
+            if (isValid) {
+                element.classList.remove('is-invalid');
+                element.classList.add('is-valid');
+                if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                    feedbackElement.style.display = 'none';
+                    feedbackElement.textContent = '';
+                }
+            } else {
+                element.classList.remove('is-valid');
+                element.classList.add('is-invalid');
+                if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                    feedbackElement.textContent = errorMessage;
+                    feedbackElement.style.display = 'block';
+                }
+            }
+        }
+
+        // Initialize total
+        updateTotal();
+    });
+
+    // Hiển thị thông báo toast
+    function showToast(type, message) {
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            // Tạo container cho toast nếu chưa tồn tại
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+            toastContainer = container;
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type === 'error' ? 'bg-danger' : 'bg-success'} text-white`;
+        toast.style.minWidth = '250px';
+        toast.innerHTML = `
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        const bsToast = new bootstrap.Toast(toast, {
+            autohide: true,
+            delay: 5000
         });
+        bsToast.show();
 
-        // Only add order if it has items and subtotal > 0
-        if (orderItems.length > 0 && subtotal > 0) {
-            const orderData_item = {
-                orderId: Math.random(), // Temporary ID for preview
-                shopName: shopName,
-                subtotal: subtotal,
-                shippingFee: 30000, // Fixed shipping fee
-                totalAmount: subtotal + 30000,
-                items: orderItems
-            };
+        // Xóa toast sau khi ẩn
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
+    }
 
-            orderData.push(orderData_item);
-            console.log(`Added order for shop "${shopName}":`, orderData_item);
-        } else {
-            console.warn(`Skipping shop "${shopName}" - no valid items or zero subtotal. Items: ${orderItems.length}, Subtotal: ${subtotal}`);
+    // Kiểm tra thông báo lỗi từ Flash attributes
+    document.addEventListener('DOMContentLoaded', function() {
+        // Kiểm tra nếu có thông báo lỗi từ server
+        const errorElement = document.getElementById('server-error');
+        if (errorElement && errorElement.textContent.trim() !== '') {
+            // Hiển thị lỗi dưới dạng toast
+            showToast('error', errorElement.textContent);
+        }
+
+        // Debug: Check if CheckoutDiscountSystem is available
+        console.log('CheckoutDiscountSystem available:', typeof CheckoutDiscountSystem);
+
+        // Initialize checkout discount system
+        try {
+            window.checkoutDiscount = new CheckoutDiscountSystem();
+            console.log('CheckoutDiscountSystem initialized successfully');
+
+            // Get order data from the page
+            const orderData = getOrderDataFromPage();
+            console.log('Order data extracted:', orderData);
+
+            window.checkoutDiscount.initializeWithData(orderData);
+
+            // Display existing promotion if any
+            if (appliedPromotion && appliedPromotion.success) {
+                console.log('Displaying existing promotion:', appliedPromotion);
+                window.checkoutDiscount.displayAppliedPromotion(appliedPromotion);
+                window.checkoutDiscount.displayDiscountBreakdown(appliedPromotion);
+            }
+
+            // Initialize shipping fee calculation
+            updateShippingFeeDisplay();
+
+            // Only update total if no promotion applied (server already calculated correctly)
+            if (!appliedPromotion || !appliedPromotion.success) {
+                updateTotal();
+            } else {
+                // Just update discount display, keep server-calculated total
+                updateDiscountDisplay();
+
+                // Ensure CheckoutDiscountSystem doesn't override server total
+                console.log('Preventing CheckoutDiscountSystem from overriding server total');
+            }
+
+            console.log('Checkout initialization completed');
+        } catch (error) {
+            console.error('Error initializing checkout discount system:', error);
         }
     });
 
-    console.log('Final order data:', orderData);
-    return orderData;
-}
+    // Function to extract order data from the checkout page
+    function getOrderDataFromPage() {
+        const orderData = [];
+
+        // Extract data from DOM instead of serializing complex entities
+        const shopGroups = document.querySelectorAll('.shop-group');
+        console.log(`Found ${shopGroups.length} shop groups`);
+
+        shopGroups.forEach((shopGroup, index) => {
+            const shopNameElement = shopGroup.querySelector('.text-primary.fw-bold');
+            if (!shopNameElement) {
+                console.warn(`Shop group ${index} has no shop name element`);
+                return;
+            }
+
+            const shopName = shopNameElement.textContent.trim();
+            const bookItems = shopGroup.querySelectorAll('.book-item');
+            let subtotal = 0;
+            const orderItems = [];
+
+            console.log(`Shop "${shopName}" has ${bookItems.length} book items`);
+
+            bookItems.forEach((bookItem, itemIndex) => {
+                const titleElement = bookItem.querySelector('.book-title');
+                const priceElement = bookItem.querySelector('.book-price');
+                const quantityElement = bookItem.querySelector('.quantity-badge');
+
+                if (titleElement && priceElement && quantityElement) {
+                    const title = titleElement.textContent.trim();
+                    const priceText = priceElement.textContent.replace(/[^\d]/g, '');
+                    const unitPrice = parseFloat(priceText) || 0;
+                    const quantityText = quantityElement.textContent.replace(/[^\d]/g, '');
+                    const quantity = parseInt(quantityText) || 1;
+                    const totalPrice = unitPrice * quantity;
+
+                    subtotal += totalPrice;
+
+                    orderItems.push({
+                        bookId: Math.random(), // Temporary ID for preview
+                        bookTitle: title,
+                        quantity: quantity,
+                        unitPrice: unitPrice,
+                        totalPrice: totalPrice
+                    });
+
+                    console.log(`Item ${itemIndex}: ${title}, Price: ${unitPrice}, Qty: ${quantity}, Total: ${totalPrice}`);
+                } else {
+                    console.warn(`Book item ${itemIndex} in shop "${shopName}" missing required elements:`, {
+                        titleElement: !!titleElement,
+                        priceElement: !!priceElement,
+                        quantityElement: !!quantityElement
+                    });
+                }
+            });
+
+            // Only add order if it has items and subtotal > 0
+            if (orderItems.length > 0 && subtotal > 0) {
+                const orderData_item = {
+                    orderId: Math.random(), // Temporary ID for preview
+                    shopName: shopName,
+                    subtotal: subtotal,
+                    shippingFee: 30000, // Fixed shipping fee
+                    totalAmount: subtotal + 30000,
+                    items: orderItems
+                };
+
+                orderData.push(orderData_item);
+                console.log(`Added order for shop "${shopName}":`, orderData_item);
+            } else {
+                console.warn(`Skipping shop "${shopName}" - no valid items or zero subtotal. Items: ${orderItems.length}, Subtotal: ${subtotal}`);
+            }
+        });
+
+        console.log('Final order data:', orderData);
+        return orderData;
+    }
 </script>
 
 <!-- Chat Widget - Buyers Only -->

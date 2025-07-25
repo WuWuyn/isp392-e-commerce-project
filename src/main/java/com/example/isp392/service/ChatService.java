@@ -43,11 +43,11 @@ public class ChatService {
 
     @Autowired
     public ChatService(ChatConfig chatConfig,
-                      ChatSessionRepository chatSessionRepository,
-                      ChatMessageRepository chatMessageRepository,
-                      @Autowired(required = false) VectorStore vectorStore,
-                      GoogleAIClient googleAIClient,
-                      EmbeddingModel embeddingModel) {
+                       ChatSessionRepository chatSessionRepository,
+                       ChatMessageRepository chatMessageRepository,
+                       @Autowired(required = false) VectorStore vectorStore,
+                       GoogleAIClient googleAIClient,
+                       EmbeddingModel embeddingModel) {
         this.chatConfig = chatConfig;
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
@@ -141,7 +141,7 @@ public class ChatService {
 
             // Log search results for debugging
             logger.debug("Vector search for '{}' returned {} documents with threshold {}",
-                        userMessage, relevantDocs.size(), threshold);
+                    userMessage, relevantDocs.size(), threshold);
 
             return buildContext(relevantDocs);
 
@@ -304,10 +304,10 @@ public class ChatService {
             return "ReadHub có chính sách chỉ với 30,000 cho mỗi đơn và nhiều phương thức thanh toán. Bạn cần biết thêm về điều gì?";
         } else {
             return "Tôi là ReadHub Assistant, có thể giúp bạn:\n" +
-                   "📚 Tìm sách theo sở thích\n" +
-                   "💰 Tư vấn giá và khuyến mãi\n" +
-                   "🏪 Thông tin chính sách cửa hàng\n" +
-                   "Bạn cần hỗ trợ gì?";
+                    "📚 Tìm sách theo sở thích\n" +
+                    "💰 Tư vấn giá và khuyến mãi\n" +
+                    "🏪 Thông tin chính sách cửa hàng\n" +
+                    "Bạn cần hỗ trợ gì?";
         }
     }
 
@@ -321,7 +321,7 @@ public class ChatService {
     private ChatSession getOrCreateSession(String sessionToken, User user) {
         // Try to find existing active session
         Optional<ChatSession> existingSession = chatSessionRepository.findBySessionTokenAndIsActiveTrue(sessionToken);
-        
+
         if (existingSession.isPresent()) {
             ChatSession session = existingSession.get();
             // Check if session is not too old
@@ -343,7 +343,7 @@ public class ChatService {
         try {
             Pageable pageable = PageRequest.of(0, 6); // Last 6 messages (3 exchanges)
             List<ChatMessage> recentMessages = chatMessageRepository.findRecentMessagesBySession(session, pageable);
-            
+
             if (recentMessages.isEmpty()) {
                 return "This is the start of a new conversation.";
             }
@@ -354,7 +354,7 @@ public class ChatService {
                 String sender = msg.isUserMessage() ? "User" : "Assistant";
                 context.append(sender).append(": ").append(msg.getContent()).append("\n");
             }
-            
+
             return context.toString();
 
         } catch (Exception e) {
@@ -549,7 +549,7 @@ public class ChatService {
      */
     private boolean isUsingRealEmbeddings() {
         return embeddingModel != null &&
-               embeddingModel.getClass().getSimpleName().contains("Enhanced");
+                embeddingModel.getClass().getSimpleName().contains("Enhanced");
     }
 
     /**

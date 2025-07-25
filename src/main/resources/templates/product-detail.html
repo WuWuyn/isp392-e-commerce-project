@@ -85,14 +85,22 @@
                         <div class="d-flex flex-wrap gap-2">
                             <!-- Nút Add to Cart - Yêu cầu đăng nhập khi chưa authenticated -->
                             <button class="btn btn-primary btn-lg add-to-cart-btn" type="button"
-                                    th:attr="data-auth=${isAuthenticated}">
-                                <i class="fas fa-shopping-cart me-2"></i>Add to cart
+                                    th:attr="data-auth=${isAuthenticated}"
+                                    th:disabled="${book.stockQuantity == null || book.stockQuantity == 0}"
+                                    th:title="${book.stockQuantity == null || book.stockQuantity == 0 ? 'Out of stock' : ''}">
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                <span th:if="${book.stockQuantity == null || book.stockQuantity == 0}">Out of Stock</span>
+                                <span th:unless="${book.stockQuantity == null || book.stockQuantity == 0}">Add to cart</span>
                             </button>
 
                             <!-- Nút Buy Now - Yêu cầu đăng nhập khi chưa authenticated -->
                             <button class="btn btn-success btn-lg buy-now-btn" type="button"
-                                    th:attr="data-auth=${isAuthenticated}">
-                                <i class="fas fa-bolt me-2"></i>Buy Now
+                                    th:attr="data-auth=${isAuthenticated}"
+                                    th:disabled="${book.stockQuantity == null || book.stockQuantity == 0}"
+                                    th:title="${book.stockQuantity == null || book.stockQuantity == 0 ? 'Out of stock' : ''}">
+                                <i class="fas fa-bolt me-2"></i>
+                                <span th:if="${book.stockQuantity == null || book.stockQuantity == 0}">Out of Stock</span>
+                                <span th:unless="${book.stockQuantity == null || book.stockQuantity == 0}">Buy Now</span>
                             </button>
                         </div>
                     </div>
@@ -105,12 +113,21 @@
                                 <a th:href="@{/all-category(category=${category.categoryId})}" th:text="${category.categoryName}">Category</a><span th:if="${!iterStat.last}">, </span>
                             </span>
                         </p>
+                        <p class="mb-1" th:if="${book.authors != null}"><strong class="text-secondary">Author:</strong> <span th:text="${book.authors}">Author Name</span></p>
                         <p class="mb-1" th:if="${book.publisher != null}"><strong class="text-secondary">Publisher:</strong> <span th:text="${book.publisher.publisherName}">Publisher Name</span></p>
                         <p class="mb-1"><strong class="text-secondary">Views:</strong> <span th:text="${book.viewsCount}">0</span></p>
                         <!-- Hiển thị thông tin về số lượng tồn kho -->
                         <p class="mb-1">
                             <strong class="text-secondary">Availability:</strong>
-                            <span th:if="${book.stockQuantity > 10}" class="text-success">In Stock</span>
+                            <span th:if="${book.stockQuantity == null || book.stockQuantity == 0}" class="text-danger">
+                                <i class="fas fa-times-circle"></i> Out of Stock
+                            </span>
+                            <span th:if="${book.stockQuantity != null && book.stockQuantity > 0 && book.stockQuantity <= 5}" class="text-warning">
+                                <i class="fas fa-exclamation-triangle"></i> Low Stock ([[${book.stockQuantity}]] left)
+                            </span>
+                            <span th:if="${book.stockQuantity != null && book.stockQuantity > 5}" class="text-success">
+                                <i class="fas fa-check-circle"></i> In Stock
+                            </span>
                         </p>
 
                         <p class="mb-1" th:if="${book.shop != null}">
@@ -275,29 +292,6 @@
                         </li>
                     </ul>
                 </nav>
-
-                <!-- Add a Review Form -->
-                <div class="add-review-form mt-5 pt-4 border-top">
-                    <h4 class="mb-3">Add a review</h4>
-                    <p class="text-muted small mb-3">Your email address will not be published. Required fields are marked *</p>
-                    <form>
-                        <div class="mb-3">
-                            <label class="form-label">Your rating *</label>
-                            <div class="add-review-stars">
-                                <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
-                                <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
-                                <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
-                                <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
-                                <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star"><i class="fas fa-star"></i></label>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="reviewText" class="form-label">Your review *</label>
-                            <textarea class="form-control" id="reviewText" rows="5" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Submit</button>
-                    </form>
-                </div>
             </div>
         </section>
 
@@ -320,7 +314,7 @@
                                 <!-- Sử dụng fragment book-rating để hiển thị đánh giá sao -->
                                 <div th:replace="~{fragments/book-rating :: star-rating(${relatedBook.averageRating})}"></div>
                                 <!-- Sử dụng fragment book-price để hiển thị giá -->
-                                <div th:replace="~{fragments/book-price :: price-display(${relatedBook.originalPrice}, ${relatedBook.sellingPrice})}"></div>
+                                <div th:replace="~{fragments/book-price :: price-display(${relatedBook.sellingPrice}, ${relatedBook.originalPrice})}"></div>
                             </div>
                         </div>
                     </div>
@@ -352,16 +346,11 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center">
-                <img th:src="@{/images/product-detail-avenir-next.jpg}" class="img-fluid" alt="Zoomed Product Image">
+                <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/product-detail-avenir-next.jpg'}"  class="img-fluid" alt="Zoomed Product Image">
             </div>
         </div>
     </div>
 </div>
-
-<!-- Newsletter Subscription Section -->
-<div th:replace="~{fragments/newsletter :: newsletter-section}"></div> <!-- Assuming you create newsletter-section.html -->
-<!-- Or copy paste the section if not fragmented yet -->
-<!-- <section class="newsletter-section py-5 text-center"> ... </section> -->
 
 
 <!-- Footer -->
@@ -377,22 +366,22 @@
     function changeSorting(sortValue) {
         // Split the value into field and direction
         const [field, direction] = sortValue.split(',');
-        
+
         // Update hidden form fields
         document.getElementById('sortField').value = field;
         document.getElementById('sortDirection').value = direction;
-        
+
         // Submit the form
         document.getElementById('reviewFilterForm').submit();
     }
-    
+
     // Initialize quantity control buttons
     document.addEventListener('DOMContentLoaded', function() {
         // Quantity increment/decrement
         const quantityInput = document.getElementById('quantity');
         const decrementBtn = document.querySelector('.quantity-btn.decrement');
         const incrementBtn = document.querySelector('.quantity-btn.increment');
-        
+
         if (quantityInput && decrementBtn && incrementBtn) {
             decrementBtn.addEventListener('click', function() {
                 const currentValue = parseInt(quantityInput.value);
@@ -400,7 +389,7 @@
                     quantityInput.value = currentValue - 1;
                 }
             });
-            
+
             incrementBtn.addEventListener('click', function() {
                 const currentValue = parseInt(quantityInput.value);
                 const maxStock = parseInt(quantityInput.getAttribute('data-max-stock') || '100');
@@ -418,7 +407,7 @@
     const bookId = /*[[${book.bookId}]]*/ 0;
     const isAuthenticated = /*[[${isAuthenticated}]]*/ false;
     const headerCartCountBadge = window.parent.document.getElementById('headerCartCountBadge');
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         // Lấy các phần tử DOM
         const quantityInput = document.getElementById('quantityInput');
@@ -426,13 +415,13 @@
         const increaseBtn = document.getElementById('increaseBtn');
         const addToCartBtn = document.querySelector('.add-to-cart-btn');
         const buyNowBtn = document.querySelector('.buy-now-btn');
-        
+
         // Set max quantity from stock
         const maxQuantity = /*[[${book.stockQuantity}]]*/ 10;
         if (quantityInput) {
             quantityInput.setAttribute('data-max-stock', maxQuantity);
         }
-        
+
         // Xử lý nút giảm số lượng
         if (decreaseBtn && quantityInput) {
             decreaseBtn.addEventListener('click', function() {
@@ -442,7 +431,7 @@
                 }
             });
         }
-        
+
         // Xử lý nút tăng số lượng
         if (increaseBtn && quantityInput) {
             increaseBtn.addEventListener('click', function() {
@@ -452,7 +441,7 @@
                 }
             });
         }
-        
+
         // Hiển thị thông báo kiểu toast
         function showToast(type, message) {
             let toastContainer = document.getElementById('toast-container');
@@ -467,7 +456,7 @@
                 document.body.appendChild(container);
                 toastContainer = container;
             }
-            
+
             const toast = document.createElement('div');
             toast.className = `toast ${type === 'error' ? 'bg-danger' : 'bg-success'} text-white`;
             toast.style.minWidth = '250px';
@@ -476,38 +465,50 @@
                     ${message}
                 </div>
             `;
-            
+
             toastContainer.appendChild(toast);
-            
+
             const bsToast = new bootstrap.Toast(toast, {
                 autohide: true,
                 delay: 5000
             });
             bsToast.show();
-            
+
             // Xóa toast sau khi ẩn
             toast.addEventListener('hidden.bs.toast', () => {
                 toast.remove();
             });
         }
-        
+
         // Xử lý nút "Buy Now"
         if (buyNowBtn) {
             buyNowBtn.addEventListener('click', function() {
+                // Check if button is disabled (out of stock)
+                if (this.disabled) {
+                    showToast('error', 'This item is currently out of stock');
+                    return;
+                }
+
                 const isAuthenticated = this.getAttribute('data-auth') === 'true';
                 const quantity = quantityInput ? quantityInput.value || 1 : 1;
-                
+
+                // Additional stock check
+                if (quantity > maxQuantity) {
+                    showToast('error', `Only ${maxQuantity} items available in stock`);
+                    return;
+                }
+
                 if (isAuthenticated) {
                     // Create a form to submit the buy now request
                     const headers = {
                         'Content-Type': 'application/json'
                     };
-                    
+
                     const csrfToken = getCsrfToken();
                     if (csrfToken) {
                         headers[getCsrfHeader()] = csrfToken;
                     }
-                    
+
                     fetch('/buyer/cart/buy-now', {
                         method: 'POST',
                         headers: headers,
@@ -536,7 +537,7 @@
                 }
             });
         }
-        
+
         // CSRF setup
         function getCsrfToken() {
             const csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
@@ -545,7 +546,7 @@
             }
             return null;
         }
-        
+
         function getCsrfHeader() {
             const headerMeta = document.querySelector('meta[name="_csrf_header"]');
             if (headerMeta) {
@@ -553,9 +554,16 @@
             }
             return 'X-CSRF-TOKEN';
         }
-        
+
         // Function to update the cart count in the header
         function updateHeaderCartCount() {
+            // Use global cart update function if available, otherwise fallback to local implementation
+            if (window.updateGlobalCartCount) {
+                window.updateGlobalCartCount();
+                return;
+            }
+
+            // Fallback implementation
             fetch('/buyer/cart/total-quantity', {
                 method: 'GET',
                 headers: getCsrfHeaders() // Use the CSRF headers for the GET request as well
@@ -563,13 +571,20 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const totalQuantity = data.totalQuantity;
+                    const uniqueItemCount = data.uniqueItemCount;
                     if (headerCartCountBadge) {
-                        headerCartCountBadge.textContent = totalQuantity;
-                        headerCartCountBadge.style.display = totalQuantity > 0 ? '' : 'none';
+                        headerCartCountBadge.textContent = uniqueItemCount;
+                        headerCartCountBadge.style.display = uniqueItemCount > 0 ? '' : 'none';
+                    }
+
+                    // Trigger global cart update event
+                    if (window.dispatchEvent) {
+                        window.dispatchEvent(new CustomEvent('cartUpdated', {
+                            detail: { uniqueItemCount: uniqueItemCount }
+                        }));
                     }
                 } else {
-                    console.error('Failed to get total cart quantity:', data.message);
+                    console.error('Failed to get cart unique item count:', data.message);
                 }
             })
             .catch(error => {
@@ -591,24 +606,36 @@
         if (isAuthenticated) {
             updateHeaderCartCount();
         }
-        
+
         // Xử lý nút "Add to Cart"
         if (addToCartBtn) {
             addToCartBtn.addEventListener('click', function() {
+                // Check if button is disabled (out of stock)
+                if (this.disabled) {
+                    showToast('error', 'This item is currently out of stock');
+                    return;
+                }
+
                 const isAuthenticated = this.getAttribute('data-auth') === 'true';
                 const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
-                
+
+                // Additional stock check
+                if (quantity > maxQuantity) {
+                    showToast('error', `Only ${maxQuantity} items available in stock`);
+                    return;
+                }
+
                 if (isAuthenticated) {
                     // Nếu đã đăng nhập, thêm vào giỏ hàng bằng Ajax
                     const headers = {
                         'Content-Type': 'application/json'
                     };
-                    
+
                     const csrfToken = getCsrfToken();
                     if (csrfToken) {
                         headers[getCsrfHeader()] = csrfToken;
                     }
-                    
+
                     fetch('/buyer/cart/add', {
                         method: 'POST',
                         headers: headers,
@@ -623,6 +650,11 @@
                             showToast('success', data.message || 'Thêm vào giỏ hàng thành công!');
                             // Update the cart count badge in the header
                             updateHeaderCartCount();
+
+                            // Also trigger global cart update
+                            if (window.updateGlobalCartCount) {
+                                window.updateGlobalCartCount();
+                            }
                         } else {
                             showToast('error', data.message || 'Không thể thêm vào giỏ hàng');
                         }

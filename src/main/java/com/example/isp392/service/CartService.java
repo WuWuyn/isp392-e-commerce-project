@@ -67,16 +67,16 @@ public class CartService {
     public BigDecimal getCartTotal(User user) {
         Cart cart = getCartForUser(user);
         BigDecimal total = BigDecimal.ZERO;
-        
+
         for (CartItem item : cart.getItems()) {
             if (item.getBook() != null && item.getBook().getSellingPrice() != null) {
                 BigDecimal itemPrice = item.getBook().getSellingPrice();
                 int quantity = item.getQuantity() != null ? item.getQuantity() : 0;
-                
+
                 total = total.add(itemPrice.multiply(BigDecimal.valueOf(quantity)));
             }
         }
-        
+
         return total;
     }
 
@@ -90,7 +90,7 @@ public class CartService {
     public boolean checkBookAvailability(Integer bookId, int requestedQuantity) {
         Book book = bookService.getBookById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found for id " + bookId));
-        
+
         return book.getStockQuantity() != null && book.getStockQuantity() >= requestedQuantity;
     }
 
@@ -104,16 +104,16 @@ public class CartService {
     public boolean checkCartItemAvailability(User user, Integer bookId, int newQuantity) {
         Book book = bookService.getBookById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found for id " + bookId));
-                
+
         // Kiểm tra số lượng hiện có trong giỏ hàng
         Cart cart = getCartForUser(user);
         Optional<CartItem> existingItem = cart.getItems().stream()
                 .filter(item -> item.getBook().getBookId().equals(bookId))
                 .findFirst();
-                
+
         int currentQuantity = existingItem.map(CartItem::getQuantity).orElse(0);
         int totalRequestedQuantity = currentQuantity + newQuantity;
-        
+
         return book.getStockQuantity() != null && book.getStockQuantity() >= totalRequestedQuantity;
     }
 
@@ -169,19 +169,19 @@ public class CartService {
 
     public void updateQuantity(User user, Integer bookId, int quantity) {
         Cart cart = getCartForUser(user);
-        
+
         // Kiểm tra số lượng sách trong kho
         Book book = bookService.getBookById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found for id " + bookId));
-                
+
         if (book.getStockQuantity() == null || book.getStockQuantity() <= 0) {
             throw new RuntimeException("Sách đã hết hàng");
         }
-        
+
         if (quantity > book.getStockQuantity()) {
             throw new RuntimeException("Số lượng sách yêu cầu vượt quá số lượng hiện có (" + book.getStockQuantity() + ")");
         }
-        
+
         cart.getItems().forEach(item -> {
             if (item.getBook().getBookId().equals(bookId)) {
                 item.setQuantity(quantity);
@@ -209,11 +209,11 @@ public class CartService {
                     })
                     .filter(id -> id != null)
                     .toList();
-            
+
             if (bookIdList.isEmpty()) {
                 return new ArrayList<>();
             }
-            
+
             return cartItemRepository.findByCartUserAndBookIds(user, bookIdList);
         } catch (Exception e) {
             // Log the error
@@ -231,15 +231,15 @@ public class CartService {
     public void transferCartItemsToOrder(Cart cart, Order order) {
         for (CartItem cartItem : cart.getItems()) {
             Book book = cartItem.getBook();
-            
+
             // Kiểm tra số lượng sách trong kho trước khi chuyển sang đơn hàng
             if (book.getStockQuantity() == null || book.getStockQuantity() < cartItem.getQuantity()) {
                 throw new RuntimeException("Sản phẩm " + book.getTitle() + " không đủ số lượng trong kho");
             }
-            
+
             // Trừ số lượng sách trong kho
             book.setStockQuantity(book.getStockQuantity() - cartItem.getQuantity());
-            
+
             OrderItem orderItem = new OrderItem();
             orderItem.setBook(book);
             orderItem.setQuantity(cartItem.getQuantity());

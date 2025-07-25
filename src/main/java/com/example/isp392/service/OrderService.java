@@ -53,13 +53,13 @@ public class OrderService {
     private final Lock orderStatusLock = new ReentrantLock();
 
     public OrderService(OrderRepository orderRepository,
-                       CustomerOrderRepository customerOrderRepository,
-                       PromotionService promotionService,
-                       PromotionCalculationService promotionCalculationService,
-                       BookService bookService,
-                       CustomerOrderService customerOrderService,
-                       CartService cartService,
-                       WalletService walletService) {
+                        CustomerOrderRepository customerOrderRepository,
+                        PromotionService promotionService,
+                        PromotionCalculationService promotionCalculationService,
+                        BookService bookService,
+                        CustomerOrderService customerOrderService,
+                        CartService cartService,
+                        WalletService walletService) {
         this.orderRepository = orderRepository;
         this.customerOrderRepository = customerOrderRepository;
         this.promotionService = promotionService;
@@ -81,15 +81,15 @@ public class OrderService {
             return orderRepository.findById(orderId).map(order -> {
                 // Validate status transition
                 if (!isValidStatusTransition(order.getOrderStatus(), newStatus)) {
-                    throw new IllegalStateException("Không thể chuyển từ trạng thái " + 
-                        order.getOrderStatus() + " sang " + newStatus);
+                    throw new IllegalStateException("Không thể chuyển từ trạng thái " +
+                            order.getOrderStatus() + " sang " + newStatus);
                 }
-                
+
                 // Check if order is part of a customer order
                 if (order.getCustomerOrder() != null) {
                     validateCustomerOrderStatus(order.getCustomerOrder(), newStatus);
                 }
-                
+
                 OrderStatus oldStatus = order.getOrderStatus();
                 order.setOrderStatus(newStatus);
 
@@ -126,10 +126,10 @@ public class OrderService {
         switch (currentStatus) {
             case PROCESSING:
                 return newStatus == OrderStatus.SHIPPED ||
-                       newStatus == OrderStatus.CANCELLED;
+                        newStatus == OrderStatus.CANCELLED;
             case SHIPPED:
                 return newStatus == OrderStatus.DELIVERED ||
-                       newStatus == OrderStatus.CANCELLED;
+                        newStatus == OrderStatus.CANCELLED;
             case DELIVERED:
                 return false; // Cannot change from delivered
             case CANCELLED:
@@ -144,7 +144,7 @@ public class OrderService {
      */
     public boolean canBeCancelled(Order order) {
         return order.getOrderStatus() == OrderStatus.PROCESSING ||
-               order.getOrderStatus() == OrderStatus.SHIPPED;
+                order.getOrderStatus() == OrderStatus.SHIPPED;
     }
 
     /**
@@ -166,14 +166,14 @@ public class OrderService {
             // Verify order belongs to user
             if (!order.getCustomerOrder().getUser().getUserId().equals(user.getUserId())) {
                 logger.warn("User {} attempted to cancel order {} that doesn't belong to them",
-                           user.getEmail(), orderId);
+                        user.getEmail(), orderId);
                 return false;
             }
 
             // Check if order can be cancelled
             if (!canBeCancelled(order)) {
                 logger.warn("Order {} cannot be cancelled. Current status: {}",
-                           orderId, order.getOrderStatus());
+                        orderId, order.getOrderStatus());
                 return false;
             }
 
@@ -201,7 +201,7 @@ public class OrderService {
                         // Process refund to wallet for the entire customer order
                         walletService.processRefund(customerOrder);
                         logger.info("Processed wallet refund for customer order {} after cancelling order {}",
-                                   customerOrder.getCustomerOrderId(), orderId);
+                                customerOrder.getCustomerOrderId(), orderId);
                     }
                 } catch (Exception e) {
                     logger.error("Failed to process wallet refund for order {}: {}", orderId, e.getMessage(), e);
@@ -243,19 +243,19 @@ public class OrderService {
             List<Predicate> predicates = new ArrayList<>();
 
             predicates.add(cb.equal(root.get("customerOrder").get("user"), user));
-            
+
             if (status != null && !status.isEmpty()) {
                 predicates.add(cb.equal(root.get("orderStatus"), OrderStatus.valueOf(status)));
             }
-            
+
             if (dateFrom != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("orderDate"), dateFrom.atStartOfDay()));
             }
-            
+
             if (dateTo != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("orderDate"), dateTo.plusDays(1).atStartOfDay()));
             }
-            
+
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable);
     }
@@ -269,7 +269,7 @@ public class OrderService {
 
         // Use centralized promotion service for validation and calculation
         PromotionCalculationService.PromotionApplicationResult result =
-            promotionCalculationService.applyPromotion(promotionCode, order.getCustomerOrder().getUser(), order.getSubTotal());
+                promotionCalculationService.applyPromotion(promotionCode, order.getCustomerOrder().getUser(), order.getSubTotal());
 
         if (!result.isSuccess()) {
             logger.error("Promotion application failed: {}", result.getErrorMessage());
@@ -277,14 +277,14 @@ public class OrderService {
         }
 
         logger.info("Promotion application successful. Discount amount: {}, Final total: {}",
-                   result.getDiscountAmount(), result.getFinalTotal());
+                result.getDiscountAmount(), result.getFinalTotal());
 
         order.setDiscountAmount(result.getDiscountAmount());
         order.setDiscountCode(promotionCode);
         promotionCalculationService.recordPromotionUsage(promotionCode, order.getCustomerOrder().getUser().getUserId());
 
         logger.info("Order discount amount set to: {}, discount code set to: {}",
-                   order.getDiscountAmount(), order.getDiscountCode());
+                order.getDiscountAmount(), order.getDiscountCode());
     }
 
     private void handleInventoryForStatusChange(Order order, OrderStatus oldStatus, OrderStatus newStatus) {
@@ -294,14 +294,14 @@ public class OrderService {
                 bookService.increaseStockQuantity(item.getBook().getBookId(), item.getQuantity());
             }
         } else if (oldStatus == OrderStatus.CANCELLED &&
-                  newStatus == OrderStatus.PROCESSING) {
+                newStatus == OrderStatus.PROCESSING) {
             // Remove items from inventory when cancelled order is reactivated
             for (OrderItem item : order.getOrderItems()) {
                 bookService.decreaseStockQuantity(item.getBook().getBookId(), item.getQuantity());
             }
         }
     }
-    
+
     /**
      * Lưu đơn hàng vào cơ sở dữ liệu
      * @param order Đơn hàng cần lưu
@@ -310,9 +310,9 @@ public class OrderService {
     @org.springframework.transaction.annotation.Transactional(isolation = Isolation.SERIALIZABLE)
     public Order save(Order order) {
         logger.info("Saving order with {} items for user: {}",
-                   order.getOrderItems().size(),
-                   order.getCustomerOrder() != null && order.getCustomerOrder().getUser() != null ?
-                   order.getCustomerOrder().getUser().getEmail() : "Unknown");
+                order.getOrderItems().size(),
+                order.getCustomerOrder() != null && order.getCustomerOrder().getUser() != null ?
+                        order.getCustomerOrder().getUser().getEmail() : "Unknown");
 
         // Validate order data
         validateOrderData(order);
@@ -345,9 +345,9 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
         logger.info("Order saved successfully with ID: {} for user: {}",
-                   savedOrder.getOrderId(),
-                   savedOrder.getCustomerOrder() != null && savedOrder.getCustomerOrder().getUser() != null ?
-                   savedOrder.getCustomerOrder().getUser().getEmail() : "Unknown");
+                savedOrder.getOrderId(),
+                savedOrder.getCustomerOrder() != null && savedOrder.getCustomerOrder().getUser() != null ?
+                        savedOrder.getCustomerOrder().getUser().getEmail() : "Unknown");
         return savedOrder;
     }
 
@@ -379,108 +379,108 @@ public class OrderService {
 
         logger.info("Order validation passed for user: {}", customerOrder.getUser().getEmail());
     }
-    
+
     // Seller-specific methods
-    
+
     public List<Map<String, Object>> getRecentOrders(Integer shopId, int limit) {
         return orderRepository.getRecentOrders(shopId, limit);
     }
-    
+
     public int getNewOrdersCount(Integer shopId, int daysAgo) {
         LocalDateTime startDate = LocalDateTime.now().minusDays(daysAgo);
         return orderRepository.countByShopShopIdAndOrderDateAfter(shopId, startDate);
     }
-    
+
     public BigDecimal getTodayRevenue(Integer shopId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().plusDays(1).atStartOfDay();
-        
+
         List<Order> orders = orderRepository.findByShopShopIdAndOrderDateBetweenAndOrderStatus(
-            shopId, startOfDay, endOfDay, OrderStatus.SHIPPED);
-            
+                shopId, startOfDay, endOfDay, OrderStatus.SHIPPED);
+
         return orders.stream()
-            .map(Order::getTotalAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
-    
+
     public BigDecimal getTotalRevenue(Integer shopId, LocalDate startDate, LocalDate endDate) {
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.plusDays(1).atStartOfDay();
-        
+
         List<Order> orders = orderRepository.findByShopShopIdAndOrderDateBetweenAndOrderStatus(
-            shopId, start, end, OrderStatus.SHIPPED);
-            
+                shopId, start, end, OrderStatus.SHIPPED);
+
         return orders.stream()
-            .map(Order::getTotalAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
-    
+
     public Long getTotalOrders(Integer shopId, LocalDate startDate, LocalDate endDate) {
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.plusDays(1).atStartOfDay();
-        
+
         return orderRepository.countByShopShopIdAndOrderDateBetween(shopId, start, end);
     }
-    
+
     public List<BigDecimal> getWeeklyRevenue(Integer shopId) {
         LocalDateTime startDate = LocalDate.now().minusDays(6).atStartOfDay();
         LocalDateTime endDate = LocalDate.now().plusDays(1).atStartOfDay();
-        
+
         List<Order> orders = orderRepository.findByShopShopIdAndOrderDateBetweenAndOrderStatus(
-            shopId, startDate, endDate, OrderStatus.SHIPPED);
-            
+                shopId, startDate, endDate, OrderStatus.SHIPPED);
+
         Map<LocalDate, BigDecimal> revenueByDate = orders.stream()
-            .collect(Collectors.groupingBy(
-                order -> order.getOrderDate().toLocalDate(),
-                Collectors.mapping(
-                    Order::getTotalAmount,
-                    Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
-                )
-            ));
-            
+                .collect(Collectors.groupingBy(
+                        order -> order.getOrderDate().toLocalDate(),
+                        Collectors.mapping(
+                                Order::getTotalAmount,
+                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+                        )
+                ));
+
         List<BigDecimal> weeklyRevenue = new ArrayList<>();
         for (int i = 6; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
             weeklyRevenue.add(revenueByDate.getOrDefault(date, BigDecimal.ZERO));
         }
-        
+
         return weeklyRevenue;
     }
-    
+
     public Optional<Order> findOrderByIdForSeller(Integer orderId, Integer sellerId) {
         return orderRepository.findOrderByIdForSellerWithCustomerOrder(orderId, sellerId);
     }
-    
-    public Page<Order> searchOrdersForSeller(Integer sellerId, String keyword, OrderStatus status, 
-                                           String startDateStr, String endDateStr, Pageable pageable) {
+
+    public Page<Order> searchOrdersForSeller(Integer sellerId, String keyword, OrderStatus status,
+                                             String startDateStr, String endDateStr, Pageable pageable) {
         return orderRepository.findAll((Specification<Order>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            
+
             predicates.add(cb.equal(root.get("shop").get("user").get("userId"), sellerId));
-            
+
             if (keyword != null && !keyword.trim().isEmpty()) {
                 String searchTerm = "%" + keyword.trim().toLowerCase() + "%";
                 predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("customerOrder").get("recipientName")), searchTerm),
-                    cb.like(cb.lower(root.get("customerOrder").get("recipientPhone")), searchTerm),
-                    cb.like(cb.lower(root.get("orderId").as(String.class)), searchTerm)
+                        cb.like(cb.lower(root.get("customerOrder").get("recipientName")), searchTerm),
+                        cb.like(cb.lower(root.get("customerOrder").get("recipientPhone")), searchTerm),
+                        cb.like(cb.lower(root.get("orderId").as(String.class)), searchTerm)
                 ));
             }
-            
+
             if (status != null) {
                 predicates.add(cb.equal(root.get("orderStatus"), status));
             }
-            
+
             if (startDateStr != null && !startDateStr.isEmpty()) {
                 LocalDate startDate = LocalDate.parse(startDateStr);
                 predicates.add(cb.greaterThanOrEqualTo(root.get("orderDate"), startDate.atStartOfDay()));
             }
-            
+
             if (endDateStr != null && !endDateStr.isEmpty()) {
                 LocalDate endDate = LocalDate.parse(endDateStr);
                 predicates.add(cb.lessThanOrEqualTo(root.get("orderDate"), endDate.plusDays(1).atStartOfDay()));
             }
-            
+
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable);
     }
@@ -505,7 +505,7 @@ public class OrderService {
                 throw new IllegalArgumentException("Invalid period: " + period);
         }
     }
-    
+
     /**
      * Lấy danh sách sách bán chạy nhất
      * @param shopId ID của shop
@@ -515,7 +515,7 @@ public class OrderService {
     public List<Map<String, Object>> getBestsellingBooks(Integer shopId, int limit) {
         return orderRepository.getBestsellingBooksByQuantity(shopId, limit);
     }
-    
+
     /**
      * Lấy phân bố địa lý của đơn hàng
      * @param shopId ID của shop
@@ -524,7 +524,7 @@ public class OrderService {
     public List<Map<String, Object>> getGeographicDistribution(Integer shopId) {
         return orderRepository.getGeographicDistribution(shopId);
     }
-    
+
     /**
      * Tìm đơn hàng cho quản trị viên với các bộ lọc
      * @param search Từ khóa tìm kiếm
@@ -547,32 +547,32 @@ public class OrderService {
             if (search != null && !search.trim().isEmpty()) {
                 String searchTerm = "%" + search.trim().toLowerCase() + "%";
                 predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("customerOrder").get("recipientName")), searchTerm),
-                    cb.like(cb.lower(root.get("customerOrder").get("recipientPhone")), searchTerm),
-                    cb.like(cb.lower(root.get("orderId").as(String.class)), searchTerm),
-                    cb.like(cb.lower(root.get("customerOrder").get("user").get("email")), searchTerm),
-                    cb.like(cb.lower(root.get("customerOrder").get("user").get("fullName")), searchTerm)
+                        cb.like(cb.lower(root.get("customerOrder").get("recipientName")), searchTerm),
+                        cb.like(cb.lower(root.get("customerOrder").get("recipientPhone")), searchTerm),
+                        cb.like(cb.lower(root.get("orderId").as(String.class)), searchTerm),
+                        cb.like(cb.lower(root.get("customerOrder").get("user").get("email")), searchTerm),
+                        cb.like(cb.lower(root.get("customerOrder").get("user").get("fullName")), searchTerm)
                 ));
             }
-            
+
             // Filter by status
             if (orderStatus != null) {
                 predicates.add(cb.equal(root.get("orderStatus"), orderStatus));
             }
-            
+
             // Filter by date range
             if (fromDate != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("orderDate"), fromDate.atStartOfDay()));
             }
-            
+
             if (toDate != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("orderDate"), toDate.atTime(LocalTime.MAX)));
             }
-            
+
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable);
     }
-    
+
     /**
      * Cập nhật trạng thái đơn hàng bởi quản trị viên
      * @param orderId ID đơn hàng
@@ -587,30 +587,30 @@ public class OrderService {
             return orderRepository.findById(orderId).map(order -> {
                 OrderStatus oldStatus = order.getOrderStatus();
                 order.setOrderStatus(newStatus);
-                
+
                 // Add admin notes if provided
                 if (adminNotes != null && !adminNotes.trim().isEmpty()) {
                     String existingNotes = order.getNotes();
                     String timestamp = LocalDateTime.now().toString();
                     String newNote = "[ADMIN " + timestamp + "]: " + adminNotes;
-                    
+
                     if (existingNotes != null && !existingNotes.isEmpty()) {
                         order.setNotes(existingNotes + "\n" + newNote);
                     } else {
                         order.setNotes(newNote);
                     }
                 }
-                
+
                 // Handle inventory changes if status changed
                 if (oldStatus != newStatus) {
                     handleInventoryForStatusChange(order, oldStatus, newStatus);
                 }
-                
+
                 // Update customer order status if needed
                 if (order.getCustomerOrder() != null) {
                     customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
                 }
-                
+
                 orderRepository.save(order);
                 return true;
             }).orElse(false);
@@ -618,7 +618,7 @@ public class OrderService {
             orderStatusLock.unlock();
         }
     }
-    
+
     /**
      * Xử lý hoàn tiền cho đơn hàng
      * @param orderId ID đơn hàng
@@ -635,39 +635,39 @@ public class OrderService {
 
             // Set payment status to REFUNDED
             order.getCustomerOrder().setPaymentStatus(PaymentStatus.REFUNDED);
-            
+
             // Set order status to CANCELLED if not already
             if (order.getOrderStatus() != OrderStatus.CANCELLED) {
                 OrderStatus oldStatus = order.getOrderStatus();
                 order.setOrderStatus(OrderStatus.CANCELLED);
                 handleInventoryForStatusChange(order, oldStatus, OrderStatus.CANCELLED);
             }
-            
+
             // Add refund reason to notes
             if (refundReason != null && !refundReason.trim().isEmpty()) {
                 String existingNotes = order.getNotes();
                 String timestamp = LocalDateTime.now().toString();
                 String refundNote = "[REFUND " + timestamp + "]: " + refundReason;
-                
+
                 if (existingNotes != null && !existingNotes.isEmpty()) {
                     order.setNotes(existingNotes + "\n" + refundNote);
                 } else {
                     order.setNotes(refundNote);
                 }
             }
-            
+
             // Save the order
             orderRepository.save(order);
-            
+
             // Update customer order status if needed
             if (order.getCustomerOrder() != null) {
                 customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
             }
-            
+
             return true;
         }).orElse(false);
     }
-    
+
     /**
      * Thêm ghi chú của quản trị viên vào đơn hàng
      * @param orderId ID đơn hàng
@@ -679,18 +679,18 @@ public class OrderService {
         if (adminNote == null || adminNote.trim().isEmpty()) {
             return false;
         }
-        
+
         return orderRepository.findById(orderId).map(order -> {
             String existingNotes = order.getNotes();
             String timestamp = LocalDateTime.now().toString();
             String newNote = "[ADMIN " + timestamp + "]: " + adminNote;
-            
+
             if (existingNotes != null && !existingNotes.isEmpty()) {
                 order.setNotes(existingNotes + "\n" + newNote);
             } else {
                 order.setNotes(newNote);
             }
-            
+
             orderRepository.save(order);
             return true;
         }).orElse(false);
@@ -702,7 +702,7 @@ public class OrderService {
      */
     public boolean canBeReordered(Order order) {
         return order.getOrderStatus() == OrderStatus.DELIVERED ||
-               order.getOrderStatus() == OrderStatus.CANCELLED;
+                order.getOrderStatus() == OrderStatus.CANCELLED;
     }
 
     /**
@@ -741,14 +741,14 @@ public class OrderService {
         // Verify order belongs to user
         if (!order.getCustomerOrder().getUser().getUserId().equals(user.getUserId())) {
             logger.warn("User {} attempted to rebuy order {} that doesn't belong to them",
-                       user.getEmail(), orderId);
+                    user.getEmail(), orderId);
             return null;
         }
 
         // Check if order can be reordered
         if (!canBeReordered(order)) {
             logger.warn("Order {} cannot be reordered. Current status: {}",
-                       orderId, order.getOrderStatus());
+                    orderId, order.getOrderStatus());
             return null;
         }
 
@@ -776,7 +776,7 @@ public class OrderService {
 
         if (itemsAdded > 0) {
             logger.info("Successfully added {} out of {} items to cart for rebuy of order {}",
-                       itemsAdded, totalItems, order.getOrderId());
+                    itemsAdded, totalItems, order.getOrderId());
             return true;
         } else {
             logger.warn("No items could be added to cart for rebuy of order {}", order.getOrderId());
@@ -962,24 +962,24 @@ public class OrderService {
         BigDecimal sellerAmount = orderTotal.subtract(commission);
 
         logger.info("Processing seller payment for order {}: Total={}, Commission={}, Seller Amount={}",
-                   order.getOrderId(), orderTotal, commission, sellerAmount);
+                order.getOrderId(), orderTotal, commission, sellerAmount);
 
         // Add funds to seller's wallet
         String description = String.format("Payment for delivered order #%d (Total: %s VND, Commission: %s VND)",
-                                         order.getOrderId(), orderTotal, commission);
+                order.getOrderId(), orderTotal, commission);
 
         try {
             walletService.addFunds(
-                seller,
-                sellerAmount,
-                description,
-                WalletReferenceType.ORDER_PAYMENT,
-                order.getOrderId(),
-                seller.getUserId()
+                    seller,
+                    sellerAmount,
+                    description,
+                    WalletReferenceType.ORDER_PAYMENT,
+                    order.getOrderId(),
+                    seller.getUserId()
             );
 
             logger.info("Successfully processed seller payment of {} VND for order {} to seller {}",
-                       sellerAmount, order.getOrderId(), seller.getEmail());
+                    sellerAmount, order.getOrderId(), seller.getEmail());
         } catch (Exception e) {
             logger.error("Failed to add funds to seller wallet for order {}: {}", order.getOrderId(), e.getMessage(), e);
             throw new RuntimeException("Failed to process seller payment: " + e.getMessage(), e);

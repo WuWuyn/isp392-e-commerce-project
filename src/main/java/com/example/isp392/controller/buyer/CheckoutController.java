@@ -28,14 +28,14 @@ import java.util.Map;
 public class CheckoutController {
 
     private static final Logger logger = LoggerFactory.getLogger(CheckoutController.class);
-    
+
     private final CartService cartService;
     private final UserService userService;
     private final UserAddressService userAddressService;
 
-    public CheckoutController(CartService cartService, 
-                            UserService userService, 
-                            UserAddressService userAddressService) {
+    public CheckoutController(CartService cartService,
+                              UserService userService,
+                              UserAddressService userAddressService) {
         this.cartService = cartService;
         this.userService = userService;
         this.userAddressService = userAddressService;
@@ -50,7 +50,7 @@ public class CheckoutController {
             HttpSession session
     ) {
         logger.info("Checkout request received with items: {}, buyNow: {}", selectedItems, buyNow);
-        
+
         // Validate authentication
         if (authentication == null) {
             logger.warn("Authentication is null, redirecting to login");
@@ -60,7 +60,7 @@ public class CheckoutController {
         // Get current user
         String email = authentication.getName();
         User user = userService.findByEmail(email).orElse(null);
-        
+
         if (user == null) {
             logger.warn("User not found for email: {}", email);
             return "redirect:/login";
@@ -80,7 +80,7 @@ public class CheckoutController {
         // Get selected cart items
         String[] itemIds = selectedItems.split(",");
         logger.info("Parsed item IDs: {}", Arrays.toString(itemIds));
-        
+
         if (itemIds.length == 0) {
             logger.warn("No item IDs found after splitting, redirecting to cart");
             return "redirect:/buyer/cart";
@@ -89,7 +89,7 @@ public class CheckoutController {
         try {
             List<CartItem> selectedCartItems = cartService.getSelectedCartItems(user, itemIds);
             logger.info("Retrieved {} cart items", selectedCartItems.size());
-            
+
             if (selectedCartItems.isEmpty()) {
                 logger.warn("No cart items found for the given IDs, redirecting to cart");
                 return "redirect:/buyer/cart";
@@ -119,7 +119,7 @@ public class CheckoutController {
             double finalTotalAmount = originalTotalAmount - discountAmount;
 
             logger.info("Checkout totals - Subtotal: {}, Shipping: {}, Discount: {}, Original: {}, Final: {}",
-                       subtotal, shippingFee, discountAmount, originalTotalAmount, finalTotalAmount);
+                    subtotal, shippingFee, discountAmount, originalTotalAmount, finalTotalAmount);
 
             // Get user's addresses
             List<UserAddress> userAddresses = userAddressService.findByUser(user);
