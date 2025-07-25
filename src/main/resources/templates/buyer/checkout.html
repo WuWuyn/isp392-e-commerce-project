@@ -16,12 +16,14 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <style>
+        /* Checkout specific styles - consistent with buyer pages */
         .checkout-section {
             background-color: #fff;
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 20px;
             margin-bottom: 20px;
+            border: 1px solid #e9ecef;
         }
         .section-title {
             color: #333;
@@ -30,6 +32,18 @@
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 2px solid #f0f0f0;
+        }
+        .card-checkout {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-header-checkout {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            color: #333;
         }
         .address-card {
             border: 1px solid #e0e0e0;
@@ -263,19 +277,19 @@
         <form id="checkoutForm" th:action="@{/buyer/process-checkout}" method="post">
         <div class="row">
                 <!-- Left Column -->
-            <div class="col-lg-8">
+            <div class="col-lg-8 mb-4 mb-lg-0">
                 <!-- Shipping Address Section -->
-                <div class="checkout-section">
-                    <h2 class="section-title">
+                <div class="card card-checkout mb-4">
+                    <div class="card-header card-header-checkout">
                         <i class="fas fa-map-marker-alt me-2"></i>
                         Shipping Address
-                    </h2>
+                    </div>
+                    <div class="card-body">
                     
                     <!-- Address Selection Dropdown -->
                     <div class="mb-4">
                         <label for="addressSelect" class="form-label">Select Shipping Address</label>
                         <select class="form-select" id="addressSelect" name="addressSelect">
-                            <option value="">Choose an address...</option>
                             <option value="new">+ Add New Address</option>
                             <th:block th:each="address : ${userAddresses}">
                                 <option th:value="${address.addressId}" 
@@ -428,17 +442,18 @@
                             <label class="form-check-label" for="saveAddress">
                                 Save this address for future use
                             </label>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
         <!-- Order Items Section -->
-        <div class="checkout-section">
-            <h2 class="section-title">
+        <div class="card card-checkout mb-4">
+            <div class="card-header card-header-checkout">
                 <i class="fas fa-shopping-bag me-2"></i>
                 Order Items
-            </h2>
+            </div>
+            <div class="card-body">
             
             <div class="order-items">
                 <!-- Group items by shop -->
@@ -454,14 +469,22 @@
 
                     <!-- Items for this shop -->
                     <div class="shop-items">
-                        <div th:each="item : ${shopEntry.value}" class="book-item">
-                            <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}"
-                                 alt="Book Cover" class="book-image">
-                            <div class="book-details">
-                                <h5 class="book-title" th:text="${item.book.title}">Book Title</h5>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="book-price" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
-                                    <span class="quantity-badge" th:text="'Quantity: ' + ${item.quantity}">Quantity: 1</span>
+                        <div th:each="item : ${shopEntry.value}" class="book-item border-bottom pb-3 mb-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}"
+                                         alt="Book Cover" class="img-fluid rounded book-image" style="max-height: 80px; object-fit: cover;">
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="book-title mb-1" th:text="${item.book.title}">Book Title</h6>
+                                    <p class="text-muted small mb-1" th:if="${item.book.authors}" th:text="'Author: ' + ${item.book.authors}">Author: Author Name</p>
+                                    <p class="text-muted small mb-0" th:if="${item.book.isbn}" th:text="'ISBN: ' + ${item.book.isbn}">ISBN: 123456789</p>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <span class="badge bg-secondary" th:text="'Qty: ' + ${item.quantity}">Qty: 1</span>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <span class="fw-bold text-primary" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</span>
                                 </div>
                             </div>
                         </div>
@@ -545,15 +568,16 @@
                     </div>
                 </div>
             </div>
+        </div>
 
             <!-- Order Notes -->
-            <div class="checkout-section">
-                <h2 class="section-title">
+            <div class="card card-checkout mb-4">
+                <div class="card-header card-header-checkout">
                     <i class="fas fa-pencil-alt me-2"></i>
                     Order Notes
-                </h2>
-                <div class="mb-3">
-                    <textarea class="form-control" id="notes" name="notes" rows="3" 
+                </div>
+                <div class="card-body">
+                    <textarea class="form-control" id="notes" name="notes" rows="3"
                               placeholder="Add any special instructions or notes for your order"></textarea>
                 </div>
             </div>
@@ -561,8 +585,12 @@
 
         <!-- Right Column - Order Summary -->
         <div class="col-lg-4">
-            <div class="checkout-section">
-                <h2 class="section-title">Order Summary</h2>
+            <div class="card card-checkout sticky-top" style="top: 20px;">
+                <div class="card-header card-header-checkout">
+                    <i class="fas fa-receipt me-2"></i>
+                    Order Summary
+                </div>
+                <div class="card-body">
                 <div class="order-summary">
                     <div class="summary-item">
                         <span>Subtotal</span>
@@ -669,10 +697,10 @@
                     </div>
                 </div>
             </div>
-    </div>
+        </div>
 
-    </form>
-</div>
+        </form>
+    </div>
 </main>
 
 <!-- Footer -->

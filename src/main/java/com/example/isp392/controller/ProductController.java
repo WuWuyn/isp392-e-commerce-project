@@ -179,7 +179,7 @@ public class ProductController {
             // Lấy các sách liên quan (cùng danh mục)
             if (book.getCategories() != null && !book.getCategories().isEmpty()) {
                 Category firstCategory = book.getCategories().iterator().next();
-                List<Book> relatedBooks = bookService.findBooksByCategory(firstCategory, 0, 5, "dateAdded", "DESC")
+                List<Book> relatedBooks = bookService.findBooksByCategory(firstCategory, 0, 4, "dateAdded", "DESC")
                         .getContent();
                 model.addAttribute("relatedBooks", relatedBooks);
             }

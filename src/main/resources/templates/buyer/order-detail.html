@@ -105,10 +105,12 @@
                                         <tr th:each="item : ${order.orderItems}">
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <img th:src="${item.book.coverImgUrl}" alt="Book cover" class="rounded-3 me-3" style="width: 60px; height: auto;">
+                                                    <img th:src="${item.bookImageUrl != null ? item.bookImageUrl : (item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg')}"
+                                                         alt="Book cover" class="rounded-3 me-3" style="width: 60px; height: auto;">
                                                     <div>
-                                                        <h6 class="mb-1" th:text="${item.book.title}"></h6>
-                                                        <small class="text-muted" th:if="${item.book.authors != null}" th:text="${'Author: ' + item.book.authors}"></small>
+                                                        <h6 class="mb-1" th:text="${item.bookTitle != null ? item.bookTitle : item.book.title}"></h6>
+                                                        <small class="text-muted" th:if="${(item.bookAuthors != null ? item.bookAuthors : item.book.authors) != null}"
+                                                               th:text="${'Author: ' + (item.bookAuthors != null ? item.bookAuthors : item.book.authors)}"></small>
                                                     </div>
                                                 </div>
                                             </td>
@@ -118,13 +120,27 @@
                                                 <span th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
                                                 <!-- Rebuy button for individual item -->
                                                 <div class="mt-2" th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}">
-                                                    <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.bookId} + '/rebuy'}"
-                                                          method="post" class="d-inline-block">
-                                                        <input type="hidden" name="quantity" th:value="${item.quantity}"/>
-                                                        <button type="submit" class="btn btn-sm btn-outline-success rounded-3">
-                                                            <i class="fas fa-sync-alt"></i> Rebuy Item
+                                                    <!-- Check if book is still available -->
+                                                    <div th:if="${item.book != null && item.book.active && item.book.stockQuantity > 0}">
+                                                        <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.bookId} + '/rebuy'}"
+                                                              method="post" class="d-inline-block">
+                                                            <input type="hidden" name="quantity" th:value="${item.quantity}"/>
+                                                            <button type="submit" class="btn btn-sm btn-outline-success rounded-3">
+                                                                <i class="fas fa-sync-alt"></i> Rebuy Item
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                    <!-- Show unavailable message if book is not available -->
+                                                    <div th:if="${item.book == null || !item.book.active || item.book.stockQuantity <= 0}">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-3" disabled>
+                                                            <i class="fas fa-ban"></i> Unavailable
                                                         </button>
-                                                    </form>
+                                                        <small class="text-muted d-block">
+                                                            <span th:if="${item.book == null}">Book no longer exists</span>
+                                                            <span th:if="${item.book != null && !item.book.active}">Book is inactive</span>
+                                                            <span th:if="${item.book != null && item.book.active && item.book.stockQuantity <= 0}">Out of stock</span>
+                                                        </small>
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -142,7 +158,7 @@
                                             type="button"
                                             class="btn btn-outline-danger rounded-3 cancel-order-btn"
                                             th:data-order-id="${order.orderId}"
-                                            th:data-order-title="${order.orderItems[0].book.title + (order.orderItems.size() > 1 ? ' và ' + (order.orderItems.size() - 1) + ' sản phẩm khác' : '')}">
+                                            th:data-order-title="${(order.orderItems[0].bookTitle != null ? order.orderItems[0].bookTitle : order.orderItems[0].book.title) + (order.orderItems.size() > 1 ? ' và ' + (order.orderItems.size() - 1) + ' sản phẩm khác' : '')}">
                                         <i class="fas fa-times"></i> Cancel Order
                                     </button>
 
