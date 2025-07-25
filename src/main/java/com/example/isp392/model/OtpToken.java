@@ -15,7 +15,7 @@ public class OtpToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false)
+    @Column(name = "otp", nullable = false)
     private String token;
     
     @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)

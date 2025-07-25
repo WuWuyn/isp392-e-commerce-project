@@ -48,8 +48,8 @@
             <a th:href="@{/seller/orders(status=DELIVERED)}" class="list-group-item list-group-item-action">
                 <i class="fas fa-check-circle"></i> Completed
             </a>
-            <a th:href="@{/seller/orders/returns}" class="list-group-item list-group-item-action">
-                <i class="fas fa-undo"></i> Returns/Cancellations
+            <a th:href="@{/seller/orders/cancellations}" class="list-group-item list-group-item-action">
+                <i class="fas fa-times-circle"></i> Cancellations
             </a>
             
             <!-- Customer Interaction -->
@@ -62,11 +62,8 @@
             <a th:href="@{/seller/analytics}" class="list-group-item list-group-item-action">
                 <i class="fas fa-chart-line"></i> Analytics & Reports
             </a>
-            <a th:href="@{/seller/finance/payments}" class="list-group-item list-group-item-action">
-                <i class="fas fa-money-bill"></i> Payment History
-            </a>
-            <a th:href="@{/seller/finance/withdraw}" class="list-group-item list-group-item-action">
-                <i class="fas fa-wallet"></i> Withdrawal
+            <a th:href="@{/seller/wallet}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'wallet' ? 'active' : ''}">
+                <i class="fas fa-wallet"></i> My Wallet
             </a>
 
             <a th:href="@{/seller/data-management}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'data-management' ? 'active' : ''}">

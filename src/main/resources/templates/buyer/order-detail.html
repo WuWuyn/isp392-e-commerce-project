@@ -23,7 +23,7 @@
         <div class="row">
             <!-- Sidebar -->
             <div th:replace="fragments/buyer-account-sidebar :: sidebar('orders')"></div>
-
+            
             <!-- Main Content -->
             <div class="col-lg-9">
                 <div class="card rounded-4 shadow-sm">
@@ -64,7 +64,7 @@
                                     <hr class="my-3">
                                     <div class="detail-row mb-2"><span class="label">Order Date:</span> <span class="value" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span></div>
                                     <div class="detail-row mb-2">
-                                        <span class="label">Status:</span>
+                                        <span class="label">Status:</span> 
                                         <span th:class="'order-status status-' + ${#strings.toLowerCase(order.orderStatus)}"
                                               th:text="${order.orderStatus}">
                                         </span>
@@ -94,56 +94,56 @@
                             <div class="table-responsive">
                                 <table class="table">
                                     <thead>
-                                    <tr>
-                                        <th class="border-top-0">Product</th>
-                                        <th class="border-top-0">Price</th>
-                                        <th class="border-top-0">Quantity</th>
-                                        <th class="text-end border-top-0">Subtotal</th>
-                                    </tr>
+                                        <tr>
+                                            <th class="border-top-0">Product</th>
+                                            <th class="border-top-0">Price</th>
+                                            <th class="border-top-0">Quantity</th>
+                                            <th class="text-end border-top-0">Subtotal</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
-                                    <tr th:each="item : ${order.orderItems}">
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <img th:src="${item.bookImageUrl != null ? item.bookImageUrl : (item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg')}"
-                                                     alt="Book cover" class="rounded-3 me-3" style="width: 60px; height: auto;">
-                                                <div>
-                                                    <h6 class="mb-1" th:text="${item.bookTitle != null ? item.bookTitle : item.book.title}"></h6>
-                                                    <small class="text-muted" th:if="${(item.bookAuthors != null ? item.bookAuthors : item.book.authors) != null}"
-                                                           th:text="${'Author: ' + (item.bookAuthors != null ? item.bookAuthors : item.book.authors)}"></small>
+                                        <tr th:each="item : ${order.orderItems}">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img th:src="${item.bookImageUrl != null ? item.bookImageUrl : (item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg')}"
+                                                         alt="Book cover" class="rounded-3 me-3" style="width: 60px; height: auto;">
+                                                    <div>
+                                                        <h6 class="mb-1" th:text="${item.bookTitle != null ? item.bookTitle : item.book.title}"></h6>
+                                                        <small class="text-muted" th:if="${(item.bookAuthors != null ? item.bookAuthors : item.book.authors) != null}"
+                                                               th:text="${'Author: ' + (item.bookAuthors != null ? item.bookAuthors : item.book.authors)}"></small>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'"></td>
-                                        <td th:text="${item.quantity}"></td>
-                                        <td class="text-end">
-                                            <span th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
-                                            <!-- Rebuy button for individual item -->
-                                            <div class="mt-2" th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}">
-                                                <!-- Check if book is still available -->
-                                                <div th:if="${item.book != null && item.book.active && item.book.stockQuantity > 0}">
-                                                    <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.bookId} + '/rebuy'}"
-                                                          method="post" class="d-inline-block">
-                                                        <input type="hidden" name="quantity" th:value="${item.quantity}"/>
-                                                        <button type="submit" class="btn btn-sm btn-outline-success rounded-3">
-                                                            <i class="fas fa-sync-alt"></i> Rebuy Item
+                                            </td>
+                                            <td th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'"></td>
+                                            <td th:text="${item.quantity}"></td>
+                                            <td class="text-end">
+                                                <span th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
+                                                <!-- Rebuy button for individual item -->
+                                                <div class="mt-2" th:if="${order.orderStatus != null && order.orderStatus.name() == 'DELIVERED'}">
+                                                    <!-- Check if book is still available -->
+                                                    <div th:if="${item.book != null && item.book.active && item.book.stockQuantity > 0}">
+                                                        <form th:action="@{'/buyer/orders/' + ${order.orderId} + '/items/' + ${item.book.bookId} + '/rebuy'}"
+                                                              method="post" class="d-inline-block">
+                                                            <input type="hidden" name="quantity" th:value="${item.quantity}"/>
+                                                            <button type="submit" class="btn btn-sm btn-outline-success rounded-3">
+                                                                <i class="fas fa-sync-alt"></i> Rebuy Item
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                    <!-- Show unavailable message if book is not available -->
+                                                    <div th:if="${item.book == null || !item.book.active || item.book.stockQuantity <= 0}">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-3" disabled>
+                                                            <i class="fas fa-ban"></i> Unavailable
                                                         </button>
-                                                    </form>
+                                                        <small class="text-muted d-block">
+                                                            <span th:if="${item.book == null}">Book no longer exists</span>
+                                                            <span th:if="${item.book != null && !item.book.active}">Book is inactive</span>
+                                                            <span th:if="${item.book != null && item.book.active && item.book.stockQuantity <= 0}">Out of stock</span>
+                                                        </small>
+                                                    </div>
                                                 </div>
-                                                <!-- Show unavailable message if book is not available -->
-                                                <div th:if="${item.book == null || !item.book.active || item.book.stockQuantity <= 0}">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-3" disabled>
-                                                        <i class="fas fa-ban"></i> Unavailable
-                                                    </button>
-                                                    <small class="text-muted d-block">
-                                                        <span th:if="${item.book == null}">Book no longer exists</span>
-                                                        <span th:if="${item.book != null && !item.book.active}">Book is inactive</span>
-                                                        <span th:if="${item.book != null && item.book.active && item.book.stockQuantity <= 0}">Out of stock</span>
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>

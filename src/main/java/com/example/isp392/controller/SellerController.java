@@ -1654,6 +1654,60 @@ public class SellerController {
         }
     }
 
+    @GetMapping("/orders/cancellations")
+    public String listCancellations(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "startDate", required = false) String startDate,
+            @RequestParam(name = "endDate", required = false) String endDate,
+            @RequestParam(name = "sortField", defaultValue = "orderDate") String sortField,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir,
+            Model model,
+            Authentication authentication
+    ) {
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User seller = userService.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Seller not found"));
+
+        // Convert dates
+        LocalDateTime startDateTime = null;
+        LocalDateTime endDateTime = null;
+        if (startDate != null && !startDate.isEmpty()) {
+            startDateTime = LocalDate.parse(startDate).atStartOfDay();
+        }
+        if (endDate != null && !endDate.isEmpty()) {
+            endDateTime = LocalDate.parse(endDate).atTime(23, 59, 59);
+        }
+
+        // Create pageable with sorting
+        Sort sort = Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortField);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Get cancelled orders only
+        Page<Order> orderPage = orderService.searchOrdersForSeller(
+                seller.getUserId(),
+                keyword,
+                OrderStatus.CANCELLED,  // Only cancelled orders
+                startDate,
+                endDate,
+                pageable
+        );
+
+        model.addAttribute("orderPage", orderPage);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("selectedStatus", OrderStatus.CANCELLED);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
+        model.addAttribute("user", seller);
+        model.addAttribute("activeMenu", "cancellations");
+
+        return "seller/cancellations";
+    }
+
     @PostMapping("/orders/update-status/{orderId}")
     public String updateOrderStatus(@PathVariable("orderId") Integer orderId,
                                     @RequestParam("newStatus") OrderStatus newStatus,

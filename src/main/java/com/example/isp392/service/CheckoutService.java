@@ -48,11 +48,11 @@ public class CheckoutService {
                         .flatMap(so -> so.getCartItemIds().stream())
                         .collect(Collectors.toList())
         );
-
+        
         if (selectedItems.isEmpty()) {
             throw new RuntimeException("Không có sản phẩm nào được chọn");
         }
-
+        
         // Validate inventory before proceeding
         try {
             inventoryLock.lock();
@@ -60,18 +60,18 @@ public class CheckoutService {
 
             for (CartItem item : selectedItems) {
                 logger.info("Checking inventory for book ID: {}, requested: {}, available: {}",
-                        item.getBook().getBookId(), item.getQuantity(), item.getBook().getStockQuantity());
+                           item.getBook().getBookId(), item.getQuantity(), item.getBook().getStockQuantity());
 
                 if (item.getQuantity() > item.getBook().getStockQuantity()) {
                     logger.error("Insufficient inventory for book ID: {}, title: {}, requested: {}, available: {}",
-                            item.getBook().getBookId(), item.getBook().getTitle(),
-                            item.getQuantity(), item.getBook().getStockQuantity());
+                               item.getBook().getBookId(), item.getBook().getTitle(),
+                               item.getQuantity(), item.getBook().getStockQuantity());
                     throw new RuntimeException("Sản phẩm '" + item.getBook().getTitle() + "' không đủ số lượng trong kho. " +
-                            "Yêu cầu: " + item.getQuantity() + ", Có sẵn: " + item.getBook().getStockQuantity());
+                                             "Yêu cầu: " + item.getQuantity() + ", Có sẵn: " + item.getBook().getStockQuantity());
                 }
             }
             logger.info("Inventory validation passed for all items");
-
+            
             // Create customer order with shipping and payment information
             CustomerOrder customerOrder = new CustomerOrder();
             customerOrder.setUser(user);
@@ -149,7 +149,7 @@ public class CheckoutService {
                 // Atomically reserve inventory for this shop's items
                 try {
                     logger.info("Reserving inventory for shop {} with {} items",
-                            shop.getShopName(), orderItems.size());
+                               shop.getShopName(), orderItems.size());
                     bookService.reserveInventoryForOrder(orderItems);
                     logger.info("Successfully reserved inventory for shop {}", shop.getShopName());
                 } catch (IllegalArgumentException e) {
@@ -185,16 +185,16 @@ public class CheckoutService {
             customerOrder.setFinalTotalAmount(finalTotal);
 
             logger.info("CheckoutService: Set CustomerOrder totals - Original: {}, Final: {}, Shipping: {}, Discount: {}",
-                    originalTotal, finalTotal, totalShippingFee, totalDiscountAmount);
+                       originalTotal, finalTotal, totalShippingFee, totalDiscountAmount);
 
             // Set promotion code if any discount was applied
             if (totalDiscountAmount.compareTo(BigDecimal.ZERO) > 0) {
                 // Try to get promotion code from the first order that has a discount code
                 String promotionCode = orders.stream()
-                        .filter(order -> order.getDiscountCode() != null && !order.getDiscountCode().isEmpty())
-                        .map(Order::getDiscountCode)
-                        .findFirst()
-                        .orElse(null);
+                    .filter(order -> order.getDiscountCode() != null && !order.getDiscountCode().isEmpty())
+                    .map(Order::getDiscountCode)
+                    .findFirst()
+                    .orElse(null);
                 customerOrder.setPromotionCode(promotionCode);
             } else {
                 customerOrder.setPromotionCode(null);
@@ -210,7 +210,7 @@ public class CheckoutService {
             }
 
             return customerOrder;
-
+            
         } finally {
             inventoryLock.unlock();
         }
