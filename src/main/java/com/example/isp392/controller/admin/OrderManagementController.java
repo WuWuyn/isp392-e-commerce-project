@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -108,15 +110,27 @@ public class OrderManagementController {
     @GetMapping("/{orderId}")
     public String viewOrderDetail(@PathVariable Integer orderId, Model model) {
         Optional<Order> orderOpt = orderService.findOrderById(orderId);
-        
+
         if (orderOpt.isEmpty()) {
             return "redirect:/admin/orders";
         }
-        
+
         Order order = orderOpt.get();
         model.addAttribute("order", order);
-        model.addAttribute("allStatuses", OrderStatus.values());
-        
+
+        // MODIFICATION: Calculate and add the list of valid next statuses
+        List<OrderStatus> validNextStatuses = new ArrayList<>();
+        OrderStatus currentStatus = order.getOrderStatus();
+        if (currentStatus == OrderStatus.PROCESSING) {
+            validNextStatuses.add(OrderStatus.SHIPPED);
+            validNextStatuses.add(OrderStatus.CANCELLED);
+        } else if (currentStatus == OrderStatus.SHIPPED) {
+            validNextStatuses.add(OrderStatus.DELIVERED);
+            validNextStatuses.add(OrderStatus.CANCELLED);
+        }
+        // If status is DELIVERED or CANCELLED, the list will be empty.
+        model.addAttribute("validNextStatuses", validNextStatuses);
+
         return "admin/order/order-detail";
     }
 
@@ -129,15 +143,19 @@ public class OrderManagementController {
             @RequestParam("newStatus") OrderStatus newStatus,
             @RequestParam(value = "adminNotes", required = false) String adminNotes,
             RedirectAttributes redirectAttributes) {
-        
-        boolean success = orderService.updateOrderStatusByAdmin(orderId, newStatus, adminNotes);
-        
-        if (success) {
-            redirectAttributes.addFlashAttribute("successMessage", "Order status updated successfully.");
-        } else {
-            redirectAttributes.addFlashAttribute("errorMessage", "Failed to update order status.");
+
+        try {
+            boolean success = orderService.updateOrderStatusByAdmin(orderId, newStatus, adminNotes);
+            if (success) {
+                redirectAttributes.addFlashAttribute("successMessage", "Order status updated successfully.");
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "Failed to update order status.");
+            }
+        } catch (IllegalStateException e) {
+            // MODIFICATION: Catch the specific validation error from the service
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
         }
-        
+
         return "redirect:/admin/orders/" + orderId;
     }
 

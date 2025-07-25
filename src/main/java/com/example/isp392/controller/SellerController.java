@@ -102,7 +102,7 @@ public class SellerController {
     public SellerController(UserService userService, BookService bookService, ShopService shopService,
                             CategoryService categoryService, PublisherService publisherService,
                             OrderService orderService, OtpService otpService, EmailService emailService, DataImportExportService dataImportExportService
-    , BookReviewService bookReviewService) {
+            , BookReviewService bookReviewService) {
         this.userService = userService;
         this.bookService = bookService;
         this.shopService = shopService;
@@ -1088,8 +1088,8 @@ public class SellerController {
             }
 
             // Check if selling price is greater than original price
-            if (bookForm.getSellingPrice() != null && bookForm.getOriginalPrice() != null && 
-                bookForm.getSellingPrice().compareTo(bookForm.getOriginalPrice()) > 0) {
+            if (bookForm.getSellingPrice() != null && bookForm.getOriginalPrice() != null &&
+                    bookForm.getSellingPrice().compareTo(bookForm.getOriginalPrice()) > 0) {
                 bindingResult.rejectValue("sellingPrice", "invalidPrice", "Giá bán không được lớn hơn giá gốc");
             }
 
@@ -1275,10 +1275,10 @@ public class SellerController {
             if (user == null) {
                 return "redirect:/seller/login";
             }
-            
+
             // Check if selling price is greater than original price
-            if (bookForm.getSellingPrice() != null && bookForm.getOriginalPrice() != null && 
-                bookForm.getSellingPrice().compareTo(bookForm.getOriginalPrice()) > 0) {
+            if (bookForm.getSellingPrice() != null && bookForm.getOriginalPrice() != null &&
+                    bookForm.getSellingPrice().compareTo(bookForm.getOriginalPrice()) > 0) {
                 bindingResult.rejectValue("sellingPrice", "invalidPrice", "Giá bán không được lớn hơn giá gốc");
             }
 
@@ -1320,8 +1320,8 @@ public class SellerController {
             }
 
             // Check for unique ISBN (but allow the book to keep its own ISBN)
-            if (!book.getIsbn().equals(bookForm.getIsbn()) && 
-                bookService.isbnExists(bookForm.getIsbn().trim(), shop.getShopId())) {
+            if (!book.getIsbn().equals(bookForm.getIsbn()) &&
+                    bookService.isbnExists(bookForm.getIsbn().trim(), shop.getShopId())) {
                 bindingResult.rejectValue("isbn", "duplicateIsbn", "A book with this ISBN already exists in your shop.");
                 model.addAttribute("user", user);
                 model.addAttribute("roles", userService.getUserRoles(user));
@@ -2120,7 +2120,7 @@ public class SellerController {
             model.addAttribute("roles", userService.getUserRoles(user));
 
             log.debug("Displaying inventory page for shop ID: {} with {} items",
-                     shop.getShopId(), inventoryPage.getTotalElements());
+                    shop.getShopId(), inventoryPage.getTotalElements());
 
             return "seller/inventory-management";
 

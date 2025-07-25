@@ -191,35 +191,39 @@
         let originalName = '';
         let originalDescription = '';
         let originalActive = false;
-        
+
         function enableEditing() {
             // Store original values
             originalName = document.getElementById('categoryName').value;
             originalDescription = document.getElementById('categoryDescription').value;
             originalActive = document.getElementById('isActive').checked;
-            
+
             // Enable form fields
             document.getElementById('categoryName').readOnly = false;
             document.getElementById('categoryDescription').readOnly = false;
+
+            // MODIFICATION: Enable the checkbox so its value is submitted
             document.getElementById('isActive').disabled = false;
-            
+
             // Show/hide buttons
             document.querySelector('.btn-primary').classList.add('d-none');
             document.getElementById('saveButton').classList.remove('d-none');
             document.getElementById('cancelButton').classList.remove('d-none');
         }
-        
+
         function cancelEditing() {
             // Restore original values
             document.getElementById('categoryName').value = originalName;
             document.getElementById('categoryDescription').value = originalDescription;
             document.getElementById('isActive').checked = originalActive;
-            
+
             // Disable form fields
             document.getElementById('categoryName').readOnly = true;
             document.getElementById('categoryDescription').readOnly = true;
+
+            // MODIFICATION: Disable the checkbox again on cancel
             document.getElementById('isActive').disabled = true;
-            
+
             // Show/hide buttons
             document.querySelector('.btn-primary').classList.remove('d-none');
             document.getElementById('saveButton').classList.add('d-none');

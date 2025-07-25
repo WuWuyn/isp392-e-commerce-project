@@ -147,7 +147,8 @@
                             </p>
                         </div>
                         <div>
-                            <a th:href="@{/admin/promotions/{id}/edit(id=${promotion.promotionId})}"
+                            <a th:if="${!promotion.isActive and promotion.isNeverUsed()}"
+                               th:href="@{/admin/promotions/{id}/edit(id=${promotion.promotionId})}"
                                class="btn btn-primary me-2">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
@@ -420,7 +421,8 @@
                         <i class="fas fa-bolt"></i> Quick Actions
                     </h5>
                     <div class="d-grid gap-2">
-                        <a th:href="@{/admin/promotions/{id}/edit(id=${promotion.promotionId})}" 
+                        <a th:if="${!promotion.isActive and promotion.isNeverUsed()}"
+                           th:href="@{/admin/promotions/{id}/edit(id=${promotion.promotionId})}"
                            class="btn btn-primary">
                             <i class="fas fa-edit"></i> Edit Promotion
                         </a>

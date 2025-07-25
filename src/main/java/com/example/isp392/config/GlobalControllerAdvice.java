@@ -5,17 +5,20 @@ import com.example.isp392.model.User;
 import com.example.isp392.service.CartService;
 import com.example.isp392.service.SystemSettingService;
 import com.example.isp392.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Optional;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import java.util.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,5 +100,47 @@ public class GlobalControllerAdvice {
             defaultSettings.put("hero_background_image", "/images/hero-bg.jpg");
             return defaultSettings;
         }
+    }
+    @ModelAttribute("currentUser")
+    public User addCurrentUserToModel() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+
+        String username = "";
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+        } else {
+            // Fallback for cases where principal is just the username string
+            username = principal.toString();
+        }
+
+        if (username.isEmpty()) {
+            return null;
+        }
+
+        return userService.findByEmail(username).orElse(null);
+    }
+
+    /**
+     * Adds a list of roles for the currently authenticated user to the model.
+     * This makes the 'currentUserRoles' list available in all Thymeleaf templates.
+     *
+     * @param currentUser The User object provided by the addCurrentUserToModel method.
+     * @return A list of role names (e.g., "ADMIN", "SELLER"), or an empty list.
+     */
+    @ModelAttribute("currentUserRoles")
+    public List<String> addCurrentUserRolesToModel(@ModelAttribute("currentUser") User currentUser) {
+        if (currentUser != null) {
+            return userService.getUserRoles(currentUser);
+        }
+        return Collections.emptyList();
+    }
+    @ModelAttribute("_csrf")
+    public CsrfToken csrfToken(HttpServletRequest request) {
+        return (CsrfToken) request.getAttribute(CsrfToken.class.getName());
     }
 } 

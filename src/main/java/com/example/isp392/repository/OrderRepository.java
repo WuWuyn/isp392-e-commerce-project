@@ -374,7 +374,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "JOIN orders o ON oi.order_id = o.order_id " +
             "JOIN customer_orders co ON o.customer_order_id = co.customer_order_id " +
             "JOIN shops s ON b.shop_id = s.shop_id " +
-            "WHERE o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+            // MODIFICATION: Changed WHERE clause to only count DELIVERED orders
+            "WHERE o.order_status = 'DELIVERED' " +
             "GROUP BY b.book_id, b.title, s.shop_name " +
             "ORDER BY SUM(oi.quantity) DESC",
             nativeQuery = true)
@@ -483,10 +484,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * @return List of top sellers with revenue data
      */
     @Query(value = "SELECT TOP(:limit) " +
-            "s.shop_id, s.shop_name, u.full_name AS seller_name, " +
-            "COALESCE(SUM(co.total_amount), 0) AS total_sales, " +
-            "COALESCE(SUM(co.total_amount * :commissionRate), 0) AS platform_revenue, " +
-            "COUNT(DISTINCT co.customer_order_id) AS order_count " +
+            "s.shop_name, u.full_name AS seller_name, " +
+            // MODIFICATION: Added 'AS total_orders' to match the HTML template
+            "COUNT(DISTINCT co.customer_order_id) AS total_orders, " +
+            "COALESCE(SUM(co.total_amount), 0) AS total_revenue " +
             "FROM shops s " +
             "JOIN users u ON s.user_id = u.user_id " +
             "LEFT JOIN orders o ON s.shop_id = o.shop_id " +
@@ -494,7 +495,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "WHERE (co.status IS NULL OR co.status NOT IN ('CANCELLED', 'REFUNDED')) " +
             "AND (co.created_at IS NULL OR CAST(co.created_at AS DATE) BETWEEN :startDate AND :endDate) " +
             "GROUP BY s.shop_id, s.shop_name, u.full_name " +
-            "ORDER BY COALESCE(SUM(co.total_amount * :commissionRate), 0) DESC",
+            "ORDER BY total_revenue DESC",
             nativeQuery = true)
     List<Map<String, Object>> getTopSellersByRevenue(
             @Param("startDate") LocalDate startDate,
@@ -562,6 +563,18 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 
+    @Query(value = "SELECT TOP(:limit) b.title, SUM(oi.quantity) as total_quantity, SUM(oi.unit_price * oi.quantity) as total_revenue " +
+            "FROM order_items oi JOIN books b ON oi.book_id = b.book_id JOIN orders o ON oi.order_id = o.order_id " +
+            "WHERE o.order_status = 'DELIVERED' AND o.order_date BETWEEN :startDate AND :endDate " +
+            "GROUP BY b.title ORDER BY total_revenue DESC", nativeQuery = true)
+    List<Map<String, Object>> getTopSellingProductsByDateRange(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("limit") int limit);
+    @Query("SELECT SUM(oi.quantity) FROM OrderItem oi JOIN oi.order o " +
+            "WHERE o.orderStatus = com.example.isp392.model.OrderStatus.DELIVERED " +
+            "AND o.orderDate BETWEEN :startDate AND :endDate")
+    Long sumQuantitiesByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
     /**
      * Count active sellers by date range
      *
