@@ -230,102 +230,102 @@
                             <div class="table-responsive">
                                 <table class="table align-middle">
                                     <thead>
-                                    <tr>
-                                        <th><input type="checkbox" id="selectAll" class="form-check-input"></th>
-                                        <th>Book</th>
-                                        <th class="text-center">Price</th>
-                                        <th class="text-center">Quantity</th>
-                                        <th class="text-end">Total</th>
-                                        <th class="text-center">Action</th>
-                                    </tr>
+                                        <tr>
+                                            <th><input type="checkbox" id="selectAll" class="form-check-input"></th>
+                                            <th>Book</th>
+                                            <th class="text-center">Price</th>
+                                            <th class="text-center">Quantity</th>
+                                            <th class="text-end">Total</th>
+                                            <th class="text-center">Action</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
-                                    <!-- Group items by shop -->
-                                    <th:block th:each="shopEntry : ${cartItemsByShop}">
-                                        <!-- Shop header row -->
-                                        <tr class="shop-header-row">
-                                            <td colspan="6" class="shop-header">
-                                                <div class="d-flex align-items-center py-2">
-                                                    <i class="fas fa-store text-primary me-2"></i>
-                                                    <a th:href="@{/shops/{shopId}(shopId=${shopEntry.value[0].book.shop.shopId})}"
-                                                       th:text="${shopEntry.key}"
-                                                       class="text-primary text-decoration-none fw-bold">Shop Name</a>
-                                                    <span class="badge bg-light text-dark ms-2" th:text="${shopEntry.value.size()} + ' item' + (${shopEntry.value.size()} > 1 ? 's' : '')">2 items</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <!-- Items for this shop -->
-                                        <tr th:each="item : ${shopEntry.value}" th:data-book-id="${item.book.bookId}" class="cart-item">
-                                            <td>
-                                                <input type="checkbox" name="selected" th:value="${item.book.bookId}"
-                                                       class="item-checkbox form-check-input"
-                                                       th:disabled="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity}"
-                                                       th:title="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity ? 'Sản phẩm không đủ số lượng trong kho' : ''}"
-                                                       th:data-stock="${item.book.stockQuantity}">
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <a th:href="@{/product-detail(book_id=${item.book.bookId})}">
-                                                        <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}"
-                                                             alt="Cover" class="img-thumbnail rounded" style="width: 60px;height:90px;object-fit:cover;">
-                                                    </a>
-                                                    <div>
-                                                        <a th:href="@{/product-detail(book_id=${item.book.bookId})}" class="book-title" th:text="${item.book.title}">Book Title</a>
-
-                                                        <!-- Always show author if available -->
-                                                        <p class="mb-0 small text-muted" th:if="${item.book.authors != null}">
-                                                            <i class="fas fa-user-edit"></i>
-                                                            <span th:text="'Tác giả: ' + ${item.book.authors}">Tác giả: Author Name</span>
-                                                        </p>
-
-                                                        <!-- Show shop name with link -->
-                                                        <p class="mb-0 small text-muted" th:if="${item.book.shop != null}">
-                                                            <i class="fas fa-store"></i>
-                                                            <a th:href="@{/shops/{shopId}(shopId=${item.book.shop.shopId})}"
-                                                               th:text="'Cửa hàng: ' + ${item.book.shop.shopName}"
-                                                               class="text-decoration-none">Cửa hàng: Shop Name</a>
-                                                        </p>
-
-                                                        <!-- Show low stock warning (5 or less) with author -->
-                                                        <p class="mb-0 small text-warning" th:if="${item.book.stockQuantity != null && item.book.stockQuantity <= 5 && item.book.stockQuantity >= item.quantity}">
-                                                            <i class="fas fa-exclamation-triangle"></i>
-                                                            <span>Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho</span>
-                                                        </p>
-
-                                                        <!-- Show insufficient stock error -->
-                                                        <p class="mb-0 small text-danger" th:if="${item.book.stockQuantity != null && item.book.stockQuantity < item.quantity}">
-                                                            <i class="fas fa-exclamation-circle"></i>
-                                                            <span>Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho</span>
-                                                        </p>
-
-                                                        <!-- Show out of stock -->
-                                                        <p class="mb-0 small text-danger" th:if="${item.book.stockQuantity == null || item.book.stockQuantity == 0}">
-                                                            <i class="fas fa-times-circle"></i> Sản phẩm đã hết hàng
-                                                        </p>
+                                        <!-- Group items by shop -->
+                                        <th:block th:each="shopEntry : ${cartItemsByShop}">
+                                            <!-- Shop header row -->
+                                            <tr class="shop-header-row">
+                                                <td colspan="6" class="shop-header">
+                                                    <div class="d-flex align-items-center py-2">
+                                                        <i class="fas fa-store text-primary me-2"></i>
+                                                        <a th:href="@{/shops/{shopId}(shopId=${shopEntry.value[0].book.shop.shopId})}"
+                                                           th:text="${shopEntry.key}"
+                                                           class="text-primary text-decoration-none fw-bold">Shop Name</a>
+                                                        <span class="badge bg-light text-dark ms-2" th:text="${shopEntry.value.size()} + ' item' + (${shopEntry.value.size()} > 1 ? 's' : '')">2 items</span>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-center price-value" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT')}">0</td>
-                                            <td class="text-center">
-                                                <div class="input-group input-group-sm justify-content-center qty-input-group">
-                                                    <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="decrease">
-                                                        <i class="fas fa-minus"></i>
+                                                </td>
+                                            </tr>
+                                            <!-- Items for this shop -->
+                                            <tr th:each="item : ${shopEntry.value}" th:data-book-id="${item.book.bookId}" class="cart-item">
+                                                <td>
+                                                    <input type="checkbox" name="selected" th:value="${item.book.bookId}"
+                                                           class="item-checkbox form-check-input"
+                                                           th:disabled="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity}"
+                                                           th:title="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity ? 'Sản phẩm không đủ số lượng trong kho' : ''}"
+                                                           th:data-stock="${item.book.stockQuantity}">
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <a th:href="@{/product-detail(book_id=${item.book.bookId})}">
+                                                            <img th:src="${item.book.coverImgUrl != null ? item.book.coverImgUrl : '/images/book-placeholder.jpg'}"
+                                                                 alt="Cover" class="img-thumbnail rounded" style="width: 60px;height:90px;object-fit:cover;">
+                                                        </a>
+                                                        <div>
+                                                            <a th:href="@{/product-detail(book_id=${item.book.bookId})}" class="book-title" th:text="${item.book.title}">Book Title</a>
+
+                                                            <!-- Always show author if available -->
+                                                            <p class="mb-0 small text-muted" th:if="${item.book.authors != null}">
+                                                                <i class="fas fa-user-edit"></i>
+                                                                <span th:text="'Tác giả: ' + ${item.book.authors}">Tác giả: Author Name</span>
+                                                            </p>
+
+                                                            <!-- Show shop name with link -->
+                                                            <p class="mb-0 small text-muted" th:if="${item.book.shop != null}">
+                                                                <i class="fas fa-store"></i>
+                                                                <a th:href="@{/shops/{shopId}(shopId=${item.book.shop.shopId})}"
+                                                                   th:text="'Cửa hàng: ' + ${item.book.shop.shopName}"
+                                                                   class="text-decoration-none">Cửa hàng: Shop Name</a>
+                                                            </p>
+
+                                                            <!-- Show low stock warning (5 or less) with author -->
+                                                            <p class="mb-0 small text-warning" th:if="${item.book.stockQuantity != null && item.book.stockQuantity <= 5 && item.book.stockQuantity >= item.quantity}">
+                                                                <i class="fas fa-exclamation-triangle"></i>
+                                                                <span>Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho</span>
+                                                            </p>
+
+                                                            <!-- Show insufficient stock error -->
+                                                            <p class="mb-0 small text-danger" th:if="${item.book.stockQuantity != null && item.book.stockQuantity < item.quantity}">
+                                                                <i class="fas fa-exclamation-circle"></i>
+                                                                <span>Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho</span>
+                                                            </p>
+
+                                                            <!-- Show out of stock -->
+                                                            <p class="mb-0 small text-danger" th:if="${item.book.stockQuantity == null || item.book.stockQuantity == 0}">
+                                                                <i class="fas fa-times-circle"></i> Sản phẩm đã hết hàng
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center price-value" th:text="${#numbers.formatDecimal(item.book.sellingPrice, 0, 'COMMA', 0, 'POINT')}">0</td>
+                                                <td class="text-center">
+                                                    <div class="input-group input-group-sm justify-content-center qty-input-group">
+                                                        <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="decrease">
+                                                            <i class="fas fa-minus"></i>
+                                                        </button>
+                                                        <input type="text" name="quantity" class="form-control text-center" th:value="${item.quantity}" readonly
+                                                               th:data-price="${item.book.sellingPrice}">
+                                                        <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="increase">
+                                                            <i class="fas fa-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td class="text-end item-total" th:text="${#numbers.formatDecimal(item.book.sellingPrice * item.quantity, 0, 'COMMA', 0, 'POINT')}">0</td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-sm btn-danger remove-item-btn remove-item">
+                                                        <i class="fas fa-trash"></i>
                                                     </button>
-                                                    <input type="text" name="quantity" class="form-control text-center" th:value="${item.quantity}" readonly
-                                                           th:data-price="${item.book.sellingPrice}">
-                                                    <button type="button" class="btn btn-outline-secondary btn-qty qty-btn" data-action="increase">
-                                                        <i class="fas fa-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td class="text-end item-total" th:text="${#numbers.formatDecimal(item.book.sellingPrice * item.quantity, 0, 'COMMA', 0, 'POINT')}">0</td>
-                                            <td class="text-center">
-                                                <button type="button" class="btn btn-sm btn-danger remove-item-btn remove-item">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </th:block>
+                                                </td>
+                                            </tr>
+                                        </th:block>
                                     </tbody>
                                 </table>
                             </div>
@@ -344,7 +344,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <!-- Cart Summary -->
             <div class="col-lg-4" th:if="${cart != null && cart.items != null && !cart.items.isEmpty()}">
                 <div class="card card-cart">
@@ -417,7 +417,7 @@
         let subtotalAmount = 0;
         let selectedItemsTotal = 0;
         let appliedPromotion = null; // Store applied promotion info
-
+        
         // Format currency using VND formatter
         function formatCurrency(amount) {
             if (window.VNDFormatter) {
@@ -442,7 +442,7 @@
                 totalCell.textContent = new Intl.NumberFormat('en-US').format(itemTotal);
             }
         }
-
+        
         function calculateUniqueItemCount() {
             // Calculate unique item count (number of different items)
             const quantityInputs = document.querySelectorAll('input[name="quantity"]');
@@ -575,7 +575,7 @@
                 getItemCheckboxes().forEach(cb => {
                     if (!cb.disabled) {
                         cb.checked = selectAll.checked;
-
+                        
                         // Update row highlighting
                         const row = cb.closest('tr');
                         if (cb.checked) {
@@ -597,17 +597,17 @@
 
                 // Prevent immediate deselection by stopping event propagation
                 e.stopPropagation();
-
+                
                 // Update "select all" checkbox state - chỉ tính những sản phẩm có thể chọn
                 if (selectAll) {
                     const availableCheckboxes = Array.from(getItemCheckboxes()).filter(c => !c.disabled);
                     const allChecked = availableCheckboxes.every(c => c.checked);
                     const someChecked = availableCheckboxes.some(c => c.checked);
-
+                    
                     selectAll.checked = allChecked;
                     selectAll.indeterminate = someChecked && !allChecked;
                 }
-
+                
                 // Highlight selected rows
                 const row = cb.closest('tr');
                 if (cb.checked) {
@@ -615,7 +615,7 @@
                 } else {
                     row.classList.remove('selected');
                 }
-
+                
                 // Update cart summary based on selected items
                 updateCartSummary();
             }
@@ -636,7 +636,7 @@
         if (checkoutBtn) {
             // Store original href
             checkoutBtn.setAttribute('data-href', checkoutBtn.getAttribute('href'));
-
+            
             // No need to add old event listener as onclick=\"proceedToCheckout()\" already exists
             // Remove old event listener to avoid conflicts
             /*
@@ -644,18 +644,18 @@
                 const selectedIds = Array.from(getItemCheckboxes())
                     .filter(cb => cb.checked)
                     .map(cb => cb.value);
-
+                
                 if (selectedIds.length === 0) {
                     e.preventDefault();
                     alert('Please select at least one item to checkout');
                     return false;
                 }
-
+                
                 // Modify the checkout URL to include selected items
                 e.preventDefault();
                 const baseUrl = checkoutBtn.getAttribute('data-href') || '/buyer/checkout';
                 const redirectUrl = `${baseUrl}?items=${selectedIds.join(',')}`;
-
+                
                 // Navigate to the modified URL
                 window.location.href = redirectUrl;
                 return false;

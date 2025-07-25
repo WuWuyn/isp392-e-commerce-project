@@ -40,7 +40,7 @@ public class CartController {
     private final BookService bookService;
 
     public CartController(CartService cartService, UserService userService,
-                          PromotionCalculationService promotionCalculationService, BookService bookService) {
+                         PromotionCalculationService promotionCalculationService, BookService bookService) {
         this.cartService = cartService;
         this.userService = userService;
         this.promotionCalculationService = promotionCalculationService;
@@ -111,16 +111,16 @@ public class CartController {
     public ResponseEntity<Map<String, Object>> addToCart(@RequestBody Map<String, Object> payload) {
         Optional<User> userOptional = getAuthenticatedUser();
         Map<String, Object> response = new HashMap<>();
-
+        
         if (userOptional.isEmpty()) {
             response.put("success", false);
             response.put("message", "User not authenticated");
             return ResponseEntity.badRequest().body(response);
         }
-
+        
         Integer bookId;
         Integer quantity;
-
+        
         try {
             bookId = Integer.valueOf(payload.get("bookId").toString());
             quantity = Integer.valueOf(payload.get("quantity").toString());
@@ -129,13 +129,13 @@ public class CartController {
             response.put("message", "Invalid payload");
             return ResponseEntity.badRequest().body(response);
         }
-
+        
         if (quantity <= 0) {
             response.put("success", false);
             response.put("message", "Quantity must be greater than zero");
             return ResponseEntity.badRequest().body(response);
         }
-
+        
         User user = userOptional.get();
         try {
             // Kiểm tra số lượng trước khi thêm vào giỏ hàng
@@ -144,7 +144,7 @@ public class CartController {
                 response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
                 return ResponseEntity.badRequest().body(response);
             }
-
+            
             cartService.addBookToCart(user, bookId, quantity);
 
             // Get updated unique item count for UI update
@@ -153,7 +153,7 @@ public class CartController {
             response.put("success", true);
             response.put("message", "Book added to cart successfully");
             response.put("cartCount", uniqueItemCount);
-
+            
             log.debug("Added book {} to cart of user {} with quantity {}", bookId, user.getEmail(), quantity);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -215,16 +215,16 @@ public class CartController {
     public ResponseEntity<Map<String, Object>> updateQuantity(@RequestBody Map<String, Object> payload) {
         Optional<User> userOptional = getAuthenticatedUser();
         Map<String, Object> response = new HashMap<>();
-
+        
         if (userOptional.isEmpty()) {
             response.put("success", false);
             response.put("message", "User not authenticated");
             return ResponseEntity.badRequest().body(response);
         }
-
+        
         Integer bookId;
         Integer quantity;
-
+        
         try {
             bookId = Integer.valueOf(payload.get("bookId").toString());
             quantity = Integer.valueOf(payload.get("quantity").toString());
@@ -233,9 +233,9 @@ public class CartController {
             response.put("message", "Invalid payload");
             return ResponseEntity.badRequest().body(response);
         }
-
+        
         User user = userOptional.get();
-
+        
         try {
             if (quantity != null && quantity > 0) {
                 // Kiểm tra số lượng sách trong kho
@@ -244,17 +244,17 @@ public class CartController {
                     response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
                     return ResponseEntity.badRequest().body(response);
                 }
-
+                
                 cartService.updateQuantity(user, bookId, quantity);
                 log.debug("Updated quantity of book {} to {} for user {}", bookId, quantity, user.getEmail());
-
+                
                 response.put("success", true);
                 response.put("message", "Quantity updated successfully");
                 return ResponseEntity.ok(response);
             } else {
                 cartService.removeItem(user, bookId);
                 log.debug("Removed book {} due to non-positive quantity for user {}", bookId, user.getEmail());
-
+                
                 response.put("success", true);
                 response.put("message", "Item removed as quantity is 0");
                 return ResponseEntity.ok(response);
@@ -276,16 +276,16 @@ public class CartController {
     public ResponseEntity<Map<String, Object>> buyNow(@RequestBody Map<String, Object> payload, HttpSession session) {
         Optional<User> userOptional = getAuthenticatedUser();
         Map<String, Object> response = new HashMap<>();
-
+        
         if (userOptional.isEmpty()) {
             response.put("success", false);
             response.put("message", "User not authenticated");
             return ResponseEntity.badRequest().body(response);
         }
-
+        
         Integer bookId;
         Integer quantity;
-
+        
         try {
             bookId = Integer.valueOf(payload.get("bookId").toString());
             quantity = Integer.valueOf(payload.get("quantity").toString());
@@ -294,13 +294,13 @@ public class CartController {
             response.put("message", "Invalid payload");
             return ResponseEntity.badRequest().body(response);
         }
-
+        
         if (quantity <= 0) {
             response.put("success", false);
             response.put("message", "Quantity must be greater than zero");
             return ResponseEntity.badRequest().body(response);
         }
-
+        
         User user = userOptional.get();
         try {
             // Kiểm tra số lượng trong kho
@@ -309,20 +309,20 @@ public class CartController {
                 response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
                 return ResponseEntity.badRequest().body(response);
             }
-
+            
             // Create a temporary buy now session
             Map<String, Object> buyNowSession = new HashMap<>();
             buyNowSession.put("bookId", bookId);
             buyNowSession.put("quantity", quantity);
             buyNowSession.put("userId", user.getUserId());
-
+            
             // Store in session
             session.setAttribute("buyNowSession", buyNowSession);
-
+            
             // Return success with redirect URL
             response.put("success", true);
             response.put("redirectUrl", "/buyer/checkout?buyNow=true");
-
+            
             log.debug("Buy Now: Created checkout session for book {} for user {}", bookId, user.getEmail());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -402,7 +402,7 @@ public class CartController {
 
             // Apply promotion using simple calculation
             PromotionCalculationService.PromotionApplicationResult result =
-                    promotionCalculationService.applyPromotion(promotionCode, user, totalOrderValue);
+                promotionCalculationService.applyPromotion(promotionCode, user, totalOrderValue);
 
             if (result.isSuccess()) {
                 // Create simple breakdown for session storage

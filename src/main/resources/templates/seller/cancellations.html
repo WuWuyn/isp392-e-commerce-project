@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancelled Orders - ReadHub Seller</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/seller-style.css}">
+</head>
+<body>
+
+<div class="topbar-wrapper" th:replace="fragments/seller-topbar :: seller-topbar"></div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-3 mb-4 sidebar-wrapper">
+            <div th:replace="fragments/seller-sidebar :: seller-sidebar"></div>
+        </div>
+
+        <div class="col-lg-9 main-content-wrapper">
+            <main class="py-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="section-title mb-0">
+                        <i class="fas fa-times-circle text-danger me-2"></i>Cancelled Orders
+                    </h3>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a th:href="@{/seller/dashboard}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a th:href="@{/seller/orders}">Orders</a></li>
+                            <li class="breadcrumb-item active">Cancellations</li>
+                        </ol>
+                    </nav>
+                </div>
+
+                <!-- Search and Filter Form -->
+                <div class="account-container" style="padding-bottom: 1rem; margin-bottom: 0;">
+                    <form th:action="@{/seller/orders/cancellations}" method="get">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-lg-4 col-md-12">
+                                <label for="keyword" class="form-label">Search</label>
+                                <input type="text" id="keyword" name="keyword" class="form-control" placeholder="Order ID, Buyer Name..." th:value="${keyword}">
+                            </div>
+
+                            <div class="col-lg-2 col-md-6">
+                                <label for="startDate" class="form-label">From Date</label>
+                                <input type="date" id="startDate" name="startDate" class="form-control" th:value="${startDate}">
+                            </div>
+
+                            <div class="col-lg-2 col-md-6">
+                                <label for="endDate" class="form-label">To Date</label>
+                                <input type="date" id="endDate" name="endDate" class="form-control" th:value="${endDate}">
+                            </div>
+
+                            <div class="col-lg-2 col-md-6">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+
+                            <div class="col-lg-2 col-md-6">
+                                <a th:href="@{/seller/orders/cancellations}" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="account-container" style="border-top-left-radius: 0; border-top-right-radius: 0; padding-top: 1rem;">
+                    <div th:if="${orderPage.content.empty}" class="text-center py-5">
+                        <i class="fas fa-times-circle fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No cancelled orders found</h5>
+                        <p class="text-muted">There are no cancelled orders matching your criteria.</p>
+                        <a th:href="@{/seller/orders}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to All Orders
+                        </a>
+                    </div>
+
+                    <div th:unless="${orderPage.content.empty}">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <p class="text-muted mb-0">
+                                Showing <span th:text="${orderPage.numberOfElements}">0</span> of 
+                                <span th:text="${orderPage.totalElements}">0</span> cancelled orders
+                            </p>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                <tr>
+                                    <th>
+                                        <a th:href="@{/seller/orders/cancellations(sortField='orderId', sortDir=${sortField == 'orderId' ? reverseSortDir : 'asc'}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate})}">
+                                            Order
+                                            <i th:if="${sortField == 'orderId'}" th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a th:href="@{/seller/orders/cancellations(sortField='orderDate', sortDir=${sortField == 'orderDate' ? reverseSortDir : 'asc'}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate})}">
+                                            Date
+                                            <i th:if="${sortField == 'orderDate'}" th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"></i>
+                                        </a>
+                                    </th>
+                                    <th>Buyer</th>
+                                    <th>
+                                        <a th:href="@{/seller/orders/cancellations(sortField='totalAmount', sortDir=${sortField == 'totalAmount' ? reverseSortDir : 'asc'}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate})}">
+                                            Total
+                                            <i th:if="${sortField == 'totalAmount'}" th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"></i>
+                                        </a>
+                                    </th>
+                                    <th>Cancellation Date</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="order : ${orderPage.content}" th:object="${order}">
+                                    <td>
+                                        <a class="fw-bold text-decoration-none" th:href="@{/seller/orders/{id}(id=*{orderId})}" th:text="*{'#' + orderId}"></a>
+                                    </td>
+                                    <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+                                    <td>
+                                        <div>
+                                            <strong th:text="*{customerOrder.user.fullName}"></strong>
+                                        </div>
+                                        <small class="text-muted" th:text="*{customerOrder.user.email}"></small>
+                                    </td>
+                                    <td>
+                                        <strong th:text="${'$' + #numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 2, 'POINT')}"></strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle me-1"></i>Cancelled
+                                        </span>
+                                        <br>
+                                        <small class="text-muted" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}"></small>
+                                    </td>
+                                    <td class="text-center">
+                                        <a th:href="@{/seller/orders/{id}(id=*{orderId})}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div th:if="${orderPage.totalPages > 1}" class="d-flex justify-content-center mt-4">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination">
+                                    <li class="page-item" th:classappend="${orderPage.first} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/seller/orders/cancellations(page=${orderPage.number - 1}, size=${orderPage.size}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate})}">Previous</a>
+                                    </li>
+                                    <li th:each="pageNum : ${#numbers.sequence(0, orderPage.totalPages - 1)}" 
+                                        class="page-item" th:classappend="${pageNum == orderPage.number} ? 'active'">
+                                        <a class="page-link" th:href="@{/seller/orders/cancellations(page=${pageNum}, size=${orderPage.size}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate})}" th:text="${pageNum + 1}"></a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${orderPage.last} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/seller/orders/cancellations(page=${orderPage.number + 1}, size=${orderPage.size}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate})}">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

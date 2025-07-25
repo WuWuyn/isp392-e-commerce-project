@@ -96,6 +96,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     int countByShopShopIdAndOrderDateAfter(Integer shopId, LocalDateTime startDate);
     
     Long countByShopShopIdAndOrderDateBetween(Integer shopId, LocalDateTime startDate, LocalDateTime endDate);
+    Long countByShopShopIdAndOrderDateBetweenAndOrderStatus(Integer shopId, LocalDateTime startDate, LocalDateTime endDate, OrderStatus status);
     long countByShopShopIdAndOrderStatus(Integer shopId, OrderStatus status);
     List<Order> findByShopShopIdAndOrderDateBetweenAndOrderStatus(
             Integer shopId, LocalDateTime startDate, LocalDateTime endDate, OrderStatus status);
@@ -149,7 +150,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "JOIN books b ON oi.book_id = b.book_id " +
             "WHERE b.shop_id = :shopId " +
             "AND o.order_date >= DATEADD(day, -6, CONVERT(date, GETDATE())) " +
-            "AND o.order_status NOT IN ('CANCELLED') " +
+            "AND o.order_status = 'DELIVERED' " +
             "GROUP BY CONVERT(date, o.order_date), CONVERT(varchar, CONVERT(date, o.order_date), 120) " +
             "ORDER BY CONVERT(date, o.order_date)", nativeQuery = true)
     List<Map<String, Object>> getWeeklyRevenue(@Param("shopId") Integer shopId);
@@ -189,7 +190,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "JOIN books b ON oi.book_id = b.book_id " +
             "WHERE b.shop_id = :shopId " +
             "AND o.order_date BETWEEN :startDate AND :endDate " +
-            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+            "AND o.order_status = 'DELIVERED' " +
             "GROUP BY CONVERT(varchar, CONVERT(date, o.order_date), 120) " +
             "ORDER BY time_period", nativeQuery = true)
     List<Map<String, Object>> getRevenueByDay(
@@ -214,7 +215,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "JOIN books b ON oi.book_id = b.book_id " +
             "WHERE b.shop_id = :shopId " +
             "AND o.order_date BETWEEN :startDate AND :endDate " +
-            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+            "AND o.order_status = 'DELIVERED' " +
             "GROUP BY CONCAT(YEAR(o.order_date), '-W', DATEPART(week, o.order_date)) " +
             "ORDER BY time_period", nativeQuery = true)
     List<Map<String, Object>> getRevenueByWeek(
@@ -239,7 +240,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "JOIN books b ON oi.book_id = b.book_id " +
             "WHERE b.shop_id = :shopId " +
             "AND o.order_date BETWEEN :startDate AND :endDate " +
-            "AND o.order_status NOT IN ('CANCELLED', 'REFUNDED') " +
+            "AND o.order_status = 'DELIVERED' " +
             "GROUP BY CONCAT(YEAR(o.order_date), '-', FORMAT(o.order_date, 'MM')) " +
             "ORDER BY time_period", nativeQuery = true)
     List<Map<String, Object>> getRevenueByMonth(

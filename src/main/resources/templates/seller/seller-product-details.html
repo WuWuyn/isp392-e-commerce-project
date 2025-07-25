@@ -340,8 +340,8 @@
                             <div class="row detail-row">
                                 <div class="col-sm-4 detail-label">Status</div>
                                 <div class="col-sm-8 detail-value">
-                                    <span th:if="${book.isActive}" class="badge bg-success">Active</span>
-                                    <span th:unless="${book.isActive}" class="badge bg-secondary">Inactive</span>
+                                    <span th:if="${book.active}" class="badge bg-success">Active</span>
+                                    <span th:unless="${book.active}" class="badge bg-secondary">Inactive</span>
                                 </div>
                             </div>
                             <div th:if="${book.averageRating != null}" class="row detail-row">

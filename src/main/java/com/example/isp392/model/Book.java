@@ -133,6 +133,10 @@ public class Book {
         return percentage.intValue();
     }
 
+    public boolean isActive() {
+        return this.isActive;
+    }
+
     public boolean getActive() {
         return this.isActive;
     }

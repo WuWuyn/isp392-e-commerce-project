@@ -57,7 +57,7 @@ public class OrderController {
         // Get individual orders with filters (display individual orders, not grouped by CustomerOrder), sorted by newest first
         Sort sort = Sort.by(Sort.Direction.DESC, "orderDate");
         Page<Order> orderPage = orderService.findOrdersWithSearch(
-                user, status, dateFrom, dateTo, search, PageRequest.of(page, 10, sort)
+            user, status, dateFrom, dateTo, search, PageRequest.of(page, 10, sort)
         );
 
         // Calculate statistics
@@ -81,54 +81,54 @@ public class OrderController {
     public String getOrderDetail(@PathVariable Integer orderId, Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+                
         Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
         if (orderOpt.isEmpty()) {
             return "redirect:/buyer/orders";
         }
-
+        
         Order order = orderOpt.get();
 
         model.addAttribute("order", order);
         return "buyer/order-detail";
     }
-
+    
     @PostMapping("/orders/{orderId}/cancel")
     @ResponseBody
     public ResponseEntity<?> cancelOrder(@PathVariable Integer orderId, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+                
         Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
         if (orderOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("Đơn hàng không tồn tại");
         }
-
+        
         Order order = orderOpt.get();
         if (!order.canCancel()) {
             return ResponseEntity.badRequest().body("Không thể hủy đơn hàng ở trạng thái hiện tại");
         }
-
+        
         orderService.updateOrderStatus(orderId, OrderStatus.CANCELLED);
-
+        
         Map<String, String> response = new HashMap<>();
         response.put("status", "success");
         response.put("message", "Đơn hàng đã được hủy thành công");
-
+        
         return ResponseEntity.ok(response);
     }
-
+    
     @PostMapping("/orders/{orderId}/rebuy")
     public String rebuyOrder(@PathVariable Integer orderId, Authentication authentication, RedirectAttributes redirectAttributes) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+                
         Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
         if (orderOpt.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Đơn hàng không tồn tại");
             return "redirect:/buyer/orders";
         }
-
+        
         Order order = orderOpt.get();
         // Add items from order to cart
         order.getOrderItems().forEach(item -> {
@@ -138,7 +138,7 @@ public class OrderController {
                 redirectAttributes.addFlashAttribute("error", "Không thể thêm sản phẩm: " + e.getMessage());
             }
         });
-
+        
         redirectAttributes.addFlashAttribute("success", "Đã thêm các sản phẩm vào giỏ hàng");
         return "redirect:/buyer/cart";
     }
@@ -184,8 +184,8 @@ public class OrderController {
 
     @GetMapping("/order-success")
     public String orderSuccessPage(@RequestParam(required = false) Integer customerOrderId,
-                                   @RequestParam(required = false) Integer orderId,
-                                   Model model, Authentication authentication) {
+                                 @RequestParam(required = false) Integer orderId,
+                                 Model model, Authentication authentication) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -224,8 +224,8 @@ public class OrderController {
     @PostMapping("/cancel")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> cancelOrder(@RequestParam Integer orderId,
-                                                           @RequestParam String reason,
-                                                           Authentication authentication) {
+                                                          @RequestParam String reason,
+                                                          Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
 
         if (authentication == null) {
@@ -264,7 +264,7 @@ public class OrderController {
     @PostMapping("/rebuy")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> rebuyOrder(@RequestParam Integer orderId,
-                                                          Authentication authentication) {
+                                                         Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
 
         if (authentication == null) {
@@ -304,7 +304,7 @@ public class OrderController {
     @PostMapping("/orders/{orderId}/confirm-delivery")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> confirmDelivery(@PathVariable Integer orderId,
-                                                               Authentication authentication) {
+                                                              Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
 
         if (authentication == null) {
