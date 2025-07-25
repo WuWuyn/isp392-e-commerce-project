@@ -39,8 +39,8 @@
             </div>
             <div class="col-md-6 text-md-end">
                 <!-- Hiển thị badge giảm giá nếu sách đang được giảm giá -->
-                <span class="badge bg-danger product-sale-badge-breadcrumb" 
-                     th:if="${book.originalPrice != null && book.sellingPrice != null && book.originalPrice.compareTo(book.sellingPrice) > 0}">Sale!</span>
+                <span class="badge bg-danger product-sale-badge-breadcrumb"
+                      th:if="${book.originalPrice != null && book.sellingPrice != null && book.originalPrice.compareTo(book.sellingPrice) > 0}">Sale!</span>
             </div>
         </div>
 
@@ -52,7 +52,7 @@
                     <div class="product-image-gallery">
                         <div class="main-product-image position-relative">
                             <!-- Hiển thị ảnh bìa sách từ cơ sở dữ liệu hoặc ảnh mặc định nếu không có -->
-                            <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/product-detail-avenir-next.jpg'}" 
+                            <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/product-detail-avenir-next.jpg'}"
                                  th:alt="${book.title}" class="img-fluid rounded border" id="mainProductImage">
                             <button class="btn btn-light btn-sm position-absolute top-0 end-0 m-2" aria-label="Expand image" data-bs-toggle="modal" data-bs-target="#imageZoomModal">
                                 <i class="fas fa-expand-arrows-alt"></i>
@@ -64,7 +64,7 @@
                 <!-- Product Information & Actions -->
                 <div class="col-md-7 ps-md-5">
                     <h1 class="product-title-detail display-6" th:text="${book.title}">Book Title</h1>
-                    
+
                     <!-- Thêm hiển thị đánh giá sao -->
                     <div class="product-rating mb-2">
                         <div th:replace="~{fragments/book-rating :: star-rating(${book.averageRating})}"></div>
@@ -108,7 +108,7 @@
                     <div class="product-meta mt-4">
                         <p class="mb-1"><strong class="text-secondary">Author:</strong> <span th:text="${book.authors}">Author Name</span></p>
                         <p class="mb-1" th:if="${book.sku != null}"><strong class="text-secondary">SKU:</strong> <span th:text="${book.sku}">SKU</span></p>
-                        <p class="mb-1" th:if="${!book.categories.isEmpty()}"><strong class="text-secondary">Category:</strong> 
+                        <p class="mb-1" th:if="${!book.categories.isEmpty()}"><strong class="text-secondary">Category:</strong>
                             <span th:each="category, iterStat : ${book.categories}">
                                 <a th:href="@{/all-category(category=${category.categoryId})}" th:text="${category.categoryName}">Category</a><span th:if="${!iterStat.last}">, </span>
                             </span>
@@ -153,7 +153,7 @@
                     <!-- Display original description, may contain HTML formatting -->
                     <div th:utext="${book.description}"></div>
                 </div>
-                
+
                 <!-- Display message if no description available -->
                 <div th:if="${book.description == null or book.description.isEmpty()}">
                     <p class="text-muted">No description available for this book.</p>
@@ -208,7 +208,7 @@
                         <input type="hidden" name="size" th:value="${param.size != null ? param.size : 5}">
                         <input type="hidden" name="sort" th:value="${sortField}" id="sortField">
                         <input type="hidden" name="direction" th:value="${sortDirection}" id="sortDirection">
-                        
+
                         <!-- Filter by rating -->
                         <select class="form-select form-select-sm w-auto" aria-label="Filter by stars" name="minRating" onchange="document.getElementById('reviewFilterForm').submit();">
                             <option value="" th:selected="${minRating == null}">All Stars</option>
@@ -218,7 +218,7 @@
                             <option value="2" th:selected="${minRating != null && minRating == 2}">2 Stars & Up</option>
                             <option value="1" th:selected="${minRating != null && minRating == 1}">1 Star & Up</option>
                         </select>
-                        
+
                         <!-- Sort reviews -->
                         <select class="form-select form-select-sm w-auto" aria-label="Sort reviews" id="sortSelect" onchange="changeSorting(this.value)">
                             <option value="createdDate,DESC" th:selected="${sortField == 'createdDate' && sortDirection == 'DESC'}">Sort by Latest</option>
@@ -241,7 +241,7 @@
                         <!-- Default avatar if user has no profile image -->
                         <img th:src="${review.user.profilePicUrl != null ? review.user.profilePicUrl : '/images/default-avatar.jpg'}"
                              th:alt="${review.user.fullName}" class="reviewer-avatar rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                        
+
                         <div class="review-content">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h6 class="reviewer-name mb-0">
@@ -254,15 +254,15 @@
                                 <!-- Format date nicely -->
                                 <span class="review-date text-muted small" th:text="${#temporals.format(review.createdDate, 'dd MMM, yyyy')}">Date</span>
                             </div>
-                            
+
                             <!-- Use star-rating fragment for consistent display -->
                             <div class="my-1">
                                 <div th:replace="~{fragments/book-rating :: star-rating(${review.rating})}"></div>
                             </div>
-                            
+
                             <!-- Show review title if available -->
                             <h6 th:if="${review.title != null && !review.title.isEmpty()}" class="mb-1" th:text="${review.title}">Review Title</h6>
-                            
+
                             <!-- Review content -->
                             <p class="review-text mb-0" th:text="${review.content}">Review content</p>
                         </div>
@@ -278,12 +278,12 @@
                                 <i class="fas fa-chevron-left"></i>
                             </a>
                         </li>
-                        
+
                         <!-- Page numbers -->
                         <li class="page-item" th:each="i: ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${i == currentPage ? 'active' : ''}">
                             <a class="page-link" th:href="@{/product-detail(book_id=${book.bookId}, page=${i}, size=${param.size}, sort=${sortField}, direction=${sortDirection}, minRating=${minRating})}" th:text="${i + 1}">1</a>
                         </li>
-                        
+
                         <!-- Next page -->
                         <li class="page-item" th:classappend="${currentPage + 1 >= totalPages ? 'disabled' : ''}">
                             <a class="page-link" th:href="@{/product-detail(book_id=${book.book_id}, page=${currentPage + 1}, size=${param.size}, sort=${sortField}, direction=${sortDirection}, minRating=${minRating})}">
@@ -297,14 +297,14 @@
 
         <!-- "You may also like" Section -->
         <section class="you-may-also-like-section py-5 border-top">
-            <div class="container px-0"> 
+            <div class="container px-0">
                 <h3 class="section-title mb-4">You may also like</h3>
                 <div class="row">
                     <!-- Hiển thị các sách liên quan từ cơ sở dữ liệu -->
                     <div class="col-lg-3 col-md-4 col-6 mb-4" th:each="relatedBook : ${relatedBooks}" th:if="${relatedBook.book_id != book.book_id}">
                         <div class="book-card">
                             <a th:href="@{/product-detail(book_id=${relatedBook.book_id})}">
-                                <img th:src="${relatedBook.coverImgUrl != null ? relatedBook.coverImgUrl : '/images/book-placeholder.jpg'}" 
+                                <img th:src="${relatedBook.coverImgUrl != null ? relatedBook.coverImgUrl : '/images/book-placeholder.jpg'}"
                                      th:alt="${relatedBook.title}" class="book-cover img-fluid">
                             </a>
                             <div class="book-info">
@@ -318,7 +318,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Hiển thị nội dung mặc định nếu không có sách liên quan -->
                     <div class="col-lg-3 col-md-4 col-6 mb-4" th:if="${#lists.isEmpty(relatedBooks)}">
                         <div class="book-card">
@@ -359,29 +359,29 @@
 <!-- Bootstrap JS Bundle (Popper.js included) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script th:src="@{/js/custom.js}"></script>
-    
+
 <!-- JavaScript for review sorting and filtering -->
 <script>
     // Function to handle sorting change
     function changeSorting(sortValue) {
         // Split the value into field and direction
         const [field, direction] = sortValue.split(',');
-        
+
         // Update hidden form fields
         document.getElementById('sortField').value = field;
         document.getElementById('sortDirection').value = direction;
-        
+
         // Submit the form
         document.getElementById('reviewFilterForm').submit();
     }
-    
+
     // Initialize quantity control buttons
     document.addEventListener('DOMContentLoaded', function() {
         // Quantity increment/decrement
         const quantityInput = document.getElementById('quantity');
         const decrementBtn = document.querySelector('.quantity-btn.decrement');
         const incrementBtn = document.querySelector('.quantity-btn.increment');
-        
+
         if (quantityInput && decrementBtn && incrementBtn) {
             decrementBtn.addEventListener('click', function() {
                 const currentValue = parseInt(quantityInput.value);
@@ -389,7 +389,7 @@
                     quantityInput.value = currentValue - 1;
                 }
             });
-            
+
             incrementBtn.addEventListener('click', function() {
                 const currentValue = parseInt(quantityInput.value);
                 const maxStock = parseInt(quantityInput.getAttribute('data-max-stock') || '100');
@@ -407,7 +407,7 @@
     const bookId = /*[[${book.bookId}]]*/ 0;
     const isAuthenticated = /*[[${isAuthenticated}]]*/ false;
     const headerCartCountBadge = window.parent.document.getElementById('headerCartCountBadge');
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         // Lấy các phần tử DOM
         const quantityInput = document.getElementById('quantityInput');
@@ -415,13 +415,13 @@
         const increaseBtn = document.getElementById('increaseBtn');
         const addToCartBtn = document.querySelector('.add-to-cart-btn');
         const buyNowBtn = document.querySelector('.buy-now-btn');
-        
+
         // Set max quantity from stock
         const maxQuantity = /*[[${book.stockQuantity}]]*/ 10;
         if (quantityInput) {
             quantityInput.setAttribute('data-max-stock', maxQuantity);
         }
-        
+
         // Xử lý nút giảm số lượng
         if (decreaseBtn && quantityInput) {
             decreaseBtn.addEventListener('click', function() {
@@ -431,7 +431,7 @@
                 }
             });
         }
-        
+
         // Xử lý nút tăng số lượng
         if (increaseBtn && quantityInput) {
             increaseBtn.addEventListener('click', function() {
@@ -441,7 +441,7 @@
                 }
             });
         }
-        
+
         // Hiển thị thông báo kiểu toast
         function showToast(type, message) {
             let toastContainer = document.getElementById('toast-container');
@@ -456,7 +456,7 @@
                 document.body.appendChild(container);
                 toastContainer = container;
             }
-            
+
             const toast = document.createElement('div');
             toast.className = `toast ${type === 'error' ? 'bg-danger' : 'bg-success'} text-white`;
             toast.style.minWidth = '250px';
@@ -465,21 +465,21 @@
                     ${message}
                 </div>
             `;
-            
+
             toastContainer.appendChild(toast);
-            
+
             const bsToast = new bootstrap.Toast(toast, {
                 autohide: true,
                 delay: 5000
             });
             bsToast.show();
-            
+
             // Xóa toast sau khi ẩn
             toast.addEventListener('hidden.bs.toast', () => {
                 toast.remove();
             });
         }
-        
+
         // Xử lý nút "Buy Now"
         if (buyNowBtn) {
             buyNowBtn.addEventListener('click', function() {
@@ -497,18 +497,18 @@
                     showToast('error', `Only ${maxQuantity} items available in stock`);
                     return;
                 }
-                
+
                 if (isAuthenticated) {
                     // Create a form to submit the buy now request
                     const headers = {
                         'Content-Type': 'application/json'
                     };
-                    
+
                     const csrfToken = getCsrfToken();
                     if (csrfToken) {
                         headers[getCsrfHeader()] = csrfToken;
                     }
-                    
+
                     fetch('/buyer/cart/buy-now', {
                         method: 'POST',
                         headers: headers,
@@ -537,7 +537,7 @@
                 }
             });
         }
-        
+
         // CSRF setup
         function getCsrfToken() {
             const csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
@@ -546,7 +546,7 @@
             }
             return null;
         }
-        
+
         function getCsrfHeader() {
             const headerMeta = document.querySelector('meta[name="_csrf_header"]');
             if (headerMeta) {
@@ -554,7 +554,7 @@
             }
             return 'X-CSRF-TOKEN';
         }
-        
+
         // Function to update the cart count in the header
         function updateHeaderCartCount() {
             // Use global cart update function if available, otherwise fallback to local implementation
@@ -606,7 +606,7 @@
         if (isAuthenticated) {
             updateHeaderCartCount();
         }
-        
+
         // Xử lý nút "Add to Cart"
         if (addToCartBtn) {
             addToCartBtn.addEventListener('click', function() {
@@ -624,18 +624,18 @@
                     showToast('error', `Only ${maxQuantity} items available in stock`);
                     return;
                 }
-                
+
                 if (isAuthenticated) {
                     // Nếu đã đăng nhập, thêm vào giỏ hàng bằng Ajax
                     const headers = {
                         'Content-Type': 'application/json'
                     };
-                    
+
                     const csrfToken = getCsrfToken();
                     if (csrfToken) {
                         headers[getCsrfHeader()] = csrfToken;
                     }
-                    
+
                     fetch('/buyer/cart/add', {
                         method: 'POST',
                         headers: headers,

@@ -39,8 +39,8 @@ public class ProductController {
     private final PublisherRepository publisherRepository;
     private final BookReviewRepository bookReviewRepository;
 
-    public ProductController(BookService bookService, CategoryRepository categoryRepository, 
-                            PublisherRepository publisherRepository, BookReviewRepository bookReviewRepository) {
+    public ProductController(BookService bookService, CategoryRepository categoryRepository,
+                             PublisherRepository publisherRepository, BookReviewRepository bookReviewRepository) {
         this.bookService = bookService;
         this.categoryRepository = categoryRepository;
         this.publisherRepository = publisherRepository;
@@ -61,7 +61,7 @@ public class ProductController {
             @RequestParam(name = "priceRange", required = false) List<String> priceRanges,
             @RequestParam(name = "rating", required = false) Float minRating,
             Model model) {
-        
+
         // Process price ranges if selected
         if (priceRanges != null && !priceRanges.isEmpty()) {
             for (String range : priceRanges) {
@@ -89,35 +89,35 @@ public class ProductController {
                 }
             }
         }
-        
+
         // Fetch books with all the filters
         Page<Book> books = bookService.findBooks(
-                searchQuery, 
-                categoryIds, 
-                publisherIds, 
-                minPrice, 
-                maxPrice, 
-                minRating, 
-                page, 
-                size, 
-                sortField, 
+                searchQuery,
+                categoryIds,
+                publisherIds,
+                minPrice,
+                maxPrice,
+                minRating,
+                page,
+                size,
+                sortField,
                 sortDirection,
                 true);
-        
+
         // Fetch active categories and all publishers for filter options
         List<Category> allCategories = categoryRepository.findByIsActiveTrue();
         List<Publisher> allPublishers = publisherRepository.findAll();
-        
+
         // Add data to the model
         model.addAttribute("books", books);
         model.addAttribute("allCategories", allCategories);
         model.addAttribute("allPublishers", allPublishers);
-        
+
         // Add pagination info
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", books.getTotalPages());
         model.addAttribute("totalItems", books.getTotalElements());
-        
+
         // Add filter parameters to maintain state
         model.addAttribute("searchQuery", searchQuery);
         model.addAttribute("selectedCategoryIds", categoryIds != null ? categoryIds : new ArrayList<>());
@@ -128,7 +128,7 @@ public class ProductController {
         model.addAttribute("minRating", minRating);
         model.addAttribute("sortField", sortField);
         model.addAttribute("sortDirection", sortDirection);
-        
+
         return "all-category";
     }
 
@@ -142,16 +142,16 @@ public class ProductController {
             @RequestParam(value = "minRating", required = false) Integer minRating,
             Model model,
             HttpSession session) {
-        
+
         // Lấy thông tin chi tiết sách từ cơ sở dữ liệu
         Optional<Book> bookOptional = bookService.getBookById(bookId);
-        
+
         // Add authentication information to model
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        boolean isAuthenticated = authentication != null && authentication.isAuthenticated() && 
-                                 !authentication.getName().equals("anonymousUser");
+        boolean isAuthenticated = authentication != null && authentication.isAuthenticated() &&
+                !authentication.getName().equals("anonymousUser");
         model.addAttribute("isAuthenticated", isAuthenticated);
-        
+
         if (bookOptional.isPresent()) {
             Book book = bookOptional.get();
 
@@ -168,14 +168,14 @@ public class ProductController {
             }
 
             model.addAttribute("book", book);
-            
+
             // Get categories
             Set<Category> categories = book.getCategories();
             if (categories != null && !categories.isEmpty()) {
                 model.addAttribute("categories", categories);
                 model.addAttribute("categoryNames", categories.stream().map(Category::getCategoryName).collect(Collectors.joining(", ")));
             }
-            
+
             // Lấy các sách liên quan (cùng danh mục)
             if (book.getCategories() != null && !book.getCategories().isEmpty()) {
                 Category firstCategory = book.getCategories().iterator().next();
@@ -183,22 +183,22 @@ public class ProductController {
                         .getContent();
                 model.addAttribute("relatedBooks", relatedBooks);
             }
-            
+
             // Lấy đánh giá sách từ cơ sở dữ liệu
             Page<BookReview> bookReviews;
             Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
             Pageable pageable = PageRequest.of(page, size, sort);
-            
+
             // Lọc theo rating nếu có
             if (minRating != null && minRating > 0) {
                 bookReviews = bookReviewRepository.findByBookIdAndRatingGreaterThanEqual(bookId, minRating, pageable);
             } else {
                 bookReviews = bookReviewRepository.findByBookId(bookId, pageable);
             }
-            
+
             // Đếm tổng số đánh giá
             long totalReviews = bookReviewRepository.countByBookId(bookId);
-            
+
             model.addAttribute("bookReviews", bookReviews);
             model.addAttribute("totalReviews", totalReviews);
             model.addAttribute("currentPage", page);
@@ -206,7 +206,7 @@ public class ProductController {
             model.addAttribute("sortField", sortField);
             model.addAttribute("sortDirection", sortDirection);
             model.addAttribute("minRating", minRating);
-            
+
             return "product-detail";
         } else {
             // Nếu không tìm thấy sách, chuyển hướng về trang chủ

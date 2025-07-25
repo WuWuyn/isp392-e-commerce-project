@@ -64,7 +64,8 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 @Controller
 @RequestMapping("/admin")
-public class AdminController {
+public class
+AdminController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
     private final UserService userService;
@@ -502,32 +503,7 @@ public class AdminController {
         return "admin/product/product-management";
     }
 
-    @GetMapping("/products/add")
-    public String showAddProductForm(Model model) {
-        adminService.addAdminInfoToModel(model);
-        model.addAttribute("book", new Book());
-        model.addAttribute("categories", categoryRepository.findAll());
-        model.addAttribute("publishers", publisherRepository.findAll());
-        model.addAttribute("activeMenu", "product");
-        model.addAttribute("activeSubMenu", "product-add");
-        return "admin/product/add-product";
-    }
 
-    @PostMapping("/products/add")
-    public String saveProduct(@ModelAttribute("book") Book book, BindingResult result, RedirectAttributes redirectAttributes) {
-        if (result.hasErrors()) {
-            return "admin/product/add-product";
-        }
-
-        Shop defaultShop = shopService.getShopById(1);
-
-        book.setShop(defaultShop);
-        book.setDateAdded(LocalDate.now());
-        bookService.save(book);
-
-        redirectAttributes.addFlashAttribute("successMessage", "Book added successfully!");
-        return "redirect:/admin/products";
-    }
 
     @GetMapping("/products/edit/{id}")
     public String showEditProductForm(@PathVariable("id") Integer bookId, Model model) {

@@ -77,7 +77,7 @@ public class BuyerController {
      * @param bookReviewService Service for review-related operations
      */
     public BuyerController(UserService userService, CartService cartService, ShopService shopService,
-                          OrderService orderService, BookReviewService bookReviewService, FileStorageService fileStorageService) {
+                           OrderService orderService, BookReviewService bookReviewService, FileStorageService fileStorageService) {
         this.userService = userService;
         this.cartService = cartService;
         this.shopService = shopService;
@@ -198,7 +198,7 @@ public class BuyerController {
         model.addAttribute("roles", userService.getUserRoles(user));
 
         log.debug("Showing account info for user: id={}, name={}",
-                 user.getUserId(), user.getFullName());
+                user.getUserId(), user.getFullName());
 
         return "buyer/account-info";
     }
@@ -225,7 +225,7 @@ public class BuyerController {
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
                 log.info("User found in database: id={}, name={}",
-                         user.getUserId(), user.getFullName());
+                        user.getUserId(), user.getFullName());
             } else {
                 log.warn("OAuth2 user not found in database after login success");
             }
@@ -308,7 +308,7 @@ public class BuyerController {
                     // Generate unique filename
                     String originalFilename = profilePictureFile.getOriginalFilename();
                     String fileName = System.currentTimeMillis() + "_" +
-                                     (originalFilename != null ? originalFilename : "profile.jpg");
+                            (originalFilename != null ? originalFilename : "profile.jpg");
 
                     // Get upload directory path - use the same path configured in FileUploadConfig
                     String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/profile-pictures/";
@@ -576,7 +576,7 @@ public class BuyerController {
     }
 
     // Helper methods for authentication
-    
+
     /**
      * Check if user is authenticated
      * @return true if user is authenticated, false otherwise
@@ -585,7 +585,7 @@ public class BuyerController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal());
     }
-    
+
     /**
      * Get current user from SecurityContextHolder
      * @return User object or null if not authenticated
@@ -594,7 +594,7 @@ public class BuyerController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return getCurrentUser(auth);
     }
-    
+
     /**
      * Get user from Authentication object with OAuth2 support
      * @param auth Authentication object
@@ -604,9 +604,9 @@ public class BuyerController {
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             return null;
         }
-        
+
         String email = null;
-        
+
         // Handle different authentication types
         if (auth instanceof OAuth2AuthenticationToken) {
             OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
@@ -614,19 +614,19 @@ public class BuyerController {
         } else {
             email = auth.getName();
         }
-        
+
         if (email == null) {
             log.warn("Email is null for authenticated user");
             return null;
         }
-        
+
         // Find user by email
         Optional<User> userOptional = userService.findByEmail(email);
-        
+
         if (userOptional.isEmpty()) {
             log.warn("User not found in database: {}", email);
         }
-        
+
         return userOptional.orElse(null);
     }
 
@@ -772,7 +772,7 @@ public class BuyerController {
             // Get the order item and validate user can review it
             OrderItem orderItem = orderService.getOrderItemById(orderItemId);
             if (orderItem == null || !orderItem.getOrder().getCustomerOrder().getUser().equals(user)
-                || !orderItem.getOrder().getOrderStatus().equals(OrderStatus.DELIVERED)) {
+                    || !orderItem.getOrder().getOrderStatus().equals(OrderStatus.DELIVERED)) {
                 model.addAttribute("error", "Không thể đánh giá sản phẩm này");
                 return "redirect:/buyer/reviews";
             }
@@ -842,12 +842,12 @@ public class BuyerController {
      */
     @PostMapping("/reviews/submit/{orderItemId}")
     public String submitReview(@PathVariable Integer orderItemId,
-                              @ModelAttribute BookReview review,
-                              @RequestParam(value = "image1", required = false) MultipartFile image1,
-                              @RequestParam(value = "image2", required = false) MultipartFile image2,
-                              @RequestParam(value = "image3", required = false) MultipartFile image3,
-                              RedirectAttributes redirectAttributes,
-                              Authentication authentication) {
+                               @ModelAttribute BookReview review,
+                               @RequestParam(value = "image1", required = false) MultipartFile image1,
+                               @RequestParam(value = "image2", required = false) MultipartFile image2,
+                               @RequestParam(value = "image3", required = false) MultipartFile image3,
+                               RedirectAttributes redirectAttributes,
+                               Authentication authentication) {
 
         if (authentication == null) {
             return "redirect:/buyer/login";
@@ -860,7 +860,7 @@ public class BuyerController {
             // Validate order item
             OrderItem orderItem = orderService.getOrderItemById(orderItemId);
             if (orderItem == null || !orderItem.getOrder().getCustomerOrder().getUser().equals(user)
-                || !orderItem.getOrder().getOrderStatus().equals(OrderStatus.DELIVERED)) {
+                    || !orderItem.getOrder().getOrderStatus().equals(OrderStatus.DELIVERED)) {
                 redirectAttributes.addFlashAttribute("error", "Không thể đánh giá sản phẩm này");
                 return "redirect:/buyer/reviews";
             }
