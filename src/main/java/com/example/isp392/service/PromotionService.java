@@ -167,7 +167,7 @@ public class PromotionService {
         logger.info("Updating promotion with ID: {}", id);
 
         Promotion existingPromotion = promotionRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Promotion not found with ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Promotion not found with ID: " + id));
 
         // Validate unique code (excluding current promotion)
         Optional<Promotion> codeCheck = promotionRepository.findByCode(dto.getCode());
@@ -178,21 +178,15 @@ public class PromotionService {
         // Validate business rules
         validatePromotionBusinessRules(dto);
 
-        // Check if promotion is active - must be deactivated before editing
-        if (existingPromotion.getIsActive()) {
-            throw new IllegalStateException("Promotion must be deactivated before editing. Please deactivate the promotion first.");
+        // MODIFICATION: Check if promotion has been used or is active before editing
+        if (existingPromotion.hasBeenUsed() || existingPromotion.getIsActive()) {
+            throw new IllegalStateException("Promotion cannot be edited. It must be deactivated and have zero usage.");
         }
 
-        // Apply different update rules based on usage status
-        if (existingPromotion.isNeverUsed()) {
-            // When never used, all fields can be updated
-            mapDtoToEntity(dto, existingPromotion, currentUser);
-            logger.info("Updated all fields for unused promotion: {}", existingPromotion.getCode());
-        } else {
-            // When used, only certain fields can be updated
-            updateRestrictedPromotionFields(existingPromotion, dto, currentUser);
-            logger.info("Updated restricted fields for used promotion: {}", existingPromotion.getCode());
-        }
+        // When never used and inactive, all fields can be updated
+        mapDtoToEntity(dto, existingPromotion, currentUser);
+        logger.info("Updated all fields for unused and inactive promotion: {}", existingPromotion.getCode());
+
         existingPromotion.setUpdatedBy(currentUser);
         existingPromotion.setUpdatedAt(LocalDateTime.now());
 

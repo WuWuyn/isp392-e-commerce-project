@@ -361,17 +361,18 @@
                         <!-- Update Order Status -->
                         <div class="account-container">
                             <h5 class="section-title">Update Status</h5>
-                            <form th:action="@{/admin/orders/{id}/update-status(id=${order.orderId})}" method="post">
-                                <div class="mb-3">
-                                    <label for="newStatus" class="form-label">New Status:</label>
-                                    <select class="form-select" id="newStatus" name="newStatus" required>
-                                        <option value="" disabled selected>Select status</option>
-                                        <option th:each="status : ${allStatuses}" 
-                                                th:value="${status}" 
-                                                th:text="${status}"
-                                                th:selected="${status == order.orderStatus}">
-                                        </option>
-                                    </select>
+                            <div th:if="${!validNextStatuses.isEmpty()}">
+                                <form th:action="@{/admin/orders/{id}/update-status(id=${order.orderId})}" method="post">
+                                    <div class="mb-3">
+                                        <label for="newStatus" class="form-label">New Status:</label>
+                                        <select class="form-select" id="newStatus" name="newStatus" required>
+                                            <option value="" disabled selected>Select a valid status</option>
+
+                                            <option th:each="status : ${validNextStatuses}"
+                                                    th:value="${status}"
+                                                    th:text="${status}">
+                                            </option>
+                                        </select>
                                 </div>
                                 <div class="mb-3">
                                     <label for="adminNotes" class="form-label">Admin Notes:</label>
@@ -383,19 +384,7 @@
                             </form>
                         </div>
                         
-                        <!-- Process Refund -->
-                        <div class="account-container mt-4" th:if="${order.orderStatus.name() != 'CANCELLED'}">
-                            <h5 class="section-title">Process Refund</h5>
-                            <form th:action="@{/admin/orders/{id}/process-refund(id=${order.orderId})}" method="post">
-                                <div class="mb-3">
-                                    <label for="refundReason" class="form-label">Refund Reason:</label>
-                                    <textarea class="form-control" id="refundReason" name="refundReason" rows="3" placeholder="Enter reason for refund" required></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to process a refund for this order?');">
-                                    <i class="fas fa-undo me-2"></i>Process Refund
-                                </button>
-                            </form>
-                        </div>
+
                         
                         <!-- Add Internal Note -->
                         <div class="account-container mt-4">

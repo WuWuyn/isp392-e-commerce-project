@@ -21,7 +21,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
+import com.fasterxml.jackson.core.JsonProcessingException; // Thêm import này nếu chưa có
+import com.fasterxml.jackson.databind.ObjectMapper;       // Thêm import này nếu chưa có
+import java.util.stream.Collectors;
 /**
  * Service for admin-specific operations
  * This service provides functionality specifically for admin users
@@ -489,90 +491,68 @@ public class AdminService {
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getRevenueAnalytics(LocalDate startDate, LocalDate endDate, String period, Integer sellerId, String compareMode) {
-        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> analyticsData = new HashMap<>();
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
-        try {
-            // 1. Calculate total revenue for the period
-            BigDecimal totalRevenue = orderRepository.calculatePlatformRevenue(startDate, endDate, platformCommissionRate);
-            result.put("totalRevenue", totalRevenue);
+        // Metric 1: Tổng Doanh thu (Tổng giá trị bán hàng)
+        BigDecimal totalRevenue = orderRepository.calculateTotalOrderValueByDateRange(startDate, endDate);
+        analyticsData.put("totalRevenue", totalRevenue);
 
-            // 2. Calculate comparison period revenue and growth
-            LocalDate comparisonStartDate, comparisonEndDate;
-            long daysDifference = ChronoUnit.DAYS.between(startDate, endDate);
+        // Metric 2: Phí Hoa hồng Nền tảng (Doanh thu của nền tảng)
+        BigDecimal platformRevenue = orderRepository.calculatePlatformRevenue(startDate, endDate, platformCommissionRate);
+        analyticsData.put("platformRevenue", platformRevenue);
 
-            if ("year".equals(compareMode)) {
-                comparisonStartDate = startDate.minusYears(1);
-                comparisonEndDate = endDate.minusYears(1);
-            } else { // previous period
-                comparisonStartDate = startDate.minusDays(daysDifference + 1);
-                comparisonEndDate = startDate.minusDays(1);
-            }
+        // Metric 3: Tổng số Đơn hàng
+        long totalOrders = orderRepository.countOrdersByDateRange(startDate, endDate);
+        analyticsData.put("totalOrders", totalOrders);
 
-            BigDecimal comparisonRevenue = orderRepository.calculatePlatformRevenue(comparisonStartDate, comparisonEndDate, platformCommissionRate);
-            double revenueGrowth = 0.0;
-            if (comparisonRevenue.compareTo(BigDecimal.ZERO) > 0) {
-                revenueGrowth = totalRevenue.subtract(comparisonRevenue)
-                    .divide(comparisonRevenue, 4, RoundingMode.HALF_UP)
+        // Metric 4: Giá trị Đơn hàng Trung bình
+        BigDecimal averageOrderValue = (totalOrders > 0) ? totalRevenue.divide(BigDecimal.valueOf(totalOrders), 0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        analyticsData.put("averageOrderValue", averageOrderValue);
+
+        // Metric 5: Tổng sản phẩm đã bán (Sử dụng phương thức mới)
+        Long totalProductsSold = orderRepository.sumQuantitiesByDateRange(startDateTime, endDateTime);
+        analyticsData.put("totalProductsSold", totalProductsSold != null ? totalProductsSold : 0L);
+
+        // Metric 6: Tăng trưởng Doanh thu
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        LocalDate previousStartDate = startDate.minusDays(days);
+        BigDecimal previousPeriodRevenue = orderRepository.calculatePlatformRevenue(previousStartDate, startDate.minusDays(1), platformCommissionRate);
+        double revenueGrowth = 0.0;
+        if (previousPeriodRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            revenueGrowth = platformRevenue.subtract(previousPeriodRevenue)
+                    .divide(previousPeriodRevenue, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100))
                     .doubleValue();
-            }
-            result.put("comparisonRevenue", comparisonRevenue);
-            result.put("revenueGrowth", revenueGrowth);
-
-            // 3. Get revenue trend data based on period
-            List<Map<String, Object>> revenueData = getRevenueTrendData(startDate, endDate, period);
-            List<String> chartLabels = new ArrayList<>();
-            List<BigDecimal> chartData = new ArrayList<>();
-
-            for (Map<String, Object> data : revenueData) {
-                chartLabels.add((String) data.get("label"));
-                chartData.add((BigDecimal) data.get("revenue"));
-            }
-
-            result.put("revenueChartLabels", convertToJsonArray(chartLabels));
-            result.put("revenueChartData", convertToJsonArray(chartData));
-            result.put("revenueTrendData", revenueData);
-
-            // 4. Get top sellers data (filtered by sellerId if provided)
-            List<Map<String, Object>> topSellers;
-            if (sellerId != null) {
-                topSellers = getSellerRevenueDetails(sellerId, startDate, endDate);
-            } else {
-                topSellers = getTopSellersByRevenue(startDate, endDate, 10);
-            }
-            result.put("topSellers", topSellers);
-
-            // 5. Calculate additional metrics
-            long totalOrders = orderRepository.countOrdersByDateRange(startDate, endDate);
-            result.put("totalOrders", totalOrders);
-
-            BigDecimal averageOrderValue = totalOrders > 0 ?
-                orderRepository.calculateTotalOrderValueByDateRange(startDate, endDate)
-                    .divide(BigDecimal.valueOf(totalOrders), 2, RoundingMode.HALF_UP) :
-                BigDecimal.ZERO;
-            result.put("averageOrderValue", averageOrderValue);
-
-            // 6. Get seller count for the period
-            long activeSellers = orderRepository.countActiveSellersByDateRange(startDate, endDate);
-            result.put("activeSellers", activeSellers);
-
-        } catch (Exception e) {
-            log.error("Error calculating revenue analytics: {}", e.getMessage(), e);
-            // Return default values on error
-            result.put("totalRevenue", BigDecimal.ZERO);
-            result.put("comparisonRevenue", BigDecimal.ZERO);
-            result.put("revenueGrowth", 0.0);
-            result.put("revenueChartLabels", "[]");
-            result.put("revenueChartData", "[]");
-            result.put("topSellers", new ArrayList<>());
-            result.put("totalOrders", 0L);
-            result.put("averageOrderValue", BigDecimal.ZERO);
-            result.put("activeSellers", 0L);
         }
+        analyticsData.put("revenueGrowth", revenueGrowth);
 
-        return result;
+        // Metric 7 & 8: Top 5 Sản phẩm Bán chạy (Sử dụng phương thức mới)
+        List<Map<String, Object>> topProducts = orderRepository.getTopSellingProductsByDateRange(startDate, endDate, 5);
+        analyticsData.put("topProducts", topProducts);
+
+        // Metric 9 & 10+: Top 5 Người bán Tốt nhất
+        List<Map<String, Object>> topSellers = orderRepository.getTopSellersByRevenue(startDate, endDate, platformCommissionRate, 5);
+        analyticsData.put("topSellers", topSellers);
+
+        // Dữ liệu cho biểu đồ
+        List<Map<String, Object>> revenueTrendData = orderRepository.getDailyPlatformRevenue(startDate, endDate, platformCommissionRate);
+        List<String> chartLabels = revenueTrendData.stream().map(d -> d.get("order_date").toString()).collect(Collectors.toList());
+        List<BigDecimal> chartData = revenueTrendData.stream().map(d -> (BigDecimal) d.get("daily_revenue")).collect(Collectors.toList());
+        analyticsData.put("revenueChartLabels", safeConvertToJsonArray(chartLabels));
+        analyticsData.put("revenueChartData", safeConvertToJsonArray(chartData));
+
+        return analyticsData;
     }
-
+    private String safeConvertToJsonArray(List<?> list) {
+        try {
+            return new ObjectMapper().writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            log.error("Error converting list to JSON array", e);
+            return "[]";
+        }
+    }
     /**
      * Get revenue trend data based on period grouping
      *

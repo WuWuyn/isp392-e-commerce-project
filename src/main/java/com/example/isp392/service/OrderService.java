@@ -125,15 +125,15 @@ public class OrderService {
     private boolean isValidStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {
         switch (currentStatus) {
             case PROCESSING:
-                return newStatus == OrderStatus.SHIPPED ||
-                       newStatus == OrderStatus.CANCELLED;
+                // From PROCESSING, can only go to SHIPPED or CANCELLED
+                return newStatus == OrderStatus.SHIPPED || newStatus == OrderStatus.CANCELLED;
             case SHIPPED:
-                return newStatus == OrderStatus.DELIVERED ||
-                       newStatus == OrderStatus.CANCELLED;
+                // From SHIPPED, can only go to DELIVERED or CANCELLED
+                return newStatus == OrderStatus.DELIVERED || newStatus == OrderStatus.CANCELLED;
             case DELIVERED:
-                return false; // Cannot change from delivered
             case CANCELLED:
-                return false; // Cannot change from cancelled
+                // Cannot change from a final state
+                return false;
             default:
                 return false;
         }
@@ -590,31 +590,38 @@ public class OrderService {
             orderStatusLock.lock();
             return orderRepository.findById(orderId).map(order -> {
                 OrderStatus oldStatus = order.getOrderStatus();
+
+                // MODIFICATION: Add status transition validation
+                if (!isValidStatusTransition(oldStatus, newStatus)) {
+                    // If the transition is not valid, throw an exception
+                    throw new IllegalStateException("Invalid status transition from " + oldStatus + " to " + newStatus);
+                }
+
                 order.setOrderStatus(newStatus);
-                
+
                 // Add admin notes if provided
                 if (adminNotes != null && !adminNotes.trim().isEmpty()) {
                     String existingNotes = order.getNotes();
                     String timestamp = LocalDateTime.now().toString();
                     String newNote = "[ADMIN " + timestamp + "]: " + adminNotes;
-                    
+
                     if (existingNotes != null && !existingNotes.isEmpty()) {
                         order.setNotes(existingNotes + "\n" + newNote);
                     } else {
                         order.setNotes(newNote);
                     }
                 }
-                
+
                 // Handle inventory changes if status changed
                 if (oldStatus != newStatus) {
                     handleInventoryForStatusChange(order, oldStatus, newStatus);
                 }
-                
+
                 // Update customer order status if needed
                 if (order.getCustomerOrder() != null) {
                     customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
                 }
-                
+
                 orderRepository.save(order);
                 return true;
             }).orElse(false);

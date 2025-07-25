@@ -47,7 +47,7 @@ public class CategoryController {
         if ("name".equalsIgnoreCase(sort)) {
             actualSortField = "categoryName";
         }
-        
+
         // Validate and fallback to a guaranteed existing field if the provided one is not explicitly mapped or invalid
         List<String> validSortFields = Arrays.asList("categoryId", "categoryName", "categoryDescription", "isActive");
         if (!validSortFields.contains(actualSortField)) {
@@ -55,10 +55,10 @@ public class CategoryController {
         }
 
         Sort sorting = Sort.by(sortDirection, actualSortField);
-        
+
         // Create pageable
         Pageable pageable = PageRequest.of(page, size, sorting);
-        
+
         // Get categories based on search and status
         Page<Category> categories;
         if (search != null && !search.isEmpty()) {
@@ -79,7 +79,7 @@ public class CategoryController {
         model.addAttribute("categories", categories);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", categories.getTotalPages());
-        
+
         return "admin/category";
     }
 
@@ -128,13 +128,25 @@ public class CategoryController {
     public String updateCategory(
             @PathVariable Integer id,
             @ModelAttribute Category category,
+            // MODIFICATION: Add @RequestParam to explicitly capture the 'active' checkbox value
+            @RequestParam(name = "active", required = false) String activeValue,
             RedirectAttributes redirectAttributes) {
-        
+
         try {
-            Optional<Category> existingCategory = categoryService.findById(id);
-            if (existingCategory.isPresent()) {
-                category.setCategoryId(id);
-                categoryService.save(category);
+            Optional<Category> existingCategoryOpt = categoryService.findById(id);
+            if (existingCategoryOpt.isPresent()) {
+                Category existingCategory = existingCategoryOpt.get();
+
+                // Manually update fields from the form
+                existingCategory.setCategoryName(category.getCategoryName());
+                existingCategory.setCategoryDescription(category.getCategoryDescription());
+
+                // MODIFICATION: Check if the checkbox was ticked.
+                // If activeValue is "on" (the default for a checked box) or "true", set active to true.
+                // If it's null (unchecked), set active to false.
+                existingCategory.setActive(activeValue != null && (activeValue.equals("on") || activeValue.equals("true")));
+
+                categoryService.save(existingCategory);
                 redirectAttributes.addFlashAttribute("successMessage", "Category updated successfully");
             } else {
                 redirectAttributes.addFlashAttribute("errorMessage", "Category not found");
@@ -142,7 +154,7 @@ public class CategoryController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error updating category: " + e.getMessage());
         }
-        
+
         return "redirect:/admin/categories/" + id;
     }
 
@@ -199,6 +211,24 @@ public class CategoryController {
                 "Error performing bulk action: " + e.getMessage());
         }
         
+        return "redirect:/admin/categories";
+    }
+    @PostMapping("/{id}/delete")
+    public String deleteCategory(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            // Find the category first to provide a more informative success message
+            Optional<Category> categoryOpt = categoryService.findById(id);
+            if (categoryOpt.isPresent()) {
+                String categoryName = categoryOpt.get().getCategoryName();
+                categoryService.deleteById(id); // Perform the hard delete
+                redirectAttributes.addFlashAttribute("successMessage", "Category '" + categoryName + "' has been permanently deleted.");
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "Category not found.");
+            }
+        } catch (Exception e) {
+            // Catch potential data integrity violations (e.g., if products are still linked to this category)
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: This category cannot be deleted because it is still in use by some products.");
+        }
         return "redirect:/admin/categories";
     }
 }
