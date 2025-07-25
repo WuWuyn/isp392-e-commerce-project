@@ -361,7 +361,7 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     @Query("SELECT b FROM Book b JOIN b.categories c WHERE c.categoryName LIKE %:categoryName% AND b.isActive = true")
     Page<Book> findByIsActiveTrueAndCategories_CategoryNameContainingIgnoreCase(@Param("categoryName") String categoryName, Pageable pageable);
 
-    Page<Book> findByIsActiveTrueAndSellingPriceLessThanEqualOrderBySellingPriceAsc(java.math.BigDecimal maxPrice, Pageable pageable);
+    Page<Book> findByIsActiveTrueAndSellingPriceLessThanEqualOrderBySellingPriceAsc(BigDecimal maxPrice, Pageable pageable);
 
     /**
      * Find all active books with comprehensive information for vector store

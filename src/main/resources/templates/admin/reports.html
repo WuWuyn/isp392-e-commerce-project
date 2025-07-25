@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revenue Reports - ReadHub Admin</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8F5F0;
+            color: #333;
+        }
+        .navbar-brand {
+            font-family: 'Lora', serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: #2C3E50;
+        }
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2C3E50;
+            border-bottom: 2px solid #2C3E50;
+            padding-bottom: 0.5rem;
+        }
+        .account-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .profile-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .default-profile {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+        }
+        .account-sidebar {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        .list-group-item {
+            border: none;
+            padding: 1rem 1.5rem;
+            color: #555;
+            transition: all 0.3s ease;
+        }
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+            color: #2C3E50;
+            transform: translateX(5px);
+        }
+        .list-group-item.active {
+            background-color: #2C3E50;
+            color: white;
+            border-left: 4px solid #3498db;
+        }
+        .list-group-item i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+        .stat-card p {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .stat-card .trend {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        .stat-card i {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 2rem;
+            opacity: 0.3;
+        }
+        .stat-card.revenue {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .stat-card.growth {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .stat-card.orders {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card.sellers {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 2rem;
+        }
+        .overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .overview-header h3 {
+            margin-bottom: 0;
+        }
+        .period-badge {
+            background-color: #ecf0f1;
+            color: #2C3E50;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .filter-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .table th {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+        }
+        .growth-positive {
+            color: #28a745;
+        }
+        .growth-negative {
+            color: #dc3545;
+        }
+        .btn-filter {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Topbar -->
+    <div th:replace="fragments/admin-topbar :: admin-topbar"></div>
+
+    <div class="container my-4">
+        <div class="row">
+            <!-- Include Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div th:replace="fragments/admin-sidebar :: admin-sidebar"></div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Page Header -->
+                <div class="account-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="section-title mb-0">Revenue Reports & Analytics</h2>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="exportReport()">
+                                <i class="fas fa-file-csv"></i> Export to CSV
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="refreshData()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="filter-card">
+                        <form method="get" th:action="@{/admin/reports}">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label for="period" class="form-label">Period</label>
+                                    <select class="form-select" id="period" name="period" th:value="${period}">
+                                        <option value="daily" th:selected="${period == 'daily'}">Daily</option>
+                                        <option value="weekly" th:selected="${period == 'weekly'}">Weekly</option>
+                                        <option value="monthly" th:selected="${period == 'monthly'}">Monthly</option>
+                                        <option value="yearly" th:selected="${period == 'yearly'}">Yearly</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="startDate" class="form-label">Start Date</label>
+                                    <input type="date" class="form-control" id="startDate" name="startDate" th:value="${startDate}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="endDate" class="form-label">End Date</label>
+                                    <input type="date" class="form-control" id="endDate" name="endDate" th:value="${endDate}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="compareMode" class="form-label">Compare With</label>
+                                    <select class="form-select" id="compareMode" name="compareMode" th:value="${compareMode}">
+                                        <option value="previous" th:selected="${compareMode == 'previous'}">Previous Period</option>
+                                        <option value="year" th:selected="${compareMode == 'year'}">Same Period Last Year</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-filter">
+                                        <i class="fas fa-filter"></i> Apply Filters
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-card revenue">
+                                <h4>Total Platform Revenue</h4>
+                                <p th:text="${totalRevenue != null ? (#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT') + ' đ') : '0 đ'}">0 đ</p>
+                                <div class="trend">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Commission Fees</span>
+                                </div>
+                                <i class="fas fa-coins"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card growth">
+                                <h4>Revenue Growth</h4>
+                                <p th:class="${revenueGrowth >= 0 ? 'growth-positive' : 'growth-negative'}" 
+                                   th:text="${revenueGrowth != null ? #numbers.formatDecimal(revenueGrowth, 1, 1) + '%' : '0%'}">0%</p>
+                                <div class="trend">
+                                    <i th:class="${revenueGrowth >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'}"></i>
+                                    <span th:text="${compareMode == 'year' ? 'vs Last Year' : 'vs Previous Period'}">vs Previous Period</span>
+                                </div>
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card orders">
+                                <h4>Total Orders</h4>
+                                <p th:text="${totalOrders ?: '0'}">0</p>
+                                <div class="trend">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    <span>In Period</span>
+                                </div>
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card sellers">
+                                <h4>Active Sellers</h4>
+                                <p th:text="${activeSellers ?: '0'}">0</p>
+                                <div class="trend">
+                                    <i class="fas fa-store"></i>
+                                    <span>Contributing</span>
+                                </div>
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue Trend Chart -->
+                <div class="account-container">
+                    <div class="overview-header">
+                        <h3 class="section-title mb-0">Revenue Trend</h3>
+                        <span class="period-badge" th:text="${#strings.capitalize(period)} + ' View'">Monthly View</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Sellers Table -->
+                <div class="account-container">
+                    <div class="overview-header">
+                        <h3 class="section-title mb-0">Top Contributing Sellers</h3>
+                        <span class="period-badge">By Platform Revenue</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Seller</th>
+                                    <th>Shop Name</th>
+                                    <th>Total Sales</th>
+                                    <th>Platform Revenue</th>
+                                    <th>Orders</th>
+                                    <th>Avg Order Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="seller, iterStat : ${topSellers}" th:if="${not #lists.isEmpty(topSellers)}">
+                                    <td>
+                                        <span class="badge bg-primary" th:text="${iterStat.count}">1</span>
+                                    </td>
+                                    <td th:text="${seller.seller_name ?: 'N/A'}">Seller Name</td>
+                                    <td th:text="${seller.shop_name ?: 'N/A'}">Shop Name</td>
+                                    <td th:text="${seller.total_sales != null ? #numbers.formatCurrency(seller.total_sales) : '$0'}">$0</td>
+                                    <td>
+                                        <strong th:text="${seller.platform_revenue != null ? #numbers.formatCurrency(seller.platform_revenue) : '$0'}">$0</strong>
+                                    </td>
+                                    <td th:text="${seller.order_count ?: '0'}">0</td>
+                                    <td>$0</td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(topSellers)}">
+                                    <td colspan="7" class="text-center text-muted">No data available for the selected period</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Revenue Comparison Chart -->
+                <div class="account-container">
+                    <div class="overview-header">
+                        <h3 class="section-title mb-0">Revenue Comparison</h3>
+                        <span class="period-badge" th:text="${compareMode == 'year' ? 'Current vs Last Year' : 'Current vs Previous Period'}">Current vs Previous Period</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Additional Metrics -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="account-container">
+                            <h4 class="section-title">Key Performance Indicators</h4>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="text-center p-3 border rounded">
+                                        <h5 class="text-muted">Average Order Value</h5>
+                                        <h3 th:text="${averageOrderValue != null ? (#numbers.formatDecimal(averageOrderValue, 0, 'COMMA', 0, 'POINT') + ' đ') : '0 đ'}">0 đ</h3>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-3 border rounded">
+                                        <h5 class="text-muted">Revenue per Seller</h5>
+                                        <h3>0 đ</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="account-container">
+                            <h4 class="section-title">Period Summary</h4>
+                            <ul class="list-unstyled">
+                                <li class="d-flex justify-content-between py-2 border-bottom">
+                                    <span>Period:</span>
+                                    <strong th:text="${startDate + ' to ' + endDate}">Date Range</strong>
+                                </li>
+                                <li class="d-flex justify-content-between py-2 border-bottom">
+                                    <span>Total Revenue:</span>
+                                    <strong th:text="${totalRevenue != null ? #numbers.formatCurrency(totalRevenue) : '$0'}">$0</strong>
+                                </li>
+                                <li class="d-flex justify-content-between py-2 border-bottom">
+                                    <span>Comparison Revenue:</span>
+                                    <strong th:text="${comparisonRevenue != null ? #numbers.formatCurrency(comparisonRevenue) : '$0'}">$0</strong>
+                                </li>
+                                <li class="d-flex justify-content-between py-2">
+                                    <span>Growth:</span>
+                                    <strong th:class="${revenueGrowth >= 0 ? 'text-success' : 'text-danger'}"
+                                            th:text="${revenueGrowth != null ? #numbers.formatDecimal(revenueGrowth, 1, 1) + '%' : '0%'}">0%</strong>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Chart Initialization -->
+    <script th:inline="javascript">
+        // Revenue Trend Chart
+        const revenueTrendCtx = document.getElementById('revenueTrendChart').getContext('2d');
+
+        const revenueLabelsJson = /*[[${revenueChartLabels}]]*/ '[]';
+        const revenueLabels = JSON.parse(revenueLabelsJson);
+
+        const revenueDataJson = /*[[${revenueChartData}]]*/ '[]';
+        const revenueData = JSON.parse(revenueDataJson);
+
+        new Chart(revenueTrendCtx, {
+            type: 'line',
+            data: {
+                labels: revenueLabels,
+                datasets: [{
+                    label: 'Platform Revenue',
+                    data: revenueData,
+                    borderColor: '#2C3E50',
+                    backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#2C3E50',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Revenue: $' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Period'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Revenue ($)'
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        // Revenue Comparison Chart
+        const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+
+        const currentRevenue = /*[[${totalRevenue}]]*/ 0;
+        const comparisonRevenue = /*[[${comparisonRevenue}]]*/ 0;
+        const compareMode = /*[[${compareMode}]]*/ 'previous';
+
+        const comparisonLabel = compareMode === 'year' ? 'Same Period Last Year' : 'Previous Period';
+
+        new Chart(comparisonCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Current Period', comparisonLabel],
+                datasets: [{
+                    label: 'Platform Revenue',
+                    data: [currentRevenue, comparisonRevenue],
+                    backgroundColor: [
+                        'rgba(44, 62, 80, 0.8)',
+                        'rgba(52, 152, 219, 0.8)'
+                    ],
+                    borderColor: [
+                        '#2C3E50',
+                        '#3498db'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Revenue: $' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Period'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Revenue ($)'
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Utility functions
+        function exportReport() {
+            // Show loading indicator
+            const loadingToast = showToast('Preparing CSV export...', 'info');
+
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const exportUrl = '/admin/reports/export-csv?' + params.toString();
+                const filename = `revenue_reports_${new Date().toISOString().split('T')[0]}.csv`;
+
+                // Create a temporary link to trigger download
+                const link = document.createElement('a');
+                link.href = exportUrl;
+                link.download = filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Hide loading and show success
+                setTimeout(() => {
+                    hideToast(loadingToast);
+                    showToast(`CSV export completed! File: ${filename}`, 'success');
+                }, 1000);
+
+            } catch (error) {
+                console.error('Export error:', error);
+                hideToast(loadingToast);
+                showToast('CSV export failed. Please try again.', 'error');
+            }
+        }
+
+        function refreshData() {
+            window.location.reload();
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(function() {
+            const refreshBtn = document.querySelector('button[onclick="refreshData()"]');
+            if (refreshBtn) {
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Auto Refreshing...';
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        }, 300000); // 5 minutes
+
+        // Toast notification functions
+        function showToast(message, type = 'info') {
+            const toastContainer = getOrCreateToastContainer();
+            const toastId = 'toast-' + Date.now();
+
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white bg-${getBootstrapColor(type)} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas ${getToastIcon(type)} me-2"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, {
+                autohide: type !== 'info', // Keep info toasts visible until manually closed
+                delay: type === 'error' ? 5000 : 3000
+            });
+
+            toast.show();
+
+            // Auto-remove from DOM after hiding
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+
+            return toastId;
+        }
+
+        function hideToast(toastId) {
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+                const toast = bootstrap.Toast.getInstance(toastElement);
+                if (toast) {
+                    toast.hide();
+                }
+            }
+        }
+
+        function getOrCreateToastContainer() {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'toast-container position-fixed top-0 end-0 p-3';
+                container.style.zIndex = '1055';
+                document.body.appendChild(container);
+            }
+            return container;
+        }
+
+        function getBootstrapColor(type) {
+            switch (type) {
+                case 'success': return 'success';
+                case 'error': return 'danger';
+                case 'warning': return 'warning';
+                case 'info': return 'info';
+                default: return 'primary';
+            }
+        }
+
+        function getToastIcon(type) {
+            switch (type) {
+                case 'success': return 'fa-check-circle';
+                case 'error': return 'fa-exclamation-circle';
+                case 'warning': return 'fa-exclamation-triangle';
+                case 'info': return 'fa-info-circle';
+                default: return 'fa-bell';
+            }
+        }
+    </script>
+</body>
+</html>
