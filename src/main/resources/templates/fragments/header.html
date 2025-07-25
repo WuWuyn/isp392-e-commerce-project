@@ -89,9 +89,7 @@
                     <a th:href="${#authorization.expression('isAuthenticated()') ? '/buyer/cart' : '/buyer/login'}" class="nav-link position-relative">
                         <i class="fas fa-shopping-cart"></i> <span class="d-none d-lg-inline">Cart</span>
                         <span id="headerCartCountBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                              th:if="${cart != null && cart.items != null && !cart.items.isEmpty()}"
-                              th:text="${cart.items.size()}"
-                              style="font-size: 0.7rem;">0</span>
+                              style="font-size: 0.7rem; display: none;">0</span>
                     </a>
                 </div>
             </div>
@@ -181,6 +179,110 @@
             new bootstrap.Dropdown(dropdownToggleEl);
         });
     });
+</script>
+
+<!-- Global Cart Count Synchronization Script -->
+<script th:if="${#authorization.expression('isAuthenticated()')}">
+    // Global function to update cart count across all pages
+    window.updateGlobalCartCount = function() {
+        const headerCartCountBadge = document.getElementById('headerCartCountBadge');
+        if (!headerCartCountBadge) {
+            console.warn('Header cart count badge not found');
+            return;
+        }
+
+        fetch('/buyer/cart/total-quantity', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Add CSRF token if available
+                ...(window.getCsrfHeaders ? window.getCsrfHeaders() : {})
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const uniqueItemCount = data.uniqueItemCount || 0;
+                headerCartCountBadge.textContent = uniqueItemCount;
+
+                // Always show badge if count > 0, hide if count = 0
+                if (uniqueItemCount > 0) {
+                    headerCartCountBadge.style.display = '';
+                    headerCartCountBadge.style.visibility = 'visible';
+                } else {
+                    headerCartCountBadge.style.display = 'none';
+                }
+
+                console.log('Cart count updated:', uniqueItemCount);
+
+                // Trigger custom event for other components to listen
+                window.dispatchEvent(new CustomEvent('cartCountUpdated', {
+                    detail: { uniqueItemCount: uniqueItemCount }
+                }));
+            } else {
+                console.error('Failed to get cart unique item count:', data.message);
+                // Hide badge on error
+                headerCartCountBadge.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching cart count:', error);
+            // Hide badge on error
+            headerCartCountBadge.style.display = 'none';
+        });
+    };
+
+    // Helper function for CSRF headers (fallback if not defined elsewhere)
+    if (!window.getCsrfHeaders) {
+        window.getCsrfHeaders = function() {
+            const headers = {};
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+            return headers;
+        };
+    }
+
+    // Update cart count on page load with multiple triggers
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initial update
+        window.updateGlobalCartCount();
+
+        // Also update after a short delay to ensure everything is loaded
+        setTimeout(function() {
+            window.updateGlobalCartCount();
+        }, 500);
+    });
+
+    // Update when page becomes visible (for browser tab switching)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            window.updateGlobalCartCount();
+        }
+    });
+
+    // Listen for cart updates from other components
+    window.addEventListener('cartUpdated', function() {
+        window.updateGlobalCartCount();
+    });
+
+    // Update on window focus (for when user returns to tab)
+    window.addEventListener('focus', function() {
+        window.updateGlobalCartCount();
+    });
+
+    // Expose function for manual testing/debugging
+    window.refreshCartCount = function() {
+        console.log('Manually refreshing cart count...');
+        window.updateGlobalCartCount();
+    };
 </script>
 </body>
 </html>

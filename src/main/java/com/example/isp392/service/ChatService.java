@@ -301,7 +301,7 @@ public class ChatService {
         } else if (lowerMessage.contains("giá") || lowerMessage.contains("price")) {
             return "Tôi có thể tư vấn về giá sách và các chương trình khuyến mãi. Bạn quan tâm đến sách nào?";
         } else if (lowerMessage.contains("chính sách") || lowerMessage.contains("policy")) {
-            return "ReadHub có chính sách đổi trả trong 7 ngày, miễn phí vận chuyển từ 500k, và nhiều phương thức thanh toán. Bạn cần biết thêm về điều gì?";
+            return "ReadHub có chính sách chỉ với 30,000 cho mỗi đơn và nhiều phương thức thanh toán. Bạn cần biết thêm về điều gì?";
         } else {
             return "Tôi là ReadHub Assistant, có thể giúp bạn:\n" +
                    "📚 Tìm sách theo sở thích\n" +

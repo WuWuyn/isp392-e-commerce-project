@@ -135,6 +135,13 @@ public class CheckoutService {
                     orderItem.setBook(cartItem.getBook());
                     orderItem.setQuantity(cartItem.getQuantity());
                     orderItem.setUnitPrice(cartItem.getBook().getSellingPrice());
+
+                    // Capture book information at time of order to prevent data loss
+                    Book book = cartItem.getBook();
+                    orderItem.setBookTitle(book.getTitle());
+                    orderItem.setBookAuthors(book.getAuthors());
+                    orderItem.setBookImageUrl(book.getCoverImgUrl());
+
                     orderItems.add(orderItem);
                 }
                 order.setOrderItems(orderItems);

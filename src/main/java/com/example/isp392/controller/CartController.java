@@ -87,11 +87,11 @@ public class CartController {
 
         User user = userOptional.get();
         try {
-            // Count unique items instead of total quantity
-            int uniqueItemCount = cartService.getCartForUser(user).getItems().size();
+            // Calculate unique item count (number of different items)
+            int uniqueItemCount = cartService.getUniqueItemCount(user);
 
             response.put("success", true);
-            response.put("totalQuantity", uniqueItemCount);
+            response.put("uniqueItemCount", uniqueItemCount);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error getting cart total quantity: {}", e.getMessage());
@@ -146,13 +146,13 @@ public class CartController {
             }
             
             cartService.addBookToCart(user, bookId, quantity);
-            
-            // Get updated cart count for UI update
-            int cartCount = cartService.getCartForUser(user).getItems().size();
-            
+
+            // Get updated unique item count for UI update
+            int uniqueItemCount = cartService.getUniqueItemCount(user);
+
             response.put("success", true);
             response.put("message", "Book added to cart successfully");
-            response.put("cartCount", cartCount);
+            response.put("cartCount", uniqueItemCount);
             
             log.debug("Added book {} to cart of user {} with quantity {}", bookId, user.getEmail(), quantity);
             return ResponseEntity.ok(response);

@@ -152,14 +152,33 @@ public class OrderController {
             RedirectAttributes redirectAttributes) {
         User user = userService.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         try {
+            // Verify the order belongs to the user first
+            Optional<Order> orderOpt = orderService.findByIdAndUser(orderId, user);
+            if (orderOpt.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Đơn hàng không tồn tại hoặc không thuộc về bạn");
+                return "redirect:/buyer/orders";
+            }
+
+            // Verify the book exists in the order
+            Order order = orderOpt.get();
+            boolean bookInOrder = order.getOrderItems().stream()
+                    .anyMatch(item -> item.getBook() != null && item.getBook().getBookId().equals(bookId));
+
+            if (!bookInOrder) {
+                redirectAttributes.addFlashAttribute("error", "Sản phẩm không tồn tại trong đơn hàng này");
+                return "redirect:/buyer/orders/" + orderId;
+            }
+
             cartService.addBookToCart(user, bookId, quantity);
             redirectAttributes.addFlashAttribute("success", "Sản phẩm đã được thêm vào giỏ hàng!");
         } catch (Exception e) {
+            logger.error("Error rebuying item - orderId: {}, bookId: {}, error: {}", orderId, bookId, e.getMessage());
             redirectAttributes.addFlashAttribute("error", "Không thể thêm sản phẩm: " + e.getMessage());
+            return "redirect:/buyer/orders/" + orderId;
         }
-        
+
         return "redirect:/buyer/cart";
     }
 

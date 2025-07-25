@@ -41,6 +41,16 @@ public class OrderItem {
     // For this entity, we'll assume it's calculated and set before saving.
     private BigDecimal subtotal;
 
+    // Capture book information at time of order to prevent data loss if book is modified
+    @Column(name = "book_title", nullable = false, length = 500)
+    private String bookTitle;
+
+    @Column(name = "book_authors", length = 500)
+    private String bookAuthors;
+
+    @Column(name = "book_image_url", length = 1000)
+    private String bookImageUrl;
+
     // Trong OrderItem.java
     @OneToOne(mappedBy = "orderItem", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private BookReview review;

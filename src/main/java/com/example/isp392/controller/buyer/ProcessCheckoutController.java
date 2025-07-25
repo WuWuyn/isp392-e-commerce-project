@@ -267,6 +267,12 @@ public class ProcessCheckoutController {
                             item.getBook().getSellingPrice().multiply(BigDecimal.valueOf(item.getQuantity()))
                     );
 
+                    // Capture book information at time of order to prevent data loss
+                    Book book = item.getBook();
+                    orderItem.setBookTitle(book.getTitle());
+                    orderItem.setBookAuthors(book.getAuthors());
+                    orderItem.setBookImageUrl(book.getCoverImgUrl());
+
                     orderItems.add(orderItem);
                     subtotal = subtotal.add(orderItem.getSubtotal());
 
@@ -973,6 +979,11 @@ public class ProcessCheckoutController {
                     orderItem.setQuantity(cartItem.getQuantity());
                     orderItem.setUnitPrice(book.getSellingPrice());
                     orderItem.setSubtotal(book.getSellingPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+
+                    // Capture book information at time of order to prevent data loss
+                    orderItem.setBookTitle(book.getTitle());
+                    orderItem.setBookAuthors(book.getAuthors());
+                    orderItem.setBookImageUrl(book.getCoverImgUrl());
 
                     orderItems.add(orderItem);
                     subtotal = subtotal.add(orderItem.getSubtotal());

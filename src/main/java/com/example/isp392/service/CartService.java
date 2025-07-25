@@ -117,36 +117,47 @@ public class CartService {
         return book.getStockQuantity() != null && book.getStockQuantity() >= totalRequestedQuantity;
     }
 
+    /**
+     * Get current quantity of a book in user's cart
+     */
+    public int getCurrentCartQuantity(User user, Integer bookId) {
+        Cart cart = getCartForUser(user);
+        return cart.getItems().stream()
+                .filter(item -> item.getBook().getBookId().equals(bookId))
+                .mapToInt(CartItem::getQuantity)
+                .sum();
+    }
+
     public void addBookToCart(User user, Integer bookId, int quantity) {
         Cart cart = getCartForUser(user);
         Book book = bookService.getBookById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found for id " + bookId));
-                
+
         // Kiểm tra số lượng sách trong kho
         if (book.getStockQuantity() == null || book.getStockQuantity() <= 0) {
             throw new RuntimeException("Sách đã hết hàng");
         }
-        
+
         Optional<CartItem> existingItemOptional = cart.getItems().stream()
                 .filter(item -> item.getBook().getBookId().equals(bookId))
                 .findFirst();
-                
+
         if (existingItemOptional.isPresent()) {
             CartItem item = existingItemOptional.get();
             int newQuantity = item.getQuantity() + quantity;
-            
+
             // Kiểm tra số lượng mới có vượt quá số lượng trong kho không
             if (newQuantity > book.getStockQuantity()) {
                 throw new RuntimeException("Số lượng sách yêu cầu vượt quá số lượng hiện có (" + book.getStockQuantity() + ")");
             }
-            
+
             item.setQuantity(newQuantity);
         } else {
             // Kiểm tra số lượng yêu cầu có vượt quá số lượng trong kho không
             if (quantity > book.getStockQuantity()) {
                 throw new RuntimeException("Số lượng sách yêu cầu vượt quá số lượng hiện có (" + book.getStockQuantity() + ")");
             }
-            
+
             CartItem item = new CartItem();
             item.setBook(book);
             item.setQuantity(quantity);
@@ -269,19 +280,41 @@ public class CartService {
     public void removeItem(User user, Integer bookId) {
         Cart cart = getCartForUser(user);
         CartItem itemToRemove = null;
-        
+
         for (CartItem item : cart.getItems()) {
             if (item.getBook().getBookId().equals(bookId)) {
                 itemToRemove = item;
                 break;
             }
         }
-        
+
         if (itemToRemove != null) {
             cart.getItems().remove(itemToRemove);
             cartItemRepository.delete(itemToRemove);
             cartRepository.save(cart);
         }
+    }
+
+    /**
+     * Calculate unique item count in cart (number of different items)
+     * @param user the user whose cart to calculate
+     * @return number of unique items in cart
+     */
+    public int getUniqueItemCount(User user) {
+        Cart cart = getCartForUser(user);
+        return cart.getItems().size();
+    }
+
+    /**
+     * Calculate total quantity of all items in cart (sum of all quantities)
+     * @param user the user whose cart to calculate
+     * @return total quantity of all items
+     */
+    public int getTotalQuantity(User user) {
+        Cart cart = getCartForUser(user);
+        return cart.getItems().stream()
+                .mapToInt(CartItem::getQuantity)
+                .sum();
     }
 
     /**

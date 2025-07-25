@@ -5,8 +5,9 @@ import com.example.isp392.repository.OrderRepository;
 import com.example.isp392.repository.CustomerOrderRepository;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -707,74 +708,140 @@ public class OrderService {
     /**
      * Rebuy all items from a delivered order by adding them to cart
      */
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public boolean rebuyOrder(Integer orderId, User user) {
         try {
-            Optional<Order> orderOpt = orderRepository.findById(orderId);
-            if (orderOpt.isEmpty()) {
-                logger.warn("Order not found for rebuy: {}", orderId);
+            // First validate the order without transaction
+            Order order = validateOrderForRebuy(orderId, user);
+            if (order == null) {
                 return false;
             }
 
-            Order order = orderOpt.get();
-
-            // Verify order belongs to user
-            if (!order.getCustomerOrder().getUser().getUserId().equals(user.getUserId())) {
-                logger.warn("User {} attempted to rebuy order {} that doesn't belong to them",
-                           user.getEmail(), orderId);
-                return false;
-            }
-
-            // Check if order can be reordered
-            if (!canBeReordered(order)) {
-                logger.warn("Order {} cannot be reordered. Current status: {}",
-                           orderId, order.getOrderStatus());
-                return false;
-            }
-
-            // Add all order items to cart
-            int itemsAdded = 0;
-            for (OrderItem orderItem : order.getOrderItems()) {
-                Book book = orderItem.getBook();
-
-                // Check if book is still active and has stock
-                if (!book.getActive()) {
-                    logger.warn("Book {} is no longer active, skipping rebuy", book.getBookId());
-                    continue;
-                }
-
-                if (book.getStockQuantity() <= 0) {
-                    logger.warn("Book {} is out of stock, skipping rebuy", book.getBookId());
-                    continue;
-                }
-
-                // Determine quantity to add (limited by current stock)
-                int quantityToAdd = Math.min(orderItem.getQuantity(), book.getStockQuantity());
-
-                try {
-                    // Add to cart using CartService
-                    cartService.addBookToCart(user, book.getBookId(), quantityToAdd);
-                    itemsAdded++;
-                    logger.info("Added {} x {} to cart for rebuy", quantityToAdd, book.getTitle());
-                } catch (Exception e) {
-                    logger.error("Failed to add book {} to cart for rebuy: {}",
-                               book.getBookId(), e.getMessage());
-                }
-            }
-
-            if (itemsAdded > 0) {
-                logger.info("Successfully added {} items to cart for rebuy of order {}",
-                           itemsAdded, orderId);
-                return true;
-            } else {
-                logger.warn("No items could be added to cart for rebuy of order {}", orderId);
-                return false;
-            }
+            // Process each item independently to avoid transaction rollback issues
+            return processRebuyItems(order, user);
 
         } catch (Exception e) {
             logger.error("Error during rebuy of order {}: {}", orderId, e.getMessage(), e);
             return false;
         }
+    }
+
+    /**
+     * Validate order for rebuy without transaction
+     */
+    private Order validateOrderForRebuy(Integer orderId, User user) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            logger.warn("Order not found for rebuy: {}", orderId);
+            return null;
+        }
+
+        Order order = orderOpt.get();
+
+        // Verify order belongs to user
+        if (!order.getCustomerOrder().getUser().getUserId().equals(user.getUserId())) {
+            logger.warn("User {} attempted to rebuy order {} that doesn't belong to them",
+                       user.getEmail(), orderId);
+            return null;
+        }
+
+        // Check if order can be reordered
+        if (!canBeReordered(order)) {
+            logger.warn("Order {} cannot be reordered. Current status: {}",
+                       orderId, order.getOrderStatus());
+            return null;
+        }
+
+        return order;
+    }
+
+    /**
+     * Process rebuy items with individual error handling
+     */
+    private boolean processRebuyItems(Order order, User user) {
+        int itemsAdded = 0;
+        int totalItems = order.getOrderItems().size();
+
+        for (OrderItem orderItem : order.getOrderItems()) {
+            try {
+                if (addSingleItemToCart(orderItem, user)) {
+                    itemsAdded++;
+                }
+            } catch (Exception e) {
+                String bookTitle = getBookTitleFromOrderItem(orderItem);
+                logger.error("Failed to add book '{}' to cart for rebuy: {}", bookTitle, e.getMessage());
+                // Continue with other items even if one fails
+            }
+        }
+
+        if (itemsAdded > 0) {
+            logger.info("Successfully added {} out of {} items to cart for rebuy of order {}",
+                       itemsAdded, totalItems, order.getOrderId());
+            return true;
+        } else {
+            logger.warn("No items could be added to cart for rebuy of order {}", order.getOrderId());
+            return false;
+        }
+    }
+
+    /**
+     * Add a single order item to cart with validation
+     */
+    private boolean addSingleItemToCart(OrderItem orderItem, User user) {
+        Book book = orderItem.getBook();
+
+        // Check if book still exists
+        if (book == null) {
+            logger.warn("Book for order item {} no longer exists, skipping rebuy", orderItem.getOrderItemId());
+            return false;
+        }
+
+        // Check if book is still active and has stock
+        if (!book.getActive()) {
+            logger.warn("Book {} is no longer active, skipping rebuy", book.getBookId());
+            return false;
+        }
+
+        if (book.getStockQuantity() == null || book.getStockQuantity() <= 0) {
+            logger.warn("Book {} is out of stock, skipping rebuy", book.getBookId());
+            return false;
+        }
+
+        // Check current cart quantity to avoid exceeding stock
+        int currentCartQuantity = cartService.getCurrentCartQuantity(user, book.getBookId());
+        int availableQuantity = book.getStockQuantity() - currentCartQuantity;
+
+        if (availableQuantity <= 0) {
+            logger.warn("Book {} already at maximum quantity in cart, skipping rebuy", book.getBookId());
+            return false;
+        }
+
+        // Determine quantity to add (limited by available stock)
+        int quantityToAdd = Math.min(orderItem.getQuantity(), availableQuantity);
+
+        try {
+            // Add to cart using CartService
+            cartService.addBookToCart(user, book.getBookId(), quantityToAdd);
+            logger.info("Added {} x {} to cart for rebuy", quantityToAdd, book.getTitle());
+            return true;
+        } catch (RuntimeException e) {
+            // Log the specific error but don't propagate to avoid transaction rollback
+            logger.warn("Could not add book {} to cart for rebuy: {}", book.getTitle(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get book title from order item (prefer captured title)
+     */
+    private String getBookTitleFromOrderItem(OrderItem orderItem) {
+        if (orderItem.getBookTitle() != null) {
+            return orderItem.getBookTitle();
+        }
+        if (orderItem.getBook() != null && orderItem.getBook().getTitle() != null) {
+            return orderItem.getBook().getTitle();
+        }
+        return "Unknown Book";
     }
 
     /**
