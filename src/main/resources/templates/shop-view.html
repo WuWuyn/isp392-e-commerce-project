@@ -68,13 +68,18 @@
     <div class="row" th:if="${!bookPage.empty}">
       <div class="col-lg-3 col-md-4 col-6 mb-4" th:each="book : ${bookPage.content}">
         <div class="book-card">
-          <a th:href="@{/product-detail(book_id=${book.book_id})}">
-            <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/book-placeholder.jpg'}" th:alt="${book.title}" class="book-cover img-fluid">
-          </a>
+          <div class="position-relative">
+            <a th:href="@{/product-detail(book_id=${book.book_id})}">
+              <img th:src="${book.coverImgUrl != null ? book.coverImgUrl : '/images/book-placeholder.jpg'}" th:alt="${book.title}" class="book-cover img-fluid">
+            </a>
+            <!-- Sale badge if discount is available -->
+            <span class="badge bg-danger sale-badge"
+                  th:if="${book.originalPrice != null && book.sellingPrice != null && book.originalPrice.compareTo(book.sellingPrice) > 0}">Sale!</span>
+          </div>
           <div class="book-info">
             <h6 class="book-title"><a th:href="@{/product-detail(book_id=${book.book_id})}" th:text="${book.title}">Book Title</a></h6>
             <div th:replace="~{fragments/book-rating :: star-rating(${book.averageRating})}"></div>
-            <div th:replace="~{fragments/book-price :: price-display(${book.sellingPrice}, ${book.originalPrice})}"></div>
+            <div th:replace="~{fragments/book-price :: price-display(${book.originalPrice}, ${book.sellingPrice})}"></div>
           </div>
         </div>
       </div>
@@ -85,7 +90,7 @@
         <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
           <a class="page-link" th:href="@{/shops/{shopId}(shopId=${shop.shopId}, page=${currentPage - 1}, searchQuery=${searchQuery}, sortField=${sortField}, sortDir=${sortDir})}">&laquo;</a>
         </li>
-        <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${currentPage == i} ? 'active' : ''}">
+        <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${currentPage == i ? 'active' : ''}">
           <a class="page-link" th:href="@{/shops/{shopId}(shopId=${shop.shopId}, page=${i}, searchQuery=${searchQuery}, sortField=${sortField}, sortDir=${sortDir})}" th:text="${i + 1}"></a>
         </li>
         <li class="page-item" th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}">

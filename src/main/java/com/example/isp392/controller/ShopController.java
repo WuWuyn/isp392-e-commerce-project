@@ -29,7 +29,7 @@ public class ShopController {
     @GetMapping("/shops/{shopId}")
     public String viewShopPage(@PathVariable("shopId") Integer shopId,
                                @RequestParam(defaultValue = "0") int page,
-                               @RequestParam(defaultValue = "10") int size,
+                               @RequestParam(defaultValue = "8") int size,
                                @RequestParam(required = false) String searchQuery, // Thêm tham số search
                                @RequestParam(defaultValue = "dateAdded") String sortField, // Thêm tham số sort
                                @RequestParam(defaultValue = "desc") String sortDir,   // Thêm tham số sort
