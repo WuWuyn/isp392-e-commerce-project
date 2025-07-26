@@ -90,8 +90,8 @@ function checkWordCount(textarea) {
 document.addEventListener('DOMContentLoaded', function() {
     setMaxDate();
     
-    // Bootstrap form validation
-    const form = document.getElementById('addBookForm');
+    // Bootstrap form validation - support both add and edit forms
+    const form = document.getElementById('addBookForm') || document.getElementById('editBookForm');
     if (form) {
         // Restore image preview if available
         restoreImagePreview();

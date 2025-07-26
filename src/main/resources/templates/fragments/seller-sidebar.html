@@ -22,45 +22,43 @@
         </div>
         <div class="list-group list-group-flush">
             <!-- Dashboard -->
-            <a th:href="@{/seller/dashboard}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/dashboard}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'dashboard' ? 'active' : ''}">
                 <i class="fas fa-tachometer-alt"></i> Dashboard
             </a>
-            
+
             <!-- Products -->
-            <a th:href="@{/seller/products}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/products}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'products' ? 'active' : ''}">
                 <i class="fas fa-book"></i> All Products
             </a>
-            <a th:href="@{/seller/products/add}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/products/add}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'add-product' ? 'active' : ''}">
                 <i class="fas fa-plus"></i> Add New Product
             </a>
-            <a th:href="@{/seller/inventory}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/inventory}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'inventory' ? 'active' : ''}">
                 <i class="fas fa-boxes"></i> Inventory Management
             </a>
-            
+
             <!-- Orders -->
-            <a th:href="@{/seller/orders}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/orders}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'orders' ? 'active' : ''}">
                 <i class="fas fa-shopping-cart"></i> All Orders
             </a>
 
-            <a th:href="@{/seller/orders(status=SHIPPED)}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/orders(status=SHIPPED)}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'orders-shipped' ? 'active' : ''}">
                 <i class="fas fa-truck"></i> In Shipping
             </a>
-            <a th:href="@{/seller/orders(status=DELIVERED)}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/orders(status=DELIVERED)}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'orders-delivered' ? 'active' : ''}">
                 <i class="fas fa-check-circle"></i> Completed
             </a>
-            <a th:href="@{/seller/orders/cancellations}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/orders/cancellations}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'cancellations' ? 'active' : ''}">
                 <i class="fas fa-times-circle"></i> Cancellations
             </a>
 
-
             <!-- Customer Interaction -->
-
             <a th:href="@{/seller/reviews}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'reviews' ? 'active' : ''}">
             <i class="fas fa-star"></i> Reviews
             </a>
-            
+
             <!-- Finance -->
-            <a th:href="@{/seller/analytics}" class="list-group-item list-group-item-action">
+            <a th:href="@{/seller/analytics}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'analytics' ? 'active' : ''}">
                 <i class="fas fa-chart-line"></i> Analytics & Reports
             </a>
             <a th:href="@{/seller/wallet}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'wallet' ? 'active' : ''}">
@@ -70,7 +68,7 @@
             <a th:href="@{/seller/data-management}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'data-management' ? 'active' : ''}">
                 <i class="fas fa-file-import"></i> Data Management
             </a>
-            
+
             <!-- Store Settings -->
             <a th:href="@{/seller/shop-information}" class="list-group-item list-group-item-action" th:classappend="${activeMenu == 'shop-information' ? 'active' : ''}">
                 <i class="fas fa-store"></i> Shop Information
@@ -82,10 +80,10 @@
 <!--            <a th:href="@{/seller/settings/payment}" class="list-group-item list-group-item-action">-->
 <!--                <i class="fas fa-credit-card"></i> Payment Settings-->
 <!--            </a>-->
-            
+
             <!-- Help -->
 
-            
+
             <!-- Logout -->
             <form th:action="@{/seller/logout}" method="post">
                 <button type="submit" class="list-group-item list-group-item-action text-danger">
