@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delete Account - Bookix</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
 
     <style>
@@ -76,7 +72,6 @@
 </head>
 <body>
 
-<!-- Sử dụng chung header fragment -->
 <div th:replace="~{fragments/header :: header-content}"></div>
 
 <main class="account-page py-5 bg-light">
@@ -90,16 +85,14 @@
         </nav>
 
         <div class="row">
-            <!-- Sử dụng chung sidebar fragment, đặt tab 'delete' là active -->
             <div th:replace="~{fragments/buyer-account-sidebar :: sidebar('delete')}"></div>
 
-            <!-- Nội dung chính -->
             <section class="col-lg-9 account-content">
                 <div class="card">
                     <div class="card-header bg-white py-3">
                     </div>
                     <div class="card-body p-4">
-                        <h2 class="card-title text-danger mb-4"><i class="fas fa-exclamation-triangle me-2"></i> Delete Account Permanently</h2>
+                        <h2 class="card-title text-danger mb-4"><i class="fas fa-exclamation-triangle me-2"></i> Deactivate Account</h2>
 
                         <div th:if="${error}" class="alert alert-danger" role="alert">
                             <span th:text="${error}"></span>
@@ -108,12 +101,7 @@
                             <span th:text="${success}"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="reason" class="form-label fw-bold">Reason for Deletion</label>
-                            <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
-                        </div>
-
-                        <p class="text-muted mb-4">You are about to permanently delete your Bookix account. This action is irreversible.</p>
+                        <p class="text-muted mb-4">You are about to deactivate your Bookix account. This action will log you out and prevent you from logging in again with this account.</p>
 
                         <div class="notice">
                             <i class="fas fa-info-circle me-2"></i> Please read the following warnings and consequences carefully before proceeding.
@@ -121,39 +109,31 @@
 
                         <div class="consequences mb-4">
                             <ul>
-                                <li>You will <strong>permanently lose</strong> all your data, including your purchase history, reviews, wishlists, and any other items associated with your Bookix account.</li>
-                                <li>Ensure your account has <strong>no pending orders</strong> or unresolved complaints. Active orders or complaints must be resolved before your account can be deleted.</li>
-                                <li>Bookix may retain some transaction or activity data for a limited period for auditing and legal purposes after successful deletion, as outlined in our Privacy Policy.</li>
-                                <li>After successful deletion, you will <strong>no longer be able to log in</strong> or access the deleted account.</li>
-                                <li>The email address and phone number linked to the deleted account <strong>cannot be used</strong> to register a new Bookix account or link to another existing account for a certain period.</li>
+                                <li>You will <strong>lose access</strong> to all your data, including your purchase history, reviews, wishlists, and any other items associated with your Bookix account.</li>
+                                <li>Ensure your account has <strong>no pending orders</strong> or unresolved complaints. Active orders or complaints must be resolved before your account can be deactivated.</li>
+                                <li>Bookix may retain some transaction or activity data for a limited period for auditing and legal purposes, as outlined in our Privacy Policy.</li>
+                                <li>After deactivation, you will <strong>no longer be able to log in</strong>.</li>
+                                <li>The email address and phone number linked to the deactivated account <strong>cannot be used</strong> to register a new Bookix account immediately.</li>
                                 <li>If this account is used to access any associated services (e.g., seller dashboard if you are a seller), access to those services will also be <strong>revoked</strong>.</li>
                             </ul>
                         </div>
 
-                        <div class="notice">
-                            <i class="fas fa-info-circle me-2"></i> Please note that if you have any active orders or complaints, you will not be able to delete your account until they are resolved.
-                        </div>
+                        <p class="mb-3">To proceed with your account deactivation request, please confirm your understanding of the consequences.</p>
 
-                       
-
-                        <p class="mb-3">To proceed with your account deletion request, please re-enter your password to confirm your identity.</p>
-
-                        <form th:action="@{/buyer/perform-delete-account}" method="post" id="deleteAccountForm">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <form th:action="@{/buyer/perform-delete-account}" method="post">
 
                             <div class="mb-3">
-                                <label for="reason" class="form-label fw-bold">Reason for Deletion (Optional)</label>
-                                <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Please let us know why you are leaving..."></textarea>
+                                <label for="reason" class="form-label fw-bold">Lý do hủy kích hoạt (tùy chọn)</label>
+                                <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Chúng tôi có thể cải thiện điều gì?"></textarea>
                             </div>
-
                             <div class="form-check confirmation-group">
-                                <input class="form-check-input" type="checkbox" id="confirm-delete" required>
+                                <input class="form-check-input" type="checkbox" id="confirm-delete" name="confirmDelete" required>
                                 <label class="form-check-label" for="confirm-delete">
-                                    I understand the consequences and wish to proceed with deactivating my account.
+                                    I understand the consequences and wish to proceed with deactivating my Bookix account.
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn btn-danger w-100 fw-bold py-2 submit-btn" id="submitDeleteBtn" disabled>Deactivate My Account</button>
+                            <button type="submit" class="btn btn-danger w-100 fw-bold py-2 submit-btn" id="submitDeleteBtn" disabled>Request Account Deactivation</button>
                         </form>
                     </div>
                 </div>
@@ -162,7 +142,6 @@
     </div>
 </main>
 
-<!-- Sử dụng chung footer fragments -->
 <div th:replace="~{fragments/newsletter :: newsletter-section}"></div>
 <div th:replace="~{fragments/footer :: footer-content}"></div>
 

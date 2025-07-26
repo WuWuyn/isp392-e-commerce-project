@@ -92,6 +92,10 @@ public class UserService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
+                user.isActive(), // <-- THÊM THAM SỐ NÀY
+                true,           // accountNonExpired
+                true,           // credentialsNonExpired
+                true,           // accountNonLocked
                 authorities
         );
     }
