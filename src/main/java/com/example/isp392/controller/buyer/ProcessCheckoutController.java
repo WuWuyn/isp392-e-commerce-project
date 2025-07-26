@@ -1010,8 +1010,8 @@ public class ProcessCheckoutController {
                 // Add order to customer order
                 customerOrder.addOrder(order);
 
-                // Save order
-                Order savedOrder = orderService.save(order);
+                // Save order without reserving inventory (already reserved in payment reservation)
+                Order savedOrder = orderService.save(order, false);
                 logger.info("Created order ID: {} for shop: {}", savedOrder.getOrderId(), firstBook.getShop().getShopName());
             }
 
@@ -1037,9 +1037,9 @@ public class ProcessCheckoutController {
                     DiscountDistributionService.DiscountDistributionResult distributionResult =
                         discountDistributionService.distributeDiscount(orders, customerOrder.getDiscountAmount(), customerOrder.getPromotionCode());
 
-                    // Save updated orders with distributed discounts
+                    // Save updated orders with distributed discounts (no inventory reservation needed)
                     for (Order order : distributionResult.getOrdersWithDiscounts()) {
-                        orderService.save(order);
+                        orderService.save(order, false);
                     }
 
                     logger.info("Successfully distributed VNPay discount of {} across {} orders using promotion: {}",
