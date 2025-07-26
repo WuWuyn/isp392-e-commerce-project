@@ -13,10 +13,23 @@ import java.util.Optional;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-
+    private final BookService bookService;
     // Constructor injection (as per memory guideline)
-    public CategoryService(CategoryRepository categoryRepository) {
+    public CategoryService(CategoryRepository categoryRepository, BookService bookService) {
         this.categoryRepository = categoryRepository;
+        this.bookService = bookService;
+    }
+    public void deleteById(Integer id) {
+        // 1. Kiểm tra xem có sản phẩm nào đang sử dụng category này không
+        long productCount = bookService.countBooksByCategoryId(id); // Giả định có phương thức này trong BookService
+
+        if (productCount > 0) {
+            // 2. Nếu có, ném ra một ngoại lệ với thông báo rõ ràng
+            throw new IllegalStateException("Error: This category cannot be deleted because it is linked to " + productCount + " product(s).");
+        }
+
+        // 3. Nếu không có sản phẩm nào liên quan, tiến hành xóa
+        categoryRepository.deleteById(id);
     }
 
     /**
@@ -66,9 +79,7 @@ public class CategoryService {
      * Delete a category by ID
      * @param id Category ID to delete
      */
-    public void deleteById(Integer id) {
-        categoryRepository.deleteById(id);
-    }
+
 
     /**
      * Delete multiple categories by their IDs

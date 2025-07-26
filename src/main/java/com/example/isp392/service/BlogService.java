@@ -7,6 +7,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,28 +61,35 @@ public class BlogService {
     // Get blogs based on sort option
     @Transactional(readOnly = true)
     public Page<Blog> getBlogsSorted(String sortOption, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        // 1. Tạo Specification để lọc các bài viết chưa bị khóa
+        Specification<Blog> spec = (root, query, cb) -> cb.isFalse(root.get("isLocked"));
 
-        Page<Blog> blogs;
+        // 2. Xác định tiêu chí sắp xếp
+        Sort sort;
         switch (sortOption) {
             case "latest":
-                blogs = blogRepository.findAllByOrderByCreatedDateDesc(pageable);
+                sort = Sort.by(Sort.Direction.DESC, "createdDate");
                 break;
             case "oldest":
-                blogs = blogRepository.findAllByOrderByCreatedDateAsc(pageable);
+                sort = Sort.by(Sort.Direction.ASC, "createdDate");
                 break;
             case "popular":
-                blogs = blogRepository.findAllByOrderByViewsCountDesc(pageable);
+                sort = Sort.by(Sort.Direction.DESC, "viewsCount");
                 break;
             default:
-                blogs = blogRepository.findAll(pageable);
+                sort = Sort.by(Sort.Direction.DESC, "createdDate"); // Mặc định mới nhất
                 break;
         }
 
-        // Chủ động tải thông tin user để tránh lỗi LazyInitializationException
+        // 3. Tạo Pageable với sắp xếp
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // 4. Thực hiện truy vấn với Specification và Pageable
+        Page<Blog> blogs = blogRepository.findAll(spec, pageable);
+
+        // Chủ động tải thông tin user để tránh lỗi LazyInitializationException (giữ nguyên)
         blogs.getContent().forEach(blog -> {
             if (blog.getUser() != null) {
-                // Chủ động truy cập để đảm bảo Hibernate tải dữ liệu
                 blog.getUser().getFullName();
             }
         });
@@ -90,10 +98,26 @@ public class BlogService {
     }
 
     // Get blogs by search term
+
     public Page<Blog> searchBlogs(String searchTerm, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return blogRepository.findByTitleOrContentContaining(searchTerm, pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+
+        // Specification để lọc bài chưa bị khóa
+        Specification<Blog> notLockedSpec = (root, query, cb) -> cb.isFalse(root.get("isLocked"));
+
+        // Specification để tìm kiếm theo title hoặc content
+        Specification<Blog> searchSpec = (root, query, cb) ->
+                cb.or(
+                        cb.like(cb.lower(root.get("title")), "%" + searchTerm.toLowerCase() + "%"),
+                        cb.like(cb.lower(root.get("content")), "%" + searchTerm.toLowerCase() + "%")
+                );
+
+        // Kết hợp hai điều kiện: (chưa bị khóa) AND (thỏa mãn tìm kiếm)
+        Specification<Blog> finalSpec = notLockedSpec.and(searchSpec);
+
+        return blogRepository.findAll(finalSpec, pageable);
     }
+
 
     // Get blog by ID
     public Optional<Blog> getBlogById(int id) {

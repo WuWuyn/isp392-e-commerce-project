@@ -116,6 +116,9 @@ public class BookService {
         return bookRepository.findTopRatedBooks(pageable);
     }
 
+    public long countBooksByCategoryId(Integer categoryId) {
+        return bookRepository.countByCategories_CategoryId(categoryId);
+    }
     // Lấy những sách mới thêm vào
     public List<Book> getNewAdditions(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
