@@ -650,8 +650,14 @@
 
                     <div class="summary-item">
                         <span>Shipping Fee</span>
-                        <span id="summaryShipping">30,000 VND</span>
-                        <input type="hidden" name="shippingFee" id="shippingFeeInput" value="30000" />
+                        <span id="summaryShipping" th:text="${#numbers.formatDecimal(shippingFee, 0, 'COMMA', 0, 'POINT') + ' VND'}">30,000 VND</span>
+                        <input type="hidden" name="shippingFee" id="shippingFeeInput" th:value="${shippingFee}" value="30000" />
+
+                        <!-- Hidden inputs for JavaScript -->
+                        <input type="hidden" id="serverSubtotal" th:value="${subtotal}" value="0" />
+                        <input type="hidden" id="serverShippingFee" th:value="${shippingFee}" value="0" />
+                        <input type="hidden" id="serverTotalAmount" th:value="${totalAmount}" value="0" />
+                        <input type="hidden" id="serverOriginalTotal" th:value="${originalTotalAmount}" value="0" />
                     </div>
 
                     <!-- Discount row (hidden by default) -->
@@ -723,11 +729,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const addressSelect = document.getElementById('addressSelect');
     const newAddressForm = document.getElementById('newAddressForm');
     const selectedAddressDetails = document.getElementById('selectedAddressDetails');
-    let currentSubtotal = parseFloat(/*[[${subtotal}]]*/ '0') || 0;
-    let currentShippingFee = parseFloat(/*[[${shippingFee}]]*/ '0') || 0;
-    let serverCalculatedTotal = parseFloat(/*[[${totalAmount}]]*/ '0') || 0;
-    let serverOriginalTotal = parseFloat(/*[[${originalTotalAmount}]]*/ '0') || 0;
+    // Read values from hidden inputs instead of Thymeleaf inline
+    let currentSubtotal = parseFloat(document.getElementById('serverSubtotal').value) || 0;
+    let currentShippingFee = parseFloat(document.getElementById('serverShippingFee').value) || 0;
+    let serverCalculatedTotal = parseFloat(document.getElementById('serverTotalAmount').value) || 0;
+    let serverOriginalTotal = parseFloat(document.getElementById('serverOriginalTotal').value) || 0;
     let appliedPromotion = /*[[${appliedPromotion}]]*/ null;
+
+    // Debug: Log values from hidden inputs
+    console.log('Values from hidden inputs:', {
+        subtotal: currentSubtotal,
+        shippingFee: currentShippingFee,
+        totalAmount: serverCalculatedTotal,
+        originalTotal: serverOriginalTotal
+    });
 
     // Expose server-calculated total to window for other scripts
     window.serverCalculatedTotal = serverCalculatedTotal;
@@ -743,6 +758,59 @@ document.addEventListener('DOMContentLoaded', function() {
         exposedToWindow: window.serverCalculatedTotal
     });
 
+    // Debug subtotal display
+    const summarySubtotalElement = document.getElementById('summarySubtotal');
+    if (summarySubtotalElement) {
+        console.log('Current summarySubtotal display:', summarySubtotalElement.textContent);
+        console.log('Server subtotal value:', currentSubtotal);
+
+        // Force update subtotal display if server has valid value
+        if (currentSubtotal > 0) {
+            summarySubtotalElement.textContent = new Intl.NumberFormat('vi-VN').format(currentSubtotal) + ' VND';
+            console.log('Force updated subtotal display to server value:', currentSubtotal);
+        }
+
+        // If server subtotal is 0 but we have items, recalculate
+        else if (currentSubtotal === 0) {
+            console.warn('Server subtotal is 0, checking for cart items...');
+            const shopGroups = document.querySelectorAll('.shop-group');
+            console.log('Found shop groups:', shopGroups.length);
+
+            if (shopGroups.length > 0) {
+                let calculatedSubtotal = 0;
+                shopGroups.forEach((shopGroup, index) => {
+                    const bookItems = shopGroup.querySelectorAll('.book-item');
+                    console.log(`Shop ${index + 1} has ${bookItems.length} items`);
+
+                    bookItems.forEach(bookItem => {
+                        const priceElement = bookItem.querySelector('.item-price');
+                        const quantityElement = bookItem.querySelector('.item-quantity');
+
+                        if (priceElement && quantityElement) {
+                            const priceText = priceElement.textContent.replace(/[^\d]/g, '');
+                            const quantityText = quantityElement.textContent.replace(/[^\d]/g, '');
+                            const price = parseFloat(priceText) || 0;
+                            const quantity = parseInt(quantityText) || 1;
+                            const itemTotal = price * quantity;
+                            calculatedSubtotal += itemTotal;
+
+                            console.log(`Item: price=${price}, quantity=${quantity}, total=${itemTotal}`);
+                        }
+                    });
+                });
+
+                console.log('Calculated subtotal from DOM:', calculatedSubtotal);
+
+                // Update subtotal display if calculated value is different
+                if (calculatedSubtotal > 0) {
+                    summarySubtotalElement.textContent = new Intl.NumberFormat('vi-VN').format(calculatedSubtotal) + ' VND';
+                    currentSubtotal = calculatedSubtotal;
+                    console.log('Updated subtotal display to:', calculatedSubtotal);
+                }
+            }
+        }
+    }
+
     // Calculate total shipping fee from all shops
     function calculateTotalShippingFee() {
         const shopGroups = document.querySelectorAll('.shop-group');
@@ -757,10 +825,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to update shipping fee display
     function updateShippingFeeDisplay() {
-        const totalShipping = calculateTotalShippingFee();
+        // Use server shipping fee if available, otherwise calculate
+        let totalShipping = currentShippingFee > 0 ? currentShippingFee : calculateTotalShippingFee();
+
         document.getElementById('summaryShipping').textContent =
-            new Intl.NumberFormat('vi-VN').format(totalShipping) + ' đ';
+            new Intl.NumberFormat('vi-VN').format(totalShipping) + ' VND';
         document.getElementById('shippingFeeInput').value = totalShipping;
+
+        console.log('Updated shipping fee display:', {
+            serverShippingFee: currentShippingFee,
+            calculatedShippingFee: calculateTotalShippingFee(),
+            usedShippingFee: totalShipping
+        });
+
         return totalShipping;
     }
 
@@ -777,7 +854,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (discountRow && discountAmount && promoCodeSummary) {
                 discountRow.style.display = 'flex';
-                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' đ';
+                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' VND';
                 promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
             }
         } else {
@@ -788,8 +865,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Use server-calculated total for consistency with backend logic
-        const total = serverCalculatedTotal;
+        // Calculate total: if server total is 0 but we have subtotal, recalculate
+        let total = serverCalculatedTotal;
+
+        if (total === 0 && currentSubtotal > 0) {
+            const currentShipping = calculateTotalShippingFee();
+            total = currentSubtotal + currentShipping - discount;
+            console.log('Recalculated total:', {
+                subtotal: currentSubtotal,
+                shipping: currentShipping,
+                discount: discount,
+                total: total
+            });
+        }
 
         const summaryTotalElement = document.getElementById('summaryTotal');
         if (summaryTotalElement) {
@@ -817,7 +905,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (discountRow && discountAmount && promoCodeSummary) {
                 discountRow.style.display = 'flex';
-                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' đ';
+                discountAmount.textContent = '-' + new Intl.NumberFormat('vi-VN').format(discount) + ' VND';
                 promoCodeSummary.textContent = '(' + appliedPromotion.promoCode + ')';
             }
 
@@ -841,7 +929,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // IMPORTANT: Ensure server-calculated total is preserved
             const summaryTotalElement = document.getElementById('summaryTotal');
             if (summaryTotalElement && serverCalculatedTotal) {
-                summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(serverCalculatedTotal) + ' đ';
+                summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(serverCalculatedTotal) + ' VND';
                 console.log('Preserved server-calculated total:', serverCalculatedTotal);
             }
 
@@ -1297,6 +1385,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const orderData = getOrderDataFromPage();
         console.log('Order data extracted:', orderData);
 
+        // Override CheckoutDiscountSystem's updateSummary to preserve server values
+        const originalUpdateSummary = window.checkoutDiscount.updateSummary;
+        window.checkoutDiscount.updateSummary = function() {
+            console.log('CheckoutDiscountSystem updateSummary called - preserving server values');
+
+            // Call original but preserve server-calculated total
+            const result = originalUpdateSummary.call(this);
+
+            // Force restore server values
+            if (serverCalculatedTotal > 0) {
+                const summaryTotalElement = document.getElementById('summaryTotal');
+                if (summaryTotalElement) {
+                    summaryTotalElement.textContent = new Intl.NumberFormat('vi-VN').format(serverCalculatedTotal) + ' VND';
+                    console.log('Preserved server-calculated total:', serverCalculatedTotal);
+                }
+            }
+
+            return result;
+        };
+
         window.checkoutDiscount.initializeWithData(orderData);
 
         // Display existing promotion if any
@@ -1309,15 +1417,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize shipping fee calculation
         updateShippingFeeDisplay();
 
-        // Only update total if no promotion applied (server already calculated correctly)
-        if (!appliedPromotion || !appliedPromotion.success) {
-            updateTotal();
-        } else {
-            // Just update discount display, keep server-calculated total
-            updateDiscountDisplay();
+        // Always update total (it will use server value if available, or recalculate if needed)
+        updateTotal();
 
-            // Ensure CheckoutDiscountSystem doesn't override server total
-            console.log('Preventing CheckoutDiscountSystem from overriding server total');
+        // Ensure CheckoutDiscountSystem doesn't override server total
+        if (appliedPromotion && appliedPromotion.success) {
+            console.log('Preserving server-calculated total with promotion');
         }
 
         console.log('Checkout initialization completed');
@@ -1350,8 +1455,14 @@ function getOrderDataFromPage() {
 
         bookItems.forEach((bookItem, itemIndex) => {
             const titleElement = bookItem.querySelector('.book-title');
-            const priceElement = bookItem.querySelector('.book-price');
-            const quantityElement = bookItem.querySelector('.quantity-badge');
+            const priceElement = bookItem.querySelector('.fw-bold.text-primary');
+            const quantityElement = bookItem.querySelector('.badge.bg-secondary');
+
+            console.log(`Book item ${itemIndex} in shop "${shopName}" missing required elements:`, {
+                titleElement: !!titleElement,
+                priceElement: !!priceElement,
+                quantityElement: !!quantityElement
+            });
 
             if (titleElement && priceElement && quantityElement) {
                 const title = titleElement.textContent.trim();

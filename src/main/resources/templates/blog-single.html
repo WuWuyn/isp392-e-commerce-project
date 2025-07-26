@@ -87,26 +87,6 @@
                             <label for="commentText" class="form-label">Comment <span class="required">*</span></label>
                             <textarea class="form-control" id="commentText" name="comment" rows="5" required></textarea>
                         </div>
-                        <div class="row" th:if="${#authorization.expression('!isAuthenticated()')}">
-                            <div class="col-md-4 mb-3">
-                                <label for="commentAuthor" class="form-label">Name <span class="required">*</span></label>
-                                <input type="text" class="form-control" id="commentAuthor" name="author" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="commentEmail" class="form-label">Email <span class="required">*</span></label>
-                                <input type="email" class="form-control" id="commentEmail" name="email" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="commentWebsite" class="form-label">Website</label>
-                                <input type="url" class="form-control" id="commentWebsite" name="url">
-                            </div>
-                        </div>
-                        <div class="form-check mb-3" th:if="${#authorization.expression('!isAuthenticated()')}">
-                            <input class="form-check-input" type="checkbox" value="" id="saveCommentInfo" name="wp-comment-cookies-consent">
-                            <label class="form-check-label" for="saveCommentInfo">
-                                Save my name, email, and website in this browser for the next time I comment.
-                            </label>
-                        </div>
                         <button type="submit" class="btn btn-dark submit-comment-btn">Post Comment</button>
                     </form>
 
