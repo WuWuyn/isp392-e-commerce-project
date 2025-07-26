@@ -18,6 +18,8 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 /**
  * Security configuration for Spring Security
  * Implements separate authentication flows for admin, buyer, and seller roles
@@ -190,7 +192,7 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID", "remember-me")
                         .permitAll()
                 )
-                .csrf(csrf -> csrf.disable());
+                .csrf(withDefaults());
 
         return http.build();
     }

@@ -645,21 +645,38 @@ public class BuyerController {
      * Deactivates the user account and logs the user out.
      */
     @PostMapping("/perform-delete-account")
-    public String performAccountDeactivation(Authentication authentication, HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        if (authentication == null) {
+    public String performAccountDeactivation(
+            @RequestParam(name = "reason", required = false) String reason, // Nhận lý do (không bắt buộc)
+            Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            RedirectAttributes redirectAttributes) {
+
+        User currentUser = getCurrentUser(authentication);
+        if (currentUser == null) {
             return "redirect:/buyer/login";
         }
 
-        try {
-            String email = authentication.getName();
-            userService.deactivateUser(email);
-            new SecurityContextLogoutHandler().logout(request, response, authentication);
+        // BƯỚC 1: Kiểm tra xem người dùng có đơn hàng đang hoạt động không
+        if (userService.hasActiveOrders(currentUser.getUserId())) {
+            redirectAttributes.addFlashAttribute("errorMessage", "You cannot deactivate your account while you have active orders. Please complete or cancel them first.");
+            return "redirect:/buyer/account-deletion";
+        }
 
-            redirectAttributes.addFlashAttribute("successMessage", "Your account has been successfully deactivated. We're sorry to see you go.");
+        // BƯỚC 2: (Đã xóa bước kiểm tra mật khẩu) Tiến hành hủy kích hoạt và đăng xuất
+        try {
+            // (Tùy chọn) Bạn có thể lưu lại lý do người dùng rời đi vào đâu đó nếu muốn
+            // Ví dụ: userService.logDeactivationReason(currentUser.getUserId(), reason);
+
+            String email = currentUser.getEmail();
+            userService.deactivateUser(email); // Gọi service để deactivate
+            new SecurityContextLogoutHandler().logout(request, response, authentication); // Đăng xuất người dùng
+
+            redirectAttributes.addFlashAttribute("successMessage", "Your account has been successfully deactivated. We are sorry to see you go.");
             return "redirect:/buyer/login?deactivated=true";
 
         } catch (Exception e) {
-            log.error("Error during account deactivation for user {}: {}", authentication.getName(), e.getMessage());
+            log.error("Error during account deactivation for user {}: {}", currentUser.getEmail(), e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while deactivating your account. Please try again.");
             return "redirect:/buyer/account-info";
         }

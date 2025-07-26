@@ -138,20 +138,22 @@
 
                         <p class="mb-3">To proceed with your account deletion request, please re-enter your password to confirm your identity.</p>
 
-                        <form th:action="@{/account-delete-request}" method="post">
+                        <form th:action="@{/buyer/perform-delete-account}" method="post" id="deleteAccountForm">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
                             <div class="mb-3">
-                                <label for="password" class="form-label fw-bold">Your Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
+                                <label for="reason" class="form-label fw-bold">Reason for Deletion (Optional)</label>
+                                <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Please let us know why you are leaving..."></textarea>
                             </div>
 
                             <div class="form-check confirmation-group">
-                                <input class="form-check-input" type="checkbox" id="confirm-delete" name="confirmDelete" required>
+                                <input class="form-check-input" type="checkbox" id="confirm-delete" required>
                                 <label class="form-check-label" for="confirm-delete">
-                                    I understand the consequences and wish to proceed with deleting my Bookix account.
+                                    I understand the consequences and wish to proceed with deactivating my account.
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn btn-danger w-100 fw-bold py-2 submit-btn" id="submitDeleteBtn" disabled>Request Account Deletion</button>
+                            <button type="submit" class="btn btn-danger w-100 fw-bold py-2 submit-btn" id="submitDeleteBtn" disabled>Deactivate My Account</button>
                         </form>
                     </div>
                 </div>
