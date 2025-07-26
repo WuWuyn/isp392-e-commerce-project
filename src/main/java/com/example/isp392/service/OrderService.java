@@ -302,10 +302,22 @@ public class OrderService {
      */
     @org.springframework.transaction.annotation.Transactional(isolation = Isolation.SERIALIZABLE)
     public Order save(Order order) {
-        logger.info("Saving order with {} items for user: {}",
+        return save(order, true);
+    }
+
+    /**
+     * Lưu đơn hàng vào cơ sở dữ liệu với tùy chọn reserve inventory
+     * @param order Đơn hàng cần lưu
+     * @param reserveInventory true nếu cần reserve inventory, false nếu inventory đã được reserve trước đó
+     * @return Đơn hàng đã được lưu
+     */
+    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.SERIALIZABLE)
+    public Order save(Order order, boolean reserveInventory) {
+        logger.info("Saving order with {} items for user: {}, reserveInventory: {}",
                    order.getOrderItems().size(),
                    order.getCustomerOrder() != null && order.getCustomerOrder().getUser() != null ?
-                   order.getCustomerOrder().getUser().getEmail() : "Unknown");
+                   order.getCustomerOrder().getUser().getEmail() : "Unknown",
+                   reserveInventory);
 
         // Validate order data
         validateOrderData(order);
@@ -323,17 +335,21 @@ public class OrderService {
             }
         }
 
-        // Atomically reserve inventory for all items to prevent race conditions
-        try {
-            logger.info("Reserving inventory for order with {} items", order.getOrderItems().size());
-            bookService.reserveInventoryForOrder(order.getOrderItems());
-            logger.info("Successfully reserved inventory for all order items");
-        } catch (IllegalArgumentException e) {
-            logger.error("Failed to reserve inventory: {}", e.getMessage());
-            throw new RuntimeException("Đặt hàng thất bại: " + e.getMessage());
-        } catch (Exception e) {
-            logger.error("Unexpected error during inventory reservation: {}", e.getMessage(), e);
-            throw new RuntimeException("Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.");
+        // Only reserve inventory if requested (for direct orders, not for orders from payment reservations)
+        if (reserveInventory) {
+            try {
+                logger.info("Reserving inventory for order with {} items", order.getOrderItems().size());
+                bookService.reserveInventoryForOrder(order.getOrderItems());
+                logger.info("Successfully reserved inventory for all order items");
+            } catch (IllegalArgumentException e) {
+                logger.error("Failed to reserve inventory: {}", e.getMessage());
+                throw new RuntimeException("Đặt hàng thất bại: " + e.getMessage());
+            } catch (Exception e) {
+                logger.error("Unexpected error during inventory reservation: {}", e.getMessage(), e);
+                throw new RuntimeException("Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.");
+            }
+        } else {
+            logger.info("Skipping inventory reservation as it was already done for payment reservation");
         }
 
         Order savedOrder = orderRepository.save(order);
