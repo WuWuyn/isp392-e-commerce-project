@@ -6,7 +6,7 @@
     <title>Admin Sidebar Fragment</title>
 </head>
 <body>
-    <div th:fragment="admin-sidebar" class="account-sidebar">
+    <div th:fragment="admin-sidebar(activeMenu)" class="account-sidebar">
         <div class="p-4 text-center border-bottom">
             <div th:if="${user.profilePicUrl != null and !user.profilePicUrl.isEmpty()}">
                 <img th:src="${user.profilePicUrl}" alt="Profile Picture" class="profile-image mb-3">

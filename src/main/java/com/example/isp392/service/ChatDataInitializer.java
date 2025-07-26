@@ -83,7 +83,7 @@ public class ChatDataInitializer implements CommandLineRunner {
 
     private void indexStoreInfo() {
         try {
-            logger.info("🏪 Đang lập chỉ mục thông tin cửa hàng...");
+            logger.info("🏪 Đang lập chỉ mục thông tin sàn...");
 
             // Thông tin cửa hàng cơ bản
             String storeInfo = """
@@ -93,10 +93,6 @@ public class ChatDataInitializer implements CommandLineRunner {
                 - Website: readhub.vn
                 - Email: support@readhub.vn
                 - Hotline: 1900-1234
-
-                Giờ làm việc:
-                - Thứ 2 - Thứ 6: 8:00 - 18:00
-                - Thứ 7 - Chủ nhật: 9:00 - 17:00
 
                 Phương thức thanh toán:
                 - Thanh toán khi nhận hàng (COD)
@@ -110,10 +106,10 @@ public class ChatDataInitializer implements CommandLineRunner {
             Document storeDocument = new Document(storeInfo, metadata);
             vectorStore.add(List.of(storeDocument));
 
-            logger.info("✅ Đã lập chỉ mục thông tin cửa hàng");
+            logger.info("✅ Đã lập chỉ mục thông tin sàn");
 
         } catch (Exception e) {
-            logger.error("❌ Lỗi khi lập chỉ mục thông tin cửa hàng: {}", e.getMessage());
+            logger.error("❌ Lỗi khi lập chỉ mục thông tin sàn: {}", e.getMessage());
         }
     }
 

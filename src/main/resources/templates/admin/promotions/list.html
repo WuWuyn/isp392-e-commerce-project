@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promotion Management - ReadHub Admin</title>
+    <title>Promotion Management - ReadHub</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
@@ -89,6 +94,35 @@
             border: 3px solid #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
+        .stat-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #2C3E50;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card h4 {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+        .stat-card p {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0;
+            color: #2C3E50;
+        }
+        .stat-card i {
+            font-size: 2.5rem;
+            color: #e9ecef;
+            position: absolute;
+            right: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -97,7 +131,7 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-lg-3 mb-4">
-            <div th:replace="~{fragments/admin-sidebar :: admin-sidebar}"></div>
+            <div th:replace="~{fragments/admin-sidebar :: admin-sidebar(activeMenu='promotions')}"></div>
         </div>
 
         <div class="col-lg-9">
@@ -340,6 +374,11 @@
     </div>
 </div>
 
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- Bootstrap JS Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Moment.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 </body>
 </html>
