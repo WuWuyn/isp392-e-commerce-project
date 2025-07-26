@@ -349,7 +349,7 @@
                                         <input class="form-check-input" type="checkbox"
                                                th:value="${category.categoryId}"
                                                th:id="'category-' + ${category.categoryId}"
-                                               th:field="*{categoryIds}" required>
+                                               th:field="*{categoryIds}">
                                         <label class="form-check-label" th:for="'category-' + ${category.categoryId}"
                                                th:text="${category.categoryName}"></label>
                                     </div>

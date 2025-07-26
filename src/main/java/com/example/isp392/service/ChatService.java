@@ -160,16 +160,17 @@ public class ChatService {
      */
     private String getBasicContext() {
         return """
-                READHUB INFORMATION:
-                - ReadHub is Vietnam's leading online bookstore
-                - Specializes in diverse books: literature, science, technology, business, children's books, academic
-                - Has buyer (customer) and seller systems
-                - Supports nationwide delivery, diverse payment methods
-                - Flexible return policy within 7 days
-                - Regular promotional programs
-                - Website: http://localhost:8080
-
-                Please answer based on this information and general book knowledge.
+                **Enhanced Prompt:**
+                
+                READHUB INFORMATION: \s
+                - ReadHub is Vietnam's leading e-commerce platform, specializing in books, where users can act as both buyers and sellers to trade a wide range of products, with a primary focus on books. \s
+                - Offers a diverse selection of books, including literature, science, technology, business, children's books, and academic publications. \s
+                - Features a robust system for buyers (customers) and sellers to facilitate seamless transactions. \s
+                - Provides nationwide delivery and supports multiple payment methods for user convenience. \s
+                - Implements regular promotional programs to enhance customer engagement and value. \s
+                - Website: http://localhost:8080 \s
+                
+                Please provide responses based on this information and general knowledge about books.
                 """;
     }
 
