@@ -87,16 +87,17 @@ public class ChatDataInitializer implements CommandLineRunner {
 
             // Thông tin cửa hàng cơ bản
             String storeInfo = """
-                ReadHub là cửa hàng sách trực tuyến sách hàng đầu Việt Nam.
-
-                Thông tin liên hệ:
-                - Website: readhub.vn
-                - Email: support@readhub.vn
-                - Hotline: 1900-1234
-
-                Phương thức thanh toán:
-                - Thanh toán khi nhận hàng (COD)
-                - Ví điện tử: VNPAY
+                    ReadHub là một nền tảng thương mại điện tử đa người bán, chuyên cung cấp các sản phẩm sách.
+                    
+                    Thông tin liên hệ:
+                    
+                    - Website: readhub.vn
+                    - Email: support@readhub.vn
+                    - Hotline: 1900-1234
+                    - Phương thức thanh toán:
+                    
+                    Thanh toán khi nhận hàng (COD)
+                    Ví điện tử: VNPAY
                 """;
 
             Map<String, Object> metadata = new HashMap<>();

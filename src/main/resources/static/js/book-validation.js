@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 4. Nếu không phải 10 hay 13 ký tự thì không hợp lệ
                 return false;
             }
-        }
+        },
         numberOfPages: {
             element: document.getElementById('numberOfPages'),
             errorMsg: 'Number of pages must be greater than 0',
