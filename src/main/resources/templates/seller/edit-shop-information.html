@@ -14,7 +14,7 @@
     </style>
 </head>
 <body>
-<div th:replace="~{fragments/header :: header}"></div>
+<div th:replace="fragments/seller-topbar :: seller-topbar"></div>
 
 <div class="container my-4">
     <nav aria-label="breadcrumb">
@@ -28,7 +28,7 @@
 
     <div class="row">
         <div class="col-md-3 mb-4">
-            <div th:replace="~{fragments/seller-account-sidebar :: seller-sidebar}"></div>
+            <div th:replace="~{fragments/seller-sidebar :: seller-sidebar}"></div>
         </div>
 
         <div class="col-md-9">
@@ -139,6 +139,11 @@
         const savedDistrict = /*[[${shop.shopDistrict}]]*/ null;
         const savedWard = /*[[${shop.shopWard}]]*/ null;
 
+        // Debug logging
+        console.log('Saved Province:', savedProvince);
+        console.log('Saved District:', savedDistrict);
+        console.log('Saved Ward:', savedWard);
+
         const provinceSelect = $('#province');
         const districtSelect = $('#district');
         const wardSelect = $('#ward');
@@ -149,11 +154,11 @@
 
         const host = "/api/location"; // API endpoint
 
-        function renderOptions(selectElement, data, placeholder) {
+        function renderOptions(selectElement, data, placeholder, savedValue) {
             selectElement.html(`<option value="" selected disabled>${placeholder}</option>`);
             $.each(data, function(index, item) {
                 // Tạo option và thêm thuộc tính 'selected' nếu nó khớp với giá trị đã lưu
-                const isSelected = item.name === savedProvince || item.name === savedDistrict || item.name === savedWard;
+                const isSelected = item.name === savedValue;
                 selectElement.append(`<option value="${item.code}" ${isSelected ? 'selected' : ''}>${item.name}</option>`);
             });
         }
@@ -163,14 +168,19 @@
         // 1. Tải danh sách Tỉnh/Thành phố
         axios.get(host + "/provinces")
             .then(function(response) {
-                renderOptions(provinceSelect, response.data, "Select Province/City");
+                console.log('Provinces loaded:', response.data);
+                renderOptions(provinceSelect, response.data, "Select Province/City", savedProvince);
 
                 // Nếu có tỉnh đã lưu, tự động trigger sự kiện change để tải quận/huyện
                 if (savedProvince) {
+                    console.log('Triggering province change for:', savedProvince);
                     provinceSelect.trigger('change');
                 }
             })
-            .catch(function(error) { console.error("Error fetching provinces:", error); });
+            .catch(function(error) {
+                console.error("Error fetching provinces:", error);
+                provinceSelect.html('<option value="">Error loading provinces</option>');
+            });
 
         // 2. Bắt sự kiện thay đổi Tỉnh/Thành phố
         provinceSelect.change(function() {
@@ -183,7 +193,7 @@
             if (provinceCode) {
                 axios.get(host + `/provinces/${provinceCode}?depth=2`)
                     .then(function(response) {
-                        renderOptions(districtSelect, response.data.districts, "Select District");
+                        renderOptions(districtSelect, response.data.districts, "Select District", savedDistrict);
                         districtSelect.prop('disabled', false);
 
                         // Nếu có quận đã lưu, tự động trigger sự kiện change để tải phường/xã
@@ -209,7 +219,7 @@
             if (districtCode) {
                 axios.get(host + `/districts/${districtCode}?depth=2`)
                     .then(function(response) {
-                        renderOptions(wardSelect, response.data.wards, "Select Ward/Commune");
+                        renderOptions(wardSelect, response.data.wards, "Select Ward/Commune", savedWard);
                         wardSelect.prop('disabled', false);
                     })
                     .catch(function(error) { console.error("Error fetching wards:", error); });

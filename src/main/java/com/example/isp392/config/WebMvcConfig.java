@@ -13,6 +13,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
@@ -43,9 +44,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .setCachePeriod(31556926);
 
         // Add handler for uploaded files
+        String uploadDir = Paths.get(System.getProperty("user.dir"), "uploads").toFile().getAbsolutePath();
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/")
-                .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS));
+                .addResourceLocations("file:/" + uploadDir + "/");
     }
 
     @Bean
@@ -62,9 +63,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 response.setHeader("X-Content-Type-Options", "nosniff");
                 response.setHeader("X-Frame-Options", "DENY");
                 response.setHeader("X-XSS-Protection", "1; mode=block");
-                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-                response.setHeader("Pragma", "no-cache");
-                response.setHeader("Expires", "0");
+
                 filterChain.doFilter(request, response);
             }
         };

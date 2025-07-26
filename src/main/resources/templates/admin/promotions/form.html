@@ -140,9 +140,9 @@
                     </div>
 
         <!-- Form -->
-        <form th:action="${isEdit ? '/admin/promotions/' + promotion.promotionId + '/edit' : '/admin/promotions/create'}" 
+        <form th:action="${isEdit ? '/admin/promotions/' + promotion.promotionId + '/edit' : '/admin/promotions/create'}"
               method="post" th:object="${promotionForm}" novalidate>
-            
+
                     <!-- Basic Information -->
                     <div class="form-section">
                         <h5 class="form-section-title">
@@ -152,7 +152,7 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="name" class="form-label">Promotion Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="name" th:field="*{name}" 
+                            <input type="text" class="form-control" id="name" th:field="*{name}"
                                    th:class="${#fields.hasErrors('name')} ? 'form-control is-invalid' : 'form-control'"
                                    placeholder="Enter promotion name">
                             <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback" th:errors="*{name}"></div>
@@ -161,7 +161,7 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="code" class="form-label">Promotion Code <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="code" th:field="*{code}" 
+                            <input type="text" class="form-control" id="code" th:field="*{code}"
                                    th:class="${#fields.hasErrors('code')} ? 'form-control is-invalid' : 'form-control'"
                                    placeholder="SAVE20" style="text-transform: uppercase;">
                             <div class="form-text">3-50 characters, uppercase letters, numbers, underscore, or dash only</div>
@@ -194,8 +194,8 @@
                             <select class="form-select" id="promotionType" th:field="*{promotionType}"
                                     th:class="${#fields.hasErrors('promotionType')} ? 'form-select is-invalid' : 'form-select'">
                                 <option value="">Select type</option>
-                                <option th:each="type : ${promotionTypes}" 
-                                        th:value="${type}" 
+                                <option th:each="type : ${promotionTypes}"
+                                        th:value="${type}"
                                         th:text="${type.displayName}">Type</option>
                             </select>
                             <div th:if="${#fields.hasErrors('promotionType')}" class="invalid-feedback" th:errors="*{promotionType}"></div>
@@ -205,7 +205,7 @@
                         <div class="mb-3">
                             <label for="discountValue" class="form-label">Discount Value <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="discountValue" th:field="*{discountValue}" 
+                                <input type="number" class="form-control" id="discountValue" th:field="*{discountValue}"
                                        th:class="${#fields.hasErrors('discountValue')} ? 'form-control is-invalid' : 'form-control'"
                                        step="0.01" min="0.01" placeholder="10">
                                 <span class="input-group-text" id="discount-unit">%</span>
@@ -250,8 +250,8 @@
                             <select class="form-select" id="scopeType" th:field="*{scopeType}"
                                     th:class="${#fields.hasErrors('scopeType')} ? 'form-select is-invalid' : 'form-select'">
                                 <option value="">Select scope</option>
-                                <option th:each="scope : ${scopeTypes}" 
-                                        th:value="${scope}" 
+                                <option th:each="scope : ${scopeTypes}"
+                                        th:value="${scope}"
                                         th:text="${scope.displayName}">Scope</option>
                             </select>
                             <div th:if="${#fields.hasErrors('scopeType')}" class="invalid-feedback" th:errors="*{scopeType}"></div>
@@ -264,8 +264,8 @@
                     <div class="mb-3">
                         <label for="categoryIds" class="form-label">Select Categories</label>
                         <select class="form-select" id="categoryIds" th:field="*{categoryIds}" multiple>
-                            <option th:each="category : ${categories}" 
-                                    th:value="${category.categoryId}" 
+                            <option th:each="category : ${categories}"
+                                    th:value="${category.categoryId}"
                                     th:text="${category.categoryName}">Category</option>
                         </select>
                         <div class="form-text">Select one or more categories for this promotion</div>
