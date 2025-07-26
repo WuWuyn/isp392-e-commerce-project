@@ -45,5 +45,13 @@ public interface BookReviewRepository extends JpaRepository<BookReview, Integer>
     Optional<BookReview> findByUserAndOrderItem_OrderItemId(User user, Integer orderItemId);
 
     List<BookReview> findByUser(User user);
+
+    // Đếm số lượng đánh giá đã được duyệt cho một quyển sách
+    @Query("SELECT COUNT(br) FROM BookReview br WHERE br.orderItem.book.bookId = :bookId AND br.isApproved = true")
+    long countApprovedByBookId(@Param("bookId") Integer bookId);
+
+    // Tính điểm đánh giá trung bình của các đánh giá đã được duyệt cho một quyển sách
+    @Query("SELECT AVG(CAST(br.rating AS double)) FROM BookReview br WHERE br.orderItem.book.bookId = :bookId AND br.isApproved = true")
+    Double calculateAverageRatingByBookId(@Param("bookId") Integer bookId);
 }
 

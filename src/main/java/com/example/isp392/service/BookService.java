@@ -9,6 +9,7 @@ import com.example.isp392.model.OrderItem;
 import com.example.isp392.model.Publisher;
 import com.example.isp392.model.Shop;
 import com.example.isp392.repository.BookRepository;
+import com.example.isp392.repository.BookReviewRepository;
 import com.example.isp392.repository.CategoryRepository;
 import com.example.isp392.repository.PublisherRepository;
 import com.example.isp392.repository.ShopRepository;
@@ -27,6 +28,7 @@ import me.xdrop.fuzzywuzzy.FuzzySearch;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +45,7 @@ public class BookService {
     private static final Logger log = LoggerFactory.getLogger(BookService.class);
 
     private final BookRepository bookRepository;
+    private final BookReviewRepository bookReviewRepository;
     private final CategoryRepository categoryRepository;
     private final PublisherRepository publisherRepository;
     private final ShopRepository shopRepository;
@@ -79,16 +82,19 @@ public class BookService {
      * Constructor for dependency injection
      *
      * @param bookRepository      Repository for book data access
+     * @param bookReviewRepository Repository for book review data access
      * @param categoryRepository  Repository for category data access
      * @param publisherRepository Repository for publisher data access
      * @param shopRepository      Repository for shop data access
      */
     public BookService(
             BookRepository bookRepository,
+            BookReviewRepository bookReviewRepository,
             CategoryRepository categoryRepository,
             PublisherRepository publisherRepository,
             ShopRepository shopRepository) {
         this.bookRepository = bookRepository;
+        this.bookReviewRepository = bookReviewRepository;
         this.categoryRepository = categoryRepository;
         this.publisherRepository = publisherRepository;
         this.shopRepository = shopRepository;
@@ -671,6 +677,43 @@ public class BookService {
 
     public long countAllBooks() {
         return bookRepository.count();
+    }
+
+    /**
+     * Cập nhật thống kê đánh giá cho sách (total_reviews và average_rating)
+     * Phương thức này sẽ được gọi tự động khi có đánh giá mới, cập nhật, hoặc xóa
+     *
+     * @param bookId ID của sách cần cập nhật thống kê
+     */
+    @Transactional
+    public void updateBookReviewStatistics(Integer bookId) {
+        try {
+            // Lấy thông tin sách
+            Book book = bookRepository.findById(bookId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sách với ID: " + bookId));
+
+            // Đếm số lượng đánh giá đã được duyệt
+            long totalApprovedReviews = bookReviewRepository.countApprovedByBookId(bookId);
+
+            // Tính điểm đánh giá trung bình của các đánh giá đã được duyệt
+            Double averageRating = bookReviewRepository.calculateAverageRatingByBookId(bookId);
+
+            // Cập nhật thông tin sách
+            book.setTotalReviews((int) totalApprovedReviews);
+            book.setAverageRating(averageRating != null ?
+                BigDecimal.valueOf(averageRating).setScale(1, RoundingMode.HALF_UP) :
+                BigDecimal.ZERO);
+
+            // Lưu thay đổi
+            bookRepository.save(book);
+
+            log.info("Updated review statistics for book ID {}: {} reviews, {} average rating",
+                    bookId, totalApprovedReviews, book.getAverageRating());
+
+        } catch (Exception e) {
+            log.error("Error updating review statistics for book ID {}: {}", bookId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     /**
