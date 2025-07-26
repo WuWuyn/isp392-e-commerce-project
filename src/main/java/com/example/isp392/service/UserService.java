@@ -527,7 +527,9 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
+        // Dòng này sẽ set is_active = false
         user.setActive(false);
+
         userRepository.save(user);
         log.info("User account for {} has been deactivated.", email);
     }
