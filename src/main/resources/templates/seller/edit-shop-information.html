@@ -156,7 +156,6 @@
 
                 <form th:action="@{/seller/shop-information/save}" th:object="${shop}" method="post" enctype="multipart/form-data">
                     <input type="hidden" th:field="*{shopId}" />
-                    <input type="hidden" th:field="*{userId}" />
                     <input type="hidden" th:field="*{taxCode}" />
                     <input type="hidden" th:field="*{identificationFileUrl}" />
 
@@ -177,20 +176,22 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Shop Logo</label>
                             <div class="mb-2">
-                                <img th:if="*{logoUrl != null}" th:src="*{logoUrl}" alt="Current Logo" class="img-thumbnail" style="max-width: 120px;">
-                                <span th:if="*{logoUrl == null}" class="text-muted">No logo</span>
+                                <img th:if="*{logoUrl != null}" th:src="*{logoUrl}" alt="Current Logo" class="img-thumbnail" id="logoPreview" style="max-width: 120px;">
+                                <img th:if="*{logoUrl == null}" src="https://placehold.co/120x120/e2e8f0/64748b?text=No+Logo" alt="No Logo" class="img-thumbnail" id="logoPreview" style="max-width: 120px;">
                             </div>
-                            <input type="file" class="form-control" name="logoFile" accept="image/*">
-                            <small class="text-muted">Leave empty to keep the current logo.</small>
+                            <input type="file" class="form-control" id="logoFile" name="logoFile" accept="image/*">
+                            <div class="invalid-feedback" id="logoFileError"></div>
+                            <small class="text-muted">Leave empty to keep the current logo. Max size: 5MB</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Cover Image</label>
                             <div class="mb-2">
-                                <img th:if="*{coverImageUrl != null}" th:src="*{coverImageUrl}" alt="Current Cover" class="img-thumbnail" style="max-width: 200px;">
-                                <span th:if="*{coverImageUrl == null}" class="text-muted">No cover image</span>
+                                <img th:if="*{coverImageUrl != null}" th:src="*{coverImageUrl}" alt="Current Cover" class="img-thumbnail" id="coverImagePreview" style="max-width: 200px;">
+                                <img th:if="*{coverImageUrl == null}" src="https://placehold.co/200x120/e2e8f0/64748b?text=No+Cover" alt="No Cover" class="img-thumbnail" id="coverImagePreview" style="max-width: 200px;">
                             </div>
-                            <input type="file" class="form-control" name="coverImageFile" accept="image/*">
-                            <small class="text-muted">Leave empty to keep the current cover image.</small>
+                            <input type="file" class="form-control" id="coverImageFile" name="coverImageFile" accept="image/*">
+                            <div class="invalid-feedback" id="coverImageFileError"></div>
+                            <small class="text-muted">Leave empty to keep the current cover image. Max size: 5MB</small>
                         </div>
                     </div>
 
@@ -260,6 +261,83 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
+        // File upload validation with preview
+        function validateFileUpload(inputId, errorId, previewId, maxSizeMB = 5) {
+            const fileInput = document.getElementById(inputId);
+            const errorDiv = document.getElementById(errorId);
+            const previewImg = document.getElementById(previewId);
+
+            if (fileInput) {
+                fileInput.addEventListener('change', function(event) {
+                    const file = event.target.files[0];
+                    errorDiv.textContent = '';
+                    fileInput.classList.remove('is-invalid');
+
+                    if (file) {
+                        // Check file size
+                        const maxSize = maxSizeMB * 1024 * 1024; // Convert to bytes
+                        if (file.size > maxSize) {
+                            errorDiv.textContent = `File size must be less than ${maxSizeMB}MB`;
+                            fileInput.classList.add('is-invalid');
+                            fileInput.value = '';
+                            return;
+                        }
+
+                        // Check file type
+                        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                        if (!validTypes.includes(file.type)) {
+                            errorDiv.textContent = 'Please select a valid image file (JPEG, PNG, GIF, WEBP)';
+                            fileInput.classList.add('is-invalid');
+                            fileInput.value = '';
+                            return;
+                        }
+
+                        // Show preview
+                        if (previewImg && file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                previewImg.src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+
+                        console.log(`Valid file selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+                    }
+                });
+            }
+        }
+
+        // Initialize file upload validation with preview
+        validateFileUpload('logoFile', 'logoFileError', 'logoPreview');
+        validateFileUpload('coverImageFile', 'coverImageFileError', 'coverImagePreview');
+
+        // Form submission validation
+        $('form').on('submit', function(e) {
+            let hasErrors = false;
+
+            // Check if any file inputs have validation errors
+            const logoInput = document.getElementById('logoFile');
+            const coverInput = document.getElementById('coverImageFile');
+
+            if (logoInput && logoInput.classList.contains('is-invalid')) {
+                hasErrors = true;
+            }
+
+            if (coverInput && coverInput.classList.contains('is-invalid')) {
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                e.preventDefault();
+                alert('Please fix the file upload errors before submitting.');
+                return false;
+            }
+
+            // Show loading state
+            const submitBtn = $(this).find('button[type="submit"]');
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Saving...');
+        });
+
         // Lấy các giá trị địa chỉ đã lưu từ model của Thymeleaf
         const savedProvince = /*[[${shop.shopProvince}]]*/ null;
         const savedDistrict = /*[[${shop.shopDistrict}]]*/ null;

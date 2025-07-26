@@ -30,7 +30,7 @@ public class Shop {
     private Integer shopId;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(name = "user_id", nullable = false, unique = true, updatable = false)
     private User user;
 
     @Column(name = "shop_name", nullable = false, length = 150, columnDefinition = "NVARCHAR(500)")

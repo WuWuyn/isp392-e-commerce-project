@@ -10,6 +10,7 @@ import com.example.isp392.repository.ShopApprovalHistoryRepository;
 import com.example.isp392.repository.ShopRepository;
 import com.example.isp392.repository.UserRepository;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,13 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import jakarta.persistence.criteria.Predicate;
 /**
  * Service for shop operations
  */
@@ -63,7 +70,37 @@ public class ShopService {
     public Shop getShopByUserId(Integer userId) {
         return shopRepository.findByUserUserId(userId).orElse(null);
     }
-    
+    public Page<Shop> searchShops(String keyword, String status, Pageable pageable) {
+        // Sử dụng Specification để xây dựng truy vấn động
+        Specification<Shop> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Lọc theo từ khóa
+            if (StringUtils.hasText(keyword)) {
+                String likePattern = "%" + keyword.toLowerCase() + "%";
+                Predicate keywordPredicate = criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("shopName")), likePattern),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("contactEmail")), likePattern)
+                );
+                predicates.add(keywordPredicate);
+            }
+
+            // Lọc theo trạng thái
+            if (StringUtils.hasText(status) && !status.equalsIgnoreCase("all")) {
+                try {
+                    Shop.ApprovalStatus approvalStatus = Shop.ApprovalStatus.valueOf(status.toUpperCase());
+                    predicates.add(criteriaBuilder.equal(root.get("approvalStatus"), approvalStatus));
+                } catch (IllegalArgumentException e) {
+                    // Bỏ qua nếu giá trị status không hợp lệ
+                }
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return shopRepository.findAll(spec, pageable);
+    }
+
     /**
      * Save or update shop information
      * @param shopDTO the shop data to save
@@ -76,11 +113,11 @@ public class ShopService {
                 shopRepository.findById(shopDTO.getShopId())
                         .orElseThrow(() -> new RuntimeException("Shop not found")) :
                 new Shop();
-        
+
         // Find the user
         User user = userRepository.findById(shopDTO.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         // Copy properties from DTO to entity
         BeanUtils.copyProperties(shopDTO, shop, "user", "books", "approvalStatus", "registrationDate");
 
@@ -98,7 +135,7 @@ public class ShopService {
             // Only update status if explicitly set and shop exists
             shop.setApprovalStatus(shopDTO.getApprovalStatus());
         }
-        
+
         // Save the shop
         return shopRepository.save(shop);
     }
@@ -106,6 +143,26 @@ public class ShopService {
     public Shop getShopById(Integer shopId) {
         return shopRepository.findById(shopId)
                 .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
+    }
+    @Transactional
+    public void blockShop(Integer shopId) {
+        // 1. Tìm shop
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new EntityNotFoundException("Shop not found with ID: " + shopId));
+
+        // 2. Lấy thông tin user (chủ shop)
+        User owner = shop.getUser();
+        if (owner == null) {
+            throw new IllegalStateException("Shop with ID " + shopId + " does not have an associated owner.");
+        }
+
+        // 3. Vô hiệu hóa shop và tất cả sản phẩm của shop
+        shop.setActive(false);
+        shopRepository.save(shop);
+        bookService.deactivateBooksByShopId(shopId);
+
+        // 4. Gọi UserService để hạ vai trò của người dùng
+        userService.demoteUserFromSeller(owner.getUserId());
     }
 
     /**
@@ -190,6 +247,37 @@ public class ShopService {
         return shopRepository.countByApprovalStatus(Shop.ApprovalStatus.APPROVED);
     }
 
+    @Transactional
+    public Shop updateShop(Integer shopId, ShopDTO shopDTO, MultipartFile logoFile, MultipartFile coverImageFile) throws IOException {
+        // 1. Tìm cửa hàng hiện có trong DB
+        Shop existingShop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new RuntimeException("Shop not found with ID: " + shopId));
+
+        // 2. Cập nhật các trường thông tin từ DTO
+        existingShop.setShopName(shopDTO.getShopName());
+        existingShop.setDescription(shopDTO.getDescription());
+        existingShop.setShopDetailAddress(shopDTO.getShopDetailAddress());
+        existingShop.setShopProvince(shopDTO.getShopProvince());
+        existingShop.setShopDistrict(shopDTO.getShopDistrict());
+        existingShop.setShopWard(shopDTO.getShopWard());
+        existingShop.setContactEmail(shopDTO.getContactEmail());
+        existingShop.setContactPhone(shopDTO.getContactPhone());
+
+        // 3. Xử lý file logo nếu có file mới
+        if (logoFile != null && !logoFile.isEmpty()) {
+            String logoUrl = fileStorageService.storeFile(logoFile, "shop-logos");
+            existingShop.setLogoUrl(logoUrl);
+        }
+
+        // 4. Xử lý file ảnh bìa nếu có file mới
+        if (coverImageFile != null && !coverImageFile.isEmpty()) {
+            String coverImageUrl = fileStorageService.storeFile(coverImageFile, "shop-covers");
+            existingShop.setCoverImageUrl(coverImageUrl);
+        }
+
+        // 5. Lưu lại và trả về
+        return shopRepository.save(existingShop);
+    }
     /**
      * Check if a shop has any active orders.
      * 'Active' means PENDING, PROCESSING, or SHIPPED.

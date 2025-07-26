@@ -40,19 +40,19 @@ import java.util.Optional;
 public class ShopInformationController {
 
     private static final Logger log = LoggerFactory.getLogger(ShopInformationController.class);
-    
+
     private final ShopService shopService;
     private final UserService userService;
     private final UserRepository userRepository;
     private final HttpSession httpSession;
     private final BookService bookService;
     private final FileStorageService fileStorageService;
-    
+
     /**
      * Constructor for dependency injection
      */
-    public ShopInformationController(ShopService shopService, UserService userService, 
-                                    UserRepository userRepository, HttpSession httpSession, BookService bookService, FileStorageService fileStorageService) {
+    public ShopInformationController(ShopService shopService, UserService userService,
+                                     UserRepository userRepository, HttpSession httpSession, BookService bookService, FileStorageService fileStorageService) {
         this.shopService = shopService;
         this.userService = userService;
         this.userRepository = userRepository;
@@ -60,7 +60,7 @@ public class ShopInformationController {
         this.bookService = bookService;
         this.fileStorageService = fileStorageService;
     }
-    
+
     /**
      * Display shop information page
      * @param model the Spring MVC model
@@ -72,16 +72,16 @@ public class ShopInformationController {
         if (user == null) {
             return "redirect:/seller/login";
         }
-        
+
         // Get user's roles for sidebar
         List<String> roles = userService.getUserRoles(user);
         model.addAttribute("user", user);
         model.addAttribute("roles", roles);
-        
+
         // Get shop information if exists
         ShopDTO shopDTO = new ShopDTO();
         Shop shop = shopService.getShopByUserId(user.getUserId());
-        
+
         if (shop != null) {
             // Copy properties from entity to DTO
             BeanUtils.copyProperties(shop, shopDTO);
@@ -95,30 +95,21 @@ public class ShopInformationController {
             model.addAttribute("shop", shopDTO);
             model.addAttribute("isEdit", false);
         }
-        
+
         return "seller/shop-information";
     }
-    
-    /**
-     * Process form to create/update shop information
-     * @param shopDTO the shop data from form
-     * @param bindingResult validation results
-     * @param logoFile shop logo file
-     * @param identificationFile identification document file
-     * @param redirectAttributes attributes for redirect
-     * @param model the Spring MVC model
-     * @return redirect to shop information page or form with errors
-     */
+
+
     @PostMapping("/shop-information/save")
     public String saveShopInformation(
             @Valid @ModelAttribute("shop") ShopDTO shopDTO,
             BindingResult bindingResult,
             @RequestParam(value = "logoFile", required = false) MultipartFile logoFile,
             @RequestParam(value = "coverImageFile", required = false) MultipartFile coverImageFile,
-            @RequestParam(value = "identificationFile", required = false) MultipartFile identificationFile,
+            // Bỏ RequestParam cho identificationFile vì nó không có trên form edit
             RedirectAttributes redirectAttributes,
-            Model model
-    ) {
+            Model model) {
+
         User user = getCurrentUser();
         if (user == null) {
             return "redirect:/seller/login";
@@ -127,81 +118,86 @@ public class ShopInformationController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("user", user);
             model.addAttribute("roles", userService.getUserRoles(user));
-            return shopDTO.getShopId() == null ? "seller/shop-information" : "seller/edit-shop-information";
+            // Trả về đúng view edit nếu có lỗi
+            return "seller/edit-shop-information";
         }
 
         try {
+            // Ensure userId is set from current user (not from form)
             shopDTO.setUserId(user.getUserId());
 
-            // <<< BẮT ĐẦU THAY ĐỔI LOGIC >>>
-            // Tải thông tin shop hiện có nếu đây là thao tác chỉnh sửa
-            Shop existingShop = null;
-            if (shopDTO.getShopId() != null) {
-                existingShop = shopService.getShopById(shopDTO.getShopId());
-            }
-
-            // Xử lý Logo
+            // Validate file uploads before processing
             if (logoFile != null && !logoFile.isEmpty()) {
-                String logoUrl = fileStorageService.storeFile(logoFile, "logos");
-                shopDTO.setLogoUrl(logoUrl);
-            } else if (existingShop != null) {
-                // Nếu không có file mới, giữ lại logo cũ
-                shopDTO.setLogoUrl(existingShop.getLogoUrl());
+                if (logoFile.getSize() > 5 * 1024 * 1024) { // 5MB limit
+                    model.addAttribute("errorMessage", "Logo file size must be less than 5MB");
+                    model.addAttribute("user", user);
+                    model.addAttribute("roles", userService.getUserRoles(user));
+                    return "seller/edit-shop-information";
+                }
+                if (!isValidImageFile(logoFile)) {
+                    model.addAttribute("errorMessage", "Logo must be a valid image file (JPEG, PNG, GIF, WEBP)");
+                    model.addAttribute("user", user);
+                    model.addAttribute("roles", userService.getUserRoles(user));
+                    return "seller/edit-shop-information";
+                }
             }
 
-            // Xử lý Cover Image
             if (coverImageFile != null && !coverImageFile.isEmpty()) {
-                String coverImageUrl = fileStorageService.storeFile(coverImageFile, "covers");
-                shopDTO.setCoverImageUrl(coverImageUrl);
-            } else if (existingShop != null) {
-                // Nếu không có file mới, giữ lại ảnh bìa cũ
-                shopDTO.setCoverImageUrl(existingShop.getCoverImageUrl());
+                if (coverImageFile.getSize() > 5 * 1024 * 1024) { // 5MB limit
+                    model.addAttribute("errorMessage", "Cover image file size must be less than 5MB");
+                    model.addAttribute("user", user);
+                    model.addAttribute("roles", userService.getUserRoles(user));
+                    return "seller/edit-shop-information";
+                }
+                if (!isValidImageFile(coverImageFile)) {
+                    model.addAttribute("errorMessage", "Cover image must be a valid image file (JPEG, PNG, GIF, WEBP)");
+                    model.addAttribute("user", user);
+                    model.addAttribute("roles", userService.getUserRoles(user));
+                    return "seller/edit-shop-information";
+                }
             }
 
-            // Xử lý Identification File
-            if (identificationFile != null && !identificationFile.isEmpty()) {
-                String identificationFileUrl = fileStorageService.storeFile(identificationFile, "documents");
-                shopDTO.setIdentificationFileUrl(identificationFileUrl);
-            } else if (existingShop != null) {
-                // Nếu không có file mới, giữ lại giấy tờ cũ
-                shopDTO.setIdentificationFileUrl(existingShop.getIdentificationFileUrl());
-            }
-            // <<< KẾT THÚC THAY ĐỔI LOGIC >>>
+            // Update shop information using service
+            shopService.updateShop(shopDTO.getShopId(), shopDTO, logoFile, coverImageFile);
 
-            // Logic cho việc tạo mới không thay đổi
-            if (shopDTO.getShopId() == null) {
-                shopDTO.setRequestAt(LocalDateTime.now());
-                shopDTO.setApprovalStatus(Shop.ApprovalStatus.PENDING);
-            }
-
-            shopService.saveShopInformation(shopDTO);
-
-            redirectAttributes.addFlashAttribute("successMessage", "Shop information saved successfully!");
+            redirectAttributes.addFlashAttribute("successMessage", "Shop information updated successfully!");
             return "redirect:/seller/shop-information";
+
         } catch (IOException e) {
             log.error("File upload error", e);
-            redirectAttributes.addFlashAttribute("errorMessage", "Error uploading file: " + e.getMessage());
-            return "redirect:/seller/shop-information/edit";
+            model.addAttribute("errorMessage", "Error uploading file: " + e.getMessage());
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            return "seller/edit-shop-information";
         } catch (Exception e) {
             log.error("Error saving shop information", e);
-            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred: " + e.getMessage());
-            return "redirect:/seller/shop-information/edit";
+            model.addAttribute("errorMessage", "An error occurred: " + e.getMessage());
+            model.addAttribute("user", user);
+            model.addAttribute("roles", userService.getUserRoles(user));
+            return "seller/edit-shop-information";
         }
     }
 
-// Xóa phương thức private uploadFile() không còn cần thiết
-    
     /**
-     * Mock method for file uploads - in a real application, this would handle proper file storage
-     * @param file the uploaded file
-     * @return URL to the uploaded file
+     * Validate if uploaded file is a valid image
      */
-    private String uploadFile(MultipartFile file) throws IOException {
-        // In a real application, this would upload to a file storage service or server
-        // For this example, we'll just return a mock URL
-        return "/uploads/" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+    private boolean isValidImageFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return false;
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null) {
+            return false;
+        }
+
+        return contentType.equals("image/jpeg") ||
+               contentType.equals("image/jpg") ||
+               contentType.equals("image/png");
     }
-    
+
+// File upload is now handled by ShopService using FileStorageService
+
     /**
      * Helper method to get the current authenticated user
      * @return User object or null if not authenticated or not found
@@ -211,7 +207,7 @@ public class ShopInformationController {
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return null;
         }
-        
+
         // First try to get user ID from session (set by OAuth2LoginSuccessHandler)
         Integer userId = (Integer) httpSession.getAttribute("USER_ID");
         if (userId != null) {
@@ -222,9 +218,9 @@ public class ShopInformationController {
                 return user;
             }
         }
-        
+
         String email;
-        
+
         // Check if authentication is from OAuth2 (Google)
         if (auth instanceof OAuth2AuthenticationToken) {
             OAuth2User oauth2User = ((OAuth2AuthenticationToken) auth).getPrincipal();
@@ -235,19 +231,19 @@ public class ShopInformationController {
             email = auth.getName();
             log.debug("Getting regular user with email: {}", email);
         }
-        
+
         if (email == null) {
             log.warn("Could not extract email from authentication: {}", auth.getPrincipal());
             return null;
         }
-        
+
         // Find user by email
         Optional<User> userOptional = userService.findByEmail(email);
         if (userOptional.isEmpty()) {
             log.warn("No user found for email: {}", email);
             return null;
         }
-        
+
         User user = userOptional.get();
         log.debug("Found user: id={}, name={}", user.getUserId(), user.getFullName());
         return user;

@@ -13,6 +13,7 @@ import com.example.isp392.repository.OrderRepository;
 import java.security.SecureRandom;
 import java.util.*;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,18 +47,18 @@ public class UserService implements UserDetailsService {
      * Constructor with explicit dependency injection
      * This is preferred over field injection with @Autowired as it makes dependencies clear,
      * ensures they're required, and makes testing easier
-     * 
+     *
      * @param userRepository Repository for user data access
      * @param roleRepository Repository for role data access
      * @param userRoleRepository Repository for user-role relationship data access
      * @param passwordEncoder Password encoder for securely storing passwords
      */
     public UserService(UserRepository userRepository,
-                      RoleRepository roleRepository,
-                      UserRoleRepository userRoleRepository,
-                      PasswordEncoder passwordEncoder,
-                      OrderRepository orderRepository,
-                      WalletService walletService) {
+                       RoleRepository roleRepository,
+                       UserRoleRepository userRoleRepository,
+                       PasswordEncoder passwordEncoder,
+                       OrderRepository orderRepository,
+                       WalletService walletService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
@@ -81,7 +82,7 @@ public class UserService implements UserDetailsService {
 
         // Get user roles
         List<UserRole> userRoles = userRoleRepository.findByUser(user);
-        
+
         // Map roles to authorities
         Collection<SimpleGrantedAuthority> authorities = userRoles.stream()
                 .filter(UserRole::isRoleActiveForUser)
@@ -99,6 +100,7 @@ public class UserService implements UserDetailsService {
                 authorities
         );
     }
+
 
     /**
      * Register a new buyer user
@@ -118,11 +120,11 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(registrationDTO.getPassword())); // Encode password
         user.setFullName(registrationDTO.getFullName());
         user.setPhone(registrationDTO.getPhoneNumber());
-        
+
         // Parse and set date of birth
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         user.setDateOfBirth(LocalDate.parse(registrationDTO.getDateOfBirth(), dateFormatter));
-        
+
         // Set gender (0 - Male, 1 - Female, 2 - Other)
         String genderStr = registrationDTO.getGender().toLowerCase();
         if ("male".equals(genderStr)) {
@@ -132,7 +134,7 @@ public class UserService implements UserDetailsService {
         } else {
             user.setGender(2); // Other
         }
-        
+
         // Save user
         User savedUser = userRepository.save(user);
 
@@ -181,7 +183,7 @@ public class UserService implements UserDetailsService {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
-    
+
     /**
      * Find user by email and return the user object directly
      * @param email the email to search for
@@ -212,7 +214,7 @@ public class UserService implements UserDetailsService {
                 .map(userRole -> "ROLE_" + userRole.getRole().getRoleName())
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Update user information
      * @param email the user's email
@@ -227,16 +229,16 @@ public class UserService implements UserDetailsService {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
+
         // Update user information
         user.setFullName(fullName);
         user.setPhone(phone);
         user.setGender(gender);
-        
+
         // Save and return updated user
         return userRepository.save(user);
     }
-    
+
     /**
      * Update user information including date of birth
      * @param email the user's email
@@ -252,17 +254,32 @@ public class UserService implements UserDetailsService {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
+
         // Update user information
         user.setFullName(fullName);
         user.setPhone(phone);
         user.setGender(gender);
         user.setDateOfBirth(dateOfBirth);
-        
+
         // Save and return updated user
         return userRepository.save(user);
     }
-    
+
+    @Transactional
+    public void demoteUserFromSeller(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+
+        Role sellerRole = roleRepository.findByRoleName("SELLER")
+                .orElseThrow(() -> new IllegalStateException("SELLER role not found in the database."));
+
+        // Tìm và xóa bản ghi UserRole tương ứng
+        user.getUserRoles().removeIf(userRole -> userRole.getRole().equals(sellerRole));
+
+        userRepository.save(user);
+    }
+
+
     /**
      * Save a user to the database
      * @param user the user to save
@@ -274,19 +291,19 @@ public class UserService implements UserDetailsService {
         if (user.getGender() < 0 || user.getGender() > 2) {
             user.setGender(2); // Default to 'Other' if invalid
         }
-        
+
         // Ensure all other required fields are not null
         if (user.getDateOfBirth() == null) {
             user.setDateOfBirth(LocalDate.now());
         }
-        
+
         if (user.getFullName() == null) {
             user.setFullName("Google User");
         }
-        
+
         return userRepository.save(user);
     }
-    
+
     /**
      * Generate a random password for OAuth2 users
      * @return a random password string
@@ -297,7 +314,7 @@ public class UserService implements UserDetailsService {
         random.nextBytes(bytes);
         return Base64.getEncoder().encodeToString(bytes);
     }
-    
+
     /**
      * Encode a password using the password encoder
      * @param password the raw password
@@ -306,7 +323,7 @@ public class UserService implements UserDetailsService {
     public String encodePassword(String password) {
         return passwordEncoder.encode(password);
     }
-    
+
     /**
      * Update user information including date of birth and profile picture
      * @param email the user's email
@@ -323,22 +340,22 @@ public class UserService implements UserDetailsService {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
+
         // Update user information
         user.setFullName(fullName);
         user.setPhone(phone);
         user.setGender(gender);
         user.setDateOfBirth(dateOfBirth);
-        
+
         // Update profile picture URL if provided
         if (profilePicUrl != null && !profilePicUrl.isEmpty()) {
             user.setProfilePicUrl(profilePicUrl);
         }
-        
+
         // Save and return updated user
         return userRepository.save(user);
     }
-    
+
     /**
      * Update user password
      * @param email the user's email
@@ -352,19 +369,19 @@ public class UserService implements UserDetailsService {
         // Find user by email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
+
         // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             return false; // Current password is incorrect
         }
-        
+
         // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        
+
         return true;
     }
-    
+
     /**
      * Change user password directly (for password reset)
      * @param user the user to update
@@ -377,12 +394,12 @@ public class UserService implements UserDetailsService {
         if (user.isOAuth2User()) {
             throw new RuntimeException("Cannot change password for OAuth2 user");
         }
-        
+
         // Encode and update the password
         user.setPassword(passwordEncoder.encode(newPassword));
         return userRepository.save(user);
     }
-    
+
     /**
      * Check if a given password matches the user's current password
      * @param user the user to check
@@ -394,7 +411,7 @@ public class UserService implements UserDetailsService {
         if (user.isOAuth2User()) {
             return false;
         }
-        
+
         // Use the password encoder to check if the given password matches the stored password
         return passwordEncoder.matches(password, user.getPassword());
     }
