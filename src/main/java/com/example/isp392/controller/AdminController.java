@@ -550,22 +550,11 @@ AdminController {
             // Xử lý upload ảnh mới nếu có
             if (coverImageFile != null && !coverImageFile.isEmpty()) {
                 try {
-                    String uploadDir = "src/main/resources/static/images/uploads/";
-                    Path uploadPath = Paths.get(uploadDir);
-
-                    if (!Files.exists(uploadPath)) {
-                        Files.createDirectories(uploadPath);
-                    }
-
-                    String uniqueFilename = System.currentTimeMillis() + "_" + coverImageFile.getOriginalFilename();
-                    Path filePath = uploadPath.resolve(uniqueFilename);
-
-                    try (InputStream inputStream = coverImageFile.getInputStream()) {
-                        Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
-                    }
+                    // Use FileStorageService for consistent upload handling
+                    String imageUrl = fileStorageService.storeFile(coverImageFile, "book-covers");
 
                     // Cập nhật đường dẫn ảnh mới cho sách
-                    existingBook.setCoverImgUrl("/images/uploads/" + uniqueFilename);
+                    existingBook.setCoverImgUrl(imageUrl);
 
                 } catch (IOException e) {
                     e.printStackTrace();

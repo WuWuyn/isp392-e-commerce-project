@@ -485,9 +485,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      */
     @Query(value = "SELECT TOP(:limit) " +
             "s.shop_name, u.full_name AS seller_name, " +
-            // MODIFICATION: Added 'AS total_orders' to match the HTML template
-            "COUNT(DISTINCT co.customer_order_id) AS total_orders, " +
-            "COALESCE(SUM(co.total_amount), 0) AS total_revenue " +
+            "COALESCE(SUM(co.total_amount), 0) AS total_sales, " +
+            "COALESCE(SUM(co.total_amount * :commissionRate), 0) AS platform_revenue, " +
+            "COUNT(DISTINCT co.customer_order_id) AS order_count, " +
+            "COALESCE(AVG(co.total_amount), 0) AS average_order_value " +
             "FROM shops s " +
             "JOIN users u ON s.user_id = u.user_id " +
             "LEFT JOIN orders o ON s.shop_id = o.shop_id " +
@@ -495,7 +496,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "WHERE (co.status IS NULL OR co.status NOT IN ('CANCELLED', 'REFUNDED')) " +
             "AND (co.created_at IS NULL OR CAST(co.created_at AS DATE) BETWEEN :startDate AND :endDate) " +
             "GROUP BY s.shop_id, s.shop_name, u.full_name " +
-            "ORDER BY total_revenue DESC",
+            "ORDER BY total_sales DESC",
             nativeQuery = true)
     List<Map<String, Object>> getTopSellersByRevenue(
             @Param("startDate") LocalDate startDate,

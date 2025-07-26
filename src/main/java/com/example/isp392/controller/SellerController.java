@@ -739,8 +739,8 @@ public class SellerController {
                     String fileName = System.currentTimeMillis() + "_" +
                             (originalFilename != null ? originalFilename : "profile.jpg");
 
-                    // Get upload directory path - use the same path configured in FileUploadConfig
-                    String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/profile-pictures/";
+                    // Get upload directory path - use project root uploads directory to match resource handler
+                    String uploadDir = System.getProperty("user.dir") + "/uploads/profile-pictures/";
                     File uploadDirectory = new File(uploadDir);
                     if (!uploadDirectory.exists()) {
                         uploadDirectory.mkdirs();
@@ -937,7 +937,7 @@ public class SellerController {
     public String showProductsPage(
             Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "9") int size,
             @RequestParam(required = false) String searchQuery,
             @RequestParam(defaultValue = "dateAdded") String sortField,
             @RequestParam(defaultValue = "desc") String sortDir) {
@@ -1489,8 +1489,8 @@ public class SellerController {
         String fileName = System.currentTimeMillis() + "_" +
                 (originalFilename != null ? originalFilename : "file.jpg");
 
-        // Get upload directory path
-        String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/" + subDirectory + "/";
+        // Get upload directory path - use project root uploads directory to match resource handler
+        String uploadDir = System.getProperty("user.dir") + "/uploads/" + subDirectory + "/";
         File uploadDirectory = new File(uploadDir);
         if (!uploadDirectory.exists()) {
             uploadDirectory.mkdirs();

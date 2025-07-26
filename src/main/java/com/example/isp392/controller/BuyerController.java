@@ -310,8 +310,8 @@ public class BuyerController {
                     String fileName = System.currentTimeMillis() + "_" +
                             (originalFilename != null ? originalFilename : "profile.jpg");
 
-                    // Get upload directory path - use the same path configured in FileUploadConfig
-                    String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/profile-pictures/";
+                    // Get upload directory path - use project root uploads directory to match resource handler
+                    String uploadDir = System.getProperty("user.dir") + "/uploads/profile-pictures/";
                     File uploadDirectory = new File(uploadDir);
                     if (!uploadDirectory.exists()) {
                         uploadDirectory.mkdirs();
