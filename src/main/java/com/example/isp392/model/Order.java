@@ -88,9 +88,9 @@ public class Order {
      * @return true nếu có thể hủy, false nếu không
      */
     public boolean canCancel() {
-        // Chỉ có thể hủy nếu đơn hàng đang ở trạng thái PROCESSING (chưa ship)
-        // Không cho phép hủy khi đã SHIPPED, DELIVERED hoặc CANCELLED
-        return orderStatus == OrderStatus.PROCESSING;
+        // Có thể hủy nếu đơn hàng đang ở trạng thái PROCESSING hoặc SHIPPED
+        // Không cho phép hủy khi đã DELIVERED hoặc CANCELLED
+        return orderStatus == OrderStatus.PROCESSING || orderStatus == OrderStatus.SHIPPED;
     }
     
     /**
