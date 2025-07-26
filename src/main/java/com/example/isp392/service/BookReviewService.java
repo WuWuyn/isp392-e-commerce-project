@@ -24,9 +24,11 @@ import java.util.stream.Collectors;
 public class BookReviewService {
 
     private final BookReviewRepository bookReviewRepository;
+    private final BookService bookService;
 
-    public BookReviewService(BookReviewRepository bookReviewRepository) {
+    public BookReviewService(BookReviewRepository bookReviewRepository, BookService bookService) {
         this.bookReviewRepository = bookReviewRepository;
+        this.bookService = bookService;
     }
 
     // Lấy đánh giá đã có hoặc tạo mới
@@ -58,11 +60,23 @@ public class BookReviewService {
             review.setCreatedDate(LocalDateTime.now());
             bookReviewRepository.save(review);
         }
+
+        // Cập nhật thống kê đánh giá cho sách
+        if (orderItem != null && orderItem.getBook() != null) {
+            bookService.updateBookReviewStatistics(orderItem.getBook().getBookId());
+        }
     }
 
     // Save review
     public BookReview saveReview(BookReview review) {
-        return bookReviewRepository.save(review);
+        BookReview savedReview = bookReviewRepository.save(review);
+
+        // Cập nhật thống kê đánh giá cho sách
+        if (review.getOrderItem() != null && review.getOrderItem().getBook() != null) {
+            bookService.updateBookReviewStatistics(review.getOrderItem().getBook().getBookId());
+        }
+
+        return savedReview;
     }
 
     // Lấy danh sách ID của các OrderItem đã được người dùng đánh giá
@@ -81,7 +95,19 @@ public class BookReviewService {
 
             // **Kiểm tra bảo mật quan trọng**: Chỉ cho phép xóa nếu review thuộc về người dùng hiện tại.
             if (review.getUser().getUserId().equals(currentUser.getUserId())) {
+                // Lưu thông tin sách trước khi xóa để cập nhật thống kê
+                Integer bookId = null;
+                if (review.getOrderItem() != null && review.getOrderItem().getBook() != null) {
+                    bookId = review.getOrderItem().getBook().getBookId();
+                }
+
                 bookReviewRepository.delete(review);
+
+                // Cập nhật thống kê đánh giá cho sách sau khi xóa
+                if (bookId != null) {
+                    bookService.updateBookReviewStatistics(bookId);
+                }
+
                 return true;
             }
         }
