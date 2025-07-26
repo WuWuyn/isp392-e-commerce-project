@@ -219,12 +219,9 @@ public class OrderService {
     }
 
     private void validateCustomerOrderStatus(CustomerOrder customerOrder, OrderStatus newStatus) {
-        // Check if any order in the customer order is in an incompatible state
-        for (Order order : customerOrder.getOrders()) {
-            if (order.getOrderStatus() == OrderStatus.CANCELLED && newStatus != OrderStatus.CANCELLED) {
-                throw new IllegalStateException("Không thể cập nhật trạng thái khi có đơn hàng đã hủy trong nhóm");
-            }
-        }
+        // Orders are independent - no validation needed based on other orders in the group
+        // Each order can be updated independently regardless of other orders' statuses
+        // The CustomerOrder status will be updated automatically based on individual order statuses
     }
 
     public Optional<Order> findOrderById(Integer orderId) {
