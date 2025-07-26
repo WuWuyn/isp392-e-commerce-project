@@ -168,7 +168,7 @@
                             <div class="card-body">
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <h6 class="card-title">Tổng đơn hàng</h6>
+                                        <h6 class="card-title">Order total</h6>
                                         <h3 class="mb-0" th:text="${statistics.totalOrders}">0</h3>
                                     </div>
                                     <div class="align-self-center">
@@ -183,9 +183,8 @@
                             <div class="card-body">
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <h6 class="card-title">Tổng chi tiêu</h6>
-                                        <h3 class="mb-0" th:text="${#numbers.formatDecimal(statistics.totalSpent, 0, 'COMMA', 0, 'POINT')} + ' VND'">0 VND</h3>
-                                        <small>Đơn hàng đã giao</small>
+                                        <h6 class="card-title">Total spending</h6>
+                                        <h3 class="mb-0" th:text="${#numbers.formatDecimal(statistics.totalSpent, 0, 'COMMA', 0, 'POINT')}">0</h3>
                                     </div>
                                     <div class="align-self-center">
                                         <i class="fas fa-money-bill-wave fa-2x"></i>
@@ -199,7 +198,7 @@
                             <div class="card-body">
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <h6 class="card-title">Đã giao</h6>
+                                        <h6 class="card-title">Delivered</h6>
                                         <h3 class="mb-0" th:text="${statistics.ordersByStatus['DELIVERED'] ?: 0}">0</h3>
                                     </div>
                                     <div class="align-self-center">
@@ -214,7 +213,7 @@
                             <div class="card-body">
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <h6 class="card-title">Đang xử lý</h6>
+                                        <h6 class="card-title">Processing</h6>
                                         <h3 class="mb-0" th:text="${(statistics.ordersByStatus['PENDING'] ?: 0) + (statistics.ordersByStatus['PROCESSING'] ?: 0) + (statistics.ordersByStatus['SHIPPED'] ?: 0)}">0</h3>
                                     </div>
                                     <div class="align-self-center">
@@ -234,15 +233,15 @@
                         <!-- Filters -->
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label for="searchInput" class="form-label small text-muted">Tìm kiếm</label>
+                                <label for="searchInput" class="form-label small text-muted">Search</label>
                                 <input type="text" class="form-control rounded-3" id="searchInput"
-                                       placeholder="Tìm theo mã đơn hàng hoặc tên sách..."
+                                       placeholder="Search by order id or book title..."
                                        th:value="${param.search}">
                             </div>
                             <div class="col-md-2">
-                                <label for="statusFilter" class="form-label small text-muted">Trạng thái</label>
+                                <label for="statusFilter" class="form-label small text-muted">Status</label>
                                 <select class="form-select rounded-3" id="statusFilter">
-                                    <option value="">Tất cả</option>
+                                    <option value="">All</option>
                                     <option th:each="status : ${T(com.example.isp392.model.OrderStatus).values()}"
                                             th:value="${status}"
                                             th:text="${status.toString()}"
@@ -251,12 +250,12 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <label for="dateFrom" class="form-label small text-muted">Từ ngày</label>
+                                <label for="dateFrom" class="form-label small text-muted">From Date</label>
                                 <input type="date" class="form-control rounded-3" id="dateFrom"
                                        th:value="${param.dateFrom}" max="9999-12-31">
                             </div>
                             <div class="col-md-2">
-                                <label for="dateTo" class="form-label small text-muted">Đến ngày</label>
+                                <label for="dateTo" class="form-label small text-muted">To Date</label>
                                 <input type="date" class="form-control rounded-3" id="dateTo"
                                        th:value="${param.dateTo}" max="9999-12-31">
                             </div>
@@ -264,10 +263,10 @@
                         <div class="row g-3 mb-4">
                             <div class="col-12 d-flex gap-2">
                                 <button class="btn btn-primary rounded-3" onclick="filterOrders()">
-                                    <i class="fas fa-search me-1"></i> Tìm kiếm
+                                    <i class="fas fa-search me-1"></i> Search
                                 </button>
                                 <button class="btn btn-outline-secondary rounded-3" onclick="resetFilters()">
-                                    <i class="fas fa-undo-alt me-1"></i> Đặt lại
+                                    <i class="fas fa-undo-alt me-1"></i> Reset
                                 </button>
                             </div>
                         </div>

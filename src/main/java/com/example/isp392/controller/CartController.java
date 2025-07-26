@@ -141,7 +141,7 @@ public class CartController {
             // Kiểm tra số lượng trước khi thêm vào giỏ hàng
             if (!cartService.checkCartItemAvailability(user, bookId, quantity)) {
                 response.put("success", false);
-                response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
+                response.put("message", "Requested book quantity exceeds available stock");
                 return ResponseEntity.badRequest().body(response);
             }
             
@@ -241,7 +241,7 @@ public class CartController {
                 // Kiểm tra số lượng sách trong kho
                 if (!cartService.checkBookAvailability(bookId, quantity)) {
                     response.put("success", false);
-                    response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
+                    response.put("message", "Requested book quantity exceeds available stock");
                     return ResponseEntity.badRequest().body(response);
                 }
                 
@@ -306,7 +306,7 @@ public class CartController {
             // Kiểm tra số lượng trong kho
             if (!cartService.checkBookAvailability(bookId, quantity)) {
                 response.put("success", false);
-                response.put("message", "Số lượng sách yêu cầu vượt quá số lượng hiện có trong kho");
+                response.put("message", "Requested book quantity exceeds available stock");
                 return ResponseEntity.badRequest().body(response);
             }
             

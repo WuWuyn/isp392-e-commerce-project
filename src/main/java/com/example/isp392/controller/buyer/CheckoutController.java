@@ -88,7 +88,16 @@ public class CheckoutController {
 
         try {
             List<CartItem> selectedCartItems = cartService.getSelectedCartItems(user, itemIds);
-            logger.info("Retrieved {} cart items", selectedCartItems.size());
+            logger.info("Retrieved {} cart items for user: {}", selectedCartItems.size(), user.getEmail());
+
+            // Debug: log each cart item
+            for (CartItem item : selectedCartItems) {
+                logger.info("Cart item: Book={}, Price={}, Quantity={}, Total={}",
+                    item.getBook().getTitle(),
+                    item.getBook().getSellingPrice(),
+                    item.getQuantity(),
+                    item.getBook().getSellingPrice().doubleValue() * item.getQuantity());
+            }
 
             if (selectedCartItems.isEmpty()) {
                 logger.warn("No cart items found for the given IDs, redirecting to cart");

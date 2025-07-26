@@ -260,7 +260,7 @@
                                                     <input type="checkbox" name="selected" th:value="${item.book.bookId}"
                                                            class="item-checkbox form-check-input"
                                                            th:disabled="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity}"
-                                                           th:title="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity ? 'Sản phẩm không đủ số lượng trong kho' : ''}"
+                                                           th:title="${item.book.stockQuantity == null || item.book.stockQuantity < item.quantity ? 'Product does not have enough quantity in stock' : ''}"
                                                            th:data-stock="${item.book.stockQuantity}">
                                                 </td>
                                                 <td>
@@ -275,32 +275,32 @@
                                                             <!-- Always show author if available -->
                                                             <p class="mb-0 small text-muted" th:if="${item.book.authors != null}">
                                                                 <i class="fas fa-user-edit"></i>
-                                                                <span th:text="'Tác giả: ' + ${item.book.authors}">Tác giả: Author Name</span>
+                                                                <span th:text="'Author: ' + ${item.book.authors}">Tác giả: Author Name</span>
                                                             </p>
 
                                                             <!-- Show shop name with link -->
                                                             <p class="mb-0 small text-muted" th:if="${item.book.shop != null}">
                                                                 <i class="fas fa-store"></i>
                                                                 <a th:href="@{/shops/{shopId}(shopId=${item.book.shop.shopId})}"
-                                                                   th:text="'Cửa hàng: ' + ${item.book.shop.shopName}"
+                                                                   th:text="'Shop: ' + ${item.book.shop.shopName}"
                                                                    class="text-decoration-none">Cửa hàng: Shop Name</a>
                                                             </p>
 
                                                             <!-- Show low stock warning (5 or less) with author -->
                                                             <p class="mb-0 small text-warning" th:if="${item.book.stockQuantity != null && item.book.stockQuantity <= 5 && item.book.stockQuantity >= item.quantity}">
                                                                 <i class="fas fa-exclamation-triangle"></i>
-                                                                <span>Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho</span>
+                                                                <span>Only [[${item.book.stockQuantity}]] products left in stock</span>
                                                             </p>
 
                                                             <!-- Show insufficient stock error -->
                                                             <p class="mb-0 small text-danger" th:if="${item.book.stockQuantity != null && item.book.stockQuantity < item.quantity}">
                                                                 <i class="fas fa-exclamation-circle"></i>
-                                                                <span>Chỉ còn [[${item.book.stockQuantity}]] sản phẩm trong kho</span>
+                                                                <span>Only [[${item.book.stockQuantity}]] products left in stock</span>
                                                             </p>
 
                                                             <!-- Show out of stock -->
                                                             <p class="mb-0 small text-danger" th:if="${item.book.stockQuantity == null || item.book.stockQuantity == 0}">
-                                                                <i class="fas fa-times-circle"></i> Sản phẩm đã hết hàng
+                                                                <i class="fas fa-times-circle"></i> Product out of stock
                                                             </p>
                                                         </div>
                                                     </div>
@@ -730,7 +730,7 @@
                             } else {
                                 // Revert to original value on error
                                 input.value = currentQty;
-                                showToast('error', data.message || 'Không thể cập nhật số lượng.');
+                                showToast('error', data.message || 'Unable to update quantity.');
                             }
                         });
                     })
@@ -738,7 +738,7 @@
                         console.error('Error updating quantity:', error);
                         // Revert to original value on error
                         input.value = currentQty;
-                        showToast('error', 'Có lỗi xảy ra khi cập nhật số lượng.');
+                        showToast('error', 'An error occurred while updating the quantity.');
                     })
                     .finally(() => {
                         // Re-enable buttons and remove visual feedback
@@ -859,7 +859,7 @@
                     checkoutBtn.removeAttribute('title');
                 } else {
                     checkoutBtn.classList.add('disabled');
-                    checkoutBtn.setAttribute('title', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+                    checkoutBtn.setAttribute('title', 'Please select at least one product to checkout');
                 }
                 
                 console.log("Checkout button state updated. Disabled:", checkoutBtn.disabled);
@@ -968,7 +968,7 @@
             if (selectedIds.length === 0) {
                 console.log("No items selected, showing alert");
                 console.groupEnd();
-                showToast('error', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+                showToast('error', 'Please select at least one product to checkout');
                 return;
             }
 
@@ -999,7 +999,7 @@
             } catch (error) {
                 console.error("Error during checkout:", error);
                 console.groupEnd();
-                showToast('error', 'Có lỗi xảy ra khi xử lý thanh toán. Vui lòng thử lại.');
+                showToast('error', 'An error occurred while processing the payment. Please try again.');
             }
         };
 
