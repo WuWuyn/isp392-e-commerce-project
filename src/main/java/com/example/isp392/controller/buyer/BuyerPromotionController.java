@@ -82,10 +82,12 @@ public class BuyerPromotionController {
 
 
 
-            // Calculate usage statistics for each promotion
+            // Calculate usage statistics for each promotion (simplified)
             Map<Integer, PromotionUsageStats> usageStatsMap = new HashMap<>();
             if (activePromotions.hasContent()) {
-                usageStatsMap = calculateUsageStats(activePromotions.getContent(), currentUser);
+                for (Promotion promotion : activePromotions.getContent()) {
+                    usageStatsMap.put(promotion.getPromotionId(), createSimpleUsageStats(promotion, currentUser));
+                }
             }
 
             // Add attributes to model
@@ -146,8 +148,8 @@ public class BuyerPromotionController {
                 return "buyer/promotions";
             }
 
-            // Calculate usage statistics for this promotion
-            PromotionUsageStats usageStats = calculateSinglePromotionUsageStats(promotion, currentUser);
+            // Calculate usage statistics for this promotion (simplified)
+            PromotionUsageStats usageStats = createSimpleUsageStats(promotion, currentUser);
 
             // Add attributes to model
             model.addAttribute("promotion", promotion);
@@ -176,59 +178,41 @@ public class BuyerPromotionController {
     }
 
     /**
-     * Calculate usage statistics for multiple promotions
+     * Create simplified usage statistics to avoid complex calculations
      */
-    private Map<Integer, PromotionUsageStats> calculateUsageStats(List<Promotion> promotions, User user) {
-        Map<Integer, PromotionUsageStats> statsMap = new HashMap<>();
-
-        if (promotions != null && user != null) {
-            for (Promotion promotion : promotions) {
-                if (promotion != null && promotion.getPromotionId() != null) {
-                    try {
-                        PromotionUsageStats stats = calculateSinglePromotionUsageStats(promotion, user);
-                        statsMap.put(promotion.getPromotionId(), stats);
-                    } catch (Exception e) {
-                        logger.warn("Error calculating usage stats for promotion {}: {}",
-                                   promotion.getPromotionId(), e.getMessage());
-                        // Create default stats for this promotion
-                        statsMap.put(promotion.getPromotionId(), createDefaultUsageStats());
-                    }
-                }
+    private PromotionUsageStats createSimpleUsageStats(Promotion promotion, User user) {
+        try {
+            // Get user's usage count for this promotion (simplified)
+            int userUsageCount = 0;
+            if (user != null && promotion != null && promotion.getPromotionId() != null) {
+                userUsageCount = promotionUsageRepository.countByUserIdAndPromotionId(
+                    user.getUserId(), promotion.getPromotionId());
             }
+
+            // Calculate remaining uses for the user (simplified)
+            Integer remainingUses = null;
+            if (promotion.getUsageLimitPerUser() != null) {
+                remainingUses = Math.max(0, promotion.getUsageLimitPerUser() - userUsageCount);
+            }
+
+            // Simplified - don't calculate complex global usage stats
+            boolean canBeUsed = promotion.getIsActive() &&
+                               (promotion.getUsageLimitPerUser() == null || userUsageCount < promotion.getUsageLimitPerUser());
+
+            return new PromotionUsageStats(
+                userUsageCount,
+                promotion.getUsageLimitPerUser(),
+                remainingUses,
+                0, // Simplified - don't show total usage count
+                null, // Simplified - don't show total usage limit
+                null, // Simplified - don't show total remaining uses
+                canBeUsed
+            );
+        } catch (Exception e) {
+            logger.warn("Error creating usage stats for promotion {}: {}",
+                       promotion != null ? promotion.getPromotionId() : "null", e.getMessage());
+            return createDefaultUsageStats();
         }
-
-        return statsMap;
-    }
-
-    /**
-     * Calculate usage statistics for a single promotion
-     */
-    private PromotionUsageStats calculateSinglePromotionUsageStats(Promotion promotion, User user) {
-        // Get user's usage count for this promotion
-        int userUsageCount = promotionUsageRepository.countByUserIdAndPromotionId(
-            user.getUserId(), promotion.getPromotionId());
-
-        // Calculate remaining uses for the user
-        Integer remainingUses = null;
-        if (promotion.getUsageLimitPerUser() != null) {
-            remainingUses = Math.max(0, promotion.getUsageLimitPerUser() - userUsageCount);
-        }
-
-        // Calculate total remaining uses
-        Integer totalRemainingUses = null;
-        if (promotion.getTotalUsageLimit() != null) {
-            totalRemainingUses = Math.max(0, promotion.getTotalUsageLimit() - promotion.getCurrentUsageCount());
-        }
-
-        return new PromotionUsageStats(
-            userUsageCount,
-            promotion.getUsageLimitPerUser(),
-            remainingUses,
-            promotion.getCurrentUsageCount(),
-            promotion.getTotalUsageLimit(),
-            totalRemainingUses,
-            promotion.canBeUsed()
-        );
     }
 
     /**

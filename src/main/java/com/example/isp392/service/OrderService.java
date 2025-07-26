@@ -189,20 +189,13 @@ public class OrderService {
             // Save order
             orderRepository.save(order);
 
-            // Process wallet refund if applicable
+            // Process wallet refund for this individual order
             if (order.getCustomerOrder() != null) {
                 try {
-                    // Check if this is the last order in the customer order to be cancelled
-                    CustomerOrder customerOrder = order.getCustomerOrder();
-                    boolean allOrdersCancelled = customerOrder.getOrders().stream()
-                            .allMatch(o -> o.getOrderStatus() == OrderStatus.CANCELLED);
-
-                    if (allOrdersCancelled) {
-                        // Process refund to wallet for the entire customer order
-                        walletService.processRefund(customerOrder);
-                        logger.info("Processed wallet refund for customer order {} after cancelling order {}",
-                                   customerOrder.getCustomerOrderId(), orderId);
-                    }
+                    // Process refund to wallet for this specific order
+                    walletService.processOrderRefund(order);
+                    logger.info("Processed wallet refund for order {} (amount: {})",
+                               orderId, order.getTotalAmount());
                 } catch (Exception e) {
                     logger.error("Failed to process wallet refund for order {}: {}", orderId, e.getMessage(), e);
                     // Don't fail the cancellation if refund fails, but log the error
@@ -644,37 +637,43 @@ public class OrderService {
                 return false;
             }
 
-            // Set payment status to REFUNDED
-            order.getCustomerOrder().setPaymentStatus(PaymentStatus.REFUNDED);
-            
             // Set order status to CANCELLED if not already
             if (order.getOrderStatus() != OrderStatus.CANCELLED) {
                 OrderStatus oldStatus = order.getOrderStatus();
                 order.setOrderStatus(OrderStatus.CANCELLED);
                 handleInventoryForStatusChange(order, oldStatus, OrderStatus.CANCELLED);
             }
-            
+
             // Add refund reason to notes
             if (refundReason != null && !refundReason.trim().isEmpty()) {
                 String existingNotes = order.getNotes();
                 String timestamp = LocalDateTime.now().toString();
                 String refundNote = "[REFUND " + timestamp + "]: " + refundReason;
-                
+
                 if (existingNotes != null && !existingNotes.isEmpty()) {
                     order.setNotes(existingNotes + "\n" + refundNote);
                 } else {
                     order.setNotes(refundNote);
                 }
             }
-            
+
+            // Process wallet refund for this individual order
+            try {
+                walletService.processOrderRefund(order);
+                logger.info("Processed wallet refund for order {} with reason: {}", orderId, refundReason);
+            } catch (Exception e) {
+                logger.error("Failed to process wallet refund for order {}: {}", orderId, e.getMessage(), e);
+                // Continue with the refund process even if wallet refund fails
+            }
+
             // Save the order
             orderRepository.save(order);
-            
+
             // Update customer order status if needed
             if (order.getCustomerOrder() != null) {
                 customerOrderService.updateCustomerOrderStatus(order.getCustomerOrder().getCustomerOrderId());
             }
-            
+
             return true;
         }).orElse(false);
     }
