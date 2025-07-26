@@ -344,7 +344,7 @@
                                         <strong th:text="${seller.platform_revenue != null ? #numbers.formatCurrency(seller.platform_revenue) : '$0'}">$0</strong>
                                     </td>
                                     <td th:text="${seller.order_count ?: '0'}">0</td>
-                                    <td>$0</td>
+                                    <td th:text="${seller.average_order_value != null ? #numbers.formatCurrency(seller.average_order_value) : '$0'}">$0</td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(topSellers)}">
                                     <td colspan="7" class="text-center text-muted">No data available for the selected period</td>
