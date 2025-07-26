@@ -191,17 +191,13 @@
                         <!-- Stats Summary -->
                         <div class="stats-summary">
                             <div class="row text-center">
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <h3 class="text-primary" th:text="${totalElements}">0</h3>
                                     <p class="mb-0">Active Promotions</p>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <h3 class="text-success" th:text="${promotions != null ? promotions.numberOfElements : 0}">0</h3>
                                     <p class="mb-0">Available for You</p>
-                                </div>
-                                <div class="col-md-4">
-                                    <h3 class="text-info">0</h3>
-                                    <p class="mb-0">Your Total Uses</p>
                                 </div>
                             </div>
                         </div>
@@ -260,8 +256,8 @@
                              th:classappend="${promotion.promotionType.name() == 'PERCENTAGE_DISCOUNT'} ? 'percentage' : ''">
                             <span th:if="${promotion.promotionType.name() == 'PERCENTAGE_DISCOUNT'}" 
                                   th:text="${promotion.discountValue} + '% OFF'">10% OFF</span>
-                            <span th:if="${promotion.promotionType.name() == 'FIXED_AMOUNT_DISCOUNT'}" 
-                                  th:text="'$' + ${#numbers.formatDecimal(promotion.discountValue, 0, 'COMMA', 0, 'POINT')} + ' OFF'">$50 OFF</span>
+                            <span th:if="${promotion.promotionType.name() == 'FIXED_AMOUNT_DISCOUNT'}"
+                                  th:text="${#numbers.formatDecimal(promotion.discountValue, 0, 'COMMA', 0, 'POINT')} + ' VND OFF'">${promotion.discountValue} VND OFF</span>
                         </div>
                         
                         <!-- Description -->
@@ -310,11 +306,11 @@
                         <div class="promotion-details">
                             <div class="detail-item" th:if="${promotion.minOrderValue != null}">
                                 <span><i class="fas fa-shopping-cart me-1"></i>Min. Order:</span>
-                                <span th:text="'$' + ${#numbers.formatDecimal(promotion.minOrderValue, 0, 'COMMA', 0, 'POINT')}">$100</span>
+                                <span th:text="${#numbers.formatDecimal(promotion.minOrderValue, 0, 'COMMA', 0, 'POINT')} + ' VND'">${promotion.minOrderValue} VND</span>
                             </div>
                             <div class="detail-item" th:if="${promotion.maxDiscountAmount != null}">
                                 <span><i class="fas fa-tag me-1"></i>Max. Discount:</span>
-                                <span th:text="'$' + ${#numbers.formatDecimal(promotion.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}">$50</span>
+                                <span th:text="${#numbers.formatDecimal(promotion.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'">${promotion.maxDiscountAmount} VND</span>
                             </div>
                         </div>
                         

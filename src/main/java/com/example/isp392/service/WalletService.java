@@ -185,10 +185,85 @@ public class WalletService {
     }
 
     /**
-     * Process refund to wallet for cancelled order
-     * @param customerOrder The cancelled customer order
+     * Process refund to wallet for cancelled individual order
+     * @param order The cancelled order
      * @return The wallet transaction if refund was processed, null if not applicable
      */
+    @Transactional
+    public WalletTransaction processOrderRefund(Order order) {
+        // Validate refund conditions
+        if (order == null) {
+            throw new IllegalArgumentException("Order cannot be null");
+        }
+
+        CustomerOrder customerOrder = order.getCustomerOrder();
+        if (customerOrder == null) {
+            log.warn("No customer order found for order: {}", order.getOrderId());
+            return null;
+        }
+
+        if (customerOrder.getPaymentMethod() != PaymentMethod.VNPAY) {
+            log.info("No refund needed for order {} - payment method is not VNPAY",
+                    order.getOrderId());
+            return null;
+        }
+
+        if (customerOrder.getPaymentStatus() != PaymentStatus.PAID) {
+            log.info("No refund needed for order {} - payment status is not PAID",
+                    order.getOrderId());
+            return null;
+        }
+
+        // Check if refund already processed for this specific order
+        boolean refundExists = walletTransactionRepository.existsByReferenceTypeAndReferenceId(
+                WalletReferenceType.ORDER_REFUND, order.getOrderId());
+
+        if (refundExists) {
+            log.warn("Refund already processed for order: {}", order.getOrderId());
+            return null;
+        }
+
+        // Use the individual order's total amount for refund
+        BigDecimal refundAmount = order.getTotalAmount();
+        if (refundAmount == null || refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            log.warn("Invalid refund amount for order: {}", order.getOrderId());
+            return null;
+        }
+
+        String description = String.format("Refund for cancelled order #%d (Shop: %s)",
+                order.getOrderId(),
+                order.getShop() != null ? order.getShop().getShopName() : "Unknown");
+
+        try {
+            WalletTransaction refundTransaction = addFunds(
+                    customerOrder.getUser(),
+                    refundAmount,
+                    description,
+                    WalletReferenceType.ORDER_REFUND,
+                    order.getOrderId(), // Use order ID instead of customer order ID
+                    customerOrder.getUser().getUserId()
+            );
+
+            log.info("Processed refund of {} for order {} (Shop: {}) to user {}",
+                    refundAmount, order.getOrderId(),
+                    order.getShop() != null ? order.getShop().getShopName() : "Unknown",
+                    customerOrder.getUser().getEmail());
+
+            return refundTransaction;
+        } catch (Exception e) {
+            log.error("Failed to process refund for order {}: {}",
+                    order.getOrderId(), e.getMessage(), e);
+            throw new RuntimeException("Failed to process refund: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Process refund to wallet for cancelled customer order (legacy method)
+     * @param customerOrder The cancelled customer order
+     * @return The wallet transaction if refund was processed, null if not applicable
+     * @deprecated Use processOrderRefund(Order) instead for individual order refunds
+     */
+    @Deprecated
     @Transactional
     public WalletTransaction processRefund(CustomerOrder customerOrder) {
         // Validate refund conditions
@@ -306,6 +381,29 @@ public class WalletService {
     @Transactional(readOnly = true)
     public List<WalletTransaction> getTransactionsByReference(WalletReferenceType referenceType, Integer referenceId) {
         return walletTransactionRepository.findByReferenceTypeAndReferenceId(referenceType, referenceId);
+    }
+
+    /**
+     * Check if an order has already been refunded
+     * @param orderId The order ID to check
+     * @return true if refund exists, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean isOrderRefunded(Integer orderId) {
+        return walletTransactionRepository.existsByReferenceTypeAndReferenceId(
+                WalletReferenceType.ORDER_REFUND, orderId);
+    }
+
+    /**
+     * Get refund transaction for a specific order
+     * @param orderId The order ID
+     * @return The refund transaction if exists, null otherwise
+     */
+    @Transactional(readOnly = true)
+    public WalletTransaction getOrderRefundTransaction(Integer orderId) {
+        List<WalletTransaction> transactions = walletTransactionRepository.findByReferenceTypeAndReferenceId(
+                WalletReferenceType.ORDER_REFUND, orderId);
+        return transactions.isEmpty() ? null : transactions.get(0);
     }
 
     /**

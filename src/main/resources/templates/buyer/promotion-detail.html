@@ -230,8 +230,8 @@
                     <i class="fas fa-tag fa-2x mb-2"></i><br>
                     <span th:if="${promotion.promotionType.name() == 'PERCENTAGE_DISCOUNT'}" 
                           th:text="${promotion.discountValue} + '% OFF'">10% OFF</span>
-                    <span th:if="${promotion.promotionType.name() == 'FIXED_AMOUNT_DISCOUNT'}" 
-                          th:text="'$' + ${#numbers.formatDecimal(promotion.discountValue, 0, 'COMMA', 0, 'POINT')} + ' OFF'">$50 OFF</span>
+                    <span th:if="${promotion.promotionType.name() == 'FIXED_AMOUNT_DISCOUNT'}"
+                          th:text="${#numbers.formatDecimal(promotion.discountValue, 0, 'COMMA', 0, 'POINT')} + ' VND OFF'">${promotion.discountValue} VND OFF</span>
                 </div>
 
                 <!-- Promotion Details -->
@@ -259,8 +259,8 @@
                         <span class="detail-value">
                             <span th:if="${promotion.promotionType.name() == 'PERCENTAGE_DISCOUNT'}" 
                                   th:text="${promotion.discountValue} + '%'">10%</span>
-                            <span th:if="${promotion.promotionType.name() == 'FIXED_AMOUNT_DISCOUNT'}" 
-                                  th:text="'$' + ${#numbers.formatDecimal(promotion.discountValue, 0, 'COMMA', 0, 'POINT')}">$50</span>
+                            <span th:if="${promotion.promotionType.name() == 'FIXED_AMOUNT_DISCOUNT'}"
+                                  th:text="${#numbers.formatDecimal(promotion.discountValue, 0, 'COMMA', 0, 'POINT')} + ' VND'">${promotion.discountValue} VND</span>
                         </span>
                     </div>
                     
@@ -268,22 +268,17 @@
                         <span class="detail-label">
                             <i class="fas fa-shopping-cart me-2"></i>Minimum Order Value
                         </span>
-                        <span class="detail-value" th:text="'$' + ${#numbers.formatDecimal(promotion.minOrderValue, 0, 'COMMA', 0, 'POINT')}">$100</span>
+                        <span class="detail-value" th:text="${#numbers.formatDecimal(promotion.minOrderValue, 0, 'COMMA', 0, 'POINT')} + ' VND'">${promotion.minOrderValue} VND</span>
                     </div>
                     
                     <div class="detail-item" th:if="${promotion.maxDiscountAmount != null}">
                         <span class="detail-label">
                             <i class="fas fa-hand-holding-usd me-2"></i>Maximum Discount Amount
                         </span>
-                        <span class="detail-value" th:text="'$' + ${#numbers.formatDecimal(promotion.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}">$50</span>
+                        <span class="detail-value" th:text="${#numbers.formatDecimal(promotion.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'">${promotion.maxDiscountAmount} VND</span>
                     </div>
                     
-                    <div class="detail-item">
-                        <span class="detail-label">
-                            <i class="fas fa-globe me-2"></i>Scope
-                        </span>
-                        <span class="detail-value" th:text="${promotion.scopeType.displayName}">Site-wide</span>
-                    </div>
+
                 </div>
 
                 <!-- Validity Period -->
@@ -314,12 +309,12 @@
                     
                     <div class="condition-item" th:if="${promotion.minOrderValue != null}">
                         <i class="fas fa-shopping-cart condition-icon"></i>
-                        <span th:text="'Minimum order value of $' + ${#numbers.formatDecimal(promotion.minOrderValue, 0, 'COMMA', 0, 'POINT')} + ' required'">Minimum order value of $100 required</span>
+                        <span th:text="'Minimum order value of ' + ${#numbers.formatDecimal(promotion.minOrderValue, 0, 'COMMA', 0, 'POINT')} + ' VND required'">Minimum order value of 100,000 VND required</span>
                     </div>
                     
                     <div class="condition-item" th:if="${promotion.maxDiscountAmount != null}">
                         <i class="fas fa-hand-holding-usd condition-icon"></i>
-                        <span th:text="'Maximum discount amount is $' + ${#numbers.formatDecimal(promotion.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}">Maximum discount amount is $50</span>
+                        <span th:text="'Maximum discount amount is ' + ${#numbers.formatDecimal(promotion.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'">Maximum discount amount is 50,000 VND</span>
                     </div>
                     
                     <div class="condition-item" th:if="${promotion.usageLimitPerUser != null}">
@@ -377,31 +372,7 @@
                     </div>
                 </div>
 
-                <!-- Global Usage Statistics -->
-                <div class="detail-card" th:if="${promotion.totalUsageLimit != null}">
-                    <h5><i class="fas fa-globe me-2"></i>Global Usage</h5>
-                    
-                    <div class="text-center mb-3">
-                        <h3 class="text-info" th:text="${usageStats.totalUsageCount}">0</h3>
-                        <p class="mb-0">Total Uses</p>
-                    </div>
-                    
-                    <div class="usage-progress">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Global Usage</span>
-                            <span th:text="${usageStats.totalUsageCount} + ' / ' + ${promotion.totalUsageLimit}">0 / 1000</span>
-                        </div>
-                        <div class="progress-custom">
-                            <div class="progress-bar-custom" 
-                                 th:style="'width: ' + ${(usageStats.totalUsageCount * 100.0 / promotion.totalUsageLimit)} + '%'"></div>
-                        </div>
-                        <div class="text-center mt-2">
-                            <small class="text-muted">
-                                <span th:text="${usageStats.totalRemainingUses}">1000</span> use(s) remaining globally
-                            </small>
-                        </div>
-                    </div>
-                </div>
+
 
                 <!-- Action Buttons -->
                 <div class="d-grid gap-2">
