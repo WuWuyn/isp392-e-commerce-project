@@ -37,7 +37,7 @@ public interface BookRepository extends JpaRepository<Book, Integer>, JpaSpecifi
     // Tìm sách theo danh mục (phân trang)
     @Query("SELECT b FROM Book b JOIN b.categories c WHERE c = ?1 AND b.isActive = true")
     Page<Book> findByCategory(Category category, Pageable pageable);
-    
+    long countByCategories_CategoryId(Integer categoryId);
     // Lấy những sách có đánh giá cao nhất
     // Thêm "WHERE b.active = true"
     @Query("SELECT b FROM Book b WHERE b.isActive = true ORDER BY b.averageRating DESC")

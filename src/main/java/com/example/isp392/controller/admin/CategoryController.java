@@ -220,21 +220,24 @@ public class CategoryController {
         
         return "redirect:/admin/categories";
     }
-    @PostMapping("/{id}/delete")
+   @PostMapping("/{id}/delete")
     public String deleteCategory(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
         try {
-            // Find the category first to provide a more informative success message
             Optional<Category> categoryOpt = categoryService.findById(id);
             if (categoryOpt.isPresent()) {
                 String categoryName = categoryOpt.get().getCategoryName();
-                categoryService.deleteById(id); // Perform the hard delete
+                // Phương thức này giờ đã chứa logic kiểm tra
+                categoryService.deleteById(id);
                 redirectAttributes.addFlashAttribute("successMessage", "Category '" + categoryName + "' has been permanently deleted.");
             } else {
                 redirectAttributes.addFlashAttribute("errorMessage", "Category not found.");
             }
+        } catch (IllegalStateException e) {
+            // <<< BẮT LỖI CỤ THỂ TỪ SERVICE
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (Exception e) {
-            // Catch potential data integrity violations (e.g., if products are still linked to this category)
-            redirectAttributes.addFlashAttribute("errorMessage", "Error: This category cannot be deleted because it is still in use by some products.");
+            // Giữ lại để bắt các lỗi không mong muốn khác
+            redirectAttributes.addFlashAttribute("errorMessage", "An unexpected error occurred. Please check system logs.");
         }
         return "redirect:/admin/categories";
     }
