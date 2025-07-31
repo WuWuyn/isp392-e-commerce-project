@@ -112,7 +112,6 @@ public class ChatService {
             String conversationHistory = getRecentConversationContext(session);
             String systemPrompt = createSystemPrompt(context, conversationHistory);
             String fullPrompt = systemPrompt + "\n\nUser: " + userMessage + "\nAssistant:";
-
             return googleAIClient.generateContent(fullPrompt);
 
         } catch (Exception e) {
