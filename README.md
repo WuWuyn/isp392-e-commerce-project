@@ -106,3 +106,6 @@ A heartfelt thank you to all the people who have dedicated their time and effort
 ## 📜 License
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for details.
+
+And here is our document https://1drv.ms/w/c/2aa76b45fb1d7e8c/EcGd1LXDtJxDkRtlr3VxPOcBNCVcJR6kKp8mgf_iuzJmjg?e=GWyPrJ
+
